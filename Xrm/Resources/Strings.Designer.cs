@@ -77,5 +77,32 @@ namespace XrmGen.Xrm.Resources {
                 return ResourceManager.GetString("CompletionSearch", resourceCulture);
             }
         }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Provided entity type does not have any logical name..
+        /// </summary>
+        internal static string EntityGenerator_NoLogicalName {
+            get {
+                return ResourceManager.GetString("EntityGenerator.NoLogicalName", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to // Code generation failed due to invalid input file..
+        /// </summary>
+        internal static string PluginGenerator_InvalidConfig {
+            get {
+                return ResourceManager.GetString("PluginGenerator.InvalidConfig", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Assembly configuration does not contain any plugin types..
+        /// </summary>
+        internal static string PluginGenerator_NoPluginTypes {
+            get {
+                return ResourceManager.GetString("PluginGenerator.NoPluginTypes", resourceCulture);
+            }
+        }
     }
 }

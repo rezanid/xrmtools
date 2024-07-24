@@ -4,6 +4,7 @@ using Microsoft;
 using Microsoft.Build.Framework;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.VisualStudio;
+using Microsoft.VisualStudio.RpcContracts.Utilities;
 using Microsoft.VisualStudio.Shell;
 using Microsoft.VisualStudio.Shell.Events;
 using Microsoft.VisualStudio.Shell.Interop;
@@ -11,12 +12,15 @@ using Microsoft.VisualStudio.TaskStatusCenter;
 using Microsoft.VisualStudio.TextTemplating.VSHost;
 using Microsoft.VisualStudio.Threading;
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Net;
 using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Threading;
+using VSLangProj;
+using XrmGen.Extensions;
 using XrmGen.Xrm;
 using Task = System.Threading.Tasks.Task;
 
@@ -81,25 +85,28 @@ public sealed class XrmGenPackage : AsyncPackage
         _dte = await GetServiceAsync(typeof(DTE)) as DTE2;
         Assumes.Present(_dte);
 
-        InitializeXrmSchemaForAllProjects();
-
         // Subscribe to solution events
         _dte.Events.SolutionEvents.Opened += delegate
         {
             ThreadHelper.JoinableTaskFactory.WithPriority(VsTaskRunContext.UIThreadIdlePriority).Run(async () =>
             {
                 await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync(alwaysYield: true);
-                StartBackgroundOperations();
+                var envs = GetProjectsDataverseEnvironments()
+                    .GroupBy(s => s.EnvironmentUrl)
+                    .Select(g => new ProjectDataverseSettings(g.Key, g.First().ApplicationId))
+                    .ToList();
+                StartBackgroundOperations(envs);
             });
         };
 
     }
 
-    private void StartBackgroundOperations()
+    internal record ProjectDataverseSettings(string EnvironmentUrl, string ApplicationId);
+
+    private void StartBackgroundOperations(IList<ProjectDataverseSettings> envs)
     {
         var taskCenter = GetService(typeof(SVsTaskStatusCenterService)) as IVsTaskStatusCenterService;
         Assumes.Present(taskCenter);
-
         var options = default(TaskHandlerOptions);
         options.Title = "Loading XRM Metadata";
         options.ActionsAfterCompletion = CompletionActions.None;
@@ -108,19 +115,27 @@ public sealed class XrmGenPackage : AsyncPackage
         data.CanBeCanceled = false;
 
         var handler = taskCenter.PreRegister(options, data);
-        handler.RegisterTask(RefreshMetadataAsync(data, handler));
+        handler.RegisterTask(RefreshMetadataAsync(envs, data, handler));
     }
 
-    private async Task RefreshMetadataAsync(TaskProgressData data, ITaskHandler handler)
+    private async Task RefreshMetadataAsync(IList<ProjectDataverseSettings> envs, TaskProgressData data, ITaskHandler handler)
     {
-        await XrmSchemaProvider.Instance.RefreshEntityNamesCacheAsync();
+        var currentIndex = 0;
+        foreach (var env in envs)
+        {
+            data.ProgressText = $"Refreshing metadata for {env.EnvironmentUrl}";
+            data.PercentComplete = 100 * currentIndex / envs.Count;
+            handler.Progress.Report(data);
+
+            await XrmSchemaProviderFactory.RefreshCacheAsync(env.EnvironmentUrl);
+        }
 
         data.ProgressText = "Metadata refresh complete";
         data.PercentComplete = 100;
         handler.Progress.Report(data);
     }
 
-    private void InitializeXrmSchemaForAllProjects()
+    private IEnumerable<ProjectDataverseSettings> GetProjectsDataverseEnvironments()
     {
         ThreadHelper.ThrowIfNotOnUIThread();
 
@@ -131,21 +146,10 @@ public sealed class XrmGenPackage : AsyncPackage
         IVsHierarchy[] hierarchies = new IVsHierarchy[1];
         while (enumHierarchies.Next(1, hierarchies, out var fetched) == VSConstants.S_OK && fetched == 1)
         {
-            var environmentUrl = GetPropertyForProject(hierarchies[0], "EnvironmentUrl");
-            var applicationId = GetPropertyForProject(hierarchies[0], "ApplicationId");
-            XrmSchemaProvider.Initialize(environmentUrl, applicationId);
+            yield return new (
+                EnvironmentUrl: hierarchies[0].GetPropertyForProject("EnvironmentUrl"), 
+                ApplicationId: hierarchies[0].GetPropertyForProject("ApplicationId"));
         }
-    }
-
-    private string GetPropertyForProject(IVsHierarchy hierarchy, string propertyName)
-    {
-        ThreadHelper.ThrowIfNotOnUIThread();
-        if (hierarchy is IVsBuildPropertyStorage propertyStorage)
-        {
-            propertyStorage.GetPropertyValue(propertyName, null, (uint)_PersistStorageType.PST_PROJECT_FILE, out var value);
-            return value;
-        }
-        return string.Empty;
     }
 
     private (string environmentUrl, string applicationId) GetProjectPropertiesOld()

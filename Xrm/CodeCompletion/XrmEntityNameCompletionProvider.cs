@@ -56,28 +56,31 @@ internal class XrmEntityNameCompletionHandler(ITextBuffer textBuffer, ITextStruc
         var extent = textNavigator.GetExtentOfWord(triggerPoint);
         var span = textNavigator.GetSpanOfEnclosing(extent.Span);
 
-        // Get the parent of the current block.
-        var startObjectPosition = textBuffer.CurrentSnapshot.GetText(0, triggerPoint.Position).LastIndexOf('{');
-        var endObjectPosition = textBuffer.CurrentSnapshot.GetText(triggerPoint.Position, textBuffer.CurrentSnapshot.Length).IndexOf('}');
-        var obj = JObject.Parse(textBuffer.CurrentSnapshot.GetText(startObjectPosition, triggerPoint.Position + endObjectPosition));
-        if (obj.TryGetValue("PrimaryEntityName", out var entityName))
+        if (span.GetText() == "FilteringAttributes")
         {
-            var trackingSpan = textBuffer.CurrentSnapshot.CreateTrackingSpan(
-                new SnapshotSpan(triggerPoint, 0),
-                SpanTrackingMode.EdgeInclusive
-            );
+            // Get the parent JSON object.
+            var objectStartPos = textBuffer.CurrentSnapshot.GetText(0, triggerPoint.Position).LastIndexOf('{');
+            var objectLength = textBuffer.CurrentSnapshot.GetText(triggerPoint.Position, textBuffer.CurrentSnapshot.Length - triggerPoint.Position).IndexOf('}') + (triggerPoint.Position - objectStartPos) + 1;
+            var obj = JObject.Parse(textBuffer.CurrentSnapshot.GetText(objectStartPos, objectLength));
+            if (obj.TryGetValue("PrimaryEntityName", out var entityName))
+            {
+                var trackingSpan = textBuffer.CurrentSnapshot.CreateTrackingSpan(
+                    new SnapshotSpan(triggerPoint, 0),
+                    SpanTrackingMode.EdgeInclusive
+                );
 
-            completionSets.Add(new CompletionSet(
-                "JSON",
-                "JSON",
-                trackingSpan,
-                GetEntityNameCompletionsAsync(entityName.ToString()).WaitAndUnwrapException(),
-                null
-            ));
+                completionSets.Add(new CompletionSet(
+                    "JSON",
+                    "JSON",
+                    trackingSpan,
+                    GetAttributeNameCompletionsAsync(entityName.ToString()).WaitAndUnwrapException(),
+                    null
+                ));
+            }
+
         }
 
-
-        var text = textBuffer.CurrentSnapshot.GetText(span);
+        var text = span.GetText();
         if (!text.StartsWith("\"PrimaryEntityName\""))
             return;
 

@@ -2,12 +2,7 @@
 using EnvDTE80;
 using Microsoft;
 using Microsoft.VisualStudio.Shell;
-using Microsoft.VisualStudio.Shell.Interop;
-using System;
 using System.ComponentModel.Design;
-using System.Globalization;
-using System.Threading;
-using System.Threading.Tasks;
 using Task = System.Threading.Tasks.Task;
 
 namespace XrmGen;
@@ -16,8 +11,6 @@ namespace XrmGen;
 /// </summary>
 internal sealed class ApplyEntityGeneratorCommand
 {
-	private static readonly DTE2 _dte;
-	
     /// <summary>
     /// Initializes the singleton instance of the command.
     /// </summary>
@@ -33,7 +26,6 @@ internal sealed class ApplyEntityGeneratorCommand
 		
 		// Unless there is a better / easier  way to do it instead of using DTE, we will. For now, it's OK.
 		// Note! DTE2 is the new DTE, but the service is registered in DTE, so we get it and cast it like following.
-		//       DTE is a cetral extensibility point.
 		var dte = await package.GetServiceAsync<DTE, DTE2>();
         Assumes.Present(dte);
 

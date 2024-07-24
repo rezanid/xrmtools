@@ -123,4 +123,13 @@
   <data name="CompletionSearch" xml:space="preserve">
     <value>Searching entities...</value>
   </data>
+  <data name="EntityGenerator.NoLogicalName" xml:space="preserve">
+    <value>Provided entity type does not have any logical name.</value>
+  </data>
+  <data name="PluginGenerator.InvalidConfig" xml:space="preserve">
+    <value>// Code generation failed due to invalid input file.</value>
+  </data>
+  <data name="PluginGenerator.NoPluginTypes" xml:space="preserve">
+    <value>Assembly configuration does not contain any plugin types.</value>
+  </data>
 </root>
