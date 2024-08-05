@@ -52,7 +52,7 @@ internal sealed class ApplyEntityGeneratorCommand
         var item = dte.SelectedItems.Item(1).ProjectItem;
         if (item != null)
         {
-            item.Properties.Item("CustomTool").Value = EntityGenerator.Name;
+            item.Properties.Item("CustomTool").Value = EntityCodeGenerator.Name;
         }
     }
 }

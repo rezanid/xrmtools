@@ -1,14 +1,14 @@
-﻿using Microsoft.Xrm.Sdk.Metadata;
+﻿#nullable enable
+using Microsoft.Xrm.Sdk.Metadata;
 using System;
 using System.ComponentModel.Composition;
-using System.Text;
 
 namespace XrmGen.Xrm.Generators;
 
-[Export(typeof(IEntityGenerator))]
-public class TemplatedEntityGenerator : IEntityGenerator
+[Export(typeof(IXrmEntityCodeGenerator))]
+public class TemplatedEntityCodeGenerator : IXrmEntityCodeGenerator
 {
-    public CodeGenConfig Config { set; private get; }
+    public XrmCodeGenConfig? Config { set; get; }
 
     public (bool, string) IsValid(EntityMetadata plugin)
     {
@@ -17,8 +17,9 @@ public class TemplatedEntityGenerator : IEntityGenerator
         return (true, string.Empty);
     }
 
-    public void GenerateCode(StringBuilder builder, EntityMetadata entityMetadata, string suggestedNamespace)
+    public string GenerateCode(EntityMetadata entityMetadata)
     {
-        return;
+        return "// Goodluck!";
     }
 }
+#nullable restore

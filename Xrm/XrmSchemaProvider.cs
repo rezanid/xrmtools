@@ -1,12 +1,15 @@
-﻿using Microsoft.PowerPlatform.Dataverse.Client;
+﻿namespace XrmGen.Xrm;
+
+using Microsoft.PowerPlatform.Dataverse.Client;
 using Microsoft.Xrm.Sdk.Messages;
 using Microsoft.Xrm.Sdk.Metadata;
+using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
-namespace XrmGen.Xrm;
 
-public interface IXrmSchemaProvider
+public interface IXrmSchemaProvider : IDisposable
 {
     public Task<IEnumerable<string>> GetEntityNamesAsync();
     public IEnumerable<string> GetEntityNames();
@@ -19,9 +22,15 @@ public interface IXrmSchemaProvider
 
 public class XrmSchemaProvider(ServiceClient serviceClient) : IXrmSchemaProvider
 {
-    private readonly MetadataCache<IEnumerable<EntityMetadata>> metadataCache = new(async () => await FetchEntitiesAsync(serviceClient));
+    private readonly MetadataCache<IEnumerable<EntityMetadata>> metadataCache = new(
+        async () =>
+        {
+            using CancellationTokenSource tcs = new(10000);
+            return await FetchEntitiesAsync(serviceClient, tcs.Token);
+        });
     private readonly Dictionary<string, MetadataCache<EntityMetadata>> metadataExtensiveCache = [];
     private readonly object _lock = new();
+    private bool disposed = false;
 
     public async Task<IEnumerable<string>> GetEntityNamesAsync()
     {
@@ -44,6 +53,7 @@ public class XrmSchemaProvider(ServiceClient serviceClient) : IXrmSchemaProvider
     }
 
     public async Task<IEnumerable<EntityMetadata>> GetEntitiesAsync() => await metadataCache.GetDataAsync();
+
     public IEnumerable<EntityMetadata> GetEntities() => metadataCache.GetData();
 
     public async Task<EntityMetadata> GetEntityAsync(string entityLogicalName)
@@ -56,7 +66,11 @@ public class XrmSchemaProvider(ServiceClient serviceClient) : IXrmSchemaProvider
         {
             if (!metadataExtensiveCache.TryGetValue(entityLogicalName, out cache))
             {
-                cache = new(async () => await FetchEntityAsync(entityLogicalName, serviceClient));
+                cache = new(async () =>
+                {
+                    using CancellationTokenSource cancellationTokenSource = new(10000);
+                    return await FetchEntityAsync(entityLogicalName, serviceClient, cancellationTokenSource.Token);
+                });
                 metadataExtensiveCache[entityLogicalName] = cache;
             }
         }
@@ -73,7 +87,10 @@ public class XrmSchemaProvider(ServiceClient serviceClient) : IXrmSchemaProvider
         {
             if (!metadataExtensiveCache.TryGetValue(entityLogicalName, out cache))
             {
-                cache = new(async () => await FetchEntityAsync(entityLogicalName, serviceClient));
+                cache = new(async () => {
+                    using CancellationTokenSource cancellationTokenSource = new(10000);
+                    return await FetchEntityAsync(entityLogicalName, serviceClient, cancellationTokenSource.Token);
+                });
                 metadataExtensiveCache[entityLogicalName] = cache;
             }
         }
@@ -90,7 +107,8 @@ public class XrmSchemaProvider(ServiceClient serviceClient) : IXrmSchemaProvider
         }
     }
 
-    private static async Task<EntityMetadata> FetchEntityAsync(string entityLogicalName, ServiceClient serviceClient)
+    private static async Task<EntityMetadata> FetchEntityAsync(
+        string entityLogicalName, ServiceClient serviceClient, CancellationToken cancellationToken)
     {
         if (serviceClient.IsReady)
         {
@@ -102,7 +120,7 @@ public class XrmSchemaProvider(ServiceClient serviceClient) : IXrmSchemaProvider
                 RetrieveAsIfPublished = true
             };
 
-            var response = (RetrieveEntityResponse) await serviceClient.ExecuteAsync(request);
+            var response = (RetrieveEntityResponse) await serviceClient.ExecuteAsync(request, cancellationToken);
 
             return response.EntityMetadata;
         }
@@ -115,7 +133,8 @@ public class XrmSchemaProvider(ServiceClient serviceClient) : IXrmSchemaProvider
         }
     }
 
-    private static async Task<IEnumerable<EntityMetadata>> FetchEntitiesAsync(ServiceClient client)
+    private static async Task<IEnumerable<EntityMetadata>> FetchEntitiesAsync(
+        ServiceClient client, CancellationToken cancellationToken)
     {
         if (client.IsReady)
         {
@@ -126,7 +145,7 @@ public class XrmSchemaProvider(ServiceClient serviceClient) : IXrmSchemaProvider
                 RetrieveAsIfPublished = true
             };
 
-            var response = (RetrieveAllEntitiesResponse) await client.ExecuteAsync(request);
+            var response = (RetrieveAllEntitiesResponse) await client.ExecuteAsync(request, cancellationToken);
 
             return response.EntityMetadata;
         }
@@ -138,4 +157,32 @@ public class XrmSchemaProvider(ServiceClient serviceClient) : IXrmSchemaProvider
             return [];
         }
     }
+
+    #region IDisposable Support
+
+    protected virtual void Dispose(bool disposing)
+    {
+        if (!disposed)
+        {
+            if (disposing)
+            {
+                // Dispose managed resources
+                serviceClient?.Dispose();
+            }
+
+            // Free unmanaged resources (if any)
+            disposed = true;
+        }
+    }
+
+    public void Dispose()
+    {
+        Dispose(true);
+        GC.SuppressFinalize(this);
+    }
+
+    // Finalizer to ensure resources are released if Dispose is not called
+    ~XrmSchemaProvider() => Dispose(false);
+
+    #endregion
 }

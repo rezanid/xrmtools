@@ -1,5 +1,7 @@
-﻿using EnvDTE;
+﻿
+using EnvDTE;
 using EnvDTE80;
+using Humanizer.Localisation;
 using Microsoft;
 using Microsoft.Build.Framework;
 using Microsoft.Extensions.DependencyInjection;
@@ -13,6 +15,9 @@ using Microsoft.VisualStudio.TextTemplating.VSHost;
 using Microsoft.VisualStudio.Threading;
 using System;
 using System.Collections.Generic;
+using System.ComponentModel;
+using System.ComponentModel.Composition;
+using System.ComponentModel.Design;
 using System.Linq;
 using System.Net;
 using System.Runtime.InteropServices;
@@ -20,11 +25,17 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Threading;
 using VSLangProj;
+using XrmGen._Core;
 using XrmGen.Extensions;
 using XrmGen.Xrm;
+using XrmGen.Xrm.Generators;
 using Task = System.Threading.Tasks.Task;
 
+#nullable enable
 namespace XrmGen;
+internal record ProjectDataverseSettings(
+    string EnvironmentUrl, string ApplicationId, string? PluginCodeGenTemplatePath, string? EntityCodeGenTemplatePath);
+
 
 /// <summary>
 /// This is the class that implements the package exposed by this assembly.
@@ -46,20 +57,27 @@ namespace XrmGen;
 [PackageRegistration(UseManagedResourcesOnly = true, AllowsBackgroundLoading = true)]
 [Guid(PackageGuids.guidXrmCodeGenPackageString)]
 [ProvideAutoLoad(UIContextGuids80.SolutionExists, PackageAutoLoadFlags.BackgroundLoad)]
-[ProvideCodeGenerator(typeof(EntityGenerator), EntityGenerator.Name, EntityGenerator.Description, true, ProjectSystem = ProvideCodeGeneratorAttribute.CSharpProjectGuid, RegisterCodeBase = true)]
-[ProvideCodeGeneratorExtension(EntityGenerator.Name, ".yaml")]
-[ProvideCodeGenerator(typeof(PluginGenerator), PluginGenerator.Name, PluginGenerator.Description, true, ProjectSystem = ProvideCodeGeneratorAttribute.CSharpProjectGuid, RegisterCodeBase = true)]
-[ProvideCodeGeneratorExtension(EntityGenerator.Name, ".def.json")]
+[ProvideCodeGenerator(typeof(EntityCodeGenerator), EntityCodeGenerator.Name, EntityCodeGenerator.Description, true, ProjectSystem = ProvideCodeGeneratorAttribute.CSharpProjectGuid, RegisterCodeBase = true)]
+[ProvideCodeGeneratorExtension(EntityCodeGenerator.Name, ".yaml")]
+[ProvideCodeGenerator(typeof(PluginCodeGenerator), PluginCodeGenerator.Name, PluginCodeGenerator.Description, true, ProjectSystem = ProvideCodeGeneratorAttribute.CSharpProjectGuid, RegisterCodeBase = true)]
+[ProvideCodeGeneratorExtension(PluginCodeGenerator.Name, ".def.json")]
 [ProvideMenuResource("Menus.ctmenu", 1)]
 // Decide the visibility of our command when the command is NOT yet loaded.
 [ProvideUIContextRule(PackageGuids.guidXrmCodeGenUIRuleString,
     name: "UI Context",
-	expression: "(Yaml | Proj) & CSharp & (SingleProj | MultiProj)",
-	termNames: ["Yaml", "Proj", "CSharp", "SingleProj", "MultiProj"],
-	termValues: ["HierSingleSelectionName:.yaml$|.yml$", "HierSingleSelectionItemType:ProjectItem", "ActiveProjectCapability:CSharp", VSConstants.UICONTEXT.SolutionHasSingleProject_string, VSConstants.UICONTEXT.SolutionHasMultipleProjects_string])]
+    expression: "(Yaml | Proj) & CSharp & (SingleProj | MultiProj)",
+    termNames: ["Yaml", "Proj", "CSharp", "SingleProj", "MultiProj"],
+    termValues: ["HierSingleSelectionName:.yaml$|.yml$", "HierSingleSelectionItemType:ProjectItem", "ActiveProjectCapability:CSharp", VSConstants.UICONTEXT.SolutionHasSingleProject_string, VSConstants.UICONTEXT.SolutionHasMultipleProjects_string])]
+[ProvideService(typeof(IXrmSchemaProviderFactory), IsAsyncQueryable = true, IsCacheable = true, IsFreeThreaded = true)]
+[ProvideService(typeof(IXrmPluginCodeGenerator), IsAsyncQueryable = true, IsCacheable = true, IsFreeThreaded = true)]
+[ProvideService(typeof(IXrmEntityCodeGenerator), IsAsyncQueryable = true, IsCacheable = true, IsFreeThreaded = true)]
 public sealed class XrmGenPackage : AsyncPackage
 {
-    private DTE2 _dte;
+    private DTE2? _dte;
+
+    // Warning!
+    // MEF Doesn't work here. Use the ServiceProvider to get the requried service.
+    private IXrmSchemaProviderFactory XrmSchemaProviderFactory;
 
     /// <summary>
     /// XrmGenPackage GUID string.
@@ -77,34 +95,71 @@ public sealed class XrmGenPackage : AsyncPackage
     {
         await base.InitializeAsync(cancellationToken, progress);
 
+
+        await InitializeServicesAsync();
+
         // When initialized asynchronously, the current thread may be a background thread at this point.
         // Do any initialization that requires the UI thread after switching to the UI thread.
         await JoinableTaskFactory.SwitchToMainThreadAsync(cancellationToken);
         await ApplyEntityGeneratorCommand.InitializeAsync(this);
 
-        _dte = await GetServiceAsync(typeof(DTE)) as DTE2;
+        _dte = await GetServiceAsync(typeof(DTE)) as DTE2
+            ?? throw new InvalidOperationException(
+                string.Format(Resources.Strings.Package_InitializationErroMissingDte, nameof(XrmGenPackage)));
         Assumes.Present(_dte);
-
-        // Subscribe to solution events
-        _dte.Events.SolutionEvents.Opened += delegate
+        // This is for when extension is loaded before the solution is opened.
+        // Usually happens when user opens Visual Studio with a solution already loaded.
+        _dte.Events.SolutionEvents.Opened += () =>
         {
+            Logger.Log("Solution Opened");
             ThreadHelper.JoinableTaskFactory.WithPriority(VsTaskRunContext.UIThreadIdlePriority).Run(async () =>
             {
                 await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync(alwaysYield: true);
-                var envs = GetProjectsDataverseEnvironments()
-                    .GroupBy(s => s.EnvironmentUrl)
-                    .Select(g => new ProjectDataverseSettings(g.Key, g.First().ApplicationId))
-                    .ToList();
-                StartBackgroundOperations(envs);
+                StartBackgroundOperations();
             });
         };
-
+        // This is for when extension is loaded after the solution is already open.
+        // Usually happens when user opens Visual Studio and then opens a solution.
+        StartBackgroundOperations();
     }
 
-    internal record ProjectDataverseSettings(string EnvironmentUrl, string ApplicationId);
-
-    private void StartBackgroundOperations(IList<ProjectDataverseSettings> envs)
+    private async Task InitializeServicesAsync()
     {
+        XrmSchemaProviderFactory ??= new XrmSchemaProviderFactory();
+        AddService(
+            typeof(IXrmSchemaProviderFactory), 
+            async (container, cancellationToken, type) =>
+                await Task.FromResult(XrmSchemaProviderFactory)
+            , promote: true);
+        AddService(
+            typeof(IXrmPluginCodeGenerator),
+            async (container, cancellationToken, type) =>
+                await Task.FromResult(new TemplatedPluginCodeGenerator())
+            // Add service at global level to make it available to Single-File generators.
+            , promote: true);
+        AddService(
+            typeof(IXrmEntityCodeGenerator),
+            async (container, cancellationToken, type) =>
+                await Task.FromResult(new TemplatedEntityCodeGenerator())
+            // Add service at global level to make it available to Single-File generators.
+            , promote: true);
+    }
+
+    private void StartBackgroundOperations()
+    {
+        var envs = GetProjectsDataverseEnvironments()
+            .Where(s => !string.IsNullOrWhiteSpace(s.EnvironmentUrl)
+                        && Uri.IsWellFormedUriString(s.EnvironmentUrl, UriKind.Absolute)
+                        && !string.IsNullOrWhiteSpace(s.ApplicationId))
+            .GroupBy(s => s.EnvironmentUrl)
+            .Select(g =>
+            {
+                var first = g.First();
+                return new ProjectDataverseSettings(
+                    first.EnvironmentUrl, first.ApplicationId, first.PluginCodeGenTemplatePath, first.EntityCodeGenTemplatePath);
+            })
+            .ToList();
+        if (envs.Count == 0) { return; }
         var taskCenter = GetService(typeof(SVsTaskStatusCenterService)) as IVsTaskStatusCenterService;
         Assumes.Present(taskCenter);
         var options = default(TaskHandlerOptions);
@@ -115,11 +170,18 @@ public sealed class XrmGenPackage : AsyncPackage
         data.CanBeCanceled = false;
 
         var handler = taskCenter.PreRegister(options, data);
-        handler.RegisterTask(RefreshMetadataAsync(envs, data, handler));
+        handler.RegisterTask(InitializeXrmMetadataAsync(envs, data, handler));
     }
 
-    private async Task RefreshMetadataAsync(IList<ProjectDataverseSettings> envs, TaskProgressData data, ITaskHandler handler)
+    private async Task InitializeXrmMetadataAsync(IList<ProjectDataverseSettings> envs, TaskProgressData data, ITaskHandler handler)
     {
+        if (XrmSchemaProviderFactory is null)
+        {
+            data.ProgressText = "Failed to initialize XRM metadata.";
+            data.PercentComplete = 100;
+            handler.Progress.Report(data);
+            throw new InvalidOperationException("XrmSchemaProviderFactory is missing.");
+        }
         var currentIndex = 0;
         foreach (var env in envs)
         {
@@ -127,9 +189,8 @@ public sealed class XrmGenPackage : AsyncPackage
             data.PercentComplete = 100 * currentIndex / envs.Count;
             handler.Progress.Report(data);
 
-            await XrmSchemaProviderFactory.RefreshCacheAsync(env.EnvironmentUrl);
+            await XrmSchemaProviderFactory.EnsureInitializedAsync(env.EnvironmentUrl, env.ApplicationId);
         }
-
         data.ProgressText = "Metadata refresh complete";
         data.PercentComplete = 100;
         handler.Progress.Report(data);
@@ -143,12 +204,14 @@ public sealed class XrmGenPackage : AsyncPackage
         var guid = Guid.Empty;
         solution.GetProjectEnum((uint)__VSENUMPROJFLAGS.EPF_LOADEDINSOLUTION, ref guid, out var enumHierarchies);
 
-        IVsHierarchy[] hierarchies = new IVsHierarchy[1];
+        var hierarchies = new IVsHierarchy[1];
         while (enumHierarchies.Next(1, hierarchies, out var fetched) == VSConstants.S_OK && fetched == 1)
         {
-            yield return new (
-                EnvironmentUrl: hierarchies[0].GetPropertyForProject("EnvironmentUrl"), 
-                ApplicationId: hierarchies[0].GetPropertyForProject("ApplicationId"));
+            yield return new(
+                EnvironmentUrl: hierarchies[0].GetProjectProperty("EnvironmentUrl"),
+                ApplicationId: hierarchies[0].GetProjectProperty("ApplicationId"),
+                PluginCodeGenTemplatePath: hierarchies[0].GetProjectProperty("PluginCodeGenTemplatePath"),
+                EntityCodeGenTemplatePath: hierarchies[0].GetProjectProperty("EntityCodeGenTemplatePath"));
         }
     }
 

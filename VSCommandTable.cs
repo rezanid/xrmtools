@@ -18,6 +18,15 @@ namespace XrmGen
         public const string guidXrmCodeGenUIRuleString = "6b9f081c-67ed-43f3-8434-237387ae4f5d";
         public static Guid guidXrmCodeGenUIRule = new Guid(guidXrmCodeGenUIRuleString);
 
+        public const string guidXrmSchemaProviderFactoryString = "b27d7354-9380-4c2e-ba0a-f423e727976e";
+        public static Guid guidXrmSchemaProviderFactory = new Guid(guidXrmSchemaProviderFactoryString);
+
+        public const string guidXrmPluginCodeGeneratorString = "6b7af55b-dc3d-4bd7-ac39-3e3b60ef279b";
+        public static Guid guidXrmPluginCodeGenerator = new Guid(guidXrmPluginCodeGeneratorString);
+
+        public const string guidXrmEntityCodeGeneratorString = "40f321f1-e206-4643-83d8-a14f3495c4ed";
+        public static Guid guidXrmEntityCodeGenerator = new Guid(guidXrmEntityCodeGeneratorString);
+
         public const string guidXrmCodeGenPackageCmdSetString = "15d399a7-b2ae-4f1c-9771-3dae966a7134";
         public static Guid guidXrmCodeGenPackageCmdSet = new Guid(guidXrmCodeGenPackageCmdSetString);
     }

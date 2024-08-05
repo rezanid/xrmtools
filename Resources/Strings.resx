@@ -126,10 +126,35 @@
   <data name="EntityGenerator.NoLogicalName" xml:space="preserve">
     <value>Provided entity type does not have any logical name.</value>
   </data>
+  <data name="EnvironmentNotInitialized" xml:space="preserve">
+    <value>Environment not initialized. You will have to first initialize the environment by calling {0}.</value>
+  </data>
+  <data name="Package.InitializationErroMissingDte" xml:space="preserve">
+    <value>Failed to acquire DTE from Visual Studio. Consequently {0} is not initialized successfully.</value>
+  </data>
+  <data name="PluginGenerator.DeserializationError" xml:space="preserve">
+    <value>Failed to serialize plugin definition from {0}.</value>
+  </data>
   <data name="PluginGenerator.InvalidConfig" xml:space="preserve">
     <value>// Code generation failed due to invalid input file.</value>
   </data>
   <data name="PluginGenerator.NoPluginTypes" xml:space="preserve">
     <value>Assembly configuration does not contain any plugin types.</value>
+  </data>
+  <data name="PluginGenerator.NullTemplate" xml:space="preserve">
+    <value>The template provided for plugin code generation is empty. Please check the file in the following path: {0}</value>
+  </data>
+  <data name="PluginGenerator.TemplateError" xml:space="preserve">
+    <value>The template provided for plugin code generation has erros. FilePath: {0}
+Error details: {1}</value>
+  </data>
+  <data name="PluginGenerator.TemplateInvalidPath" xml:space="preserve">
+    <value>The path provided for plugin code generator is invalid. Path: {0}</value>
+  </data>
+  <data name="PluginGenerator.TemplatePathNotFound" xml:space="preserve">
+    <value>The path provided for plugin code generator was not found. Path: {0}</value>
+  </data>
+  <data name="PluginGenerator.TemplatePathNotSet" xml:space="preserve">
+    <value>Configuration does contain the path to template file.</value>
   </data>
 </root>

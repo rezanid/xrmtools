@@ -46,22 +46,26 @@
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="CodeGenerators\PluginGenerator.cs" />
-    <Compile Include="CodeGenerators\EntityGenerator.cs" />
+    <Compile Include="CodeGenerators\PluginCodeGenerator.cs" />
+    <Compile Include="CodeGenerators\EntityCodeGenerator.cs" />
     <Compile Include="Commands\ApplyEntityGeneratorCommand.cs" />
     <Compile Include="Extensions\IVsHierarchyExtensions.cs" />
+    <Compile Include="Extensions\EntityMetadataExtensions.cs" />
     <Compile Include="Extensions\StringBuilderExtensions.cs" />
-    <Compile Include="Xrm\Generators\CodeGenConfig.cs" />
-    <Compile Include="Xrm\Generators\IEntityGenerator.cs" />
-    <Compile Include="Xrm\Generators\IPluginGenerator.cs" />
-    <Compile Include="Xrm\Model\PluginAssembly.cs" />
+    <Compile Include="Xrm\Generators\FileTemplateLoader.cs" />
+    <Compile Include="Xrm\Generators\XrmCodeGenConfig.cs" />
+    <Compile Include="Xrm\Generators\IXrmEntityCodeGenerator.cs" />
+    <Compile Include="Xrm\Generators\IXrmPluginCodeGenerator.cs" />
+    <Compile Include="Xrm\Generators\ScribanExtensionCache.cs" />
+    <Compile Include="Xrm\Generators\ScribanExtensions.cs" />
+    <Compile Include="Xrm\Model\PluginAssemblyInfo.cs" />
     <Compile Include="Xrm\Model\MessageProcessingStep.cs" />
     <Compile Include="Xrm\Model\MessageProcessingStepImage.cs" />
     <Compile Include="Xrm\Model\PluginStepImageRegistration.cs" />
     <Compile Include="Xrm\Model\PluginStepRegistration.cs" />
     <Compile Include="Xrm\Model\Plugin.cs" />
-    <Compile Include="Xrm\Generators\TemplatedEntityGenerator.cs" />
-    <Compile Include="Xrm\Generators\TemplatedPluginGenerator.cs" />
+    <Compile Include="Xrm\Generators\TemplatedEntityCodeGenerator.cs" />
+    <Compile Include="Xrm\Generators\TemplatedPluginCodeGenerator.cs" />
     <Compile Include="Xrm\CodeCompletion\XrmPluginDefCompletionProvider.cs" />
     <Compile Include="Xrm\CodeCompletion\XrmPluginDefCompletionSource.cs" />
     <Compile Include="Xrm\Constants.cs" />
@@ -80,7 +84,7 @@
     <Compile Include="XrmGenPackage.cs" />
     <Compile Include="Xrm\Extensions\LabelExtensions.cs" />
     <Compile Include="Xrm\MetadataCache.cs" />
-    <Compile Include="Xrm\Resources\Strings.Designer.cs">
+    <Compile Include="Resources\Strings.Designer.cs">
       <AutoGen>True</AutoGen>
       <DesignTime>True</DesignTime>
       <DependentUpon>Strings.resx</DependentUpon>
@@ -96,7 +100,7 @@
     <Content Include="assemblies\Microsoft.JSON.Core.dll" />
     <Content Include="assemblies\Microsoft.JSON.Editor.dll" />
     <Content Include="assemblies\Microsoft.Web.Editor.dll" />
-    <Content Include="Xrm\Resources\npm.png" />
+    <Content Include="Resources\npm.png" />
     <Content Include="Schemas\pluginregistration-schema.json">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
       <IncludeInVSIX>true</IncludeInVSIX>
@@ -122,6 +126,9 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <PackageReference Include="Humanizer.Core">
+      <Version>2.14.1</Version>
+    </PackageReference>
     <PackageReference Include="Microsoft.PowerPlatform.Dataverse.Client">
       <Version>1.1.27</Version>
     </PackageReference>
@@ -162,7 +169,7 @@
     <Content Include="Resources\EntityGeneratorCommand.png" />
   </ItemGroup>
   <ItemGroup>
-    <EmbeddedResource Include="Xrm\Resources\Strings.resx">
+    <EmbeddedResource Include="Resources\Strings.resx">
       <Generator>ResXFileCodeGenerator</Generator>
       <LastGenOutput>Strings.Designer.cs</LastGenOutput>
     </EmbeddedResource>

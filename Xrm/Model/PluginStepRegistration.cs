@@ -20,6 +20,16 @@ public class PluginStepRegistration
     public int Mode { get; set; }
     public int Rank { get; set; }
     public int Stage { get; set; }
+    public string StageName
+    {
+        get => Stage switch
+        {
+            10 => "PreValidation",
+            20 => "PreOperation",
+            30 => "PostOperation",
+            _ => throw new InvalidOperationException($"Unknown stage: {Stage}")
+        };
+    } 
     public int SupportedDeployment { get; set; }
     public Guid SdkMessageId { get; set; }
     public int StateCode { get; set; }

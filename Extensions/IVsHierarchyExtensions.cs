@@ -7,7 +7,7 @@ using System;
 namespace XrmGen.Extensions;
 internal static class IVsHierarchyExtensions
 {
-    public static string GetPropertyForProject(this IVsHierarchy hierarchy, string propertyName)
+    public static string GetProjectProperty(this IVsHierarchy hierarchy, string propertyName)
     {
         ThreadHelper.ThrowIfNotOnUIThread();
         if (hierarchy is IVsBuildPropertyStorage propertyStorage)

@@ -1,18 +1,17 @@
-﻿using Microsoft.VisualStudio;
+﻿#nullable enable
 using Microsoft.VisualStudio.Language.Intellisense.AsyncCompletion;
 using Microsoft.VisualStudio.Shell;
 using Microsoft.VisualStudio.Shell.Interop;
 using Microsoft.VisualStudio.Text.Editor;
 using Microsoft.VisualStudio.Text.Operations;
 using Microsoft.VisualStudio.Utilities;
-using System;
 using System.ComponentModel.Composition;
 using System.Diagnostics.CodeAnalysis;
-using System.Runtime.InteropServices;
 using XrmGen.Extensions;
 using Microsoft.VisualStudio.Text;
-
-
+using System.Diagnostics;
+using System;
+using System.Runtime.InteropServices;
 
 namespace XrmGen.Xrm.CodeCompletion;
 
@@ -22,40 +21,53 @@ namespace XrmGen.Xrm.CodeCompletion;
 //[TextViewRole(PredefinedTextViewRoles.Editable)]
 public class XrmPluginDefCompletionProvider : IAsyncCompletionSourceProvider
 {
-    private IVsRunningDocumentTable _RunningDocumenTable;
+    private IVsRunningDocumentTable? _RunningDocumenTable;
 
     [Import]
     [SuppressMessage("Style", "IDE0044:Add readonly modifier", Justification = "MEF sets this property.")]
-    ITextStructureNavigatorSelectorService StructureNavigatorSelector;
+    ITextStructureNavigatorSelectorService? StructureNavigatorSelector = null;
 
     [Import]
-    public IXrmSchemaProviderFactory XrmSchemaProviderFactory;
+    public IXrmSchemaProviderFactory? XrmSchemaProviderFactory = null;
 
     [Import]
-    public SVsServiceProvider ServiceProvider;
+    public SVsServiceProvider? ServiceProvider;
 
-    private IVsRunningDocumentTable RunningDocumenTable
+    private IVsRunningDocumentTable? RunningDocumenTable 
+        => _RunningDocumenTable ??= ServiceProvider?.GetService(typeof(SVsRunningDocumentTable)) as IVsRunningDocumentTable;
+
+    public IAsyncCompletionSource? GetOrCreate(ITextView textView)
     {
-        get => _RunningDocumenTable ??= ServiceProvider.GetService(typeof(SVsRunningDocumentTable)) as IVsRunningDocumentTable;
-    } 
-
-    public IAsyncCompletionSource GetOrCreate(ITextView textView)
-        => textView.Properties.GetOrCreateSingletonProperty(() =>
+        if (textView is null) { return null; }
+        if (XrmSchemaProviderFactory is null)
         {
+            throw new InvalidOperationException($"XrmSchemaProviderFactory is missing the in {nameof(XrmPluginDefCompletionProvider)}.");
+        }
+        return textView.Properties.GetOrCreateSingletonProperty(() =>
+        {
+            ThreadHelper.ThrowIfNotOnUIThread();
             // Get EnvironmentUrl and ApplicationId from project properties.
             if (textView.TextBuffer.Properties.GetProperty(typeof(ITextDocument)) is ITextDocument document)
             {
-                string environmentUrl = GetProjectProperty(document.FilePath, "EnvironmentUrl");
-                string applicationId = GetProjectProperty(document.FilePath, "ApplicationId");
+                string? environmentUrl = GetProjectProperty(document.FilePath, "EnvironmentUrl");
+                string? applicationId = GetProjectProperty(document.FilePath, "ApplicationId");
 
-                var xrmProvider = XrmSchemaProviderFactory.Get(environmentUrl, applicationId);
+                if (string.IsNullOrEmpty(environmentUrl) || string.IsNullOrEmpty(applicationId)) 
+                {
+                    // Write to debug that the properties are not set.
+                    Debugger.Log(0, "XrmPluginDefCompletionProvider", "EnvironmentUrl or ApplicationId is not set in project properties.");
+                    return null; 
+                }
+
+                var xrmProvider = XrmSchemaProviderFactory.GetOrNew(environmentUrl, applicationId);
                 return new XrmPluginDefCompletionSource(xrmProvider, StructureNavigatorSelector, textView.TextBuffer);
             }
             return null;
         });
+    }
 
-
-    private string GetProjectProperty(string filePath, string propertyName) => RunningDocumenTable.TryGetHierarchyAndItemID(filePath, out var hierarchy, out _)
-            ? hierarchy.GetPropertyForProject(propertyName)
-            : null;
+    private string? GetProjectProperty(string inputFilePath, string propertyName) => RunningDocumenTable?.TryGetHierarchyAndItemID(inputFilePath, out var hierarchy, out _) == true
+        ? hierarchy.GetProjectProperty(propertyName)
+        : null;
 }
+#nullable restore

@@ -1,4 +1,6 @@
-﻿using System;
+﻿using Microsoft.VisualStudio.Shell;
+using Microsoft.VisualStudio.Threading;
+using System;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -33,8 +35,11 @@ public class MetadataCache<T>(Func<Task<T>> dataFetcher)
         {
             if (!_isInitialized)
             {
-                _data = dataFetcher().ConfigureAwait(false).GetAwaiter().GetResult();
-                _isInitialized = true;
+                ThreadHelper.JoinableTaskFactory.Run(async () =>
+                {
+                    _data = await dataFetcher();
+                    _isInitialized = true;
+                });
             }
             return _data;
         }

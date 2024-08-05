@@ -1,4 +1,6 @@
-﻿namespace XrmGen.Xrm.Model;
+﻿using System.Collections.Generic;
+
+namespace XrmGen.Xrm.Model;
 
 public class Plugin
 {
@@ -8,5 +10,5 @@ public class Plugin
     public string FriendlyName { get; set; }
     public string TypeName { get; set; }
     public object WorkflowActivityGroupName { get; set; }
-    public MessageProcessingStep[] Steps { get; set; }
+    public IEnumerable<MessageProcessingStep> Steps { get; set; }
 }

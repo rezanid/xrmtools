@@ -8,7 +8,7 @@
 // </auto-generated>
 //------------------------------------------------------------------------------
 
-namespace XrmGen.Xrm.Resources {
+namespace XrmGen.Resources {
     using System;
     
     
@@ -39,7 +39,7 @@ namespace XrmGen.Xrm.Resources {
         internal static global::System.Resources.ResourceManager ResourceManager {
             get {
                 if (object.ReferenceEquals(resourceMan, null)) {
-                    global::System.Resources.ResourceManager temp = new global::System.Resources.ResourceManager("XrmGen.Xrm.Resources.Strings", typeof(Strings).Assembly);
+                    global::System.Resources.ResourceManager temp = new global::System.Resources.ResourceManager("XrmGen.Resources.Strings", typeof(Strings).Assembly);
                     resourceMan = temp;
                 }
                 return resourceMan;
@@ -88,6 +88,33 @@ namespace XrmGen.Xrm.Resources {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to Environment not initialized. You will have to first initialize the environment by calling {0}..
+        /// </summary>
+        internal static string EnvironmentNotInitialized {
+            get {
+                return ResourceManager.GetString("EnvironmentNotInitialized", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Failed to acquire DTE from Visual Studio. Consequently {0} is not initialized successfully..
+        /// </summary>
+        internal static string Package_InitializationErroMissingDte {
+            get {
+                return ResourceManager.GetString("Package.InitializationErroMissingDte", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Failed to serialize plugin definition from {0}..
+        /// </summary>
+        internal static string PluginGenerator_DeserializationError {
+            get {
+                return ResourceManager.GetString("PluginGenerator.DeserializationError", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to // Code generation failed due to invalid input file..
         /// </summary>
         internal static string PluginGenerator_InvalidConfig {
@@ -102,6 +129,52 @@ namespace XrmGen.Xrm.Resources {
         internal static string PluginGenerator_NoPluginTypes {
             get {
                 return ResourceManager.GetString("PluginGenerator.NoPluginTypes", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to The template provided for plugin code generation is empty. Please check the file in the following path: {0}.
+        /// </summary>
+        internal static string PluginGenerator_NullTemplate {
+            get {
+                return ResourceManager.GetString("PluginGenerator.NullTemplate", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to The template provided for plugin code generation has erros. FilePath: {0}
+        ///Error details: {1}.
+        /// </summary>
+        internal static string PluginGenerator_TemplateError {
+            get {
+                return ResourceManager.GetString("PluginGenerator.TemplateError", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to The path provided for plugin code generator is invalid. Path: {0}.
+        /// </summary>
+        internal static string PluginGenerator_TemplateInvalidPath {
+            get {
+                return ResourceManager.GetString("PluginGenerator.TemplateInvalidPath", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to The path provided for plugin code generator was not found. Path: {0}.
+        /// </summary>
+        internal static string PluginGenerator_TemplatePathNotFound {
+            get {
+                return ResourceManager.GetString("PluginGenerator.TemplatePathNotFound", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Configuration does contain the path to template file..
+        /// </summary>
+        internal static string PluginGenerator_TemplatePathNotSet {
+            get {
+                return ResourceManager.GetString("PluginGenerator.TemplatePathNotSet", resourceCulture);
             }
         }
     }
