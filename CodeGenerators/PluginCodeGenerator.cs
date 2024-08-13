@@ -1,24 +1,23 @@
 ﻿#nullable enable
-namespace XrmGen;
-
 using Microsoft.VisualStudio;
 using Microsoft.VisualStudio.Shell;
 using Microsoft.VisualStudio.Shell.Interop;
 using Microsoft.VisualStudio.TextTemplating.VSHost;
 using Microsoft.Xrm.Sdk.Metadata;
+using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel.Composition;
 using System.IO;
 using System.Linq;
 using System.Text;
-using System.Text.Json;
-using System.Windows.Documents;
 using XrmGen._Core;
 using XrmGen.Extensions;
 using XrmGen.Xrm;
 using XrmGen.Xrm.Generators;
 using XrmGen.Xrm.Model;
+
+namespace XrmGen;
 
 public class PluginCodeGenerator : BaseCodeGeneratorWithSite
 {
@@ -55,17 +54,17 @@ public class PluginCodeGenerator : BaseCodeGeneratorWithSite
         if (Generator is null) { return Encoding.UTF8.GetBytes("// No generator found."); }
         if (GetTemplateFilePath() is not string templateFilePath) { return Encoding.UTF8.GetBytes("// Template not found."); ; }
 
-        PluginAssemblyInfo? pluginDefinition = null;
+        PluginAssemblyConfig? config = null;
         try
         {
-            pluginDefinition = JsonSerializer.Deserialize<PluginAssemblyInfo>(inputFileContent);
+            config = System.Text.Json.JsonSerializer.Deserialize<PluginAssemblyConfig>(inputFileContent);
         }
         catch (Exception ex)
         {
             Logger.Log(string.Format(Resources.Strings.PluginGenerator_DeserializationError, inputFileName));
             Logger.Log(ex.ToString());
         }
-        if (pluginDefinition?.PluginTypes?.Any() != true) { return null; }
+        if (config?.PluginTypes?.Any() != true) { return null; }
 
         Generator.Config = new XrmCodeGenConfig
         {
@@ -74,14 +73,22 @@ public class PluginCodeGenerator : BaseCodeGeneratorWithSite
             TemplateFilePath = templateFilePath
         };
 
-        AddEntityMetadataToPluginDefinition(pluginDefinition!);
+        AddEntityMetadataToPluginDefinition(config!);
 
-        var (isValid, validationMessage) = Generator.IsValid(pluginDefinition);
+        //TODO: The following temporary code is used for troubleshooting and can be removed.
+        var serializedConfig = JsonConvert.SerializeObject(config);
+        // Polymorphic serialization is not supported by System.Text.Json.
+        // var serializedConfig = JsonSerializer.Serialize(config, new JsonSerializerOptions { WriteIndented = true });
+        File.WriteAllText(Path.ChangeExtension(inputFileName, ".config.json"), serializedConfig);
+
+        //End of TODO.
+
+        var (isValid, validationMessage) = Generator.IsValid(config);
         if (!isValid)
         {
             return Encoding.UTF8.GetBytes(validationMessage);
         }
-        return Encoding.UTF8.GetBytes(Generator.GenerateCode(pluginDefinition));
+        return Encoding.UTF8.GetBytes(Generator.GenerateCode(config));
     }
 
     private string? GetTemplateFilePath()
@@ -91,7 +98,7 @@ public class PluginCodeGenerator : BaseCodeGeneratorWithSite
         {
             return templateFilePath;
         }
-        templateFilePath = Path.GetFileNameWithoutExtension(InputFilePath) + ".sbn";
+        templateFilePath = Path.ChangeExtension(InputFilePath, "sbn");
         if (File.Exists(templateFilePath))
         {
             return templateFilePath;
@@ -108,28 +115,73 @@ public class PluginCodeGenerator : BaseCodeGeneratorWithSite
         return File.Exists(templateFilePath) ? templateFilePath : null;
     }
 
-    private EntityMetadata? GetEntityMetadata(string logicalName, string[] attributes)
+    private EntityMetadata? GetEntityMetadata(string logicalName, string[] attributes, IEnumerable<string> prefixesToRemove)
     {
         var environmentUrl = GetProjectProperty("EnvironmentUrl");
         if (string.IsNullOrWhiteSpace(environmentUrl)) { return null; }
         var schemaProvider = SchemaProviderFactory?.Get(environmentUrl!);
-        var metadata = schemaProvider?.GetEntity(logicalName);
-        if (metadata == null) { return null; }
+        var entityDefinition = schemaProvider?.GetEntity(logicalName);
+        if (entityDefinition == null) { return null; }
 
         //NOTE!
-        // Logical attributes generally don't have DisplayName.
-        // We also filter them out to avoid unnecessary processing.
-        var filteredAttributes = 
+        // Logical attributes to avoid unnecessary processing.
+        var filteredAttributes =
             attributes.Length == 0 ?
-            metadata.Attributes.Where(a => a.IsLogical != true).ToArray() :
-            metadata.Attributes.Where(a => !attributes.Any() || attributes.Contains(a.LogicalName)).ToArray();
-        var propertyInfo = typeof(EntityMetadata).GetProperty("Attributes");
+            entityDefinition.Attributes :
+            entityDefinition.Attributes.Where(a => attributes.Contains(a.LogicalName)).ToArray();
+        //    entityDefinition.Attributes.Where(a => a.AttributeType != AttributeTypeCode.EntityName && a.IsLogical != true).ToArray() :
+        //    entityDefinition.Attributes.Where(a => a.AttributeType != AttributeTypeCode.EntityName && attributes.Contains(a.LogicalName)).ToArray();
+
+        FormatSchemNames(filteredAttributes ?? entityDefinition.Attributes, prefixesToRemove);
+        FormatSchemaName(entityDefinition, prefixesToRemove);
 
         //TODO: The cloning is done because we don't want to modify the object in the cache.
         //      In future when we load from local storage this might not be required.
-        var clone = metadata.Clone();
-        propertyInfo.SetValue(clone, filteredAttributes);
-        return clone;
+        if (filteredAttributes?.Length != entityDefinition.Attributes.Length)
+        {
+            var clone = entityDefinition.Clone();
+            var propertyInfo = typeof(EntityMetadata).GetProperty("Attributes");
+            propertyInfo.SetValue(clone, filteredAttributes);
+            return clone;
+        }
+        return entityDefinition;
+    }
+
+    private static void FormatSchemaName(EntityMetadata entityDefinition, IEnumerable<string> prefixesToRemove)
+    {
+        // Remove prefixes.
+        foreach (var prefix in prefixesToRemove)
+        {
+            if (entityDefinition.SchemaName.StartsWith(prefix, StringComparison.OrdinalIgnoreCase))
+            {
+                entityDefinition.SchemaName = entityDefinition.SchemaName[prefix.Length..];
+            }
+        }
+        // Capitalize first letter.
+        if (char.IsLower(entityDefinition.SchemaName[0]))
+        {
+            entityDefinition.SchemaName = char.ToUpper(entityDefinition.SchemaName[0]) + entityDefinition.SchemaName[1..];
+        }
+    }
+
+    private static void FormatSchemNames(IEnumerable<AttributeMetadata> attributes, IEnumerable<string> prefixesToRemove)
+    {
+        foreach (var attribute in attributes)
+        {
+            // Remove prefixes.
+            foreach (var prefix in prefixesToRemove)
+            {
+                if (attribute.SchemaName.StartsWith(prefix, StringComparison.OrdinalIgnoreCase))
+                {
+                    attribute.SchemaName = attribute.SchemaName[prefix.Length..];
+                }
+            }
+            // Capitalize first letter.
+            if (char.IsLower(attribute.SchemaName[0]))
+            {
+                attribute.SchemaName = char.ToUpper(attribute.SchemaName[0]) + attribute.SchemaName[1..];
+            }
+        }
     }
 
     private string GetDefaultNamespace()
@@ -160,19 +212,21 @@ public class PluginCodeGenerator : BaseCodeGeneratorWithSite
         return null;
     }
 
-    private void AddEntityMetadataToPluginDefinition(PluginAssemblyInfo pluginDefinition)
+    private void AddEntityMetadataToPluginDefinitionOLD(PluginAssemblyConfig config)
     {
+        static bool IsEnumAttribute(AttributeMetadata a) => (a.AttributeType is AttributeTypeCode.Picklist or AttributeTypeCode.Virtual or AttributeTypeCode.State or AttributeTypeCode.Status) && a.IsLogical == false;
+
         var optionsetMetadataList = new List<OptionSetMetadata>();
-        foreach (var step in pluginDefinition.PluginTypes.SelectMany(plugin => plugin.Steps))
+        foreach (var step in config.PluginTypes.SelectMany(plugin => plugin.Steps))
         {
             if (!string.IsNullOrWhiteSpace(step.PrimaryEntityName))
             {
-                var metadata = GetEntityMetadata(step.PrimaryEntityName!, step.FilteringAttributes?.Split(',') ?? []);
-                step.PrimaryEntityMetadata = metadata;
+                var metadata = GetEntityMetadata(step.PrimaryEntityName!, step.FilteringAttributes?.Split(',') ?? [], config.RemovePrefixesCollection);
+                step.PrimaryEntityDefinition = metadata;
                 if (metadata is not null)
                 {
                     optionsetMetadataList.AddRange(metadata.Attributes
-                        .Where(a => (a.AttributeType == AttributeTypeCode.Picklist || a.AttributeType == AttributeTypeCode.Virtual) && a.IsLogical == false)
+                        .Where(IsEnumAttribute)
                         .Cast<EnumAttributeMetadata>()
                         .Select(a => a.OptionSet));
                 }
@@ -182,12 +236,12 @@ public class PluginCodeGenerator : BaseCodeGeneratorWithSite
             {
                 if (!string.IsNullOrWhiteSpace(image.EntityAlias))
                 {
-                    var metadata = GetEntityMetadata(step.PrimaryEntityName!, image.Attributes?.Split(',') ?? []);
-                    image.MessagePropertyMetadata = metadata;
+                    var metadata = GetEntityMetadata(step.PrimaryEntityName!, image.Attributes?.Split(',') ?? [], config.RemovePrefixesCollection);
+                    image.MessagePropertyDefinition = metadata;
                     if (metadata is not null)
                     {
                         optionsetMetadataList.AddRange(metadata.Attributes
-                            .Where(a => (a.AttributeType == AttributeTypeCode.Picklist || a.AttributeType == AttributeTypeCode.Virtual) && a.IsLogical == false)
+                            .Where(IsEnumAttribute)
                             .Cast<EnumAttributeMetadata>()
                             .Select(a => a.OptionSet));
                     }
@@ -195,7 +249,69 @@ public class PluginCodeGenerator : BaseCodeGeneratorWithSite
                 }
             }
         }
-        pluginDefinition.OptionMetadatas = optionsetMetadataList.Distinct(OptionSetMetadataComparer).ToList();
+        //pluginDefinition.OptionSetMetadatas = optionsetMetadataList.Distinct(OptionSetMetadataComparer).ToList();
+    }
+
+    private void AddEntityMetadataToPluginDefinition(PluginAssemblyConfig config)
+    {
+        // Let's first keep track of all the attributes that are used in the plugin definitions.
+        var entityAttributes = new Dictionary<string, HashSet<string>>();
+        // We also keep track of all the entities that are used in the plugin definitions.
+        var entityDefinitions = new Dictionary<string, EntityMetadata>();
+        foreach (var step in config.PluginTypes.SelectMany(plugin => plugin.Steps))
+        {
+            if (!string.IsNullOrWhiteSpace(step.PrimaryEntityName))
+            {
+                var attributes = step.FilteringAttributes?.Split([','], StringSplitOptions.RemoveEmptyEntries) ?? [];
+                if (!entityAttributes.ContainsKey(step.PrimaryEntityName!))
+                {
+                    entityAttributes[step.PrimaryEntityName!] = new HashSet<string>(attributes);
+                }
+                else if (attributes.Length == 0)
+                {
+                    entityAttributes[step.PrimaryEntityName!] = [];
+                }
+                else if (entityAttributes[step.PrimaryEntityName!].Count > 0)
+                {
+                    entityAttributes[step.PrimaryEntityName!].UnionWith(attributes);
+                }
+                var entityDefinition = GetEntityMetadata(step.PrimaryEntityName!, attributes, config.RemovePrefixesCollection);
+                step.PrimaryEntityDefinition = entityDefinition;
+                if (entityDefinition is not null && !entityDefinitions.ContainsKey(entityDefinition.LogicalName))
+                {
+                    entityDefinitions[entityDefinition.LogicalName] = GetEntityMetadata(step.PrimaryEntityName!, [], config.RemovePrefixesCollection)!;
+                }
+            }
+            foreach (var image in step.Images)
+            {
+                if (!string.IsNullOrWhiteSpace(image.EntityAlias))
+                {
+                    var attributes = image.Attributes?.Split(',') ?? [];
+                    if (!entityAttributes.ContainsKey(step.PrimaryEntityName!))
+                    {
+                        entityAttributes[step.PrimaryEntityName!] = new HashSet<string>(attributes);
+                    }
+                    else if (entityAttributes[step.PrimaryEntityName!].Count > 0)
+                    {
+                        entityAttributes[step.PrimaryEntityName!].UnionWith(attributes);
+                    }
+                    var entityDefinition = GetEntityMetadata(step.PrimaryEntityName!, attributes, config.RemovePrefixesCollection);
+                    image.MessagePropertyDefinition = entityDefinition;
+                    if (entityDefinition is not null && !entityDefinitions.ContainsKey(entityDefinition.LogicalName))
+                    {
+                        entityDefinitions[entityDefinition.LogicalName] = GetEntityMetadata(step.PrimaryEntityName!, [], config.RemovePrefixesCollection)!;
+                    }
+                }
+            }
+        }
+        // Now we update entity definitions with the attributes used in the plugin definitions.
+        foreach(var entity in entityAttributes.Where(e => e.Value.Count > 0))
+        {
+            var entityDefinition = entityDefinitions[entity.Key];
+            var attributesUsedInPluginDefinitions = entityDefinition.Attributes.Where(a => entity.Value.Contains(a.LogicalName)).ToArray();
+            typeof(EntityMetadata).GetProperty("Attributes").SetValue(entityDefinition, attributesUsedInPluginDefinitions);
+        }
+        config.EntityDefinitions = entityDefinitions.Values;
     }
 
     #region IDisposable Support

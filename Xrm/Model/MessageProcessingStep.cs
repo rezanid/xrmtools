@@ -4,6 +4,34 @@ using System;
 
 namespace XrmGen.Xrm.Model;
 
+public enum Stages
+{
+    /// <summary>
+    /// pre-validation (not in transaction).
+    /// </summary>
+    PreValidation = 10,
+    /// <summary>
+    /// pre-operation (in transaction, ownerid cannot be changed).
+    /// </summary>
+    PreOperation = 20,
+    //
+    // Summary:
+    //     
+    /// <summary>
+    /// Main operation (in transaction, only used in Custom APIs).
+    /// </summary>
+    MainOperation = 30,
+    /// <summary>
+    /// post-operation (operation executed, but still in transaction).
+    /// </summary>
+    PostOperation = 40,
+    /// <summary>
+    /// post-operation, deprecated.
+    /// </summary>
+    [Obsolete("Deprecated according to MS", true)]
+    DepecratedPostOperation = 50
+}
+
 public class MessageProcessingStep
 {
     private MessageProcessingStepImage[]? _images = null;
@@ -31,7 +59,7 @@ public class MessageProcessingStep
     /// Contains the metadata for the primary entity. Attributes are filtered to only include the attributes 
     /// that are used in the message processing step.
     /// </summary>
-    public EntityMetadata? PrimaryEntityMetadata { get; set; }
+    public EntityMetadata? PrimaryEntityDefinition { get; set; }
     /// <summary>
     /// Required, Integer
     /// </summary>
@@ -43,7 +71,7 @@ public class MessageProcessingStep
     /// <summary>
     /// Required, Picklist
     /// </summary>
-    public int Stage { get; set; }
+    public Stages Stage { get; set; }
     /// <summary>
     /// Required, State
     /// </summary>

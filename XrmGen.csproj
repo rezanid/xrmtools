@@ -58,7 +58,7 @@
     <Compile Include="Xrm\Generators\IXrmPluginCodeGenerator.cs" />
     <Compile Include="Xrm\Generators\ScribanExtensionCache.cs" />
     <Compile Include="Xrm\Generators\ScribanExtensions.cs" />
-    <Compile Include="Xrm\Model\PluginAssemblyInfo.cs" />
+    <Compile Include="Xrm\Model\PluginAssemblyConfig.cs" />
     <Compile Include="Xrm\Model\MessageProcessingStep.cs" />
     <Compile Include="Xrm\Model\MessageProcessingStepImage.cs" />
     <Compile Include="Xrm\Model\PluginStepImageRegistration.cs" />

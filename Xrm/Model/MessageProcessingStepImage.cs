@@ -11,6 +11,6 @@ public class MessageProcessingStepImage
     public required string EntityAlias { get; set; }
     public int ImageType { get; set; }
     public required string MessagePropertyName { get; set; }
-    public EntityMetadata? MessagePropertyMetadata { get; set; }
+    public EntityMetadata? MessagePropertyDefinition { get; set; }
 }
 #nullable restore

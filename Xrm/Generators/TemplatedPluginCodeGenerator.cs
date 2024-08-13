@@ -9,6 +9,7 @@ using System.Linq;
 using System.Text;
 using XrmGen.Xrm.Model;
 using Scriban.Runtime;
+using System.Collections.Generic;
 
 [Export(typeof(IXrmPluginCodeGenerator))]
 public class TemplatedPluginCodeGenerator : IXrmPluginCodeGenerator
@@ -16,9 +17,9 @@ public class TemplatedPluginCodeGenerator : IXrmPluginCodeGenerator
     public XrmCodeGenConfig? Config { set; get; }
 
     private static readonly Type generatorType = typeof(TemplatedPluginCodeGenerator);
-    private static readonly string generatorAttributeString = $"[GeneratedCodeAttribute(\"{generatorType.Name}\", \"{generatorType.Assembly.GetName().Version}\")]";
+    private static readonly string generatorAttributeString = $"[GeneratedCode(\"{generatorType.Name}\", \"{generatorType.Assembly.GetName().Version}\")]";
 
-    public (bool, string) IsValid(PluginAssemblyInfo pluginAssembly)
+    public (bool, string) IsValid(PluginAssemblyConfig pluginAssembly)
     {
         if (Config == null) { throw new InvalidOperationException("Config is not set."); }
         if (pluginAssembly is null) { throw new ArgumentNullException(nameof(pluginAssembly)); }
@@ -26,14 +27,14 @@ public class TemplatedPluginCodeGenerator : IXrmPluginCodeGenerator
         return (true, string.Empty);
     }
 
-    public string GenerateCode(PluginAssemblyInfo plugin)
+    public string GenerateCode(PluginAssemblyConfig plugin)
     {
         if (Config == null) { throw new InvalidOperationException("Config is not set."); }
         if (string.IsNullOrWhiteSpace(Config.TemplateFilePath)) { throw new InvalidOperationException(Resources.Strings.PluginGenerator_TemplatePathNotSet); }
         return GenerateCodeUsingScribanTemplate(plugin);
     }
 
-    private string GenerateCodeUsingScribanTemplate(PluginAssemblyInfo plugin)
+    private string GenerateCodeUsingScribanTemplate(PluginAssemblyConfig config)
     {
         var scriptObject = new ScriptObject();
         scriptObject.Import(typeof(ScribanExtensions));
@@ -41,7 +42,7 @@ public class TemplatedPluginCodeGenerator : IXrmPluginCodeGenerator
             ScribanExtensionCache.KnownAssemblies.Humanizr.ToString().ToLowerInvariant(), 
             ScribanExtensionCache.GetHumanizrMethods());
         scriptObject.Add("config", Config);
-        scriptObject.Add("model", plugin);
+        scriptObject.Add("model", config);
         scriptObject.Add("codegen_attribute", generatorAttributeString);
 
         var context = new TemplateContext()

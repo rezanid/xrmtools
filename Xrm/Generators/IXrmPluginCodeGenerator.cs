@@ -9,7 +9,7 @@ using XrmGen.Xrm.Model;
 public interface IXrmPluginCodeGenerator
 {
     public XrmCodeGenConfig? Config { get; set; }
-    (bool, string) IsValid(PluginAssemblyInfo plugin);
-    string GenerateCode(PluginAssemblyInfo plugin);
+    (bool, string) IsValid(PluginAssemblyConfig plugin);
+    string GenerateCode(PluginAssemblyConfig plugin);
 }
 #nullable restore

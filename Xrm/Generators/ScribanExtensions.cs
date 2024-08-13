@@ -2,6 +2,7 @@
 namespace XrmGen.Xrm.Generators;
 
 using Microsoft.Xrm.Sdk.Metadata;
+using Nito.Disposables.Internals;
 using System;
 using System.Collections.Generic;
 using System.Globalization;
@@ -32,9 +33,11 @@ public static class ScribanExtensions
         return stringBuilder.ToString().Normalize(NormalizationForm.FormC);
     }
 
-    public static string Tokenize(string? input)
+    public static AttributeMetadata? GetAttributeByName(IEnumerable<AttributeMetadata>? attributes, string name) => attributes?.FirstOrDefault(a => a.LogicalName == name);
+
+    public static string? Tokenize(string? input)
     {
-        if (input == null) return string.Empty;
+        if (input == null) return null;
 
         var normalizedString = input.Normalize(NormalizationForm.FormD);
         var sb = new StringBuilder(normalizedString.Length);
@@ -81,15 +84,60 @@ public static class ScribanExtensions
 
     public static string? SafeDisplayName(AttributeMetadata attribute, AttributeMetadata[]? attributes)
     {
+        if (attribute == null) return null;
         var label = attribute.DisplayName?.LocalizedLabels?.FirstOrDefault()?.Label;
         if (!string.IsNullOrEmpty(label)) return Tokenize(label);
-        if (string.IsNullOrEmpty(label)
-            && !string.IsNullOrEmpty(attribute.AttributeOf)
-            && attributes != null)
+        if (string.IsNullOrEmpty(attribute.AttributeOf) || attributes == null)
         {
-            return string.Concat(Tokenize(attributes!.FirstOrDefault(a => a.LogicalName == attribute.AttributeOf)?.DisplayName?.LocalizedLabels?[0].Label), "_", attribute.LogicalName);
+            return attribute.SchemaName;
         }
-        return null;
+        var originalAttribute = attributes.FirstOrDefault(a => a.LogicalName == attribute.AttributeOf);
+        if (originalAttribute == null) { return attribute.SchemaName; }
+        if ((attribute.AttributeType is AttributeTypeCode.String or AttributeTypeCode.Virtual) && attribute.LogicalName.EndsWith("name"))
+        {
+            label = originalAttribute.DisplayName?.LocalizedLabels?.FirstOrDefault()?.Label;
+            return string.Concat(Tokenize(label), "Name");
+        }
+        if (attribute.AttributeType == AttributeTypeCode.EntityName && attribute.LogicalName.EndsWith("idtype"))
+        {
+            label = originalAttribute.DisplayName?.LocalizedLabels?.FirstOrDefault()?.Label;
+            return string.Concat(Tokenize(label), "IdType");
+        }
+        if (attribute.AttributeType == AttributeTypeCode.BigInt && attribute.LogicalName.EndsWith("timestamp"))
+        {
+            // e.g. logicalname: "crb4d_image_timestamp" attributeof: "crb4d_imageid"
+            label = originalAttribute.DisplayName?.LocalizedLabels?.FirstOrDefault()?.Label;
+            if (label is null) { return attribute.SchemaName; }
+            return string.Concat(Tokenize(label), "Timestamp");
+        }
+        if (attribute.AttributeType == AttributeTypeCode.String && attribute.LogicalName.EndsWith("url"))
+        {
+            // e.g. logicalname: "crb4d_image_url" attributeof: "crb4d_imageid"
+            label = originalAttribute.DisplayName?.LocalizedLabels?.FirstOrDefault()?.Label;
+            if (label is null) { return attribute.SchemaName; }
+            return string.Concat(Tokenize(label), "Timestamp");
+        }
+        return attribute.SchemaName;
     }
+
+    public static string? RemovePrefixes(string text, string[] prefixes)
+    {
+        if (string.IsNullOrEmpty(text)) return null;
+        foreach (var prefix in prefixes.WhereNotNull())
+        {
+            if (text.StartsWith(prefix, StringComparison.Ordinal))
+            {
+                return text[prefix!.Length..];
+            }
+        }
+        return text;
+    }
+
+    public static string ToString(object? value) => value?.ToString() ?? string.Empty;
+
+    //TODO: Maybe it's faster to rely on IsEnmuAttribute instead of casting?
+    public static IEnumerable<EnumAttributeMetadata> FilterEnumAttributes(IEnumerable<AttributeMetadata>? attributes) => attributes?.OfType<EnumAttributeMetadata>();
+
+    public static bool IsEnumAttribute(AttributeMetadata a) => (a.AttributeType is AttributeTypeCode.Picklist or AttributeTypeCode.Virtual or AttributeTypeCode.State or AttributeTypeCode.Status or AttributeTypeCode.EntityName) && a.IsLogical == false;
 }
 #nullable restore
