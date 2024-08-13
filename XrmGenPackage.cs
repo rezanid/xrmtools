@@ -68,6 +68,16 @@ internal record ProjectDataverseSettings(
     expression: "(Yaml | Proj) & CSharp & (SingleProj | MultiProj)",
     termNames: ["Yaml", "Proj", "CSharp", "SingleProj", "MultiProj"],
     termValues: ["HierSingleSelectionName:.yaml$|.yml$", "HierSingleSelectionItemType:ProjectItem", "ActiveProjectCapability:CSharp", VSConstants.UICONTEXT.SolutionHasSingleProject_string, VSConstants.UICONTEXT.SolutionHasMultipleProjects_string])]
+[ProvideUIContextRule(PackageGuids.guidXrmCodeGenSetPluginGeneratorCommandUIRuleString,
+    name: "UI Context 2",
+    expression: "(Json | Proj) & CSharp & (SingleProj | MultiProj)",
+    termNames: ["Json", "Proj", "CSharp", "SingleProj", "MultiProj"],
+    termValues: [
+        "HierSingleSelectionName:.def.json$", 
+        "HierSingleSelectionItemType:ProjectItem", 
+        "ActiveProjectCapability:CSharp", 
+        VSConstants.UICONTEXT.SolutionHasSingleProject_string, 
+        VSConstants.UICONTEXT.SolutionHasMultipleProjects_string])]
 [ProvideService(typeof(IXrmSchemaProviderFactory), IsAsyncQueryable = true, IsCacheable = true, IsFreeThreaded = true)]
 [ProvideService(typeof(IXrmPluginCodeGenerator), IsAsyncQueryable = true, IsCacheable = true, IsFreeThreaded = true)]
 [ProvideService(typeof(IXrmEntityCodeGenerator), IsAsyncQueryable = true, IsCacheable = true, IsFreeThreaded = true)]
@@ -101,7 +111,8 @@ public sealed class XrmGenPackage : AsyncPackage
         // When initialized asynchronously, the current thread may be a background thread at this point.
         // Do any initialization that requires the UI thread after switching to the UI thread.
         await JoinableTaskFactory.SwitchToMainThreadAsync(cancellationToken);
-        await ApplyEntityGeneratorCommand.InitializeAsync(this);
+        await Commands.ApplyEntityGeneratorCommand.InitializeAsync(this);
+        await Commands.SetXrmPluginGeneratorCommand.InitializeAsync(this);
 
         _dte = await GetServiceAsync(typeof(DTE)) as DTE2
             ?? throw new InvalidOperationException(

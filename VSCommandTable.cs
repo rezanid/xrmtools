@@ -18,6 +18,9 @@ namespace XrmGen
         public const string guidXrmCodeGenUIRuleString = "6b9f081c-67ed-43f3-8434-237387ae4f5d";
         public static Guid guidXrmCodeGenUIRule = new Guid(guidXrmCodeGenUIRuleString);
 
+        public const string guidXrmCodeGenSetPluginGeneratorCommandUIRuleString = "ee3324f2-0e72-4af6-bcba-ac3af05df4e8";
+        public static Guid guidXrmCodeGenSetPluginGeneratorCommandUIRule = new Guid(guidXrmCodeGenSetPluginGeneratorCommandUIRuleString);
+
         public const string guidXrmSchemaProviderFactoryString = "b27d7354-9380-4c2e-ba0a-f423e727976e";
         public static Guid guidXrmSchemaProviderFactory = new Guid(guidXrmSchemaProviderFactoryString);
 
@@ -36,6 +39,7 @@ namespace XrmGen
     internal sealed partial class PackageIds
     {
         public const int MyMenuGroup = 0x1020;
+        public const int SetXrmPluginGeneratorCommandId = 0x0101;
         public const int EntityGeneratorCommandId = 0x0100;
     }
 }

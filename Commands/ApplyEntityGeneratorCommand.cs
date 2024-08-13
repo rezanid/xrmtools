@@ -5,9 +5,10 @@ using Microsoft.VisualStudio.Shell;
 using System.ComponentModel.Design;
 using Task = System.Threading.Tasks.Task;
 
-namespace XrmGen;
+namespace XrmGen.Commands;
+
 /// <summary>
-/// Command handler
+/// Command handler to set the custom tool of the selected item to the Xrm Entity Code Generator.
 /// </summary>
 internal sealed class ApplyEntityGeneratorCommand
 {
@@ -21,7 +22,7 @@ internal sealed class ApplyEntityGeneratorCommand
         // the UI thread.
         await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync(package.DisposalToken);
 
-        var commandService = await package.GetServiceAsync<IMenuCommandService,IMenuCommandService>();
+        var commandService = await package.GetServiceAsync<IMenuCommandService, IMenuCommandService>();
         Assumes.Present(commandService);
 		
 		// Unless there is a better / easier  way to do it instead of using DTE, we will. For now, it's OK.

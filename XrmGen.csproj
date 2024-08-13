@@ -49,6 +49,7 @@
     <Compile Include="CodeGenerators\PluginCodeGenerator.cs" />
     <Compile Include="CodeGenerators\EntityCodeGenerator.cs" />
     <Compile Include="Commands\ApplyEntityGeneratorCommand.cs" />
+    <Compile Include="Commands\SetXrmPluginGeneratorCommand.cs" />
     <Compile Include="Extensions\IVsHierarchyExtensions.cs" />
     <Compile Include="Extensions\EntityMetadataExtensions.cs" />
     <Compile Include="Extensions\StringBuilderExtensions.cs" />
