@@ -107,7 +107,7 @@ internal class XrmPluginDefCompletionSource(
         var keyText = key.Success ? key.Groups.Count > 0 && key.Groups[1].Success ? key.Groups[1].Value : string.Empty : string.Empty;
         if (keyText == "PrimaryEntityName")
         {
-            return await GetContextForEntityNameAsync();
+            return await GetContextForEntityNameAsync(token);
         }
         if (keyText == "FilteringAttributes")
         {
@@ -120,7 +120,7 @@ internal class XrmPluginDefCompletionSource(
                     var obj = JObject.Parse(objText);
                     if (obj.TryGetValue("PrimaryEntityName", out var entityName))
                     {
-                        return await GetContextForAttributeNameAsync(entityName.ToString());
+                        return await GetContextForAttributeNameAsync(entityName.ToString(), token);
                     }
                 }
                 catch (Exception) { }
@@ -169,14 +169,14 @@ internal class XrmPluginDefCompletionSource(
         return null;
     }
 
-    private async Task<CompletionContext> GetContextForEntityNameAsync()
+    private async Task<CompletionContext> GetContextForEntityNameAsync(CancellationToken cancellationToken)
     {
-        return new CompletionContext((await catalog.GetEntitiesAsync()).Where(e => !e.IsLogicalEntity ?? false).Select(MakeItemFromMetadata).ToImmutableArray());
+        return new CompletionContext((await catalog.GetEntitiesAsync(cancellationToken)).Where(e => !e.IsLogicalEntity ?? false).Select(MakeItemFromMetadata).ToImmutableArray());
     }
 
-    private async Task<CompletionContext> GetContextForAttributeNameAsync(string entityName)
+    private async Task<CompletionContext> GetContextForAttributeNameAsync(string entityName, CancellationToken cancellationToken)
     {
-        return new CompletionContext((await catalog.GetEntityAsync(entityName)).Attributes.Where(a => !a.IsLogical ?? false).Select(MakeItemFromMetadata).ToImmutableArray());
+        return new CompletionContext((await catalog.GetEntityAsync(entityName, cancellationToken)).Attributes.Where(a => !a.IsLogical ?? false).Select(MakeItemFromMetadata).ToImmutableArray());
     }
 
     private CompletionItem MakeItemFromMetadata(EntityMetadata entity)

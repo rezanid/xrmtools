@@ -1,33 +1,56 @@
 ﻿#nullable enable
-namespace XrmGen.Xrm.Model;
 
+using Microsoft.Xrm.Sdk;
+using Microsoft.Xrm.Sdk.Client;
 using Microsoft.Xrm.Sdk.Metadata;
+using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
-using System.Drawing.Text;
 using System.Runtime.Serialization;
 
-public class PluginAssemblyConfig
+namespace XrmGen.Xrm.Model;
+
+public interface IPluginAssemblyConfig : IPluginAssemblyEntity
 {
+    ICollection<EntityConfig> Entities { get; set; }
+    ICollection<EntityMetadata> EntityDefinitions { get; set; }
+    string? RemovePrefixes { get; set; }
+    IReadOnlyCollection<string> RemovePrefixesCollection { get; }
+}
+
+public interface IPluginAssemblyEntity
+{
+    int? IsolationMode { get; set; }
+    int? Major { get; set; }
+    int? Minor { get; set; }
+    string? Name { get; set; }
+    ICollection<PluginType> PluginTypes { get; set; }
+    string? PublicKeyToken { get; set; }
+    EntityReference? SolutionId { get; set; }
+    int? SourceType { get; set; }
+    string? Version { get; set; }
+}
+
+[EntityLogicalName(EntityLogicalName)]
+public class PluginAssemblyConfig : TypedEntity<PluginAssemblyConfig>, IPluginAssemblyConfig
+{
+    public const string EntityLogicalName = "pluginassembly";
+
+    #region IPluginAssemblyConfig-only Properties
+
     private string? removePrefixes;
 
-    public Guid Id { get; set; }
-    public required string Name { get; set; }
-    public int IsolationMode { get; set; }
-    public int SourceType { get; set; }
-    public string? Version { get; set; }
-    public required IEnumerable<Plugin> PluginTypes { get; set; }
-    
     /// <summary>
     /// List of all extra entities (and their comma-delimited attributes) that will be generated.
     /// </summary>
-    public IEnumerable<EntityConfig>? Entities { get; set; }
+    public ICollection<EntityConfig>? Entities { get; set; }
 
     /// <summary>
     /// Dynamically generated from the PluginTypes.
     /// </summary>
-    public IEnumerable<EntityMetadata>? EntityDefinitions { get; set; }
+    [IgnoreDataMember]
+    public ICollection<EntityMetadata>? EntityDefinitions { get; set; }
 
     public string? RemovePrefixes
     {
@@ -42,11 +65,76 @@ public class PluginAssemblyConfig
 
     [IgnoreDataMember]
     public IReadOnlyCollection<string> RemovePrefixesCollection { private set; get; } = [];
+
+    [JsonProperty("PluginTypes")]
+    public ICollection<PluginType> PluginTypes { get; set; } = [];
+
+    #endregion
+
+    #region IPluginAssemblyEntity Properties
+    [AttributeLogicalName("name")]
+    public string? Name
+    {
+        get => TryGetAttributeValue("name", out string? value) ? value : null;
+        set => this["name"] = value;
+    }
+
+    [AttributeLogicalName("isolationmode")]
+    public int? IsolationMode
+    {
+        get => TryGetAttributeValue("isolationmode", out int? value) ? value : null;
+        set => this["isolationmode"] = value;
+    }
+
+    [AttributeLogicalName("sourcetype")]
+    public int? SourceType
+    {
+        get => TryGetAttributeValue("sourcetype", out int? value) ? value : null;
+        set => this["sourcetype"] = value;
+    }
+
+    [AttributeLogicalName("major")]
+    public int? Major
+    {
+        get => TryGetAttributeValue("major", out int? value) ? value : null;
+        set => this["major"] = value;
+    }
+
+    [AttributeLogicalName("minor")]
+    public int? Minor
+    {
+        get => TryGetAttributeValue("minor", out int? value) ? value : null;
+        set => this["minor"] = value;
+    }
+
+    [AttributeLogicalName("publickeytoken")]
+    public string? PublicKeyToken
+    {
+        get => TryGetAttributeValue("publickeytoken", out string? value) ? value : null;
+        set => this["publickeytoken"] = value;
+    }
+
+    [AttributeLogicalName("solutionid")]
+    public EntityReference? SolutionId
+    {
+        get => TryGetAttributeValue("solutionid", out EntityReference? value) ? value : null;
+        set => this["solutionid"] = value;
+    }
+
+    [AttributeLogicalName("version")]
+    public string? Version
+    {
+        get => TryGetAttributeValue("version", out string? value) ? value : null;
+        set => this["version"] = value;
+    }
+    #endregion
+
+    public PluginAssemblyConfig() : base(EntityLogicalName) { }
 }
 
 public class EntityConfig
 {
-    public required string LogicalName { get; set; }
+    public string? LogicalName { get; set; }
     public string? Attributes { get; set; }
 }
 #nullable restore

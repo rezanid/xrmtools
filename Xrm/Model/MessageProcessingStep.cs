@@ -1,6 +1,9 @@
 ﻿#nullable enable
+using Microsoft.Xrm.Sdk;
+using Microsoft.Xrm.Sdk.Client;
 using Microsoft.Xrm.Sdk.Metadata;
 using System;
+using System.Collections.Generic;
 
 namespace XrmGen.Xrm.Model;
 
@@ -32,70 +35,153 @@ public enum Stages
     DepecratedPostOperation = 50
 }
 
-public class MessageProcessingStep
+public interface IMessageProcessingStepEntity
 {
-    private MessageProcessingStepImage[]? _images = null;
-    public string? Id { get; set; }
+    bool AsyncAutoDelete { get; set; }
+    string? Description { get; set; }
+    string? FilteringAttributes { get; set; }
+    int? InvocationSource { get; set; }
+    string? MessageName { get; set; }
+    int? Mode { get; set; }
+    string? Name { get; set; }
+    string? PrimaryEntityName { get; set; }
+    int? Rank { get; set; }
+    EntityReference? SdkMessageId { get; set; }
+    Stages? Stage { get; set; }
+    int? StateCode { get; set; }
+    int? SupportedDeployment { get; set; }
+}
+
+public interface IMessageProcessingStepConfig : IMessageProcessingStepEntity
+{
+    ICollection<MessageProcessingStepImage> Images { get; set; }
+    EntityMetadata? PrimaryEntityDefinition { get; set; }
     /// <summary>
-    /// Required, String
+    /// Secure Config
     /// </summary>
-    public string? Name { get; set; }
-    /// <summary>
-    /// Required, Boolean
-    /// </summary>
-    public bool AsyncAutoDelete { get; set; } = true;
-    public object? CustomConfiguration { get; set; }
-    public object? Description { get; set; }
-    public string? FilteringAttributes { get; set; }
-    public string? ImpersonatingUserFullname { get; set; }
-    public int? InvocationSource { get; set; }
-    public required string MessageName { get; set; }
-    /// <summary>
-    /// Required, Picklist
-    /// </summary>
-    public int Mode { get; set; }
-    public string? PrimaryEntityName { get; set; }
+    object? CustomConfiguration { get; set; }
+}
+
+[EntityLogicalName(EntityLogicalName)]
+public class MessageProcessingStep : TypedEntity<MessageProcessingStep>, IMessageProcessingStepConfig
+{
+    public const string EntityLogicalName = "sdkmessageprocessingstep";
+
+    #region IMessageProcessingStepConfig-only Properties
     /// <summary>
     /// Contains the metadata for the primary entity. Attributes are filtered to only include the attributes 
     /// that are used in the message processing step.
     /// </summary>
     public EntityMetadata? PrimaryEntityDefinition { get; set; }
+    public ICollection<MessageProcessingStepImage> Images { get; set; } = [];
+    public object? CustomConfiguration { get; set; }
+    #endregion
+
+    #region IMessageProcessingStepEntity Properties
+    /// <summary>
+    /// Required
+    /// </summary>
+    [AttributeLogicalName("name")]
+    public string? Name
+    {
+        get => TryGetAttributeValue("name", out string value) ? value : null;
+        set => this["name"] = value;
+    }
+    /// <summary>
+    /// Required, Boolean
+    /// </summary>
+    [AttributeLogicalName("asyncautodelete")]
+    public bool AsyncAutoDelete
+    {
+        get => TryGetAttributeValue(FilteringAttributes, out bool value) && value;
+        set => this["asyncautodelete"] = value;
+    }
+    [AttributeLogicalName("description")]
+    public string? Description 
+    { 
+        get => TryGetAttributeValue("description", out string value) ? value : null;
+        set => this["description"] = value;
+    }
+    [AttributeLogicalName("filteringattributes")]
+    public string? FilteringAttributes 
+    {
+        get => TryGetAttributeValue("filteringattributes", out string value) ? value : null;
+        set => this["filteringattributes"] = value;
+    }
+    [AttributeLogicalName("invocationsource")]
+    public int? InvocationSource 
+    { 
+        get => TryGetAttributeValue("invocationsource", out int value) ? value : null;
+        set => this["invocationsource"] = value;
+    }
+    [AttributeLogicalName("messagename")]
+    public string? MessageName 
+    { 
+        get => TryGetAttributeValue("messagename", out string value) ? value : null;
+        set => this["messagename"] = value;
+    }
+    /// <summary>
+    /// Required, Picklist
+    /// </summary>
+    [AttributeLogicalName("mode")]
+    public int? Mode 
+    { 
+        get => TryGetAttributeValue("mode", out int? value) ? value : null;
+        set => this["mode"] = value;
+    }
+    [AttributeLogicalName("primaryentityname")]
+    public string? PrimaryEntityName 
+    { 
+        get => TryGetAttributeValue("primaryentityname", out string value) ? value : null;
+        set => this["primaryentityname"] = value;
+    }
     /// <summary>
     /// Required, Integer
     /// </summary>
-    public int Rank { get; set; }
+    [AttributeLogicalName("rank")]
+    public int? Rank 
+    { 
+        get => TryGetAttributeValue("rank", out int value) ? value : null;
+        set => this["rank"] = value;
+    }
     /// <summary>
     /// Required, Lookup
     /// </summary>
-    public string? SdkMessageId { get; set; }
+    [AttributeLogicalName("sdkmessageid")]
+    public EntityReference? SdkMessageId 
+    { 
+        get => TryGetAttributeValue("sdkmessageid", out EntityReference? value) ? value : null;
+        set => this["sdkmessageid"] = value;
+    }
     /// <summary>
     /// Required, Picklist
     /// </summary>
-    public Stages Stage { get; set; }
+    [AttributeLogicalName("stage")]
+    public Stages? Stage 
+    { 
+        get => TryGetAttributeValue("stage", out OptionSetValue option) ? (Stages)option.Value : null;
+        set => this["stage"] = value == null ? null : new OptionSetValue((int)value);
+    }
     /// <summary>
     /// Required, State
     /// </summary>
-    public int StateCode { get; set; }
+    [AttributeLogicalName("statecode")]
+    public int? StateCode 
+    {
+        get => TryGetAttributeValue("statecode", out int? value) ? value : null;
+        set => this["statecode"] = value;
+    }
     /// <summary>
     /// Required, Picklist
     /// </summary>
-    public int SupportedDeployment { get; set; }
-    /// <summary>
-    /// Required, Uniqueidentifier
-    /// </summary>
-    public Guid SolutionId { get; set; }
-    /// <summary>
-    /// Required, Uniqueidentifier
-    /// </summary>
-    public Guid SdkMessageProcessingStepIdUnique { get; set; }
-    /// <summary>
-    /// Required, Uniqueidentifier
-    /// </summary>
-    public Guid SdkMessageProcessingStepId { get; set; }
-    public MessageProcessingStepImage[] Images 
-    {
-        get => _images ??= [];
-        set => _images = value;
+    [AttributeLogicalName("supporteddeployment")]
+    public int? SupportedDeployment 
+    { 
+        get => TryGetAttributeValue("supporteddeployment", out int? value) ? value : 0;
+        set => this["supporteddeployment"] = value;
     }
+    #endregion
+
+    public MessageProcessingStep() : base(EntityLogicalName) {}
 }
 #nullable restore

@@ -57,7 +57,7 @@ public class PluginCodeGenerator : BaseCodeGeneratorWithSite
         PluginAssemblyConfig? config = null;
         try
         {
-            config = System.Text.Json.JsonSerializer.Deserialize<PluginAssemblyConfig>(inputFileContent);
+            config = inputFileContent.DeserializeJson<PluginAssemblyConfig>();
         }
         catch (Exception ex)
         {
@@ -76,9 +76,10 @@ public class PluginCodeGenerator : BaseCodeGeneratorWithSite
         AddEntityMetadataToPluginDefinition(config!);
 
         //TODO: The following temporary code is used for troubleshooting and can be removed.
-        var serializedConfig = JsonConvert.SerializeObject(config);
+        //var serializedConfig = JsonConvert.SerializeObject(config);
         // Polymorphic serialization is not supported by System.Text.Json.
-        // var serializedConfig = JsonSerializer.Serialize(config, new JsonSerializerOptions { WriteIndented = true });
+        //var serializedConfig  = System.Text.Json.JsonSerializer.Serialize(config, new System.Text.Json.JsonSerializerOptions { WriteIndented = true });
+        var serializedConfig = config.SerializeJson(useNewtonsoft: false);
         File.WriteAllText(Path.ChangeExtension(inputFileName, ".config.json"), serializedConfig);
 
         //End of TODO.
@@ -236,7 +237,7 @@ public class PluginCodeGenerator : BaseCodeGeneratorWithSite
             {
                 if (!string.IsNullOrWhiteSpace(image.EntityAlias))
                 {
-                    var metadata = GetEntityMetadata(step.PrimaryEntityName!, image.Attributes?.Split(',') ?? [], config.RemovePrefixesCollection);
+                    var metadata = GetEntityMetadata(step.PrimaryEntityName!, image.ImageAttributes?.Split(',') ?? [], config.RemovePrefixesCollection);
                     image.MessagePropertyDefinition = metadata;
                     if (metadata is not null)
                     {
@@ -286,7 +287,7 @@ public class PluginCodeGenerator : BaseCodeGeneratorWithSite
             {
                 if (!string.IsNullOrWhiteSpace(image.EntityAlias))
                 {
-                    var attributes = image.Attributes?.Split(',') ?? [];
+                    var attributes = image.ImageAttributes?.Split(',') ?? [];
                     if (!entityAttributes.ContainsKey(step.PrimaryEntityName!))
                     {
                         entityAttributes[step.PrimaryEntityName!] = new HashSet<string>(attributes);

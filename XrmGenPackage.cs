@@ -1,4 +1,4 @@
-﻿
+﻿#nullable enable
 using EnvDTE;
 using EnvDTE80;
 using Humanizer.Localisation;
@@ -26,12 +26,12 @@ using System.Threading.Tasks;
 using System.Windows.Threading;
 using VSLangProj;
 using XrmGen._Core;
+using XrmGen.Commands;
 using XrmGen.Extensions;
 using XrmGen.Xrm;
 using XrmGen.Xrm.Generators;
 using Task = System.Threading.Tasks.Task;
 
-#nullable enable
 namespace XrmGen;
 internal record ProjectDataverseSettings(
     string EnvironmentUrl, string ApplicationId, string? PluginCodeGenTemplatePath, string? EntityCodeGenTemplatePath);
@@ -111,8 +111,9 @@ public sealed class XrmGenPackage : AsyncPackage
         // When initialized asynchronously, the current thread may be a background thread at this point.
         // Do any initialization that requires the UI thread after switching to the UI thread.
         await JoinableTaskFactory.SwitchToMainThreadAsync(cancellationToken);
-        await Commands.ApplyEntityGeneratorCommand.InitializeAsync(this);
-        await Commands.SetXrmPluginGeneratorCommand.InitializeAsync(this);
+        await ApplyEntityGeneratorCommand.InitializeAsync(this);
+        await SetXrmPluginGeneratorCommand.InitializeAsync(this);
+        await GenerateRegistrationFileCommand.InitializeAsync(this);
 
         _dte = await GetServiceAsync(typeof(DTE)) as DTE2
             ?? throw new InvalidOperationException(

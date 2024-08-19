@@ -13,9 +13,6 @@ namespace XrmGen.Commands;
 /// </summary>
 internal sealed class SetXrmPluginGeneratorCommand
 {
-    /// <summary>
-    /// VS Package that provides this command, not null.
-    /// </summary>
     private readonly AsyncPackage package;
     private readonly DTE2 dte;
 

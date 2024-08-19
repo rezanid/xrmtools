@@ -76,6 +76,14 @@
           <LocCanonicalName>.XrmCodeGen.SetAsPluginConfigFile</LocCanonicalName>
         </Strings>
       </Button>
+      <Button guid="guidXrmCodeGenPackageCmdSet" id="GeneratePluginConfigFileCommandId" priority="0x0100" type="Button">
+        <Parent guid="guidXrmCodeGenPackageCmdSet" id="MyMenuGroup" />
+        <Icon guid="ImageCatalogGuid" id="Type" />
+        <Strings>
+          <ButtonText>(Re)generate registration...</ButtonText>
+          <LocCanonicalName>.XrmCodeGen.GeneratePluginConfigFileCommandId</LocCanonicalName>
+        </Strings>
+      </Button>
     </Buttons>
   </Commands>
 
@@ -99,8 +107,9 @@
     <!-- This is the guid used to group the menu commands together -->
     <GuidSymbol name="guidXrmCodeGenPackageCmdSet" value="{15d399a7-b2ae-4f1c-9771-3dae966a7134}">
       <IDSymbol name="MyMenuGroup" value="0x1020" />
-      <IDSymbol name="SetXrmPluginGeneratorCommandId" value="0x0101" />
       <IDSymbol name="EntityGeneratorCommandId" value="0x0100" />
+      <IDSymbol name="SetXrmPluginGeneratorCommandId" value="0x0101" />
+      <IDSymbol name="GeneratePluginConfigFileCommandId" value="0x0102" />
     </GuidSymbol>
   </Symbols>
 </CommandTable>

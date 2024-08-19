@@ -15,7 +15,7 @@ internal static class IVsHierarchyExtensions
             propertyStorage.GetPropertyValue(propertyName, null, (uint)_PersistStorageType.PST_PROJECT_FILE, out var value);
             return value;
         }
-        return string.Empty;
+        return null;
     }
 
     public static bool TryGetHierarchyAndItemID(this IVsRunningDocumentTable runningDocumentTable, string filePath, out IVsHierarchy hierarchy, out uint itemID)

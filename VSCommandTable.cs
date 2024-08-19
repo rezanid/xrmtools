@@ -39,7 +39,8 @@ namespace XrmGen
     internal sealed partial class PackageIds
     {
         public const int MyMenuGroup = 0x1020;
-        public const int SetXrmPluginGeneratorCommandId = 0x0101;
         public const int EntityGeneratorCommandId = 0x0100;
+        public const int SetXrmPluginGeneratorCommandId = 0x0101;
+        public const int GeneratePluginConfigFileCommandId = 0x0102;
     }
 }
