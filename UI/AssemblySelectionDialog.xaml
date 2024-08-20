@@ -1,5 +1,5 @@
 ﻿<p:DialogWindow xmlns:p="clr-namespace:Microsoft.VisualStudio.PlatformUI;assembly=Microsoft.VisualStudio.Shell.15.0" 
-                x:Class="XrmGen.AssemblySelectionDialog"
+                x:Class="XrmGen.UI.AssemblySelectionDialog"
                 xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
                 xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
                 xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
@@ -14,6 +14,7 @@
                 Name="AssemySelection"
                 Title="Assembly Selection" Height="450" Width="800" HasMaximizeButton="True">
     <Grid>
+        <!-- Filter TextBox -->
         <TextBox x:Name="FilterTextBox" 
                  HorizontalAlignment="Left" 
                  Height="30" 
@@ -42,7 +43,25 @@
                 </Style>
             </TextBlock.Style>
         </TextBlock>
-        <ListBox x:Name="AssembliesListBox" HorizontalAlignment="Left" Height="350" VerticalAlignment="Top" Width="780" Margin="10,50,0,0" ItemsSource="{Binding FilteredAssemblies}" DisplayMemberPath="Name"/>
-        <Button Content="Select" HorizontalAlignment="Left" VerticalAlignment="Bottom" Width="100" Margin="10,0,0,10" Click="SelectButton_Click"/>
+        <!-- Assemblies ListBox -->
+        <ListBox ItemsSource="{Binding FilteredAssemblies}" 
+                 SelectedItem="{Binding SelectedAssembly}" 
+                 DisplayMemberPath="AssemblyName"
+                 Margin="10,50,10,40"
+                 HorizontalAlignment="Left" Width="200" />
+
+        <!-- PluginSteps TreeView -->
+        <TreeView ItemsSource="{Binding SelectedAssemblyTypes}"
+                  Margin="220,50,10,40"
+                  HorizontalAlignment="Stretch" />
+
+        <!-- Select Button -->
+        <Button Content="Select" 
+                Command="{Binding SelectCommand}" 
+                HorizontalAlignment="Right"
+                Margin="10,10,10,10"
+                MinWidth="100" MinHeight="20"
+                VerticalAlignment="Bottom" 
+                Click="OnSelectClick"/>    
     </Grid>
 </p:DialogWindow>

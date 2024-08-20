@@ -46,10 +46,10 @@
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="AssemblySelectionDialog.xaml.cs">
+    <Compile Include="UI\AssemblySelectionDialog.xaml.cs">
       <DependentUpon>AssemblySelectionDialog.xaml</DependentUpon>
     </Compile>
-    <Compile Include="AssemblySelectionViewModel.cs" />
+    <Compile Include="UI\AssemblySelectionViewModel.cs" />
     <Compile Include="CodeGenerators\PluginCodeGenerator.cs" />
     <Compile Include="CodeGenerators\EntityCodeGenerator.cs" />
     <Compile Include="Commands\ApplyEntityGeneratorCommand.cs" />
@@ -59,6 +59,7 @@
     <Compile Include="Extensions\StringBuilderExtensions.cs" />
     <Compile Include="Commands\GenerateRegistrationFileCommand.cs" />
     <Compile Include="Extensions\TypeExtensions.cs" />
+    <Compile Include="UI\ViewModelBase.cs" />
     <Compile Include="Xrm\Generators\FileTemplateLoader.cs" />
     <Compile Include="Xrm\Generators\XrmCodeGenConfig.cs" />
     <Compile Include="Xrm\Generators\IXrmEntityCodeGenerator.cs" />
@@ -66,11 +67,9 @@
     <Compile Include="Xrm\Generators\ScribanExtensionCache.cs" />
     <Compile Include="Xrm\Generators\ScribanExtensions.cs" />
     <Compile Include="Xrm\Model\PluginAssemblyConfig.cs" />
-    <Compile Include="Xrm\Model\MessageProcessingStep.cs" />
-    <Compile Include="Xrm\Model\MessageProcessingStepImage.cs" />
-    <Compile Include="Xrm\Model\PluginStepImageRegistration.cs" />
-    <Compile Include="Xrm\Model\PluginStepRegistration.cs" />
-    <Compile Include="Xrm\Model\PluginType.cs" />
+    <Compile Include="Xrm\Model\PluginStepConfig.cs" />
+    <Compile Include="Xrm\Model\PluginStepImageConfig.cs" />
+    <Compile Include="Xrm\Model\PluginTypeConfig.cs" />
     <Compile Include="Xrm\Generators\TemplatedEntityCodeGenerator.cs" />
     <Compile Include="Xrm\Generators\TemplatedPluginCodeGenerator.cs" />
     <Compile Include="Xrm\CodeCompletion\XrmPluginDefCompletionProvider.cs" />
@@ -140,6 +139,9 @@
     <Reference Include="WindowsBase" />
   </ItemGroup>
   <ItemGroup>
+    <PackageReference Include="CommunityToolkit.Mvvm">
+      <Version>8.2.2</Version>
+    </PackageReference>
     <PackageReference Include="Humanizer.Core">
       <Version>2.14.1</Version>
     </PackageReference>
@@ -193,7 +195,7 @@
     <Folder Include="Xrm\CompletionSample\" />
   </ItemGroup>
   <ItemGroup>
-    <Page Include="AssemblySelectionDialog.xaml">
+    <Page Include="UI\AssemblySelectionDialog.xaml">
       <SubType>Designer</SubType>
       <Generator>XamlIntelliSenseFileGenerator</Generator>
     </Page>

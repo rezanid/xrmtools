@@ -12,6 +12,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using XrmGen._Core;
 using XrmGen.Extensions;
+using XrmGen.UI;
 using XrmGen.Xrm;
 using XrmGen.Xrm.Model;
 using Task = System.Threading.Tasks.Task;
@@ -123,10 +124,15 @@ internal sealed class GenerateRegistrationFileCommand
         var url = GetProjectProperty("EnvironmentUrl");
         if (string.IsNullOrWhiteSpace(url)) { return null; }
         var schemaProvider = SchemaProviderFactory?.Get(url!);
+        if (schemaProvider == null) 
+        {
+            Logger.Log(url + " used in your EnvironmentUrl build property is not a valid environment URL.");
+            return null; 
+        }
         var dialog = new AssemblySelectionDialog(schemaProvider);
         if (dialog.ShowDialog() == true)
         {
-            return dialog.SelectedAssembly;
+            return ((AssemblySelectionViewModel)dialog.DataContext).SelectedAssembly;
         }
         return null;
     }

@@ -25,7 +25,7 @@ public interface IXrmSchemaProvider : IDisposable
     public Task<EntityMetadata> GetEntityAsync(string entityLogicalName, CancellationToken cancellationToken);
     public EntityMetadata GetEntity(string entityLogicalName);
     public Task<IEnumerable<PluginAssemblyConfig>> GetPluginAssembliesAsync(CancellationToken cancellationToken);
-    public Task<IEnumerable<PluginType>> GetPluginTypesAsync(Guid assemblyid, CancellationToken cancellationToken);
+    public Task<IEnumerable<PluginTypeConfig>> GetPluginTypesAsync(Guid assemblyid, CancellationToken cancellationToken);
     public Task RefreshCacheAsync();
 }
 /*
@@ -92,7 +92,7 @@ public class XrmSchemaProvider(ServiceClient serviceClient) : IXrmSchemaProvider
         async (cancellation) => await FetchEntitiesAsync(serviceClient, cancellation));
     private readonly MetadataCache<IEnumerable<PluginAssemblyConfig>> pluginAssemblyCache = new(
         async (cancellation) => await FetchPluginAssembliesAsync(serviceClient, cancellation));
-    private readonly Dictionary<Guid, MetadataCache<IEnumerable<PluginType>>> pluginTypesCache = [];
+    private readonly Dictionary<Guid, MetadataCache<IEnumerable<PluginTypeConfig>>> pluginTypesCache = [];
     private readonly Dictionary<string, MetadataCache<EntityMetadata>> metadataExtensiveCache = [];
     private readonly object _lock = new();
     private bool disposed = false;
@@ -172,7 +172,7 @@ public class XrmSchemaProvider(ServiceClient serviceClient) : IXrmSchemaProvider
     public async Task<IEnumerable<PluginAssemblyConfig>> GetPluginAssembliesAsync(CancellationToken cancellationToken) 
         => await pluginAssemblyCache.GetDataAsync(cancellationToken);
 
-    public async Task<IEnumerable<PluginType>> GetPluginTypesAsync(Guid assemblyid, CancellationToken cancellationToken)
+    public async Task<IEnumerable<PluginTypeConfig>> GetPluginTypesAsync(Guid assemblyid, CancellationToken cancellationToken)
     {
         if (pluginTypesCache.TryGetValue(assemblyid, out var cache))
         {
@@ -285,10 +285,10 @@ public class XrmSchemaProvider(ServiceClient serviceClient) : IXrmSchemaProvider
         return response.Entities.Select(entity => entity.ToEntity<PluginAssemblyConfig>());
     }
 
-    private static async Task<IEnumerable<PluginType>> FetchPluginTypesAsync(
+    private static async Task<IEnumerable<PluginTypeConfig>> FetchPluginTypesAsync(
         ServiceClient client, Guid assemblyid, CancellationToken cancellationToken)
     {
-        var query = PluginType.QueryWithSteps(
+        var query = PluginTypeConfig.QueryWithSteps(
             pt => new { pt.Name, pt.TypeName },
             s => new { s.Name, s.Stage },
             JoinOperator.LeftOuter);
@@ -300,16 +300,16 @@ public class XrmSchemaProvider(ServiceClient serviceClient) : IXrmSchemaProvider
             }
         };
 
-        var pluginTypes = new List<PluginType>();
+        var pluginTypes = new List<PluginTypeConfig>();
         var response = await client.RetrieveMultipleAsync(query, cancellationToken);
         foreach (var entity in response.Entities)
         {
             var pluginType = pluginTypes.Find(pt => pt.Id == entity.Id);
             if (pluginType is null) {
-                pluginType = entity.ToEntity<PluginType>();
+                pluginType = entity.ToEntity<PluginTypeConfig>();
                 pluginTypes.Add(pluginType);
             }
-            var step = MessageProcessingStep.FromAlias(entity);
+            var step = PluginStepConfig.FromAlias(entity);
             if (step is not null)
             {
                 pluginType.Steps.Add(step);

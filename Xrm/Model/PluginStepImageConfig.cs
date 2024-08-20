@@ -1,5 +1,6 @@
 ﻿#nullable enable
 using Microsoft.Xrm.Sdk;
+using Microsoft.Xrm.Sdk.Client;
 using Microsoft.Xrm.Sdk.Metadata;
 using System;
 using System.Text.Json;
@@ -21,8 +22,11 @@ public interface IMessageProcessingStepImageConfig : IMessageProcessingStepImage
     EntityMetadata? MessagePropertyDefinition { get; set; }
 }
 
-public class MessageProcessingStepImage : TypedEntity<MessageProcessingStepImage>, IMessageProcessingStepImageConfig
+[EntityLogicalName(EntityLogicalName)]
+public class PluginStepImageConfig : TypedEntity<PluginStepImageConfig>, IMessageProcessingStepImageConfig
 {
+    public const string EntityLogicalName = "sdkmessageprocessingstepimage";
+
     #region IMessageProcessingStepImageConfig-only Properties
     public EntityMetadata? MessagePropertyDefinition { get; set; }
     #endregion
@@ -67,11 +71,13 @@ public class MessageProcessingStepImage : TypedEntity<MessageProcessingStepImage
         set => this["messagepropertyname"] = value;
     }
     #endregion
+
+    public PluginStepImageConfig() : base(EntityLogicalName) { }
 }
 
-public class MessageProcessingStepImageConverter : JsonConverter<MessageProcessingStepImage>
+public class MessageProcessingStepImageConverter : JsonConverter<PluginStepImageConfig>
 {
-    public override MessageProcessingStepImage? Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options) => throw new NotImplementedException();
-    public override void Write(Utf8JsonWriter writer, MessageProcessingStepImage value, JsonSerializerOptions options) => throw new NotImplementedException();
+    public override PluginStepImageConfig? Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options) => throw new NotImplementedException();
+    public override void Write(Utf8JsonWriter writer, PluginStepImageConfig value, JsonSerializerOptions options) => throw new NotImplementedException();
 }
 #nullable restore

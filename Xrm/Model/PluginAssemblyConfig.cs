@@ -25,7 +25,7 @@ public interface IPluginAssemblyEntity
     int? Major { get; set; }
     int? Minor { get; set; }
     string? Name { get; set; }
-    ICollection<PluginType> PluginTypes { get; set; }
+    ICollection<PluginTypeConfig> PluginTypes { get; set; }
     string? PublicKeyToken { get; set; }
     EntityReference? SolutionId { get; set; }
     int? SourceType { get; set; }
@@ -67,7 +67,7 @@ public class PluginAssemblyConfig : TypedEntity<PluginAssemblyConfig>, IPluginAs
     public IReadOnlyCollection<string> RemovePrefixesCollection { private set; get; } = [];
 
     [JsonProperty("PluginTypes")]
-    public ICollection<PluginType> PluginTypes { get; set; } = [];
+    public ICollection<PluginTypeConfig> PluginTypes { get; set; } = [];
 
     #endregion
 

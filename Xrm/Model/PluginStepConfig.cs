@@ -37,16 +37,17 @@ public enum Stages
 
 public interface IMessageProcessingStepEntity
 {
+    EntityReference? SdkMessageId { get; set; }
     bool AsyncAutoDelete { get; set; }
     string? Description { get; set; }
     string? FilteringAttributes { get; set; }
     int? InvocationSource { get; set; }
     string? MessageName { get; set; }
-    int? Mode { get; set; }
     string? Name { get; set; }
     string? PrimaryEntityName { get; set; }
+    object? CustomConfiguration { get; set; }
+    int? Mode { get; set; }
     int? Rank { get; set; }
-    EntityReference? SdkMessageId { get; set; }
     Stages? Stage { get; set; }
     int? StateCode { get; set; }
     int? SupportedDeployment { get; set; }
@@ -54,18 +55,20 @@ public interface IMessageProcessingStepEntity
 
 public interface IMessageProcessingStepConfig : IMessageProcessingStepEntity
 {
-    ICollection<MessageProcessingStepImage> Images { get; set; }
+    ICollection<PluginStepImageConfig> Images { get; set; }
     EntityMetadata? PrimaryEntityDefinition { get; set; }
-    /// <summary>
-    /// Secure Config
-    /// </summary>
-    object? CustomConfiguration { get; set; }
+    public string? StageName { get; }
 }
 
 [EntityLogicalName(EntityLogicalName)]
-public class MessageProcessingStep : TypedEntity<MessageProcessingStep>, IMessageProcessingStepConfig
+public class PluginStepConfig : TypedEntity<PluginStepConfig>, IMessageProcessingStepConfig
 {
     public const string EntityLogicalName = "sdkmessageprocessingstep";
+
+    //TODO: Do we need to support secure config?
+    // Unsupported for now:
+    // - SecureConfig
+    // - ImpersonatingUserFullName
 
     #region IMessageProcessingStepConfig-only Properties
     /// <summary>
@@ -73,8 +76,20 @@ public class MessageProcessingStep : TypedEntity<MessageProcessingStep>, IMessag
     /// that are used in the message processing step.
     /// </summary>
     public EntityMetadata? PrimaryEntityDefinition { get; set; }
-    public ICollection<MessageProcessingStepImage> Images { get; set; } = [];
+    public ICollection<PluginStepImageConfig> Images { get; set; } = [];
     public object? CustomConfiguration { get; set; }
+    public string? StageName
+    {
+        get => Stage switch
+        {
+            Stages.PreValidation => "PreValidation",
+            Stages.PreOperation => "PreOperation",
+            Stages.MainOperation => "MainOperation",
+            Stages.PostOperation => "PostOperation",
+            null => null,
+            _ => throw new InvalidOperationException($"Unknown stage: {Stage}")
+        };
+    }
     #endregion
 
     #region IMessageProcessingStepEntity Properties
@@ -182,6 +197,6 @@ public class MessageProcessingStep : TypedEntity<MessageProcessingStep>, IMessag
     }
     #endregion
 
-    public MessageProcessingStep() : base(EntityLogicalName) {}
+    public PluginStepConfig() : base(EntityLogicalName) { }
 }
 #nullable restore
