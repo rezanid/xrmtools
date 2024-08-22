@@ -2,12 +2,14 @@
 using Microsoft.Xrm.Sdk;
 using Microsoft.Xrm.Sdk.Client;
 using Microsoft.Xrm.Sdk.Metadata;
+using Microsoft.Xrm.Sdk.Query;
 using System;
 using System.Collections.Generic;
+using System.Linq.Expressions;
 
 namespace XrmGen.Xrm.Model;
 
-public enum Stages
+public enum Stages 
 {
     /// <summary>
     /// pre-validation (not in transaction).
@@ -196,6 +198,17 @@ public class PluginStepConfig : TypedEntity<PluginStepConfig>, IMessageProcessin
         set => this["supporteddeployment"] = value;
     }
     #endregion
+
+    public static LinkEntity LinkWithImages(string[] columns, JoinOperator join = JoinOperator.LeftOuter)
+        => new(EntityLogicalName, PluginStepImageConfig.EntityLogicalName, "sdkmessageprocessingstepid", "sdkmessageprocessingstepid", join)
+        {
+            EntityAlias = PluginStepImageConfig.EntityLogicalName,
+            Columns = new ColumnSet(columns)
+        };
+
+    public static LinkEntity LinkWithImages(
+        Expression<Func<PluginStepImageConfig, object>> columnsExpression, JoinOperator join = JoinOperator.LeftOuter)
+        => LinkWithImages(PluginStepImageConfig.GetColumnsFromExpression(columnsExpression), join);
 
     public PluginStepConfig() : base(EntityLogicalName) { }
 }

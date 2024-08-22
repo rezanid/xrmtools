@@ -14,6 +14,7 @@ using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
+using XrmGen.Xrm.Extensions;
 using XrmGen.Xrm.Model;
 
 public interface IXrmSchemaProvider : IDisposable
@@ -288,17 +289,19 @@ public class XrmSchemaProvider(ServiceClient serviceClient) : IXrmSchemaProvider
     private static async Task<IEnumerable<PluginTypeConfig>> FetchPluginTypesAsync(
         ServiceClient client, Guid assemblyid, CancellationToken cancellationToken)
     {
-        var query = PluginTypeConfig.QueryWithSteps(
-            pt => new { pt.Name, pt.TypeName },
-            s => new { s.Name, s.Stage },
-            JoinOperator.LeftOuter);
-        query.Criteria = new FilterExpression()
+        var query = new QueryExpression(PluginTypeConfig.EntityLogicalName)
         {
-            Conditions =
+            ColumnSet = new ColumnSet(PluginTypeConfig.GetColumnsFromExpression(s => new { s.Name, s.TypeName })),
+            Criteria = new FilterExpression()
             {
-                new ConditionExpression("pluginassemblyid", ConditionOperator.Equal, assemblyid)
-            }
+                Conditions =
+                {
+                    new ConditionExpression("pluginassemblyid", ConditionOperator.Equal, assemblyid)
+                }
+            },
         };
+        query.LinkWith(PluginTypeConfig.LinkWithSteps(s => new { s.Name, s.Stage })
+             .LinkWith(PluginStepConfig.LinkWithImages(s => new { s.Name })));
 
         var pluginTypes = new List<PluginTypeConfig>();
         var response = await client.RetrieveMultipleAsync(query, cancellationToken);

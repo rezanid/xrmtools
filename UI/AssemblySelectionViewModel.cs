@@ -23,7 +23,7 @@ public class AssemblySelectionViewModel : ViewModelBase
 
     public ObservableCollection<PluginAssemblyConfig> Assemblies { get; }
     public ICollectionView FilteredAssemblies { get; }
-    public ObservableCollection<PluginTypeConfig> SelectedAssemblyTypes { get; }
+    public ObservableCollection<PluginTypeConfig> SelectedPluginTypes { get; }
 
     public PluginAssemblyConfig SelectedAssembly
     {
@@ -32,7 +32,7 @@ public class AssemblySelectionViewModel : ViewModelBase
         {
             if (SetProperty(ref _selectedAssembly, value))
             {
-                LoadAssemblyStepsCommand.Execute(null);
+                LoadAssemblyDetailsCommand.Execute(null);
                 OnSelectedAssemblyChanged();
             }
         }
@@ -59,7 +59,7 @@ public class AssemblySelectionViewModel : ViewModelBase
     }
 
     public IAsyncRelayCommand LoadAssembliesCommand { get; }
-    public IAsyncRelayCommand LoadAssemblyStepsCommand { get; }
+    public IAsyncRelayCommand LoadAssemblyDetailsCommand { get; }
     public ICommand SelectCommand { get; }
 
     public AssemblySelectionViewModel(IXrmSchemaProvider schemaProvider)
@@ -68,10 +68,11 @@ public class AssemblySelectionViewModel : ViewModelBase
         Assemblies = [];
         FilteredAssemblies = CollectionViewSource.GetDefaultView(Assemblies);
         FilteredAssemblies.Filter = FilterAssemblies;
-        SelectedAssemblyTypes = [];
+        //SelectedPluginTypes = [];
 
         LoadAssembliesCommand = new AsyncRelayCommand(LoadAssembliesAsync);
-        LoadAssemblyStepsCommand = new AsyncRelayCommand(LoadAssemblyStepsAsync);
+        //LoadAssemblyStepsCommand = new AsyncRelayCommand(LoadAssemblyStepsAsync);
+        LoadAssemblyDetailsCommand = new AsyncRelayCommand(LoadAssemblyDetailsAsync, CanSelectAssembly);
         SelectCommand = new RelayCommand(SelectAssembly, CanSelectAssembly);
     }
 
@@ -98,7 +99,7 @@ public class AssemblySelectionViewModel : ViewModelBase
         FilteredAssemblies.Refresh();
     }
 
-    private async Task LoadAssemblyStepsAsync()
+    private async Task LoadAssemblyDetailsAsync()
     {
         if (SelectedAssembly != null && SelectedAssembly.PluginTypes.Count == 0)
         {
@@ -108,11 +109,11 @@ public class AssemblySelectionViewModel : ViewModelBase
             SelectedAssembly.PluginTypes = new ObservableCollection<PluginTypeConfig>(pluginTypes);
 
             // Update the view model's collection
-            SelectedAssemblyTypes.Clear();
+            /*SelectedPluginTypes.Clear();
             foreach (var pluginType in SelectedAssembly.PluginTypes)
             {
-                SelectedAssemblyTypes.Add(pluginType);
-            }
+                SelectedPluginTypes.Add(pluginType);
+            }*/
             IsLoading = false;
         }
     }
@@ -127,6 +128,6 @@ public class AssemblySelectionViewModel : ViewModelBase
     private void OnSelectedAssemblyChanged()
     {
         // Notify that CanExecute changed for SelectCommand
-        ((RelayCommand)SelectCommand).RaiseCanExecuteChanged();
+        ((RelayCommand)SelectCommand).NotifyCanExecuteChanged();
     }
 }

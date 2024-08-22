@@ -7,6 +7,7 @@ using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.ComponentModel;
 using System.Runtime.Serialization;
 
 namespace XrmGen.Xrm.Model;
@@ -33,9 +34,11 @@ public interface IPluginAssemblyEntity
 }
 
 [EntityLogicalName(EntityLogicalName)]
-public class PluginAssemblyConfig : TypedEntity<PluginAssemblyConfig>, IPluginAssemblyConfig
+public class PluginAssemblyConfig : TypedEntity<PluginAssemblyConfig>, IPluginAssemblyConfig, INotifyPropertyChanged
 {
     public const string EntityLogicalName = "pluginassembly";
+
+    private ICollection<PluginTypeConfig> pluginTypes = [];
 
     #region IPluginAssemblyConfig-only Properties
 
@@ -67,7 +70,15 @@ public class PluginAssemblyConfig : TypedEntity<PluginAssemblyConfig>, IPluginAs
     public IReadOnlyCollection<string> RemovePrefixesCollection { private set; get; } = [];
 
     [JsonProperty("PluginTypes")]
-    public ICollection<PluginTypeConfig> PluginTypes { get; set; } = [];
+    public ICollection<PluginTypeConfig> PluginTypes
+    {
+        get => pluginTypes;
+        set
+        {
+            pluginTypes = value;
+            OnPropertyChanged(nameof(PluginTypes));
+        }
+    }
 
     #endregion
 
@@ -128,6 +139,11 @@ public class PluginAssemblyConfig : TypedEntity<PluginAssemblyConfig>, IPluginAs
         set => this["version"] = value;
     }
     #endregion
+
+    public event PropertyChangedEventHandler PropertyChanged;
+
+    protected void OnPropertyChanged(string propertyName)
+        => PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
 
     public PluginAssemblyConfig() : base(EntityLogicalName) { }
 }

@@ -6,30 +6,23 @@ using Microsoft.Xrm.Sdk.Client;
 using System;
 using System.Linq;
 using System.Linq.Expressions;
-using System.Text.Json.Serialization;
-using XrmGen.Xrm.Serialization;
+using System.Reflection;
 
-public interface ITypedEntity
-{
-    
-}
+public interface ITypedEntity { }
 
 public abstract class TypedEntity<T>(string entityLogicalName) : Entity(entityLogicalName), ITypedEntity where T : Entity, ITypedEntity, new()
 {
-    protected static string[] GetColumnsFromExpression(Expression<Func<T, object>> expression)
-    {
-        if (expression.Body is not MemberExpression memberExpression)
+    internal static string[] GetColumnsFromExpression(Expression<Func<T, object>> expression) =>
+        expression.Body switch
         {
-            throw new ArgumentException("Invalid expression");
-        }
+            NewExpression newExpr => newExpr.Arguments.OfType<MemberExpression>()
+                                                      .Select(GetMemberName)
+                                                      .ToArray(),
+            MemberExpression memberExpr => [GetMemberName(memberExpr)],
+            UnaryExpression { Operand: MemberExpression memberExpr } => [GetMemberName(memberExpr)],
+            _ => []
+        };
 
-        var properties = memberExpression.Member.GetCustomAttributes(typeof(AttributeLogicalNameAttribute), false)
-            .OfType<AttributeLogicalNameAttribute>()
-            .Select(a => a.LogicalName)
-            .ToArray();
-
-        return properties;
-    }
 
     internal static string GetEntityLogicalName()
     {
@@ -82,5 +75,9 @@ public abstract class TypedEntity<T>(string entityLogicalName) : Entity(entityLo
         }
         return t;
     }
+
+    private static string GetMemberName(MemberExpression memberExpr) =>
+        memberExpr.Member.GetCustomAttribute<AttributeLogicalNameAttribute>()?.LogicalName
+        ?? memberExpr.Member.Name;
 }
 #nullable restore

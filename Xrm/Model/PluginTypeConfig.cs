@@ -5,6 +5,7 @@ using Microsoft.Xrm.Sdk.Query;
 using System;
 using System.Collections.Generic;
 using System.Linq.Expressions;
+using System.Reflection;
 
 namespace XrmGen.Xrm.Model;
 
@@ -60,43 +61,31 @@ public class PluginTypeConfig : TypedEntity<PluginTypeConfig>, IPluginTypeConfig
 
     public ICollection<PluginStepConfig> Steps { get; set; } = [];
 
-    public static LinkEntity LinkWithSteps(string[] columns, JoinOperator join)
-        => new("plugintype", "sdkmessageprocessingstep", "plugintypeid", "plugintypeid", join)
+    public static LinkEntity LinkWithSteps(string[] columns, JoinOperator join = JoinOperator.LeftOuter)
+        => new(EntityLogicalName, PluginStepConfig.EntityLogicalName, "plugintypeid", "plugintypeid", join)
         {
-            EntityAlias = "steps",
+            EntityAlias = PluginStepConfig.EntityLogicalName,
             Columns = new ColumnSet(columns)
         };
 
+    public static LinkEntity LinkWithSteps(Expression<Func<PluginStepConfig, object>> columnsExpression, JoinOperator join = JoinOperator.LeftOuter)
+        => LinkWithSteps(PluginStepConfig.GetColumnsFromExpression(columnsExpression), join);
+
     public static QueryExpression QueryWithSteps(string[] columns, string[] stepColumns, JoinOperator join)
-        => new("plugintype")
+        => new(PluginStepConfig.EntityLogicalName)
         {
             ColumnSet = new ColumnSet(columns),
             LinkEntities = { LinkWithSteps(stepColumns, join) }
         };
-
-    public static LinkEntity LinkWithSteps(Expression<Func<PluginTypeConfig, object>> columnsExpression, JoinOperator join)
-    {
-        var columns = GetColumnsFromExpression(columnsExpression);
-        return new LinkEntity("plugintype", "sdkmessageprocessingstep", "plugintypeid", "plugintypeid", join)
-        {
-            EntityAlias = "steps",
-            Columns = new ColumnSet(columns)
-        };
-    }
 
     public static QueryExpression QueryWithSteps(
         Expression<Func<PluginTypeConfig, object>> columnsExpression,
         Expression<Func<PluginStepConfig, object>> stepColumnsExpression,
-        JoinOperator join)
-    {
-        var columns = GetColumnsFromExpression(columnsExpression);
-        var stepColumns = PluginStepConfig.GetColumnsFromExpression(stepColumnsExpression);
-        return new QueryExpression("plugintype")
-        {
-            ColumnSet = new ColumnSet(columns),
-            LinkEntities = { LinkWithSteps(stepColumns, join) }
-        };
-    }
+        JoinOperator join) 
+        => QueryWithSteps(
+            GetColumnsFromExpression(columnsExpression), 
+            PluginStepConfig.GetColumnsFromExpression(stepColumnsExpression), 
+            join);
 
     public PluginTypeConfig() : base(EntityLogicalName) { }
 }
