@@ -1,15 +1,26 @@
 ﻿#nullable enable
+using Community.VisualStudio.Toolkit;
 using EnvDTE;
 using EnvDTE80;
 using Microsoft;
 using Microsoft.VisualStudio.Shell;
 using Microsoft.VisualStudio.Shell.Interop;
+using Microsoft.VisualStudio.Text;
+using Microsoft.VisualStudio.Threading;
 using System;
+using System.Collections.Generic;
 using System.ComponentModel.Composition;
 using System.ComponentModel.Design;
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
+using System.IO;
+using System.Linq;
+using System.Net.Http;
+using System.Text;
+using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
+using System.Windows;
 using XrmGen._Core;
 using XrmGen.Extensions;
 using XrmGen.UI;
@@ -24,6 +35,10 @@ namespace XrmGen.Commands;
 /// </summary>
 internal sealed class GenerateRegistrationFileCommand
 {
+    private static readonly HashSet<char> _invalidFileNameChars = new(Path.GetInvalidFileNameChars());
+    private const string _solutionItemsProjectName = "Solution Items";
+    private static readonly Regex _reservedFileNamePattern = new ($@"(?i)^(PRN|AUX|NUL|CON|COM\d|LPT\d)(\.|$)");
+
     private readonly AsyncPackage package;
     private readonly DTE2 dte;
     private IXrmSchemaProviderFactory? _schemaProviderFactory;
@@ -84,27 +99,198 @@ internal sealed class GenerateRegistrationFileCommand
         Instance = new GenerateRegistrationFileCommand(package, commandService, dte);
     }
 
-    private void OnExecute(object sender, EventArgs e)
+    private async void OnExecute(object sender, EventArgs e)
     {
-        ThreadHelper.ThrowIfNotOnUIThread();
+        var target = NewItemTarget.Create(dte);
 
-        // Yes, it's a 1-based array!
-        var item = dte.SelectedItems.Item(1).ProjectItem;
-        if (item == null) { return; }
-        
-        //item.Properties.Item("CustomTool").Value = PluginCodeGenerator.Name;
-
-        if (ChooseAssembly() is PluginAssemblyConfig assembly)
+        if (target == null)
         {
-            //var assembly = dialog.SelectedAssembly;
-            //var generator = new RegistrationFileGenerator(assembly);
-            //generator.Generate();
-            Logger.Log("Assembly selected: " + assembly.Name);
+            VS.MessageBox.Show(
+                    Vsix.Name,
+                    "Could not determine where to create the new file. Select a file or folder in Solution Explorer and try again.");
+            return;
+        }
+
+        //item.Properties.Item("CustomTool").Value = PluginCodeGenerator.Name;
+        var (selectedAssembly, filename) = ChooseAssembly();
+        if (selectedAssembly is not null && filename is not null)
+        {
+            Logger.Log("Assembly selected: " + selectedAssembly.Name);
+            var content = StringHelpers.SerializeJson(selectedAssembly);
+            await AddItemAsync(filename, target, content ?? string.Empty);
         }
         else
         {
             Logger.Log("No assembly selected.");
         }
+    }
+
+    private async Task AddItemAsync(string name, NewItemTarget target, string content)
+    {
+        // The naming rules that apply to files created on disk also apply to virtual solution folders,
+        // so regardless of what type of item we are creating, we need to validate the name.
+        ValidatePath(name);
+
+        if (name.EndsWith("\\", StringComparison.Ordinal))
+        {
+            if (target.IsSolutionOrSolutionFolder)
+            {
+                GetOrAddSolutionFolder(name, target);
+            }
+            else
+            {
+                AddProjectFolder(name, target);
+            }
+        }
+        else
+        {
+            await AddFileAsync(name, target, content);
+        }
+    }
+
+    private void ValidatePath(string path)
+    {
+        do
+        {
+            string name = Path.GetFileName(path);
+
+            if (_reservedFileNamePattern.IsMatch(name))
+            {
+                throw new InvalidOperationException($"The name '{name}' is a system reserved name.");
+            }
+
+            if (name.Any(c => _invalidFileNameChars.Contains(c)))
+            {
+                throw new InvalidOperationException($"The name '{name}' contains invalid characters.");
+            }
+
+            path = Path.GetDirectoryName(path);
+        } while (!string.IsNullOrEmpty(path));
+    }
+
+    private async Task AddFileAsync(string name, NewItemTarget target, String content)
+    {
+        await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync();
+
+        FileInfo file;
+
+        // If the file is being added to a solution folder, but that
+        // solution folder doesn't have a corresponding directory on
+        // disk, then write the file to the root of the solution instead.
+        if (target.IsSolutionFolder && !Directory.Exists(target.Directory))
+        {
+            file = new FileInfo(Path.Combine(Path.GetDirectoryName(dte.Solution.FullName), Path.GetFileName(name)));
+        }
+        else if (name.StartsWith("sln\\"))
+        {
+            file = new FileInfo(Path.Combine(Path.GetDirectoryName(dte.Solution.FullName), Path.GetFileName(name.Substring(4))));
+        }
+        else if (name.StartsWith("prj\\") && target.Project != null)
+        {
+            file = new FileInfo(Path.Combine(Path.GetDirectoryName(target.Project.FileName), Path.GetFileName(name.Substring(4))));
+        }
+        else
+        {
+            file = new FileInfo(Path.Combine(target.Directory, name));
+        }
+
+        // Make sure the directory exists before we create the file. Don't use
+        // `PackageUtilities.EnsureOutputPath()` because it can silently fail.
+        Directory.CreateDirectory(file.DirectoryName);
+
+        if (!file.Exists)
+        {
+            EnvDTE.Project project;
+
+            if (target.IsSolutionOrSolutionFolder)
+            {
+                project = GetOrAddSolutionFolder(Path.GetDirectoryName(name), target);
+            }
+            else
+            {
+                project = target.Project;
+            }
+
+            await WriteToDiskAsync(file.FullName, content);
+            if (target.ProjectItem != null && target.ProjectItem.IsKind(EnvDTE.Constants.vsProjectItemKindVirtualFolder))
+            {
+                target.ProjectItem.ProjectItems.AddFromFile(file.FullName);
+            }
+            else
+            {
+                project.AddFileToProject(file);
+            }
+
+            VsShellUtilities.OpenDocument(package, file.FullName);
+
+            dte.ExecuteCommandIfAvailable("SolutionExplorer.SyncWithActiveDocument");
+            dte.ActiveDocument.Activate();
+        }
+        else
+        {
+            await VS.MessageBox.ShowAsync(Vsix.Name, $"The file '{file}' already exists.");
+        }
+    }
+
+    private static async Task WriteToDiskAsync(string file, string content)
+    {
+        using StreamWriter writer = new StreamWriter(file, false, Encoding.UTF8);
+        await writer.WriteAsync(content);
+    }
+
+    private EnvDTE.Project GetOrAddSolutionFolder(string name, NewItemTarget target)
+    {
+        ThreadHelper.ThrowIfNotOnUIThread();
+        if (target.IsSolution && string.IsNullOrEmpty(name))
+        {
+            // An empty solution folder name means we are not creating any solution
+            // folders for that item, and the file we are adding is intended to be
+            // added to the solution. Files cannot be added directly to the solution,
+            // so there is a "Solution Items" folder that they are added to.
+            return dte.Solution.FindSolutionFolder(_solutionItemsProjectName)
+                    ?? ((Solution2)dte.Solution).AddSolutionFolder(_solutionItemsProjectName);
+        }
+
+        // Even though solution folders are always virtual, if the target directory exists,
+        // then we will also create the new directory on disk. This ensures that any files
+        // that are added to this folder will end up in the corresponding physical directory.
+        if (Directory.Exists(target.Directory))
+        {
+            // Don't use `PackageUtilities.EnsureOutputPath()` because it can silently fail.
+            Directory.CreateDirectory(Path.Combine(target.Directory, name));
+        }
+
+        var parent = target.Project;
+
+        foreach (var segment in SplitPath(name))
+        {
+            // If we don't have a parent project yet,
+            // then this folder is added to the solution.
+            if (parent == null)
+            {
+                parent = dte.Solution.FindSolutionFolder(segment) ?? ((Solution2)dte.Solution).AddSolutionFolder(segment);
+            }
+            else
+            {
+                parent = parent.FindSolutionFolder(segment) ?? ((EnvDTE80.SolutionFolder)parent.Object).AddSolutionFolder(segment);
+            }
+        }
+
+        return parent;
+    }
+
+    private static string[] SplitPath(string path)
+        => path.Split([Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar], StringSplitOptions.RemoveEmptyEntries);
+
+    private void AddProjectFolder(string name, NewItemTarget target)
+    {
+        ThreadHelper.ThrowIfNotOnUIThread();
+
+        // Make sure the directory exists before we add it to the project. Don't
+        // use `PackageUtilities.EnsureOutputPath()` because it can silently fail.
+        string targetFolder = Path.Combine(target.Directory, name);
+        Directory.CreateDirectory(targetFolder);
+        ProjectHelpers.AddFolders(target.Project, targetFolder);
     }
 
     private string? GetProjectProperty(string propertyName)
@@ -118,23 +304,23 @@ internal sealed class GenerateRegistrationFileCommand
         return hierarchy.GetProjectProperty(propertyName);
     }
 
-
-    private PluginAssemblyConfig? ChooseAssembly()
+    private (PluginAssemblyConfig? config, string? filename) ChooseAssembly()
     {
         var url = GetProjectProperty("EnvironmentUrl");
-        if (string.IsNullOrWhiteSpace(url)) { return null; }
+        if (string.IsNullOrWhiteSpace(url)) { return (null, null); }
         var schemaProvider = SchemaProviderFactory?.Get(url!);
         if (schemaProvider == null) 
         {
             Logger.Log(url + " used in your EnvironmentUrl build property is not a valid environment URL.");
-            return null; 
+            return (null, null); 
         }
         var dialog = new AssemblySelectionDialog(schemaProvider);
         if (dialog.ShowDialog() == true)
         {
-            return ((AssemblySelectionViewModel)dialog.DataContext).SelectedAssembly;
+            var viewmodel = (AssemblySelectionViewModel)dialog.DataContext;
+            return (viewmodel.SelectedAssembly, viewmodel.FileName);
         }
-        return null;
+        return (null, null);
     }
 
 }

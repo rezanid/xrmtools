@@ -1,23 +1,23 @@
 ﻿#nullable enable
+namespace XrmGen.Extensions;
 
 using Microsoft.Xrm.Sdk;
 using Newtonsoft.Json;
-using System;
 using System.Collections;
 using System.Diagnostics.CodeAnalysis;
 using System.Text.Json;
+using System.Text.Json.Serialization;
 using System.Text.Json.Serialization.Metadata;
-using XrmGen.Xrm.Model;
 using XrmGen.Xrm.Serialization;
 
-namespace XrmGen.Extensions;
-internal static class StringExtensions
+internal static class StringHelpers
 {
     // System.Text.Json Configuration:
     private static readonly JsonSerializerOptions jsonSerializerOptions = new()
     {
         PropertyNameCaseInsensitive = true,
-        PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
+        DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
+        WriteIndented = true,
         TypeInfoResolver = new DefaultJsonTypeInfoResolver
         {
             Modifiers = { DefaultValueModifier }

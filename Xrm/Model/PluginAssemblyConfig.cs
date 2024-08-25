@@ -1,5 +1,7 @@
 ﻿#nullable enable
 
+namespace XrmGen.Xrm.Model;
+
 using Microsoft.Xrm.Sdk;
 using Microsoft.Xrm.Sdk.Client;
 using Microsoft.Xrm.Sdk.Metadata;
@@ -9,8 +11,6 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Runtime.Serialization;
-
-namespace XrmGen.Xrm.Model;
 
 public interface IPluginAssemblyConfig : IPluginAssemblyEntity
 {
@@ -140,7 +140,7 @@ public class PluginAssemblyConfig : TypedEntity<PluginAssemblyConfig>, IPluginAs
     }
     #endregion
 
-    public event PropertyChangedEventHandler PropertyChanged;
+    public event PropertyChangedEventHandler? PropertyChanged;
 
     protected void OnPropertyChanged(string propertyName)
         => PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));

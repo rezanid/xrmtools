@@ -9,4 +9,14 @@ public static class QueryExpressionExtensions
         query.LinkEntities.Add(target);
         return target;
     }
+    public static QueryExpression WithFilter(this QueryExpression query, FilterExpression filter)
+    {
+        query.Criteria.AddFilter(filter);
+        return query;
+    }
+    public static QueryExpression WithCondition(this QueryExpression query, ConditionExpression condition)
+    {
+        query.Criteria.AddCondition(condition);
+        return query;
+    }
 }

@@ -18,6 +18,7 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using System.ComponentModel.Composition;
 using System.ComponentModel.Design;
+using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Net;
 using System.Runtime.InteropServices;
@@ -83,11 +84,11 @@ internal record ProjectDataverseSettings(
 [ProvideService(typeof(IXrmEntityCodeGenerator), IsAsyncQueryable = true, IsCacheable = true, IsFreeThreaded = true)]
 public sealed class XrmGenPackage : AsyncPackage
 {
-    private DTE2? _dte;
+    public DTE2? Dte;
 
     // Warning!
     // MEF Doesn't work here. Use the ServiceProvider to get the requried service.
-    private IXrmSchemaProviderFactory XrmSchemaProviderFactory;
+    private IXrmSchemaProviderFactory? XrmSchemaProviderFactory;
 
     /// <summary>
     /// XrmGenPackage GUID string.
@@ -101,27 +102,33 @@ public sealed class XrmGenPackage : AsyncPackage
     /// <param name="cancellationToken">A cancellation token to monitor for initialization cancellation, which can occur when VS is shutting down.</param>
     /// <param name="progress">A provider for progress updates.</param>
     /// <returns>A task representing the async work of package initialization, or an already completed task if there is none. Do not return null from this method.</returns>
+    [MemberNotNull(nameof(Dte))]
     protected override async Task InitializeAsync(CancellationToken cancellationToken, IProgress<ServiceProgressData> progress)
     {
-        await base.InitializeAsync(cancellationToken, progress);
-
+        Dte = await GetServiceAsync(typeof(DTE)) as DTE2
+            ?? throw new InvalidOperationException(
+                string.Format(Resources.Strings.Package_InitializationErroMissingDte, nameof(XrmGenPackage)));
+        Assumes.Present(Dte);
 
         await InitializeServicesAsync();
+        if (XrmSchemaProviderFactory is null)
+        {
+            throw new InvalidOperationException("XrmSchemaProviderFactory is missing.");
+        }
 
+        await JoinableTaskFactory.SwitchToMainThreadAsync(cancellationToken);
         // When initialized asynchronously, the current thread may be a background thread at this point.
         // Do any initialization that requires the UI thread after switching to the UI thread.
-        await JoinableTaskFactory.SwitchToMainThreadAsync(cancellationToken);
         await ApplyEntityGeneratorCommand.InitializeAsync(this);
         await SetXrmPluginGeneratorCommand.InitializeAsync(this);
         await GenerateRegistrationFileCommand.InitializeAsync(this);
 
-        _dte = await GetServiceAsync(typeof(DTE)) as DTE2
-            ?? throw new InvalidOperationException(
-                string.Format(Resources.Strings.Package_InitializationErroMissingDte, nameof(XrmGenPackage)));
-        Assumes.Present(_dte);
+
+        ProjectHelpers.ParentPackage = this;
+
         // This is for when extension is loaded before the solution is opened.
         // Usually happens when user opens Visual Studio with a solution already loaded.
-        _dte.Events.SolutionEvents.Opened += () =>
+        Dte.Events.SolutionEvents.Opened += () =>
         {
             Logger.Log("Solution Opened");
             ThreadHelper.JoinableTaskFactory.WithPriority(VsTaskRunContext.UIThreadIdlePriority).Run(async () =>
@@ -135,6 +142,7 @@ public sealed class XrmGenPackage : AsyncPackage
         StartBackgroundOperations();
     }
 
+    [MemberNotNull(nameof(XrmSchemaProviderFactory))]
     private async Task InitializeServicesAsync()
     {
         XrmSchemaProviderFactory ??= new XrmSchemaProviderFactory();
@@ -155,6 +163,7 @@ public sealed class XrmGenPackage : AsyncPackage
                 await Task.FromResult(new TemplatedEntityCodeGenerator())
             // Add service at global level to make it available to Single-File generators.
             , promote: true);
+        await Task.CompletedTask;
     }
 
     private void StartBackgroundOperations()
@@ -230,11 +239,25 @@ public sealed class XrmGenPackage : AsyncPackage
     private (string environmentUrl, string applicationId) GetProjectPropertiesOld()
     {
         ThreadHelper.ThrowIfNotOnUIThread();
+        ThrowIfNotInitialized();
 
-        var project = _dte.Solution.Projects.Cast<Project>().FirstOrDefault() ?? throw new InvalidOperationException("No project found in the solution.");
+        var project = Dte.Solution.Projects.Cast<Project>().FirstOrDefault() ?? throw new InvalidOperationException("No project found in the solution.");
         var environmentUrl = project.Properties.Item("EnvironmentUrl").Value.ToString();
         var applicationId = project.Properties.Item("ApplicationId").Value.ToString();
 
         return (environmentUrl, applicationId);
+    }
+
+    [MemberNotNull(nameof(Dte), nameof(XrmSchemaProviderFactory))]
+    private void ThrowIfNotInitialized()
+    {
+        if (XrmSchemaProviderFactory is null)
+        {
+            throw new InvalidOperationException("XrmSchemaProviderFactory is missing. Extension package not initialized successfully.");
+        }
+        if (Dte is null)
+        {
+            throw new InvalidOperationException("DTE is missing. Extension package not initialized successfully.");
+        }
     }
 }

@@ -1,39 +1,28 @@
-﻿namespace XrmGen.Xrm.Extensions;
+﻿#nullable enable
+namespace XrmGen.Xrm.Extensions;
 
 using Microsoft.Xrm.Sdk;
 using System;
-using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+using XrmGen.Xrm.Model;
 
 internal static class EntityExtensions
 {
-    internal static Entity FromAlias(this Entity entity, string alias)
+    internal static Entity? FromAliasedAttributes([DisallowNull] this Entity entity, string alias)
     {
-        if (entity.LogicalName == alias)
-        {
-            return entity;
-        }
-
-        if (entity.Contains(alias))
-        {
-            return entity.GetAttributeValue<Entity>(alias);
-        }
         var prefix = alias + ".";
         var dealiased = entity.Attributes
             .Where(a => a.Key.StartsWith(alias, StringComparison.OrdinalIgnoreCase))
             .Aggregate(new Entity(), (acc, a) =>
             {
-                var key = a.Key;
-                if (key.StartsWith(prefix, StringComparison.OrdinalIgnoreCase))
+                if (a.Key.StartsWith(prefix, StringComparison.OrdinalIgnoreCase) && a.Value is AliasedValue aliasedValue)
                 {
-                    key = key.Substring(prefix.Length);
+                    acc[a.Key[prefix.Length..]] = aliasedValue.Value;
                 }
-                acc[key] = a.Value;
                 return acc;
             });
-
-        throw new InvalidOperationException($"Entity does not contain an attribute with alias '{alias}'");
+        return entity.Attributes.Count > 0 ? entity : null;
     }
 }
+#nullable disable

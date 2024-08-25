@@ -28,6 +28,12 @@ public class PluginTypeConfig : TypedEntity<PluginTypeConfig>, IPluginTypeConfig
 {
     public const string EntityLogicalName = "plugintype";
 
+    [AttributeLogicalName("pluginassemblyid")]
+    public EntityReference? PluginAssemblyId
+    {
+        get => TryGetAttributeValue<EntityReference>("pluginassemblyid", out var value) ? value : null;
+        set => this["pluginassemblyid"] = value;
+    }
     [AttributeLogicalName("name")]
     public string? Name
     {
@@ -61,6 +67,13 @@ public class PluginTypeConfig : TypedEntity<PluginTypeConfig>, IPluginTypeConfig
 
     public ICollection<PluginStepConfig> Steps { get; set; } = [];
 
+    public static LinkEntity LinkWithSteps(ColumnSet columns, JoinOperator join = JoinOperator.LeftOuter)
+        => new (EntityLogicalName, PluginStepConfig.EntityLogicalName, "plugintypeid", "plugintypeid", join)
+        {
+            EntityAlias = PluginStepConfig.EntityLogicalName,
+            Columns = columns
+        };
+
     public static LinkEntity LinkWithSteps(string[] columns, JoinOperator join = JoinOperator.LeftOuter)
         => new(EntityLogicalName, PluginStepConfig.EntityLogicalName, "plugintypeid", "plugintypeid", join)
         {
@@ -69,7 +82,7 @@ public class PluginTypeConfig : TypedEntity<PluginTypeConfig>, IPluginTypeConfig
         };
 
     public static LinkEntity LinkWithSteps(Expression<Func<PluginStepConfig, object>> columnsExpression, JoinOperator join = JoinOperator.LeftOuter)
-        => LinkWithSteps(PluginStepConfig.GetColumnsFromExpression(columnsExpression), join);
+        => LinkWithSteps(PluginStepConfig.Select.From(columnsExpression), join);
 
     public static QueryExpression QueryWithSteps(string[] columns, string[] stepColumns, JoinOperator join)
         => new(PluginStepConfig.EntityLogicalName)
@@ -81,11 +94,12 @@ public class PluginTypeConfig : TypedEntity<PluginTypeConfig>, IPluginTypeConfig
     public static QueryExpression QueryWithSteps(
         Expression<Func<PluginTypeConfig, object>> columnsExpression,
         Expression<Func<PluginStepConfig, object>> stepColumnsExpression,
-        JoinOperator join) 
-        => QueryWithSteps(
-            GetColumnsFromExpression(columnsExpression), 
-            PluginStepConfig.GetColumnsFromExpression(stepColumnsExpression), 
-            join);
+        JoinOperator join)
+        => new(EntityLogicalName)
+        {
+            ColumnSet = Select.From(columnsExpression),
+            LinkEntities = { LinkWithSteps(stepColumnsExpression, join) }
+        };
 
     public PluginTypeConfig() : base(EntityLogicalName) { }
 }

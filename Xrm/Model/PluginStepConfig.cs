@@ -199,6 +199,13 @@ public class PluginStepConfig : TypedEntity<PluginStepConfig>, IMessageProcessin
     }
     #endregion
 
+    public static LinkEntity LinkWithImages(ColumnSet columns, JoinOperator join = JoinOperator.LeftOuter)
+        => new(EntityLogicalName, PluginStepImageConfig.EntityLogicalName, "sdkmessageprocessingstepid", "sdkmessageprocessingstepid", join)
+        {
+            EntityAlias = PluginStepImageConfig.EntityLogicalName,
+            Columns = columns
+        };
+
     public static LinkEntity LinkWithImages(string[] columns, JoinOperator join = JoinOperator.LeftOuter)
         => new(EntityLogicalName, PluginStepImageConfig.EntityLogicalName, "sdkmessageprocessingstepid", "sdkmessageprocessingstepid", join)
         {
@@ -208,7 +215,7 @@ public class PluginStepConfig : TypedEntity<PluginStepConfig>, IMessageProcessin
 
     public static LinkEntity LinkWithImages(
         Expression<Func<PluginStepImageConfig, object>> columnsExpression, JoinOperator join = JoinOperator.LeftOuter)
-        => LinkWithImages(PluginStepImageConfig.GetColumnsFromExpression(columnsExpression), join);
+        => LinkWithImages(PluginStepImageConfig.Select.From(columnsExpression), join);
 
     public PluginStepConfig() : base(EntityLogicalName) { }
 }

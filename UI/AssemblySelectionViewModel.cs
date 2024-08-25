@@ -58,6 +58,8 @@ public class AssemblySelectionViewModel : ViewModelBase
         }
     }
 
+    public string FileName { get; set; }
+
     public IAsyncRelayCommand LoadAssembliesCommand { get; }
     public IAsyncRelayCommand LoadAssemblyDetailsCommand { get; }
     public ICommand SelectCommand { get; }

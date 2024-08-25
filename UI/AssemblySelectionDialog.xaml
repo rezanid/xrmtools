@@ -1,11 +1,10 @@
 ﻿<p:DialogWindow xmlns:p="clr-namespace:Microsoft.VisualStudio.PlatformUI;assembly=Microsoft.VisualStudio.Shell.15.0" 
+
                 x:Class="XrmGen.UI.AssemblySelectionDialog"
                 xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
                 xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
                 xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
                 xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
-                xmlns:vsshell="clr-namespace:Microsoft.VisualStudio.Shell;assembly=Microsoft.VisualStudio.Shell.15.0"
-                xmlns:sys="clr-namespace:System;assembly=mscorlib" 
                 xmlns:toolkit="clr-namespace:Community.VisualStudio.Toolkit;assembly=Community.VisualStudio.Toolkit" 
                 
                 mc:Ignorable="d"
@@ -15,30 +14,40 @@
                 toolkit:Themes.UseVsTheme="True"
                 Height="450" Width="800" HasMaximizeButton="True">
     <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="Auto"/>
+            <ColumnDefinition Width="*"/>
+            <ColumnDefinition Width="Auto"/>
+        </Grid.ColumnDefinitions>
         <!-- Filter TextBox -->
+        <TextBlock Text="Filter assemblies:" VerticalAlignment="Center" HorizontalAlignment="Right" Margin="4"/>
         <TextBox x:Name="FilterTextBox" 
-                 HorizontalAlignment="Left" 
-                 Height="30" 
                  VerticalAlignment="Top" 
-                 Width="780" 
-                 Margin="10,10,0,0" 
+                 Margin="10"
+                 Grid.Row="0"
+                 Grid.Column="1"
                  Text="{Binding FilterText, UpdateSourceTrigger=PropertyChanged}" />
         <TextBlock Text="Filter assemblies..." 
-                       Foreground="Gray" 
-                       VerticalAlignment="Center" 
-                       Margin="15,0,0,0" 
-                       IsHitTestVisible="False">
+                   Foreground="Gray" 
+                   VerticalAlignment="Center" 
+                   Visibility="Collapsed"
+                   Margin="15,0,0,0" 
+                   IsHitTestVisible="False"
+                   Grid.Row="0">
             <TextBlock.Style>
                 <Style TargetType="TextBlock">
+                    <Setter Property="Visibility" Value="Collapsed"/>
                     <Style.Triggers>
                         <DataTrigger Binding="{Binding Text, ElementName=FilterTextBox}" Value="">
                             <Setter Property="Visibility" Value="Visible"/>
                         </DataTrigger>
                         <DataTrigger Binding="{Binding Text, ElementName=FilterTextBox}" Value="{x:Null}">
                             <Setter Property="Visibility" Value="Visible"/>
-                        </DataTrigger>
-                        <DataTrigger Binding="{Binding Text, ElementName=FilterTextBox}" Value="">
-                            <Setter Property="Visibility" Value="Collapsed"/>
                         </DataTrigger>
                     </Style.Triggers>
                 </Style>
@@ -48,14 +57,19 @@
         <ListBox ItemsSource="{Binding FilteredAssemblies}" 
                  SelectedItem="{Binding SelectedAssembly}" 
                  DisplayMemberPath="Name"
-                 Margin="10,50,10,40"
-                 HorizontalAlignment="Left" Width="200" />
+                 Margin="10,4,2,4"
+                 HorizontalAlignment="Left" Width="205" 
+                 Grid.Row="1"
+                 Grid.Column="0"/>
 
         <!-- PluginSteps TreeView -->
         <!--<TreeView ItemsSource="{Binding SelectedPluginTypes}"-->
         <TreeView ItemsSource="{Binding SelectedAssembly.PluginTypes}"
-                  Margin="220,50,10,40"
-                  HorizontalAlignment="Stretch">
+                  Margin="2,4,10,4"
+                  HorizontalAlignment="Stretch"
+                  Grid.Row="1"
+                  Grid.Column="1"
+                  Grid.ColumnSpan="2">
 
             <!-- DataTemplate for PluginType -->
             <TreeView.ItemTemplate>
@@ -66,7 +80,7 @@
                     <HierarchicalDataTemplate.ItemTemplate>
                         <HierarchicalDataTemplate ItemsSource="{Binding Images}">
                             <TextBlock Text="{Binding Name}" />
-                            
+
                             <!-- Template for Image -->
                             <HierarchicalDataTemplate.ItemTemplate>
                                 <DataTemplate>
@@ -78,14 +92,24 @@
                 </HierarchicalDataTemplate>
             </TreeView.ItemTemplate>
         </TreeView>
+        
+        <!-- File Name -->
+        <TextBox x:Name="FineNameTextBox" 
+                 VerticalAlignment="Bottom" 
+                 Margin="0,0,0,10"
+                 Text="{Binding FileName, UpdateSourceTrigger=PropertyChanged}" 
+                 Grid.Row="2"
+                 Grid.Column="1"/>
 
         <!-- Select Button -->
         <Button Content="Select" 
                 Command="{Binding SelectCommand}" 
                 HorizontalAlignment="Right"
-                Margin="10,10,10,10"
-                MinWidth="100" MinHeight="20"
-                VerticalAlignment="Bottom" 
-                Click="OnSelectClick"/>    
+                Margin="10"
+                MinWidth="100" MinHeight="24"
+                VerticalAlignment="Center" 
+                Click="OnSelectClick"
+                Grid.Row="2"
+                Grid.Column="2"/>
     </Grid>
 </p:DialogWindow>

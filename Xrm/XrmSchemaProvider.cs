@@ -289,17 +289,12 @@ public class XrmSchemaProvider(ServiceClient serviceClient) : IXrmSchemaProvider
     private static async Task<IEnumerable<PluginTypeConfig>> FetchPluginTypesAsync(
         ServiceClient client, Guid assemblyid, CancellationToken cancellationToken)
     {
-        var query = new QueryExpression(PluginTypeConfig.EntityLogicalName)
-        {
-            ColumnSet = new ColumnSet(PluginTypeConfig.GetColumnsFromExpression(s => new { s.Name, s.TypeName })),
-            Criteria = new FilterExpression()
-            {
-                Conditions =
-                {
-                    new ConditionExpression("pluginassemblyid", ConditionOperator.Equal, assemblyid)
-                }
-            },
-        };
+        var query = PluginTypeConfig.CreateQuery(s => new { s.Name, s.TypeName })
+            .WithCondition(
+            new ConditionExpression(
+                PluginTypeConfig.Select.ColumnName((e) => e.PluginAssemblyId), 
+                ConditionOperator.Equal, 
+                assemblyid));
         query.LinkWith(PluginTypeConfig.LinkWithSteps(s => new { s.Name, s.Stage })
              .LinkWith(PluginStepConfig.LinkWithImages(s => new { s.Name })));
 
@@ -308,7 +303,8 @@ public class XrmSchemaProvider(ServiceClient serviceClient) : IXrmSchemaProvider
         foreach (var entity in response.Entities)
         {
             var pluginType = pluginTypes.Find(pt => pt.Id == entity.Id);
-            if (pluginType is null) {
+            if (pluginType is null) 
+            {
                 pluginType = entity.ToEntity<PluginTypeConfig>();
                 pluginTypes.Add(pluginType);
             }
@@ -316,6 +312,12 @@ public class XrmSchemaProvider(ServiceClient serviceClient) : IXrmSchemaProvider
             if (step is not null)
             {
                 pluginType.Steps.Add(step);
+
+                var stepimage = PluginStepImageConfig.FromAlias(entity);
+                if (stepimage is not null)
+                {
+                    step.Images.Add(stepimage);
+                }
             }
         }
 
