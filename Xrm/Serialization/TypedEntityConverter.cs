@@ -6,22 +6,14 @@ using System.Linq;
 using System.Reflection;
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using XrmGen.Extensions;
 using XrmGen.Xrm.Model;
 
 public class IgnoreEntityPropertiesConverter : JsonConverter<object>
 {
+    // This converter is used to ignore properties in the base class (TypedEntity<T>) and types deriving from it.
     public override bool CanConvert(Type typeToConvert)
-    {
-        // Check if the typeToConvert is a TypedEntity or inherits from TypedEntity
-        if (typeToConvert.IsValueType) return false;
-        var baseType = typeToConvert.BaseType;
-        while (baseType is not null)
-        {
-            if (baseType.IsGenericType && baseType.GetGenericTypeDefinition() == typeof(TypedEntity<>)) return true;
-            baseType = baseType.BaseType;
-        }
-        return false;
-    }
+        => !typeToConvert.IsValueType && IsSubclassOfRawGeneric(typeof(TypedEntity<>), typeToConvert);
 
     public override object Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
     {
@@ -71,9 +63,18 @@ public class IgnoreEntityPropertiesConverter : JsonConverter<object>
 
         foreach (var property in properties)
         {
-            if (property.GetCustomAttributes<JsonIgnoreAttribute>(true).Any())
+            var ignoreAttributes = property.GetCustomAttributes<JsonIgnoreAttribute>(true);
+            if (ignoreAttributes.Any())
             {
-                continue; // Skip ignored properties
+                var ignoreAttribute = ignoreAttributes.First();
+                if (ignoreAttribute.Condition == JsonIgnoreCondition.Always ||
+                    (ignoreAttribute.Condition == JsonIgnoreCondition.WhenWritingDefault &&
+                     Equals(property.GetValue(value), property.PropertyType.GetDefaultValue())) ||
+                    (ignoreAttribute.Condition == JsonIgnoreCondition.WhenWritingNull &&
+                     property.GetValue(value) == null))
+                {
+                    continue; // Skip ignored properties
+                }
             }
 
             var propertyValue = property.GetValue(value);
@@ -83,11 +84,31 @@ public class IgnoreEntityPropertiesConverter : JsonConverter<object>
                 ?? options.PropertyNamingPolicy?.ConvertName(property.Name)
                 ?? property.Name;
 
+            if (propertyValue == null && options.DefaultIgnoreCondition == JsonIgnoreCondition.WhenWritingNull)
+            {
+                continue; // Skip properties with null values
+            }
+
             writer.WritePropertyName(propertyName);
             JsonSerializer.Serialize(writer, propertyValue, propertyValue?.GetType() ?? typeof(object), options);
         }
 
         writer.WriteEndObject();
+    }
+
+
+    private static bool IsSubclassOfRawGeneric(Type generic, Type toCheck)
+    {
+        while (toCheck != null && toCheck != typeof(object))
+        {
+            var cur = toCheck.IsGenericType ? toCheck.GetGenericTypeDefinition() : toCheck;
+            if (generic == cur)
+            {
+                return true;
+            }
+            toCheck = toCheck.BaseType;
+        }
+        return false;
     }
 }
 #nullable restore

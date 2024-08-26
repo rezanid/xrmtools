@@ -33,5 +33,22 @@ internal static class TypeExtensions
         var attributeLogicalName = memberExpression.Member.GetCustomAttributes(typeof(AttributeLogicalNameAttribute), true).FirstOrDefault() as AttributeLogicalNameAttribute;
         return attributeLogicalName?.LogicalName ?? throw new InvalidOperationException($"AttributeLogicalNameAttribute not found on {memberExpression.Member.Name}");
     }
+
+    public static bool IsSubclassOfRawGeneric(this Type generic, Type toCheck)
+    {
+        while (toCheck != null && toCheck != typeof(object))
+        {
+            var cur = toCheck.IsGenericType ? toCheck.GetGenericTypeDefinition() : toCheck;
+            if (generic == cur)
+            {
+                return true;
+            }
+            toCheck = toCheck.BaseType;
+        }
+        return false;
+    }
+
+    public static object? GetDefaultValue(this Type type) => type.IsValueType ? Activator.CreateInstance(type) : null;
+
 }
 #nullable restore

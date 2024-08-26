@@ -3,11 +3,13 @@ namespace XrmGen.Extensions;
 
 using Microsoft.Xrm.Sdk;
 using Newtonsoft.Json;
+using System;
 using System.Collections;
 using System.Diagnostics.CodeAnalysis;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using System.Text.Json.Serialization.Metadata;
+using XrmGen.Xrm.Model;
 using XrmGen.Xrm.Serialization;
 
 internal static class StringHelpers
@@ -20,8 +22,8 @@ internal static class StringHelpers
         WriteIndented = true,
         TypeInfoResolver = new DefaultJsonTypeInfoResolver
         {
-            Modifiers = { DefaultValueModifier }
-        }, 
+            Modifiers = { DefaultValueModifier } //, IgnoreInheritedEntityPropertiesModifier }
+        },
         Converters = { new IgnoreEntityPropertiesConverter() }
     };
     // Newtonsoft Configuration:
@@ -76,6 +78,39 @@ internal static class StringHelpers
                 property.ShouldSerialize = (_,_) => false;
             }
         }
+    }
+
+    /// <summary>
+    /// This method is written for demonstration only. The problem in this approach is that `DeclaringType` is always
+    /// `null` which seems to be a bug, so we have to rely on a fully custom `TypeConversion` unfortunately.
+    /// </summary>
+    /// <param name="typeInfo"></param>
+    private static void IgnoreInheritedEntityPropertiesModifier([DisallowNull] JsonTypeInfo typeInfo)
+    {
+        if (IsSubclassOfRawGeneric(typeof(TypedEntity<>), typeInfo.Type))
+        {
+            foreach (var property in typeInfo.Properties)
+            {
+                if (property.PropertyType.DeclaringType != typeInfo.Type)
+                {
+                    property.ShouldSerialize = (_, _) => false;
+                }
+            }
+        }
+    }
+
+    private static bool IsSubclassOfRawGeneric(Type generic, Type toCheck)
+    {
+        while (toCheck != null && toCheck != typeof(object))
+        {
+            var cur = toCheck.IsGenericType ? toCheck.GetGenericTypeDefinition() : toCheck;
+            if (generic == cur)
+            {
+                return true;
+            }
+            toCheck = toCheck.BaseType;
+        }
+        return false;
     }
 }
 #nullable restore
