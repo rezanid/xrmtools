@@ -60,7 +60,7 @@ internal static class StringHelpers
         JsonConvert.DeserializeObject<T>(json, jsonSerializerSettings)! :
         System.Text.Json.JsonSerializer.Deserialize<T>(json, jsonSerializerOptions)!;
 
-    public static string SerializeJson<T>([DisallowNull] this T obj, bool useNewtonsoft = false) 
+    public static string SerializeJson([DisallowNull] this object obj, bool useNewtonsoft = false) 
         => useNewtonsoft ?
         JsonConvert.SerializeObject(obj, jsonSerializerSettings) :
         System.Text.Json.JsonSerializer.Serialize(obj, jsonSerializerOptions);

@@ -49,7 +49,7 @@ public class XrmSchemaProviderFactory : IXrmSchemaProviderFactory
                 return provider;
             }
             var connectionString = $"AuthType=OAuth;Integrated Security=true;" +
-                $"Url=https://aguflowt.crm4.dynamics.com/;" +
+                $"Url={environmentUrl};" +
                 $"AppId={applicationId};" +
                 $"RedirectUri=https://login.microsoftonline.com/common/oauth2/nativeclient;" +
                 $"TokenCacheStorePath=C:\\Users\\G99202\\msal_cache.data;" +

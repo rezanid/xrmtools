@@ -275,7 +275,9 @@ public class XrmSchemaProvider(ServiceClient serviceClient) : IXrmSchemaProvider
             }
         };
 
+        //TODO:
         //System.ServiceModel.CommunicationException: 'The underlying connection was closed: A connection that was expected to be kept alive was closed by the server.'
+        //The following line will also fail if developer doesn't have access to an EnvironmentUrl
         var response = await client.RetrieveMultipleAsync(query, cancellationToken);
 
         if (response == null || response.Entities == null)

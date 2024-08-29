@@ -8,6 +8,7 @@ using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Data;
 using System.Windows.Input;
+using XrmGen.Extensions;
 using XrmGen.Xrm;
 using XrmGen.Xrm.Model;
 
@@ -17,14 +18,13 @@ public class AssemblySelectionViewModel : ViewModelBase
 {
     private readonly IXrmSchemaProvider _schemaProvider;
     private PluginAssemblyConfig _selectedAssembly;
-    private ICollectionView _filteredAssemblies;
+    private object _generatedCode;
     private string _filterText;
     private bool _isLoading;
 
     public ObservableCollection<PluginAssemblyConfig> Assemblies { get; }
     public ICollectionView FilteredAssemblies { get; }
     public ObservableCollection<PluginTypeConfig> SelectedPluginTypes { get; }
-
     public PluginAssemblyConfig SelectedAssembly
     {
         get => _selectedAssembly;
@@ -37,13 +37,16 @@ public class AssemblySelectionViewModel : ViewModelBase
             }
         }
     }
-
+    public object GeneratedCode
+    {
+        get => _generatedCode;
+        set => SetProperty(ref _generatedCode, value);
+    }
     public bool IsLoading
     {
         get => _isLoading;
         set => SetProperty(ref _isLoading, value);
     }
-
     public string FilterText
     {
         get => _filterText;
@@ -51,18 +54,16 @@ public class AssemblySelectionViewModel : ViewModelBase
         {
             if (SetProperty(ref _filterText, value))
             {
-                //FilterAssemblies();
                 FilteredAssemblies.Refresh();
             }
             _filterText = value;
         }
     }
-
     public string FileName { get; set; }
-
     public IAsyncRelayCommand LoadAssembliesCommand { get; }
     public IAsyncRelayCommand LoadAssemblyDetailsCommand { get; }
-    public ICommand SelectCommand { get; }
+    public ICommand ChooseAssemblyCommand { get; }
+    public ICommand GenerateCodeCommand { get; }
 
     public AssemblySelectionViewModel(IXrmSchemaProvider schemaProvider)
     {
@@ -73,9 +74,9 @@ public class AssemblySelectionViewModel : ViewModelBase
         //SelectedPluginTypes = [];
 
         LoadAssembliesCommand = new AsyncRelayCommand(LoadAssembliesAsync);
-        //LoadAssemblyStepsCommand = new AsyncRelayCommand(LoadAssemblyStepsAsync);
         LoadAssemblyDetailsCommand = new AsyncRelayCommand(LoadAssemblyDetailsAsync, CanSelectAssembly);
-        SelectCommand = new RelayCommand(SelectAssembly, CanSelectAssembly);
+        ChooseAssemblyCommand = new RelayCommand(SelectAssembly, CanSelectAssembly);
+        GenerateCodeCommand = new RelayCommand<object>(GenerateCode);
     }
 
     private bool FilterAssemblies(object item)
@@ -97,8 +98,8 @@ public class AssemblySelectionViewModel : ViewModelBase
         {
             Assemblies.Add(assembly);
         }
-        IsLoading = false;
         FilteredAssemblies.Refresh();
+        IsLoading = false;
     }
 
     private async Task LoadAssemblyDetailsAsync()
@@ -109,27 +110,23 @@ public class AssemblySelectionViewModel : ViewModelBase
             using CancellationTokenSource cancellationTokenSource = new(10000);
             var pluginTypes = await _schemaProvider.GetPluginTypesAsync(SelectedAssembly.Id, cancellationTokenSource.Token);
             SelectedAssembly.PluginTypes = new ObservableCollection<PluginTypeConfig>(pluginTypes);
-
-            // Update the view model's collection
-            /*SelectedPluginTypes.Clear();
-            foreach (var pluginType in SelectedAssembly.PluginTypes)
-            {
-                SelectedPluginTypes.Add(pluginType);
-            }*/
             IsLoading = false;
         }
     }
 
+    private void GenerateCode(object input)
+    {
+        if (input is null) { return; }
+        GeneratedCode = StringHelpers.SerializeJson(input);
+    }
+
     private bool CanSelectAssembly() => SelectedAssembly != null;
 
-    private void SelectAssembly()
-    {
-
-    }
+    private void SelectAssembly() { }
 
     private void OnSelectedAssemblyChanged()
     {
         // Notify that CanExecute changed for SelectCommand
-        ((RelayCommand)SelectCommand).NotifyCanExecuteChanged();
+        ((RelayCommand)ChooseAssemblyCommand).NotifyCanExecuteChanged();
     }
 }

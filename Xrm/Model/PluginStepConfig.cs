@@ -89,7 +89,7 @@ public class PluginStepConfig : TypedEntity<PluginStepConfig>, IMessageProcessin
             Stages.MainOperation => "MainOperation",
             Stages.PostOperation => "PostOperation",
             null => null,
-            _ => throw new InvalidOperationException($"Unknown stage: {Stage}")
+            _ => $"Unknown stage: {Stage}"
         };
     }
     #endregion
