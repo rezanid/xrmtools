@@ -3,6 +3,7 @@ using Community.VisualStudio.Toolkit;
 using EnvDTE;
 using EnvDTE80;
 using Microsoft;
+using Microsoft.VisualStudio.PlatformUI;
 using Microsoft.VisualStudio.Shell;
 using Microsoft.VisualStudio.Shell.Interop;
 using Microsoft.VisualStudio.Text;
@@ -163,7 +164,7 @@ internal sealed class GenerateRegistrationFileCommand
             {
                 throw new InvalidOperationException($"The name '{name}' contains invalid characters.");
             }
-
+            //TODO: Error: The path is not of a legal form.
             path = Path.GetDirectoryName(path);
         } while (!string.IsNullOrEmpty(path));
     }

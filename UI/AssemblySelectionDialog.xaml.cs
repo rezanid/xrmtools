@@ -21,7 +21,7 @@ public partial class AssemblySelectionDialog : DialogWindow
     private async void OnLoaded(object sender, RoutedEventArgs e)
     {
         Loaded -= OnLoaded;
-        ((AssemblySelectionViewModel)DataContext).LoadAssembliesCommand.Execute(null);
+        ((AssemblySelectionViewModel)DataContext).LoadAssembliesCommand.ExecuteAsync(null);
     }
 
     private void OnSelectClick(object sender, RoutedEventArgs e)

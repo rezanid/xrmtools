@@ -5,6 +5,8 @@ VisualStudioVersion = 17.9.34723.18
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "XrmGen", "XrmGen.csproj", "{592264A3-7B0D-40C5-A879-B2222676C532}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "XrmTools.UI.Controls", "..\XrmTools.UI.Controls\XrmTools.UI.Controls.csproj", "{179DF0AC-6F44-4656-8332-034D3C594ED1}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -27,6 +29,18 @@ Global
 		{592264A3-7B0D-40C5-A879-B2222676C532}.Release|arm64.Build.0 = Release|arm64
 		{592264A3-7B0D-40C5-A879-B2222676C532}.Release|x86.ActiveCfg = Release|x86
 		{592264A3-7B0D-40C5-A879-B2222676C532}.Release|x86.Build.0 = Release|x86
+		{179DF0AC-6F44-4656-8332-034D3C594ED1}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{179DF0AC-6F44-4656-8332-034D3C594ED1}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{179DF0AC-6F44-4656-8332-034D3C594ED1}.Debug|arm64.ActiveCfg = Debug|Any CPU
+		{179DF0AC-6F44-4656-8332-034D3C594ED1}.Debug|arm64.Build.0 = Debug|Any CPU
+		{179DF0AC-6F44-4656-8332-034D3C594ED1}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{179DF0AC-6F44-4656-8332-034D3C594ED1}.Debug|x86.Build.0 = Debug|Any CPU
+		{179DF0AC-6F44-4656-8332-034D3C594ED1}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{179DF0AC-6F44-4656-8332-034D3C594ED1}.Release|Any CPU.Build.0 = Release|Any CPU
+		{179DF0AC-6F44-4656-8332-034D3C594ED1}.Release|arm64.ActiveCfg = Release|Any CPU
+		{179DF0AC-6F44-4656-8332-034D3C594ED1}.Release|arm64.Build.0 = Release|Any CPU
+		{179DF0AC-6F44-4656-8332-034D3C594ED1}.Release|x86.ActiveCfg = Release|Any CPU
+		{179DF0AC-6F44-4656-8332-034D3C594ED1}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

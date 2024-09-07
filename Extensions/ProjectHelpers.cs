@@ -354,7 +354,7 @@ public static class ProjectHelpers
 
     public static IComponentModel GetComponentModel()
     {
-        return (IComponentModel)XrmGenPackage.GetGlobalService(typeof(SComponentModel));
+        return (IComponentModel)Package.GetGlobalService(typeof(SComponentModel));
     }
 
     public static object GetSelectedItem()
@@ -362,7 +362,7 @@ public static class ProjectHelpers
         ThreadHelper.ThrowIfNotOnUIThread();
         object selectedObject = null;
 
-        IVsMonitorSelection monitorSelection = (IVsMonitorSelection)Microsoft.VisualStudio.Shell.Package.GetGlobalService(typeof(SVsShellMonitorSelection));
+        IVsMonitorSelection monitorSelection = (IVsMonitorSelection)Package.GetGlobalService(typeof(SVsShellMonitorSelection));
 
         try
         {

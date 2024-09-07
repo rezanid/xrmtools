@@ -32,7 +32,6 @@ public class AssemblySelectionViewModel : ViewModelBase
         {
             if (SetProperty(ref _selectedAssembly, value))
             {
-                LoadAssemblyDetailsCommand.Execute(null);
                 OnSelectedAssemblyChanged();
             }
         }
@@ -110,6 +109,7 @@ public class AssemblySelectionViewModel : ViewModelBase
             using CancellationTokenSource cancellationTokenSource = new(10000);
             var pluginTypes = await _schemaProvider.GetPluginTypesAsync(SelectedAssembly.Id, cancellationTokenSource.Token);
             SelectedAssembly.PluginTypes = new ObservableCollection<PluginTypeConfig>(pluginTypes);
+            GenerateCode(SelectedAssembly);
             IsLoading = false;
         }
     }
@@ -128,5 +128,6 @@ public class AssemblySelectionViewModel : ViewModelBase
     {
         // Notify that CanExecute changed for SelectCommand
         ((RelayCommand)ChooseAssemblyCommand).NotifyCanExecuteChanged();
+        LoadAssemblyDetailsCommand.Execute(null);
     }
 }
