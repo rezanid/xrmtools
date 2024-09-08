@@ -1,17 +1,14 @@
 ﻿namespace XrmGen.Xrm;
 
-using Microsoft.Identity.Client;
+using Microsoft.Extensions.Caching.Memory;
+using Microsoft.Extensions.Primitives;
 using Microsoft.PowerPlatform.Dataverse.Client;
-using Microsoft.Xrm.Sdk;
-using Microsoft.Xrm.Sdk.Client;
 using Microsoft.Xrm.Sdk.Messages;
 using Microsoft.Xrm.Sdk.Metadata;
 using Microsoft.Xrm.Sdk.Query;
-using StreamJsonRpc;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
 using XrmGen.Xrm.Extensions;
@@ -19,196 +16,83 @@ using XrmGen.Xrm.Model;
 
 public interface IXrmSchemaProvider : IDisposable
 {
-    public Task<IEnumerable<string>> GetEntityNamesAsync(CancellationToken cancellationToken);
-    public IEnumerable<string> GetEntityNames();
-    public Task<IEnumerable<EntityMetadata>> GetEntitiesAsync(CancellationToken cancellationToken);
-    public IEnumerable<EntityMetadata> GetEntities();
-    public Task<EntityMetadata> GetEntityAsync(string entityLogicalName, CancellationToken cancellationToken);
-    public EntityMetadata GetEntity(string entityLogicalName);
-    public Task<IEnumerable<PluginAssemblyConfig>> GetPluginAssembliesAsync(CancellationToken cancellationToken);
-    public Task<IEnumerable<PluginTypeConfig>> GetPluginTypesAsync(Guid assemblyid, CancellationToken cancellationToken);
-    public Task RefreshCacheAsync();
-}
-/*
-[EntityLogicalName("pluginassembly")]
-public class PluginAssembly : Entity
-{
-    [AttributeLogicalName("name")]
-    public string Name
-    {
-        get => (string)this["name"];
-        set => this["name"] = value;
-    }
-    [AttributeLogicalName("major")]
-    public int Major
-    {
-        get => (int)this["major"];
-        set => this["major"] = value;
-    }
-
-    [AttributeLogicalName("minor")]
-    public int Minor
-    {
-        get => (int)this["minor"];
-        set => this["minor"] = value;
-    }
-
-    [AttributeLogicalName("publickeytoken")]
-    public string PublicKeyToken
-    {
-        get => (string)this["publickeytoken"];
-        set => this["publickeytoken"] = value;
-    }
-
-    [AttributeLogicalName("solutionid")]
-    public EntityReference SolutionId
-    {
-        get => (EntityReference)this["solutionid"];
-        set => this["solutionid"] = value;
-    }
-
-    [AttributeLogicalName("version")]
-    public string Version
-    {
-        get => (string)this["version"];
-        set => this["version"] = value;
-    }
-
-    public List<PluginType> PluginTypes { get; set; } = [];
+    string EnvironmentUrl { get; }
+    bool IsReady { get; }
+    Exception LastException { get; }
+    string LastError { get; }
+    Task<IEnumerable<EntityMetadata>> GetEntitiesAsync(CancellationToken cancellationToken);
+    Task<EntityMetadata> GetEntityAsync(string entityLogicalName, CancellationToken cancellationToken);
+    Task<IEnumerable<PluginAssemblyConfig>> GetPluginAssembliesAsync(CancellationToken cancellationToken);
+    Task<IEnumerable<PluginTypeConfig>> GetPluginTypesAsync(Guid assemblyid, CancellationToken cancellationToken);
+    Task RefreshCacheAsync();
 }
 
-[EntityLogicalName("plugintype")]
-public class PluginType
+internal class DataverseCacheKeys(string EnvironmentUrl)
 {
-    [AttributeLogicalName("name")]
-    public string Name { get; set; }
+    public string EntityDefinitions => $"{EnvironmentUrl}_EntityDefinitions";
+    public string EntityDefinitionsExtensive(string entityLogicalName) => $"{EnvironmentUrl}_EntityDefinition_{entityLogicalName}";
+    public string PluginAssemblies => $"{EnvironmentUrl}_PluginAssemblies";
+    public string PluginTypes(Guid assemblyid) => $"{EnvironmentUrl}_PluginTypes_{assemblyid}";
+}
 
-    [AttributeLogicalName("typename")]
-    public string TypeName { get; set; }
-}*/
-
-public class XrmSchemaProvider(ServiceClient serviceClient) : IXrmSchemaProvider
+public class XrmSchemaProvider(ServiceClient serviceClient, string environmentUrl, IMemoryCache cache) : IXrmSchemaProvider
 {
-    private readonly MetadataCache<IEnumerable<EntityMetadata>> entityCache = new(
-        async (cancellation) => await FetchEntitiesAsync(serviceClient, cancellation));
-    private readonly MetadataCache<IEnumerable<PluginAssemblyConfig>> pluginAssemblyCache = new(
-        async (cancellation) => await FetchPluginAssembliesAsync(serviceClient, cancellation));
-    private readonly Dictionary<Guid, MetadataCache<IEnumerable<PluginTypeConfig>>> pluginTypesCache = [];
-    private readonly Dictionary<string, MetadataCache<EntityMetadata>> metadataExtensiveCache = [];
-    private readonly object _lock = new();
     private bool disposed = false;
+    private readonly DataverseCacheKeys cacheKeys = new (environmentUrl);
+    private readonly TimeSpan cacheExpiration = TimeSpan.FromMinutes(30);
+    private CancellationTokenSource cacheEvictionTokenSource = new ();
 
-    public async Task<IEnumerable<string>> GetEntityNamesAsync(CancellationToken cancellationToken)
-    {
-        if (serviceClient.IsReady)
+    public string EnvironmentUrl { get => environmentUrl; }
+    public bool IsReady { get => serviceClient.IsReady; }
+    public Exception LastException { get => serviceClient.LastException; }
+    public string LastError { get => serviceClient.LastError; }
+
+    public async Task<IEnumerable<EntityMetadata>> GetEntitiesAsync(CancellationToken cancellationToken)
+        => !IsReady ? [] : await cache.GetOrCreateAsync(cacheKeys.EntityDefinitions, async entry =>
         {
-            var entities = await GetEntitiesAsync(cancellationToken);
-            return entities.Select(entity => entity.LogicalName);
-        }
-        return [];
-    }
-
-    public IEnumerable<string> GetEntityNames()
-    {
-        if (serviceClient.IsReady)
-        {
-            var entities = GetEntities();
-            return entities.Select(entity => entity.LogicalName);
-        }
-        return [];
-    }
-
-    public async Task<IEnumerable<EntityMetadata>> GetEntitiesAsync(CancellationToken cancellationToken) 
-        => await entityCache.GetDataAsync(cancellationToken);
-
-    public IEnumerable<EntityMetadata> GetEntities() => entityCache.GetData();
+            entry.AbsoluteExpirationRelativeToNow = cacheExpiration;
+            entry.AddExpirationToken(new CancellationChangeToken(cancellationToken));
+            return await FetchEntitiesAsync(serviceClient, cancellationToken);
+        });
 
     public async Task<EntityMetadata> GetEntityAsync(string entityLogicalName, CancellationToken cancellationToken)
-    {
-        if (metadataExtensiveCache.TryGetValue(entityLogicalName, out var cache))
+        => !IsReady ? null : await cache.GetOrCreateAsync(cacheKeys.EntityDefinitionsExtensive(entityLogicalName), async entry =>
         {
-            return await cache.GetDataAsync(cancellationToken);
-        }
-        lock (_lock)
-        {
-            if (!metadataExtensiveCache.TryGetValue(entityLogicalName, out cache))
-            {
-                cache = new(async (cancellation) =>
-                {
-                    if (cancellation == CancellationToken.None)
-                    {
-                        using CancellationTokenSource cancellationTokenSource = new(10000);
-                        return await FetchEntityAsync(entityLogicalName, serviceClient, cancellationTokenSource.Token);
-                    }
-                    else
-                    {
-                        return await FetchEntityAsync(entityLogicalName, serviceClient, cancellation);
-                    }
-                });
-                metadataExtensiveCache[entityLogicalName] = cache;
-            }
-        }
-        return await cache.GetDataAsync(cancellationToken);
-    }
+            entry.AbsoluteExpirationRelativeToNow = cacheExpiration;
+            entry.AddExpirationToken(new CancellationChangeToken(cancellationToken));
+            return await FetchEntityAsync(entityLogicalName, serviceClient, cancellationToken);
+        });
 
-    public EntityMetadata GetEntity(string entityLogicalName)
-    {
-        if (metadataExtensiveCache.TryGetValue(entityLogicalName, out var cache))
+    public EntityMetadata GetEntity(string entityLogicalName, CancellationToken cancellationToken)
+        => !IsReady ? null : cache.GetOrCreate(cacheKeys.EntityDefinitionsExtensive(entityLogicalName), entry =>
         {
-            return cache.GetData();
-        }
-        lock (_lock)
-        {
-            if (!metadataExtensiveCache.TryGetValue(entityLogicalName, out cache))
-            {
-                cache = new(async (cancellation) => {
-                    return await FetchEntityAsync(entityLogicalName, serviceClient, cancellation);
-                });
-                metadataExtensiveCache[entityLogicalName] = cache;
-            }
-        }
-        return cache.GetData();
-    }
+            entry.AbsoluteExpirationRelativeToNow = cacheExpiration;
+            entry.AddExpirationToken(new CancellationChangeToken(cancellationToken));
+            return FetchEntity(entityLogicalName, serviceClient);
+        });
 
-    public async Task<IEnumerable<PluginAssemblyConfig>> GetPluginAssembliesAsync(CancellationToken cancellationToken) 
-        => await pluginAssemblyCache.GetDataAsync(cancellationToken);
+    public async Task<IEnumerable<PluginAssemblyConfig>> GetPluginAssembliesAsync(CancellationToken cancellationToken)
+        => !IsReady ? [] : await cache.GetOrCreateAsync(cacheKeys.PluginAssemblies, async entry =>
+        {
+            entry.AbsoluteExpirationRelativeToNow = cacheExpiration;
+            entry.AddExpirationToken(new CancellationChangeToken(cancellationToken));
+            return await FetchPluginAssembliesAsync(serviceClient, cancellationToken);
+        });
 
     public async Task<IEnumerable<PluginTypeConfig>> GetPluginTypesAsync(Guid assemblyid, CancellationToken cancellationToken)
+        => !IsReady ?[] : await cache.GetOrCreateAsync(cacheKeys.PluginTypes(assemblyid), async entry =>
+        {
+            entry.AbsoluteExpirationRelativeToNow = cacheExpiration;
+            entry.AddExpirationToken(new CancellationChangeToken(cancellationToken));
+            return await FetchPluginTypesAsync(serviceClient, assemblyid, cancellationToken);
+        });
+    
+    public Task RefreshCacheAsync()
     {
-        if (pluginTypesCache.TryGetValue(assemblyid, out var cache))
-        {
-            return await cache.GetDataAsync(cancellationToken);
-        }
-        lock (_lock)
-        {
-            if (!pluginTypesCache.TryGetValue(assemblyid, out cache))
-            {
-                cache = new(async (cancellation) =>
-                {
-                    if (cancellation == CancellationToken.None)
-                    {
-                        using CancellationTokenSource cancellationTokenSource = new(10000);
-                        return await FetchPluginTypesAsync(serviceClient, assemblyid, cancellationTokenSource.Token);
-                    }
-                    else
-                    {
-                        return await FetchPluginTypesAsync(serviceClient, assemblyid, cancellation);
-                    }
-                });
-                pluginTypesCache[assemblyid] = cache;
-            }
-        }
-        return await cache.GetDataAsync(cancellationToken);
-    }
-
-    public async Task RefreshCacheAsync()
-    {
-        await entityCache.RefreshDataAsync();
-        foreach (var cache in metadataExtensiveCache.Values.ToList())
-        {
-            // TODO: Improve to use only one fetch for all entities.
-            await cache.RefreshDataAsync();
-        }
+        cacheEvictionTokenSource?.Cancel();
+        cacheEvictionTokenSource = new();
+        //TODO: Add code here to fetch all the critical data and cache it.
+        return Task.CompletedTask;
     }
 
     private static async Task<EntityMetadata> FetchEntityAsync(
@@ -235,6 +119,27 @@ public class XrmSchemaProvider(ServiceClient serviceClient) : IXrmSchemaProvider
             // serviceClient.LastError
             return null;
         }
+    }
+
+    private static EntityMetadata FetchEntity(
+            string entityLogicalName, ServiceClient serviceClient)
+    {
+        if (!serviceClient.IsReady)
+        {
+            return null;
+        }
+
+        // Retrieve all entity's metadata
+        var request = new RetrieveEntityRequest
+        {
+            LogicalName = entityLogicalName,
+            EntityFilters = EntityFilters.Attributes,
+            RetrieveAsIfPublished = true
+        };
+
+        var response = (RetrieveEntityResponse)serviceClient.Execute(request);
+
+        return response.EntityMetadata;
     }
 
     private static async Task<IEnumerable<EntityMetadata>> FetchEntitiesAsync(
@@ -265,20 +170,14 @@ public class XrmSchemaProvider(ServiceClient serviceClient) : IXrmSchemaProvider
     private static async Task<IEnumerable<PluginAssemblyConfig>> FetchPluginAssembliesAsync(
         ServiceClient client, CancellationToken cancellationToken)
     {
-        var query = new QueryExpression("pluginassembly")
-        {
-            ColumnSet = new ColumnSet("name", "major", "minor", "publickeytoken", "solutionid", "version"),
-            PageInfo = new PagingInfo
-            {
-                Count = 5000,
-                PageNumber = 1
-            }
-        };
-
         //TODO:
         //System.ServiceModel.CommunicationException: 'The underlying connection was closed: A connection that was expected to be kept alive was closed by the server.'
+        //==>The HTTP request was forbidden with client authentication scheme 'Anonymous'. ==> 403 ==> client.LastError
         //The following line will also fail if developer doesn't have access to an EnvironmentUrl
-        var response = await client.RetrieveMultipleAsync(query, cancellationToken);
+        var response = await client.RetrieveMultipleAsync(
+            PluginAssemblyConfig.CreateQuery(
+                a => new { a.Name, a.Major, a.Minor, a.PublicKeyToken, a.SolutionId, a.Version }), 
+            cancellationToken);
 
         if (response == null || response.Entities == null)
         {
@@ -297,8 +196,9 @@ public class XrmSchemaProvider(ServiceClient serviceClient) : IXrmSchemaProvider
                 PluginTypeConfig.Select.ColumnName((e) => e.PluginAssemblyId), 
                 ConditionOperator.Equal, 
                 assemblyid));
-        query.LinkWith(PluginTypeConfig.LinkWithSteps(s => new { s.Name, s.Stage })
-             .LinkWith(PluginStepConfig.LinkWithImages(s => new { s.Name })));
+        query.LinkWith(
+            PluginTypeConfig.LinkWithSteps(s => new { s.Name, s.Stage })
+            .LinkWith(PluginStepConfig.LinkWithImages(s => new { s.Name })));
 
         var pluginTypes = new List<PluginTypeConfig>();
         var response = await client.RetrieveMultipleAsync(query, cancellationToken);

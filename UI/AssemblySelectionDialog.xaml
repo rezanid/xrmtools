@@ -15,7 +15,7 @@
                 ShowInTaskbar="False"
                 p:HasMaximizeButton="True"
                 toolkit:Themes.UseVsTheme="True"
-                Height="450" MinWidth="800">
+                Width="900" Height="450" MinWidth="800">
     <Grid Margin="5" MaxWidth="{Binding ElementName=AssemySelection, Path=ActualWidth}">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>

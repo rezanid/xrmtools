@@ -5,12 +5,14 @@ using Microsoft.VisualStudio.Shell.Interop;
 using Microsoft.VisualStudio.TextTemplating.VSHost;
 using Microsoft.Xrm.Sdk.Metadata;
 using Newtonsoft.Json;
+using Nito.AsyncEx.Synchronous;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel.Composition;
 using System.IO;
 using System.Linq;
 using System.Text;
+using System.Threading;
 using XrmGen._Core;
 using XrmGen.Extensions;
 using XrmGen.Xrm;
@@ -121,7 +123,9 @@ public class PluginCodeGenerator : BaseCodeGeneratorWithSite
         var environmentUrl = GetProjectProperty("EnvironmentUrl");
         if (string.IsNullOrWhiteSpace(environmentUrl)) { return null; }
         var schemaProvider = SchemaProviderFactory?.Get(environmentUrl!);
-        var entityDefinition = schemaProvider?.GetEntity(logicalName);
+        //make a new cancellation token for 2 minutes.
+        using var cts = new CancellationTokenSource(120000);
+        var entityDefinition = schemaProvider?.GetEntityAsync(logicalName, cts.Token).WaitAndUnwrapException();
         if (entityDefinition == null) { return null; }
 
         //NOTE!
@@ -136,8 +140,8 @@ public class PluginCodeGenerator : BaseCodeGeneratorWithSite
         FormatSchemNames(filteredAttributes ?? entityDefinition.Attributes, prefixesToRemove);
         FormatSchemaName(entityDefinition, prefixesToRemove);
 
-        //TODO: The cloning is done because we don't want to modify the object in the cache.
-        //      In future when we load from local storage this might not be required.
+        // The cloning is done because we don't want to modify the object in the cache.
+        // In future when we load from local storage this might not be required.
         if (filteredAttributes?.Length != entityDefinition.Attributes.Length)
         {
             var clone = entityDefinition.Clone();

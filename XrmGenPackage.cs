@@ -1,10 +1,15 @@
 ﻿#nullable enable
+namespace XrmGen;
+
+using Community.VisualStudio.Toolkit;
+using Community.VisualStudio.Toolkit.DependencyInjection.Microsoft;
 using EnvDTE;
 using EnvDTE80;
 using Humanizer.Localisation;
 using Microsoft;
 using Microsoft.Build.Framework;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
 using Microsoft.VisualStudio;
 using Microsoft.VisualStudio.RpcContracts.Utilities;
 using Microsoft.VisualStudio.Shell;
@@ -33,9 +38,11 @@ using XrmGen.Xrm;
 using XrmGen.Xrm.Generators;
 using Task = System.Threading.Tasks.Task;
 
-namespace XrmGen;
 internal record ProjectDataverseSettings(
-    string EnvironmentUrl, string ApplicationId, string? PluginCodeGenTemplatePath, string? EntityCodeGenTemplatePath);
+    string EnvironmentUrl, 
+    string? ConnectionString, 
+    string? PluginCodeGenTemplatePath, 
+    string? EntityCodeGenTemplatePath);
 
 
 /// <summary>
@@ -82,7 +89,7 @@ internal record ProjectDataverseSettings(
 [ProvideService(typeof(IXrmSchemaProviderFactory), IsAsyncQueryable = true, IsCacheable = true, IsFreeThreaded = true)]
 [ProvideService(typeof(IXrmPluginCodeGenerator), IsAsyncQueryable = true, IsCacheable = true, IsFreeThreaded = true)]
 [ProvideService(typeof(IXrmEntityCodeGenerator), IsAsyncQueryable = true, IsCacheable = true, IsFreeThreaded = true)]
-public sealed class XrmGenPackage : AsyncPackage
+public sealed class XrmGenPackage : AsyncPackage // MicrosoftDIToolkitPackage<XrmGenPackage>
 {
     public DTE2? Dte;
 
@@ -90,10 +97,23 @@ public sealed class XrmGenPackage : AsyncPackage
     // MEF Doesn't work here. Use the ServiceProvider to get the requried service.
     private IXrmSchemaProviderFactory? XrmSchemaProviderFactory;
 
-    /// <summary>
-    /// XrmGenPackage GUID string.
-    /// </summary>
-    //public const string PackageGuidString = "9d0b1940-11e7-41cc-a95a-ad5a6ed3c73b";
+    //protected override void InitializeServices(IServiceCollection services)
+    //{
+        //services
+        //    .AddMemoryCache()
+        //    .AddHostedService<IXrmSchemaProviderFactory>()
+        //    .RegisterCommands(ServiceLifetime.Singleton);
+        // Register your services here
+        //services.AddSingleton<IYourService, YourService>();
+
+        // Register any commands. They can be registered as a 'Singleton' or 'Scoped'. 
+        // 'Transient' will work but in practice it will behave the same as 'Scoped'.
+        //services.AddSingleton<YourCommand>();
+
+        // Alternatively, you can use the 'RegisterCommands' extension method to automatically register all commands in an assembly.
+        //services.RegisterCommands(ServiceLifetime.Singleton);
+        //...
+    //}
 
     /// <summary>
     /// Initialization of the package; this method is called right after the package is sited, so this is the place
@@ -170,17 +190,12 @@ public sealed class XrmGenPackage : AsyncPackage
     {
         var envs = GetProjectsDataverseEnvironments()
             .Where(s => !string.IsNullOrWhiteSpace(s.EnvironmentUrl)
-                        && Uri.IsWellFormedUriString(s.EnvironmentUrl, UriKind.Absolute)
-                        && !string.IsNullOrWhiteSpace(s.ApplicationId))
+                        && Uri.IsWellFormedUriString(s.EnvironmentUrl, UriKind.Absolute))
+            // The following grouping is to avoid having multiple environments with the same URL.
             .GroupBy(s => s.EnvironmentUrl)
-            .Select(g =>
-            {
-                var first = g.First();
-                return new ProjectDataverseSettings(
-                    first.EnvironmentUrl, first.ApplicationId, first.PluginCodeGenTemplatePath, first.EntityCodeGenTemplatePath);
-            })
+            .Select(g => g.First())
             .ToList();
-        if (envs.Count == 0) { return; }
+        if (!envs.Any()) { return; }
         var taskCenter = GetService(typeof(SVsTaskStatusCenterService)) as IVsTaskStatusCenterService;
         Assumes.Present(taskCenter);
         var options = default(TaskHandlerOptions);
@@ -210,7 +225,7 @@ public sealed class XrmGenPackage : AsyncPackage
             data.PercentComplete = 100 * currentIndex / envs.Count;
             handler.Progress.Report(data);
 
-            await XrmSchemaProviderFactory.EnsureInitializedAsync(env.EnvironmentUrl, env.ApplicationId);
+            await XrmSchemaProviderFactory.EnsureInitializedAsync(env.EnvironmentUrl);
         }
         data.ProgressText = "Metadata refresh complete";
         data.PercentComplete = 100;
@@ -230,22 +245,10 @@ public sealed class XrmGenPackage : AsyncPackage
         {
             yield return new(
                 EnvironmentUrl: hierarchies[0].GetProjectProperty("EnvironmentUrl"),
-                ApplicationId: hierarchies[0].GetProjectProperty("ApplicationId"),
+                ConnectionString: hierarchies[0].GetProjectProperty("ConnectionString"),
                 PluginCodeGenTemplatePath: hierarchies[0].GetProjectProperty("PluginCodeGenTemplatePath"),
                 EntityCodeGenTemplatePath: hierarchies[0].GetProjectProperty("EntityCodeGenTemplatePath"));
         }
-    }
-
-    private (string environmentUrl, string applicationId) GetProjectPropertiesOld()
-    {
-        ThreadHelper.ThrowIfNotOnUIThread();
-        ThrowIfNotInitialized();
-
-        var project = Dte.Solution.Projects.Cast<Project>().FirstOrDefault() ?? throw new InvalidOperationException("No project found in the solution.");
-        var environmentUrl = project.Properties.Item("EnvironmentUrl").Value.ToString();
-        var applicationId = project.Properties.Item("ApplicationId").Value.ToString();
-
-        return (environmentUrl, applicationId);
     }
 
     [MemberNotNull(nameof(Dte), nameof(XrmSchemaProviderFactory))]

@@ -52,14 +52,14 @@ public class XrmPluginDefCompletionProvider : IAsyncCompletionSourceProvider
                 string? environmentUrl = GetProjectProperty(document.FilePath, "EnvironmentUrl");
                 string? applicationId = GetProjectProperty(document.FilePath, "ApplicationId");
 
-                if (string.IsNullOrEmpty(environmentUrl) || string.IsNullOrEmpty(applicationId)) 
+                if (string.IsNullOrEmpty(environmentUrl)) 
                 {
                     // Write to debug that the properties are not set.
                     Debugger.Log(0, "XrmPluginDefCompletionProvider", "EnvironmentUrl or ApplicationId is not set in project properties.");
                     return null; 
                 }
 
-                var xrmProvider = XrmSchemaProviderFactory.GetOrNew(environmentUrl, applicationId);
+                var xrmProvider = XrmSchemaProviderFactory.GetOrNew(environmentUrl!);
                 return new XrmPluginDefCompletionSource(xrmProvider, StructureNavigatorSelector, textView.TextBuffer);
             }
             return null;

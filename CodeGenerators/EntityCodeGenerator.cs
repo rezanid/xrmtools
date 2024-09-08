@@ -6,11 +6,13 @@ using Microsoft.VisualStudio.Shell;
 using Microsoft.VisualStudio.Shell.Interop;
 using Microsoft.VisualStudio.TextTemplating.VSHost;
 using Microsoft.Xrm.Sdk.Metadata;
+using Nito.AsyncEx.Synchronous;
 using System;
 using System.ComponentModel.Composition;
 using System.IO;
 using System.Linq;
 using System.Text;
+using System.Threading;
 using XrmGen._Core;
 using XrmGen.Extensions;
 using XrmGen.Xrm;
@@ -140,7 +142,9 @@ public class EntityCodeGenerator : BaseCodeGeneratorWithSite
         var environmentUrl = GetProjectProperty("EnvironmentUrl");
         if (string.IsNullOrWhiteSpace(environmentUrl)) { return null; }
         var schemaProvider = SchemaProviderFactory?.Get(environmentUrl!);
-        var metadata = schemaProvider?.GetEntity(logicalName);
+        //make a new cancellation token for 2 minutes.
+        using var cts = new CancellationTokenSource(120000);
+        var metadata = schemaProvider?.GetEntityAsync(logicalName, cts.Token).WaitAndUnwrapException();
         if (metadata == null) { return null; }
         var filteredAttributes = metadata.Attributes.Where(a => attributes.Contains(a.LogicalName)).ToArray();
         var propertyInfo = typeof(EntityMetadata).GetProperty("Attributes", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);

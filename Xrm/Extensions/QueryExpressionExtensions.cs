@@ -4,10 +4,10 @@ using Microsoft.Xrm.Sdk.Query;
 
 public static class QueryExpressionExtensions
 {
-    public static LinkEntity LinkWith(this QueryExpression query, LinkEntity target)
+    public static QueryExpression LinkWith(this QueryExpression query, LinkEntity target)
     {
         query.LinkEntities.Add(target);
-        return target;
+        return query;
     }
     public static QueryExpression WithFilter(this QueryExpression query, FilterExpression filter)
     {

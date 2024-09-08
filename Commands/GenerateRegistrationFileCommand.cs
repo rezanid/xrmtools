@@ -73,7 +73,7 @@ internal sealed class GenerateRegistrationFileCommand
     /// <summary>
     /// Gets the instance of the command.
     /// </summary>
-    public static GenerateRegistrationFileCommand Instance { get; private set; }
+    public static GenerateRegistrationFileCommand? Instance { get; private set; }
 
     /// <summary>
     /// Gets the service provider from the owner package.
@@ -90,9 +90,9 @@ internal sealed class GenerateRegistrationFileCommand
         // the UI thread.
         await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync(package.DisposalToken);
 
-        var commandService = await package.GetServiceAsync<IMenuCommandService, IMenuCommandService>();
+        var commandService = await package.GetServiceAsync<IMenuCommandService, IMenuCommandService>().ConfigureAwait(false);
 
-        // Unless there is a better / easier  way to do it instead of using DTE, we will. For now, it's OK.
+        // Unless there is a better / easier way to do it instead of using DTE, we will. For now, it's OK.
         // Note! DTE2 is the new DTE, but the service is registered in DTE, so we get it and cast it like following.
         var dte = await package.GetServiceAsync<DTE, DTE2>();
         Assumes.Present(dte);
@@ -100,6 +100,7 @@ internal sealed class GenerateRegistrationFileCommand
         Instance = new GenerateRegistrationFileCommand(package, commandService, dte);
     }
 
+    [SuppressMessage("Usage", "VSTHRD100:Avoid async void methods", Justification = "Method is a event handler")]
     private async void OnExecute(object sender, EventArgs e)
     {
         var target = NewItemTarget.Create(dte);
@@ -107,13 +108,12 @@ internal sealed class GenerateRegistrationFileCommand
         if (target == null)
         {
             VS.MessageBox.Show(
-                    Vsix.Name,
-                    "Could not determine where to create the new file. Select a file or folder in Solution Explorer and try again.");
+                Vsix.Name,
+                "Could not determine where to create the new file. Select a file or folder in Solution Explorer and try again.");
             return;
         }
 
-        //item.Properties.Item("CustomTool").Value = PluginCodeGenerator.Name;
-        var (selectedAssembly, filename) = ChooseAssembly();
+        var (selectedAssembly, filename) = await ChooseAssemblyAsync();
         if (selectedAssembly is not null && filename is not null)
         {
             Logger.Log("Assembly selected: " + selectedAssembly.Name);
@@ -294,26 +294,33 @@ internal sealed class GenerateRegistrationFileCommand
         ProjectHelpers.AddFolders(target.Project, targetFolder);
     }
 
-    private string? GetProjectProperty(string propertyName)
+    private async Task<string?> GetProjectPropertyAsync(string propertyName)
     {
-        ThreadHelper.ThrowIfNotOnUIThread();
+        await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync();
 
-        IVsSolution solution = (IVsSolution)ServiceProvider.GetServiceAsync(typeof(SVsSolution)).Result;
+        var solution = await ServiceProvider.GetServiceAsync(typeof(SVsSolution)) as IVsSolution;
         Assumes.Present(solution);
         solution.GetProjectOfUniqueName(dte.SelectedItems.Item(1).ProjectItem.ContainingProject.UniqueName, out var hierarchy);
 
         return hierarchy.GetProjectProperty(propertyName);
     }
 
-    private (PluginAssemblyConfig? config, string? filename) ChooseAssembly()
+    private async Task<(PluginAssemblyConfig? config, string? filename)> ChooseAssemblyAsync()
     {
-        var url = GetProjectProperty("EnvironmentUrl");
+        var url = await GetProjectPropertyAsync("EnvironmentUrl");
         if (string.IsNullOrWhiteSpace(url)) { return (null, null); }
-        var schemaProvider = SchemaProviderFactory?.Get(url!);
-        if (schemaProvider == null) 
+        var schemaProvider = SchemaProviderFactory?.GetOrNew(url!);
+        if (schemaProvider == null)
         {
             Logger.Log(url + " used in your EnvironmentUrl build property is not a valid environment URL.");
-            return (null, null); 
+            return (null, null);
+        }
+        if (!schemaProvider.IsReady)
+        {
+            Logger.Log($"Connection has failed to the environment: {url}");
+            Logger.Log(string.IsNullOrEmpty(schemaProvider.LastError) ? "No error detected in Dataverse provider." : "Last Error: " + schemaProvider.LastError);
+            await VS.MessageBox.ShowErrorAsync("Dataverse Connection", $"Connection has failed to the environment: {url} check the Output window for more information.");
+            return (null, null);
         }
         var dialog = new AssemblySelectionDialog(schemaProvider);
         if (dialog.ShowDialog() == true)
@@ -323,6 +330,5 @@ internal sealed class GenerateRegistrationFileCommand
         }
         return (null, null);
     }
-
 }
 #nullable restore

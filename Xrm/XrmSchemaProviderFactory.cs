@@ -1,6 +1,7 @@
 ﻿#nullable enable
 namespace XrmGen.Xrm;
 
+using Microsoft.Extensions.Caching.Memory;
 using Microsoft.PowerPlatform.Dataverse.Client;
 using System;
 using System.Collections.Generic;
@@ -12,9 +13,9 @@ using System.Threading.Tasks;
 [ComVisible(true)]
 public interface IXrmSchemaProviderFactory: IDisposable
 {
-    IXrmSchemaProvider GetOrNew(string environmentUrl, string applicationId);
+    IXrmSchemaProvider GetOrNew(string environmentUrl);
     IXrmSchemaProvider Get(string environmentUrl);
-    Task EnsureInitializedAsync(string environmentUrl, string applicationId);
+    Task EnsureInitializedAsync(string environmentUrl);
 }
 
 [Export(typeof(IXrmSchemaProviderFactory))]
@@ -30,16 +31,25 @@ public class XrmSchemaProviderFactory : IXrmSchemaProviderFactory
     /// <param name="environmentUrl"></param>
     /// <param name="applicationId"></param>
     /// <returns></returns>
-    public IXrmSchemaProvider GetOrNew(string environmentUrl, string applicationId)
+    public IXrmSchemaProvider GetOrNew(string environmentUrl)
     {
         if (Providers.TryGetValue(environmentUrl, out var provider))
         {
             return provider;
         }
-        return Initialize(environmentUrl, applicationId);
+        return Initialize(environmentUrl);
     }
 
-    private IXrmSchemaProvider Initialize(string environmentUrl, string applicationId)
+    private IXrmSchemaProvider Initialize(string environmentUrl)
+        => Initialize(environmentUrl, $"AuthType=OAuth;Integrated Security=true;Url={environmentUrl};LoginPrompt=Never");
+
+    /// <summary>
+    /// Use this method to initialize a new provider.
+    /// </summary>
+    /// <param name="environmentUrl"></param>
+    /// <param name="connectionString">Examples: https://learn.microsoft.com/en-us/power-apps/developer/data-platform/xrm-tooling/use-connection-strings-xrm-tooling-connect#connection-string-parameters</param>
+    /// <returns></returns>
+    private IXrmSchemaProvider Initialize(string environmentUrl, string connectionString)
     {
         lock (_lock)
         {
@@ -48,13 +58,8 @@ public class XrmSchemaProviderFactory : IXrmSchemaProviderFactory
             {
                 return provider;
             }
-            var connectionString = $"AuthType=OAuth;Integrated Security=true;" +
-                $"Url={environmentUrl};" +
-                $"AppId={applicationId};" +
-                $"RedirectUri=https://login.microsoftonline.com/common/oauth2/nativeclient;" +
-                $"TokenCacheStorePath=C:\\Users\\G99202\\msal_cache.data;" +
-                $"LoginPrompt=Auto";
-            provider = new XrmSchemaProvider(new ServiceClient(connectionString));
+            var cache = new MemoryCache(new MemoryCacheOptions());
+            provider = new XrmSchemaProvider(new ServiceClient(connectionString), environmentUrl, cache);
             Providers[environmentUrl] = provider;
             return provider;
         }
@@ -72,8 +77,7 @@ public class XrmSchemaProviderFactory : IXrmSchemaProviderFactory
         {
             return provider;
         }
-        throw new InvalidOperationException(
-            string.Format(Resources.Strings.EnvironmentNotInitialized, nameof(Get)));
+        throw new InvalidOperationException($"Environment with the URL: {environmentUrl} has not been initialized.");
     }
 
     /// <summary>
@@ -97,10 +101,10 @@ public class XrmSchemaProviderFactory : IXrmSchemaProviderFactory
     /// </summary>
     /// <param name="environmentUrl"></param>
     /// <param name="applicationId"></param>
-    public async Task EnsureInitializedAsync(string environmentUrl, string applicationId)
+    public async Task EnsureInitializedAsync(string environmentUrl)
     {
         if (Providers.ContainsKey(environmentUrl)) { return; }
-        var provider = Initialize(environmentUrl, applicationId);
+        var provider = Initialize(environmentUrl);
         await provider.RefreshCacheAsync();
     }
 

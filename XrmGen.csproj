@@ -110,6 +110,7 @@
     <Compile Include="Xrm\Serialization\TypedEntityConverter_T.cs" />
     <Compile Include="Xrm\XrmSchemaProvider.cs" />
     <Compile Include="Xrm\XrmSchemaProviderFactory.cs" />
+    <Compile Include="_Core\CacheSignal.cs" />
     <Compile Include="_Core\Logger.cs" />
     <Compile Include="_Core\Validation.cs" />
   </ItemGroup>
@@ -154,6 +155,9 @@
     <PackageReference Include="Community.VisualStudio.Toolkit.17">
       <Version>17.0.522</Version>
     </PackageReference>
+    <PackageReference Include="Community.VisualStudio.Toolkit.DependencyInjection.Microsoft.17">
+      <Version>17.0.20</Version>
+    </PackageReference>
     <PackageReference Include="CommunityToolkit.Mvvm">
       <Version>8.3.0</Version>
     </PackageReference>
@@ -162,6 +166,9 @@
     </PackageReference>
     <PackageReference Include="Humanizer.Core">
       <Version>2.14.1</Version>
+    </PackageReference>
+    <PackageReference Include="Microsoft.Extensions.Hosting">
+      <Version>3.1.8</Version>
     </PackageReference>
     <PackageReference Include="Microsoft.PowerPlatform.Dataverse.Client">
       <Version>1.1.32</Version>
