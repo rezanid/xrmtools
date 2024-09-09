@@ -1,0 +1,47 @@
+﻿<ResourceDictionary
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:p="clr-namespace:Microsoft.VisualStudio.PlatformUI;assembly=Microsoft.VisualStudio.Shell.15.0"
+    xmlns:s="clr-namespace:Microsoft.VisualStudio.Shell;assembly=Microsoft.VisualStudio.Shell.15.0"
+    xmlns:toolkit="clr-namespace:Community.VisualStudio.Toolkit;assembly=Community.VisualStudio.Toolkit"
+    xmlns:local="clr-namespace:XrmTools.UI.Controls">
+    <DataTemplate x:Key="DefaultPlaceHolderTemplate">
+        <ContentControl Content="{Binding}" Opacity="0.5" Focusable="False" />
+    </DataTemplate>
+    <Style BasedOn="{StaticResource {x:Type TextBox}}" TargetType="{x:Type local:TextBox}">
+        <Setter Property="PlaceHolderTemplate" Value="{StaticResource DefaultPlaceHolderTemplate}" />
+        <Setter Property="Foreground" Value="{DynamicResource {x:Static p:EnvironmentColors.ToolWindowTextBrushKey}}"/>
+        <Setter Property="Background" Value="{DynamicResource {x:Static p:EnvironmentColors.ToolWindowBackgroundBrushKey}}"/>
+        <Setter Property="FontFamily" Value="{DynamicResource {x:Static s:VsFonts.EnvironmentFontFamilyKey}}" />
+        <Setter Property="FontSize" Value="{DynamicResource {x:Static s:VsFonts.EnvironmentFontSizeKey}}" />
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="{x:Type local:TextBox}">
+                    <Border Background="{TemplateBinding Background}"
+                            BorderBrush="{TemplateBinding BorderBrush}"
+                            BorderThickness="{TemplateBinding BorderThickness}">
+                        <Grid>
+                            <ScrollViewer x:Name="PART_ContentHost" SnapsToDevicePixels="{TemplateBinding SnapsToDevicePixels}"/>
+                            <ContentPresenter x:Name="PART_PlaceholderHost"
+                                              Content="{TemplateBinding PlaceHolder}"
+                                              ContentTemplate="{Binding PlaceHolderTemplate, RelativeSource={RelativeSource TemplatedParent}, TargetNullValue={StaticResource DefaultPlaceHolderTemplate}}"
+                                              VerticalAlignment="{TemplateBinding VerticalContentAlignment}"
+                                              HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
+                                              IsHitTestVisible="False"
+                                              Margin="{TemplateBinding Padding}" 
+                                              Visibility="Collapsed" />
+                        </Grid>
+                    </Border>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="Text" Value="">
+                            <Setter Property="Visibility" Value="Visible" TargetName="PART_PlaceholderHost" />
+                        </Trigger>
+                        <Trigger Property="Text" Value="{x:Null}">
+                            <Setter Property="Visibility" Value="Visible" TargetName="PART_PlaceholderHost" />
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+</ResourceDictionary>
