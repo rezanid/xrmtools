@@ -2,7 +2,7 @@
 // https://github.com/madskristensen/AddAnyFile/blob/master/src/Helpers/ProjectHelpers.cs
 
 #nullable enable
-namespace XrmGen.Extensions;
+namespace XrmGen.Helpers;
 using EnvDTE;
 using Microsoft.VisualStudio.ComponentModelHost;
 using Microsoft.VisualStudio.Editor;
@@ -18,7 +18,6 @@ using System.Linq;
 using System.Runtime.InteropServices;
 using VSLangProj;
 using System.IO;
-using XrmGen._Core;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 
@@ -300,35 +299,35 @@ public static class ProjectHelpers
                 .SelectMany(p => GetChildProjects(p.SubProject));
     }
 
-    public static Project GetActiveProject()
-    {
-        try
-        {
+    //public static Project GetActiveProject()
+    //{
+    //    try
+    //    {
 
-            if (ParentPackage.Dte.ActiveSolutionProjects is Array activeSolutionProjects && activeSolutionProjects.Length > 0)
-            {
-                return activeSolutionProjects.GetValue(0) as Project;
-            }
+    //        if (ParentPackage.Dte.ActiveSolutionProjects is Array activeSolutionProjects && activeSolutionProjects.Length > 0)
+    //        {
+    //            return activeSolutionProjects.GetValue(0) as Project;
+    //        }
 
-            Document doc = ParentPackage.Dte.ActiveDocument;
+    //        Document doc = ParentPackage.Dte.ActiveDocument;
 
-            if (doc != null && !string.IsNullOrEmpty(doc.FullName))
-            {
-                ProjectItem item = ParentPackage.Dte.Solution?.FindProjectItem(doc.FullName);
+    //        if (doc != null && !string.IsNullOrEmpty(doc.FullName))
+    //        {
+    //            ProjectItem item = ParentPackage.Dte.Solution?.FindProjectItem(doc.FullName);
 
-                if (item != null)
-                {
-                    return item.ContainingProject;
-                }
-            }
-        }
-        catch (Exception ex)
-        {
-            Logger.Log("Error getting the active project" + ex);
-        }
+    //            if (item != null)
+    //            {
+    //                return item.ContainingProject;
+    //            }
+    //        }
+    //    }
+    //    catch (Exception ex)
+    //    {
+    //        OutputLogger.Log("Error getting the active project" + ex);
+    //    }
 
-        return null;
-    }
+    //    return null;
+    //}
 
     public static IWpfTextView GetCurentTextView()
     {

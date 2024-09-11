@@ -1,13 +1,15 @@
-﻿using Microsoft.VisualStudio.Shell.Interop;
+﻿#nullable enable
+namespace XrmGen.Helpers;
+
+using Microsoft.VisualStudio.Shell.Interop;
 using Microsoft.VisualStudio.Shell;
 using Microsoft.VisualStudio;
 using System.Runtime.InteropServices;
 using System;
 
-namespace XrmGen.Extensions;
 internal static class IVsHierarchyExtensions
 {
-    public static string GetProjectProperty(this IVsHierarchy hierarchy, string propertyName)
+    public static string? GetProjectProperty(this IVsHierarchy hierarchy, string propertyName)
     {
         ThreadHelper.ThrowIfNotOnUIThread();
         if (hierarchy is IVsBuildPropertyStorage propertyStorage)
@@ -40,3 +42,4 @@ internal static class IVsHierarchyExtensions
     }
 
 }
+#nullable restore

@@ -1,5 +1,5 @@
 ﻿#nullable enable
-namespace XrmGen.Extensions;
+namespace XrmGen.Helpers;
 
 using Microsoft.Xrm.Sdk;
 using Newtonsoft.Json;

@@ -1,6 +1,7 @@
-﻿using System.Text;
+﻿#nullable enable
+using System.Text;
 
-namespace XrmGen.Extensions;
+namespace XrmGen.Helpers;
 
 internal static class StringBuilderExtensions
 {
@@ -14,3 +15,4 @@ internal static class StringBuilderExtensions
         if (!string.IsNullOrEmpty(value)) sb.AppendLine(value);
     }
 }
+#nullable restore

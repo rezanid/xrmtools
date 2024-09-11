@@ -1,11 +1,11 @@
 ﻿#nullable enable
+namespace XrmGen.Helpers;
+
 using Microsoft.Xrm.Sdk;
 using Microsoft.Xrm.Sdk.Client;
 using System;
 using System.Linq;
 using System.Linq.Expressions;
-
-namespace XrmGen.Extensions;
 
 internal static class TypeExtensions
 {

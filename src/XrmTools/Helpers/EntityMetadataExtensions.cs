@@ -1,7 +1,9 @@
-﻿using Microsoft.Xrm.Sdk.Metadata;
+﻿#nullable enable
+namespace XrmGen.Helpers;
+
+using Microsoft.Xrm.Sdk.Metadata;
 using System.Reflection;
 
-namespace XrmGen.Extensions;
 internal static class EntityMetadataExtensions
 {
     public static EntityMetadata Clone(this EntityMetadata entityMetadata)
@@ -9,3 +11,4 @@ internal static class EntityMetadataExtensions
         .GetMethod("MemberwiseClone", BindingFlags.Instance | BindingFlags.NonPublic)
         .Invoke(entityMetadata, null);
 }
+#nullable restore

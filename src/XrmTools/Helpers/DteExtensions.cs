@@ -1,5 +1,6 @@
 ﻿#nullable enable
-namespace XrmGen.Extensions;
+namespace XrmGen.Helpers;
+
 using EnvDTE;
 using EnvDTE80;
 using Microsoft.VisualStudio.Shell;
