@@ -7,7 +7,7 @@ using Microsoft.VisualStudio.Text.Operations;
 using Microsoft.VisualStudio.Utilities;
 using System.ComponentModel.Composition;
 using System.Diagnostics.CodeAnalysis;
-using XrmGen.Extensions;
+using XrmGen.Helpers;
 using Microsoft.VisualStudio.Text;
 using System.Diagnostics;
 using System;

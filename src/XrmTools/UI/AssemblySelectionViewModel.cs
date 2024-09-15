@@ -8,7 +8,7 @@ using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Data;
 using System.Windows.Input;
-using XrmGen.Extensions;
+using XrmGen.Helpers;
 using XrmGen.Xrm;
 using XrmGen.Xrm.Model;
 

@@ -3,16 +3,13 @@ namespace XrmGen;
 
 using EnvDTE;
 using EnvDTE80;
-
 using Microsoft.VisualStudio.Shell;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using XrmGen.Extensions;
+using XrmGen.Helpers;
 
 public class NewItemTarget
 {

@@ -1,6 +1,9 @@
 ﻿#nullable enable
 namespace XrmGen;
 
+using Community.VisualStudio.Toolkit.DependencyInjection.Core;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 using Microsoft.VisualStudio;
 using Microsoft.VisualStudio.Shell;
 using Microsoft.VisualStudio.Shell.Interop;
@@ -13,8 +16,7 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading;
-using XrmGen._Core;
-using XrmGen.Extensions;
+using XrmGen.Helpers;
 using XrmGen.Xrm;
 using XrmGen.Xrm.Generators;
 using YamlDotNet.Serialization;
@@ -28,6 +30,7 @@ public class EntityCodeGenerator : BaseCodeGeneratorWithSite
     private bool disposed = false;
     private IXrmEntityCodeGenerator? _generator;
     private IXrmSchemaProviderFactory? _schemaProviderFactory;
+    private ILogger<EntityCodeGenerator>? _logger;
 
     [Import]
     private IXrmEntityCodeGenerator? Generator
@@ -45,6 +48,16 @@ public class EntityCodeGenerator : BaseCodeGeneratorWithSite
         set => _schemaProviderFactory = value;
     }
 
+    ILogger<EntityCodeGenerator> Logger
+    {
+        get
+        {
+            if (_logger is not null) return _logger;
+            var serviceProvider = GlobalServiceProvider.GetService<SToolkitServiceProvider<XrmGenPackage>, IToolkitServiceProvider<XrmGenPackage>>();
+            return _logger = serviceProvider.GetRequiredService<ILogger<EntityCodeGenerator>>();
+        }
+    }
+
     public override string GetDefaultExtension() => ".cs";
 
     protected override byte[]? GenerateCode(string inputFileName, string inputFileContent)
@@ -53,16 +66,7 @@ public class EntityCodeGenerator : BaseCodeGeneratorWithSite
         if (Generator is null) { return Encoding.UTF8.GetBytes("// No generator found."); }
         if (GetTemplateFilePath() is not string templateFilePath) { return Encoding.UTF8.GetBytes("// Template not found."); ; }
 
-        XrmCodeGenConfig? entityDefinitions = null;
-        try
-        {
-            entityDefinitions = ParseConfig(inputFileContent);
-        }
-        catch (Exception ex)
-        {
-            Logger.Log(string.Format(Resources.Strings.PluginGenerator_DeserializationError, inputFileName));
-            Logger.Log(ex.ToString());
-        }
+        var entityDefinitions = ParseInputFile(inputFileName, inputFileContent);
         if (entityDefinitions?.Entities?.Any() != true) { return null; }
 
         Generator.Config = new XrmCodeGenConfig
@@ -88,12 +92,20 @@ public class EntityCodeGenerator : BaseCodeGeneratorWithSite
         return Encoding.UTF8.GetBytes(sb.ToString());
     }
 
-    private XrmCodeGenConfig ParseConfig(string inputFileContent)
+    private XrmCodeGenConfig? ParseInputFile(string inputFileName, string inputFileContent)
     {
         var deserializer = new DeserializerBuilder()
             .WithNamingConvention(CamelCaseNamingConvention.Instance)
             .Build();
-        return deserializer.Deserialize<XrmCodeGenConfig>(inputFileContent);
+        try
+        {
+            return deserializer.Deserialize<XrmCodeGenConfig>(inputFileContent);
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, Resources.Strings.PluginGenerator_DeserializationError, inputFileName);
+        }
+        return null;
     }
 
     private string? GetTemplateFilePath()
@@ -179,3 +191,4 @@ public class EntityCodeGenerator : BaseCodeGeneratorWithSite
     ~EntityCodeGenerator() => Dispose(false);
     #endregion
 }
+#nullable restore

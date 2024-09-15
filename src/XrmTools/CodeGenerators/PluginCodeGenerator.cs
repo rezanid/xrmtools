@@ -1,10 +1,11 @@
 ﻿#nullable enable
+using Community.VisualStudio.Toolkit.DependencyInjection.Core;
+using Microsoft.Extensions.Logging;
 using Microsoft.VisualStudio;
 using Microsoft.VisualStudio.Shell;
 using Microsoft.VisualStudio.Shell.Interop;
 using Microsoft.VisualStudio.TextTemplating.VSHost;
 using Microsoft.Xrm.Sdk.Metadata;
-using Newtonsoft.Json;
 using Nito.AsyncEx.Synchronous;
 using System;
 using System.Collections.Generic;
@@ -13,24 +14,26 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading;
-using XrmGen._Core;
-using XrmGen.Extensions;
+using XrmGen.Helpers;
 using XrmGen.Xrm;
 using XrmGen.Xrm.Generators;
 using XrmGen.Xrm.Model;
+using Microsoft.Extensions.DependencyInjection;
+using XrmGen.Options;
 
 namespace XrmGen;
 
 public class PluginCodeGenerator : BaseCodeGeneratorWithSite
 {
-    public const string Name = "XrmGen Plugin Generator";
-    public const string Description = "Generates plugin classes from .dej.json file.";
+    public const string Name = Vsix.Name + " Plugin Code Generator";
+    public const string Description = "Generates plugin code from .dej.json file.";
 
     private readonly static OptionSetMetadataNameComparer OptionSetMetadataComparer = new ();
 
     private bool disposed = false;
     private IXrmPluginCodeGenerator? _generator;
     private IXrmSchemaProviderFactory? _schemaProviderFactory;
+    private ILogger<PluginCodeGenerator>? _logger;
 
     [Import]
     IXrmPluginCodeGenerator? Generator 
@@ -48,6 +51,16 @@ public class PluginCodeGenerator : BaseCodeGeneratorWithSite
         set => _schemaProviderFactory = value; 
     }
 
+    ILogger<PluginCodeGenerator> Logger
+    {
+        get
+        {
+            if (_logger is not null) return _logger;
+            var serviceProvider = GlobalServiceProvider.GetService<SToolkitServiceProvider<XrmGenPackage>, IToolkitServiceProvider<XrmGenPackage>>();
+            return _logger = serviceProvider.GetRequiredService<ILogger<PluginCodeGenerator>>();
+        }
+    }
+
     public override string GetDefaultExtension() => ".cs";
 
     protected override byte[]? GenerateCode(string inputFileName, string inputFileContent)
@@ -55,18 +68,8 @@ public class PluginCodeGenerator : BaseCodeGeneratorWithSite
         if (string.IsNullOrWhiteSpace(inputFileContent)) { return null; }
         if (Generator is null) { return Encoding.UTF8.GetBytes("// No generator found."); }
         if (GetTemplateFilePath() is not string templateFilePath) { return Encoding.UTF8.GetBytes("// Template not found."); ; }
-
-        PluginAssemblyConfig? config = null;
-        try
-        {
-            config = inputFileContent.DeserializeJson<PluginAssemblyConfig>();
-        }
-        catch (Exception ex)
-        {
-            Logger.Log(string.Format(Resources.Strings.PluginGenerator_DeserializationError, inputFileName));
-            Logger.Log(ex.ToString());
-        }
-        if (config?.PluginTypes?.Any() != true) { return null; }
+        var inputModel = ParseInputFile(inputFileName, inputFileContent);
+        if (inputModel?.PluginTypes?.Any() != true) { return null; }
 
         Generator.Config = new XrmCodeGenConfig
         {
@@ -75,23 +78,33 @@ public class PluginCodeGenerator : BaseCodeGeneratorWithSite
             TemplateFilePath = templateFilePath
         };
 
-        AddEntityMetadataToPluginDefinition(config!);
+        AddEntityMetadataToPluginDefinition(inputModel!);
 
-        //TODO: The following temporary code is used for troubleshooting and can be removed.
-        //var serializedConfig = JsonConvert.SerializeObject(config);
-        // Polymorphic serialization is not supported by System.Text.Json.
-        //var serializedConfig  = System.Text.Json.JsonSerializer.Serialize(config, new System.Text.Json.JsonSerializerOptions { WriteIndented = true });
-        var serializedConfig = config.SerializeJson(useNewtonsoft: false);
-        File.WriteAllText(Path.ChangeExtension(inputFileName, ".config.json"), serializedConfig);
+        if (GeneralOptions.Instance.LogLevel == LogLevel.Trace)
+        {
+            var serializedConfig = inputModel.SerializeJson(useNewtonsoft: false);
+            File.WriteAllText(Path.ChangeExtension(inputFileName, ".config.json"), serializedConfig);
+        }
 
-        //End of TODO.
-
-        var (isValid, validationMessage) = Generator.IsValid(config);
+        var (isValid, validationMessage) = Generator.IsValid(inputModel);
         if (!isValid)
         {
             return Encoding.UTF8.GetBytes(validationMessage);
         }
-        return Encoding.UTF8.GetBytes(Generator.GenerateCode(config));
+        return Encoding.UTF8.GetBytes(Generator.GenerateCode(inputModel));
+    }
+
+    private PluginAssemblyConfig? ParseInputFile(string inputFileName, string inputFileContent)
+    {
+        try
+        {
+            return inputFileContent.DeserializeJson<PluginAssemblyConfig>();
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, Resources.Strings.PluginGenerator_DeserializationError, inputFileName);
+        }
+        return null;
     }
 
     private string? GetTemplateFilePath()
@@ -123,7 +136,7 @@ public class PluginCodeGenerator : BaseCodeGeneratorWithSite
         var environmentUrl = GetProjectProperty("EnvironmentUrl");
         if (string.IsNullOrWhiteSpace(environmentUrl)) { return null; }
         var schemaProvider = SchemaProviderFactory?.Get(environmentUrl!);
-        //make a new cancellation token for 2 minutes.
+        // Make a new cancellation token for 2 minutes.
         using var cts = new CancellationTokenSource(120000);
         var entityDefinition = schemaProvider?.GetEntityAsync(logicalName, cts.Token).WaitAndUnwrapException();
         if (entityDefinition == null) { return null; }
@@ -346,11 +359,5 @@ public class PluginCodeGenerator : BaseCodeGeneratorWithSite
     ~PluginCodeGenerator() => Dispose(false);
     #endregion
 
-}
-
-public class OptionSetMetadataNameComparer : IEqualityComparer<OptionSetMetadata>
-{
-    public bool Equals(OptionSetMetadata x, OptionSetMetadata y) => x.Name == y.Name;
-    public int GetHashCode(OptionSetMetadata obj) => obj.Name.GetHashCode();
 }
 #nullable restore

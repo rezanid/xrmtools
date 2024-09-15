@@ -106,7 +106,7 @@ namespace XrmGen.Resources {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to Failed to deserialize plugin definition from {0}..
+        ///   Looks up a localized string similar to Failed to deserialize plugin definition from {inputFileName}..
         /// </summary>
         internal static string PluginGenerator_DeserializationError {
             get {

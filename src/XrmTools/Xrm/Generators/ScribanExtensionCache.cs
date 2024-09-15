@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using Humanizer;
 using Scriban.Runtime;
-using XrmGen.Extensions;
+using XrmGen.Helpers;
 
 namespace XrmGen.Xrm.Generators;
 

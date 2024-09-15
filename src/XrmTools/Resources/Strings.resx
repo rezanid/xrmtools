@@ -133,7 +133,7 @@
     <value>Failed to acquire DTE from Visual Studio. Consequently {0} is not initialized successfully.</value>
   </data>
   <data name="PluginGenerator.DeserializationError" xml:space="preserve">
-    <value>Failed to deserialize plugin definition from {0}.</value>
+    <value>Failed to deserialize plugin definition from {inputFileName}.</value>
   </data>
   <data name="PluginGenerator.InvalidConfig" xml:space="preserve">
     <value>// Code generation failed due to invalid input file.</value>
