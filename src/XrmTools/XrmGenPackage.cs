@@ -10,6 +10,7 @@ using Microsoft;
 using Microsoft.Build.Framework;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Logging;
 using Microsoft.VisualStudio;
 using Microsoft.VisualStudio.RpcContracts.Utilities;
 using Microsoft.VisualStudio.Shell;
@@ -124,6 +125,7 @@ public sealed class XrmGenPackage : MicrosoftDIToolkitPackage<XrmGenPackage>
             .AddMemoryCache()
             .AddLogging(builder =>
             {
+                builder.SetMinimumLevel(GeneralOptions.Instance.LogLevel);
                 builder.AddOutputLogger();
             })
             //.AddHostedService<IXrmSchemaProviderFactory>()
