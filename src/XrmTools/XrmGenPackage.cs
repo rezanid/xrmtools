@@ -31,9 +31,10 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Threading;
 using VSLangProj;
-using XrmGen._Core;
 using XrmGen.Commands;
-using XrmGen.Extensions;
+using XrmGen.Helpers;
+using XrmGen.Logging;
+using XrmGen.Options;
 using XrmGen.Xrm;
 using XrmGen.Xrm.Generators;
 using Task = System.Threading.Tasks.Task;
@@ -86,34 +87,59 @@ internal record ProjectDataverseSettings(
         "ActiveProjectCapability:CSharp", 
         VSConstants.UICONTEXT.SolutionHasSingleProject_string, 
         VSConstants.UICONTEXT.SolutionHasMultipleProjects_string])]
+[ProvideUIContextRule(PackageGuids.guidGeneratePluginConfigFileCommandUIRuleString,
+    name: "UI Context NewPluginConfigCommand",
+    expression: "Proj & CSharp & (SingleProj | MultiProj)",
+    termNames: ["Proj", "CSharp", "SingleProj", "MultiProj"],
+    termValues: ["HierSingleSelectionItemType:ProjectItem",
+        "ActiveProjectCapability:CSharp",
+        VSConstants.UICONTEXT.SolutionHasSingleProject_string,
+        VSConstants.UICONTEXT.SolutionHasMultipleProjects_string])]
 [ProvideService(typeof(IXrmSchemaProviderFactory), IsAsyncQueryable = true, IsCacheable = true, IsFreeThreaded = true)]
 [ProvideService(typeof(IXrmPluginCodeGenerator), IsAsyncQueryable = true, IsCacheable = true, IsFreeThreaded = true)]
 [ProvideService(typeof(IXrmEntityCodeGenerator), IsAsyncQueryable = true, IsCacheable = true, IsFreeThreaded = true)]
-public sealed class XrmGenPackage : AsyncPackage // MicrosoftDIToolkitPackage<XrmGenPackage>
+[ProvideOptionPage(typeof(OptionsProvider.GeneralOptions), Vsix.Name, "General", 0, 0, true, SupportsProfiles = true)]
+public sealed class XrmGenPackage : MicrosoftDIToolkitPackage<XrmGenPackage>
 {
     public DTE2? Dte;
+
+    /// <summary>
+    /// The initial configuration of the extension. The value can change after initialization if 
+    /// the user changes the settings.
+    /// </summary>
+    private GeneralOptions? InitialConfig;
 
     // Warning!
     // MEF Doesn't work here. Use the ServiceProvider to get the requried service.
     private IXrmSchemaProviderFactory? XrmSchemaProviderFactory;
 
-    //protected override void InitializeServices(IServiceCollection services)
-    //{
-        //services
-        //    .AddMemoryCache()
-        //    .AddHostedService<IXrmSchemaProviderFactory>()
-        //    .RegisterCommands(ServiceLifetime.Singleton);
+    static XrmGenPackage()
+    {
+        var t = VS.Shell.GetType();
+    }
+
+    protected override void InitializeServices(IServiceCollection services)
+    {
+        services
+            .AddMemoryCache()
+            .AddLogging(builder =>
+            {
+                builder.AddOutputLogger();
+            })
+            //.AddHostedService<IXrmSchemaProviderFactory>()
+            .RegisterCommands(ServiceLifetime.Singleton);
         // Register your services here
-        //services.AddSingleton<IYourService, YourService>();
+        // services.AddSingleton<IYourService, YourService>();
 
-        // Register any commands. They can be registered as a 'Singleton' or 'Scoped'. 
+        // Register any commands.They can be registered as a 'Singleton' or 'Scoped'.
         // 'Transient' will work but in practice it will behave the same as 'Scoped'.
-        //services.AddSingleton<YourCommand>();
+        // services.AddSingleton<YourCommand>();
 
-        // Alternatively, you can use the 'RegisterCommands' extension method to automatically register all commands in an assembly.
+        //Alternatively, you can use the 'RegisterCommands' extension method to automatically register all commands in an assembly.
         //services.RegisterCommands(ServiceLifetime.Singleton);
         //...
-    //}
+
+    }
 
     /// <summary>
     /// Initialization of the package; this method is called right after the package is sited, so this is the place
@@ -122,26 +148,28 @@ public sealed class XrmGenPackage : AsyncPackage // MicrosoftDIToolkitPackage<Xr
     /// <param name="cancellationToken">A cancellation token to monitor for initialization cancellation, which can occur when VS is shutting down.</param>
     /// <param name="progress">A provider for progress updates.</param>
     /// <returns>A task representing the async work of package initialization, or an already completed task if there is none. Do not return null from this method.</returns>
-    [MemberNotNull(nameof(Dte))]
     protected override async Task InitializeAsync(CancellationToken cancellationToken, IProgress<ServiceProgressData> progress)
     {
+        await JoinableTaskFactory.SwitchToMainThreadAsync(cancellationToken);
+
         Dte = await GetServiceAsync(typeof(DTE)) as DTE2
             ?? throw new InvalidOperationException(
                 string.Format(Resources.Strings.Package_InitializationErroMissingDte, nameof(XrmGenPackage)));
         Assumes.Present(Dte);
 
-        await InitializeServicesAsync();
+        InitialConfig = await GeneralOptions.GetLiveInstanceAsync();
+
+        await InitializeMefServicesAsync();
         if (XrmSchemaProviderFactory is null)
         {
             throw new InvalidOperationException("XrmSchemaProviderFactory is missing.");
         }
 
-        await JoinableTaskFactory.SwitchToMainThreadAsync(cancellationToken);
         // When initialized asynchronously, the current thread may be a background thread at this point.
         // Do any initialization that requires the UI thread after switching to the UI thread.
-        await ApplyEntityGeneratorCommand.InitializeAsync(this);
-        await SetXrmPluginGeneratorCommand.InitializeAsync(this);
-        await GenerateRegistrationFileCommand.InitializeAsync(this);
+        //await ApplyEntityGeneratorCommand.InitializeAsync(this);
+        //await SetXrmPluginGeneratorCommand.InitializeAsync(this);
+        //await GenerateRegistrationFileCommand.InitializeAsync(this);
 
 
         ProjectHelpers.ParentPackage = this;
@@ -150,7 +178,7 @@ public sealed class XrmGenPackage : AsyncPackage // MicrosoftDIToolkitPackage<Xr
         // Usually happens when user opens Visual Studio with a solution already loaded.
         Dte.Events.SolutionEvents.Opened += () =>
         {
-            Logger.Log("Solution Opened");
+            OutputLogger.Log("Solution Opened");
             ThreadHelper.JoinableTaskFactory.WithPriority(VsTaskRunContext.UIThreadIdlePriority).Run(async () =>
             {
                 await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync(alwaysYield: true);
@@ -160,10 +188,11 @@ public sealed class XrmGenPackage : AsyncPackage // MicrosoftDIToolkitPackage<Xr
         // This is for when extension is loaded after the solution is already open.
         // Usually happens when user opens Visual Studio and then opens a solution.
         StartBackgroundOperations();
+        await base.InitializeAsync(cancellationToken, progress);
     }
 
     [MemberNotNull(nameof(XrmSchemaProviderFactory))]
-    private async Task InitializeServicesAsync()
+    private async Task InitializeMefServicesAsync()
     {
         XrmSchemaProviderFactory ??= new XrmSchemaProviderFactory();
         AddService(

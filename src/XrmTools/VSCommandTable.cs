@@ -21,6 +21,9 @@ namespace XrmGen
         public const string guidXrmCodeGenSetPluginGeneratorCommandUIRuleString = "ee3324f2-0e72-4af6-bcba-ac3af05df4e8";
         public static Guid guidXrmCodeGenSetPluginGeneratorCommandUIRule = new Guid(guidXrmCodeGenSetPluginGeneratorCommandUIRuleString);
 
+        public const string guidGeneratePluginConfigFileCommandUIRuleString = "87765b0d-0ab7-4812-9668-a2d621957cf9";
+        public static Guid guidGeneratePluginConfigFileCommandUIRule = new Guid(guidGeneratePluginConfigFileCommandUIRuleString);
+
         public const string guidXrmSchemaProviderFactoryString = "b27d7354-9380-4c2e-ba0a-f423e727976e";
         public static Guid guidXrmSchemaProviderFactory = new Guid(guidXrmSchemaProviderFactoryString);
 
@@ -30,6 +33,9 @@ namespace XrmGen
         public const string guidXrmEntityCodeGeneratorString = "40f321f1-e206-4643-83d8-a14f3495c4ed";
         public static Guid guidXrmEntityCodeGenerator = new Guid(guidXrmEntityCodeGeneratorString);
 
+        public const string guidGenerateXrmPluginConfigCmdSetString = "5e7c248f-9676-4c64-a166-218379e01bad";
+        public static Guid guidGenerateXrmPluginConfigCmdSet = new Guid(guidGenerateXrmPluginConfigCmdSetString);
+
         public const string guidXrmCodeGenPackageCmdSetString = "15d399a7-b2ae-4f1c-9771-3dae966a7134";
         public static Guid guidXrmCodeGenPackageCmdSet = new Guid(guidXrmCodeGenPackageCmdSetString);
     }
@@ -38,9 +44,9 @@ namespace XrmGen
     /// </summary>
     internal sealed partial class PackageIds
     {
+        public const int idGeneratePluginConfigFileCommand = 0x0200;
         public const int MyMenuGroup = 0x1020;
         public const int EntityGeneratorCommandId = 0x0100;
         public const int SetXrmPluginGeneratorCommandId = 0x0101;
-        public const int GeneratePluginConfigFileCommandId = 0x0102;
     }
 }
