@@ -13,11 +13,11 @@ internal class DataverseEnvironmentHelper
 {
     public static async Task<DataverseEnvironment?> GetActiveEnvironmentAsync()
     {
-        if (GeneralOptions.Instance.EnvironmentLevel == EnvironmentLevel.VisualStudioProfile)
+        if (GeneralOptions.Instance.EnvironmentSettingLevel == EnvironmentSettingLevel.Options)
         {
             return GeneralOptions.Instance.CurrentEnvironment;
         }
-        if (GeneralOptions.Instance.EnvironmentLevel == EnvironmentLevel.Solution)
+        if (GeneralOptions.Instance.EnvironmentSettingLevel == EnvironmentSettingLevel.Solution)
         {
             return await GetEnvironmentFromVsSolutionAsync();
         }

@@ -12,6 +12,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.VisualStudio;
+using Microsoft.VisualStudio.OLE.Interop;
 using Microsoft.VisualStudio.RpcContracts.Utilities;
 using Microsoft.VisualStudio.Shell;
 using Microsoft.VisualStudio.Shell.Events;
@@ -19,12 +20,14 @@ using Microsoft.VisualStudio.Shell.Interop;
 using Microsoft.VisualStudio.TaskStatusCenter;
 using Microsoft.VisualStudio.TextTemplating.VSHost;
 using Microsoft.VisualStudio.Threading;
+using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.ComponentModel.Composition;
 using System.ComponentModel.Design;
 using System.Diagnostics.CodeAnalysis;
+using System.IO;
 using System.Linq;
 using System.Net;
 using System.Runtime.InteropServices;
@@ -38,6 +41,7 @@ using XrmGen.Logging;
 using XrmGen.Options;
 using XrmGen.Xrm;
 using XrmGen.Xrm.Generators;
+using YamlDotNet.Core.Tokens;
 using Task = System.Threading.Tasks.Task;
 
 internal record ProjectDataverseSettings(
@@ -100,8 +104,10 @@ internal record ProjectDataverseSettings(
 [ProvideService(typeof(IXrmPluginCodeGenerator), IsAsyncQueryable = true, IsCacheable = true, IsFreeThreaded = true)]
 [ProvideService(typeof(IXrmEntityCodeGenerator), IsAsyncQueryable = true, IsCacheable = true, IsFreeThreaded = true)]
 [ProvideOptionPage(typeof(OptionsProvider.GeneralOptions), Vsix.Name, "General", 0, 0, true, SupportsProfiles = true)]
-public sealed class XrmGenPackage : MicrosoftDIToolkitPackage<XrmGenPackage>
+public sealed class XrmGenPackage : MicrosoftDIToolkitPackage<XrmGenPackage>, IVsPersistSolutionProps
+
 {
+    public const string OptionKeyDataverseUrl = "DataverseUrl";
     public DTE2? Dte;
 
     /// <summary>
@@ -114,9 +120,12 @@ public sealed class XrmGenPackage : MicrosoftDIToolkitPackage<XrmGenPackage>
     // MEF Doesn't work here. Use the ServiceProvider to get the requried service.
     private IXrmSchemaProviderFactory? XrmSchemaProviderFactory;
 
-    static XrmGenPackage()
+    public string? DataverseUrlOption { get; set; }
+    public string? DataverseUrlSetting { get; set; }
+
+    public XrmGenPackage()
     {
-        var t = VS.Shell.GetType();
+        AddOptionKey("DataverseUrl");
     }
 
     protected override void InitializeServices(IServiceCollection services)
@@ -152,6 +161,9 @@ public sealed class XrmGenPackage : MicrosoftDIToolkitPackage<XrmGenPackage>
     /// <returns>A task representing the async work of package initialization, or an already completed task if there is none. Do not return null from this method.</returns>
     protected override async Task InitializeAsync(CancellationToken cancellationToken, IProgress<ServiceProgressData> progress)
     {
+        var solutionPersistenceService = await GetServiceAsync(typeof(IVsSolutionPersistence)) as IVsSolutionPersistence;
+        solutionPersistenceService?.LoadPackageUserOpts(this, "DataverseUrl");
+
         await JoinableTaskFactory.SwitchToMainThreadAsync(cancellationToken);
 
         Dte = await GetServiceAsync(typeof(DTE)) as DTE2
@@ -282,6 +294,24 @@ public sealed class XrmGenPackage : MicrosoftDIToolkitPackage<XrmGenPackage>
         }
     }
 
+    protected override void OnLoadOptions(string key, Stream stream)
+    {
+        if ("DataverseUrl".Equals(key, StringComparison.InvariantCultureIgnoreCase))
+        {
+            DataverseUrlOption = new StreamReader(stream).ReadToEnd();
+        }
+    }
+
+    protected override void OnSaveOptions(string key, Stream stream)
+    {
+        if ("DataverseUrl".Equals(key, StringComparison.InvariantCultureIgnoreCase))
+        {
+            var writer = new StreamWriter(stream);
+            writer.Write(DataverseUrlOption);
+            writer.Flush();
+        }
+    }
+
     [MemberNotNull(nameof(Dte), nameof(XrmSchemaProviderFactory))]
     private void ThrowIfNotInitialized()
     {
@@ -294,4 +324,75 @@ public sealed class XrmGenPackage : MicrosoftDIToolkitPackage<XrmGenPackage>
             throw new InvalidOperationException("DTE is missing. Extension package not initialized successfully.");
         }
     }
+
+    public int SaveUserOptions(IVsSolutionPersistence pPersistence)
+    {
+        ThreadHelper.ThrowIfNotOnUIThread();
+        ((IVsPersistSolutionOpts)this).SaveUserOptions(pPersistence);
+        return VSConstants.S_OK;
+    }
+    public int LoadUserOptions(IVsSolutionPersistence pPersistence, uint grfLoadOpts)
+    {
+        ThreadHelper.ThrowIfNotOnUIThread();
+        ((IVsPersistSolutionOpts)this).LoadUserOptions(pPersistence, grfLoadOpts);
+        return VSConstants.S_OK;
+    }
+    public int WriteUserOptions(IStream pOptionsStream, string pszKey)
+    {
+        ThreadHelper.ThrowIfNotOnUIThread();
+        ((IVsPersistSolutionOpts)this).WriteUserOptions(pOptionsStream, pszKey);
+        return VSConstants.S_OK;
+    }
+    public int ReadUserOptions(IStream pOptionsStream, string pszKey)
+    {
+        ThreadHelper.ThrowIfNotOnUIThread();
+        ((IVsPersistSolutionOpts)this).ReadUserOptions(pOptionsStream, pszKey);
+        return VSConstants.S_OK;
+    }
+    public int QuerySaveSolutionProps(IVsHierarchy pHierarchy, VSQUERYSAVESLNPROPS[] pqsspSave)
+        => VSConstants.S_OK;
+    public int SaveSolutionProps(IVsHierarchy pHierarchy, IVsSolutionPersistence pPersistence)
+    {
+        // Register to save our section in the solution
+        return pPersistence.SavePackageSolutionProps(1, pHierarchy, this, Vsix.Name);
+    }
+    public int WriteSolutionProps(IVsHierarchy pHierarchy, string pszKey, IPropertyBag pPropBag)
+    {
+        ThreadHelper.ThrowIfNotOnUIThread();
+        if (pszKey == OptionKeyDataverseUrl)
+        {
+            try
+            {
+                pPropBag.Write(pszKey, DataverseUrlSetting);
+            }
+            catch (Exception ex)
+            {
+                return Marshal.GetHRForException(ex);
+            }
+        }
+        return VSConstants.S_OK;
+    }
+    public int ReadSolutionProps(IVsHierarchy pHierarchy, string pszProjectName, string pszProjectMk, string pszKey, int fPreLoad, IPropertyBag pPropBag)
+    {
+        ThreadHelper.ThrowIfNotOnUIThread();
+        if (pszKey == OptionKeyDataverseUrl)
+        {
+            try
+            {
+                // Create a placeholder for the property value
+                // VARTYPE for a string (VT_BSTR in COM) is 8, and we don't need an error log or unknown object
+                pPropBag.Read(pszKey, out var propValue, null, 8, null);
+
+                // Store the value
+                DataverseUrlSetting = propValue as string;
+            }
+            catch (Exception ex)
+            {
+                return Marshal.GetHRForException(ex);
+            }
+        }
+        return VSConstants.S_OK;
+    }
+    public int OnProjectLoadFailure(IVsHierarchy pStubHierarchy, string pszProjectName, string pszProjectMk, string pszKey)
+        => VSConstants.S_OK;
 }

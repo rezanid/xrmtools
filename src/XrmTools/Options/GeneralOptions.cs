@@ -38,9 +38,9 @@ public class GeneralOptions : BaseOptionModel<GeneralOptions>
     [Category("Power Platform Environments")]
     [DisplayName("Current Environment Level")]
     [Description("Current Environment is set at which level")]
-    [DefaultValue(EnvironmentLevel.VisualStudioProfile)]
+    [DefaultValue(EnvironmentSettingLevel.Options)]
     [TypeConverter(typeof(EnumDescriptionConverter))]
-    public EnvironmentLevel EnvironmentLevel { get; set; } = EnvironmentLevel.VisualStudioProfile;
+    public EnvironmentSettingLevel EnvironmentSettingLevel { get; set; } = EnvironmentSettingLevel.Options;
 
     [Category("Power Platform Environments")]
     [DisplayName("Current Environment")]
@@ -71,10 +71,10 @@ public class GeneralOptions : BaseOptionModel<GeneralOptions>
     }
 }
 
-public enum EnvironmentLevel
+public enum EnvironmentSettingLevel
 {
-    [Description("Visual Studio Profile")]
-    VisualStudioProfile,
+    [Description("Visual Studio Options")]
+    Options,
     Solution,
     Project,
     [Description("Solution (User)")]
