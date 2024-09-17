@@ -5,17 +5,19 @@ using Community.VisualStudio.Toolkit;
 using Community.VisualStudio.Toolkit.DependencyInjection.Core;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Configuration;
+using Microsoft.Extensions.Options;
 using Microsoft.VisualStudio.VCProjectEngine;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Runtime.InteropServices;
-using XrmGen.Configuration;
+using XrmGen.Logging;
 
 internal partial class OptionsProvider
 {
     [ComVisible(true)]
-    public class GeneralOptions : BaseOptionPage<Options.GeneralOptions> { }
+    public class GeneralOptions : BaseOptionPage<XrmGen.Options.GeneralOptions> { }
 }
 
 public class GeneralOptions : BaseOptionModel<GeneralOptions>
@@ -47,8 +49,6 @@ public class GeneralOptions : BaseOptionModel<GeneralOptions>
     [Description("The current environment. only applicable when Current environment level is set to Visual Studio Profile.")]
     public DataverseEnvironment CurrentEnvironment { get; set; } = new DataverseEnvironment();
 
-    VsOptionsConfigurationProvider? ConfigurationProvider { get; set; }
-
     public override void Save()
     {
         // Ensure that the list is not null
@@ -68,6 +68,16 @@ public class GeneralOptions : BaseOptionModel<GeneralOptions>
 
         // Ensure that the list is not null
         Environments ??= [];
+
+        UpdateLoggingLevel();
+    }
+
+    private void UpdateLoggingLevel()
+    {
+        var serviceProvider = VS.GetRequiredService<SToolkitServiceProvider<XrmGenPackage>, IToolkitServiceProvider<XrmGenPackage>>();
+        var loggerFilterOptions = serviceProvider.GetRequiredService<IConfigureOptions<LoggerFilterOptions>>();
+        var logger = serviceProvider.GetService(typeof(ILogger<GeneralOptions>)) as ILogger<GeneralOptions>;
+        loggerFilterOptions.Configure(new LoggerFilterOptions { MinLevel = this.LogLevel });
     }
 }
 

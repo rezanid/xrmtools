@@ -53,9 +53,6 @@
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="Configuration\ConfigurationManagerExtensions.cs" />
-    <Compile Include="Configuration\VsOptionsConfigurationProvider.cs" />
-    <Compile Include="Configuration\VsOptionsConfigurationSource.cs" />
     <Compile Include="Environments\DataverseEnvironmentProvider.cs" />
     <Compile Include="Helpers\DataverseEnvironmentHelper.cs" />
     <Compile Include="Helpers\FileHelper.cs" />
@@ -189,7 +186,16 @@
     <PackageReference Include="Humanizer.Core">
       <Version>2.14.1</Version>
     </PackageReference>
+    <PackageReference Include="Microsoft.Extensions.Configuration">
+      <Version>3.1.8</Version>
+    </PackageReference>
+    <PackageReference Include="Microsoft.Extensions.Configuration.Abstractions">
+      <Version>3.1.8</Version>
+    </PackageReference>
     <PackageReference Include="Microsoft.Extensions.Hosting">
+      <Version>3.1.8</Version>
+    </PackageReference>
+    <PackageReference Include="Microsoft.Extensions.Options.ConfigurationExtensions">
       <Version>3.1.8</Version>
     </PackageReference>
     <PackageReference Include="Microsoft.PowerPlatform.Dataverse.Client">
@@ -228,7 +234,7 @@
     <PackageReference Include="StrongNamer">
       <Version>0.2.5</Version>
     </PackageReference>
-    <PackageReference Include="YamlDotNet" Version="16.1.0" />
+    <PackageReference Include="YamlDotNet" Version="16.1.2" />
   </ItemGroup>
   <ItemGroup>
     <VSCTCompile Include="VSCommandTable.vsct">

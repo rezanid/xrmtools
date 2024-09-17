@@ -1,68 +1,77 @@
 ﻿#nullable enable
 namespace XrmGen.Logging;
 
-using EnvDTE;
-using EnvDTE80;
 using Microsoft.Extensions.Logging;
 using Microsoft.VisualStudio.Shell;
+using Microsoft.VisualStudio.Shell.Interop;
 using System;
-using System.Diagnostics.CodeAnalysis;
+using System.Collections.Generic;
+using System.Threading;
 
-public class OutputLogger(string categoryName) : ILogger
+public class OutputLogger(string name, IVsOutputWindowPane outputPane, LogLevel minLogLevel) : ILogger
 {
-    private static OutputWindowPane? pane;
-    private static readonly object _syncRoot = new();
-    private static DTE2? dte = null;
+    private readonly string _name = name ?? throw new ArgumentNullException(nameof(name));
+    private readonly IVsOutputWindowPane _outputPane = outputPane ?? throw new ArgumentNullException(nameof(outputPane));
 
-    [SuppressMessage("Usage", "VSTHRD010:Invoke single-threaded types on Main thread", Justification = "Already done by calling Ensure method.")]
-    public static void Log(string message)
+    // A thread-local dictionary to store scopes for each thread
+    private static readonly AsyncLocal<Scope> _currentScope = new();
+
+    public IDisposable? BeginScope<TState>(TState state) where TState : notnull
     {
-        lock (_syncRoot)
-        {
-            if (EnsurePane())
-            {
-                pane.OutputString("[" + DateTime.Now.ToLongTimeString() + "] " + message + Environment.NewLine);
-            }
-        }
+        var scope = new Scope(this, state);
+        _currentScope.Value = scope;
+        return scope;
     }
 
-    #region ILogger implementation
-    public IDisposable? BeginScope<TState>(TState state) => null;
+    public bool IsEnabled(LogLevel logLevel) => logLevel >= minLogLevel;
 
-    public bool IsEnabled(LogLevel logLevel) => logLevel != LogLevel.None;
-
-    public void Log<TState>(LogLevel logLevel, EventId eventId, TState state, Exception? exception, Func<TState, Exception?, string> formatter)
+    public void Log<TState>(LogLevel logLevel, EventId eventId, TState state, Exception exception, Func<TState, Exception, string> formatter)
     {
         if (!IsEnabled(logLevel)) return;
 
+        if (formatter == null) throw new ArgumentNullException(nameof(formatter));
+
         var message = formatter(state, exception);
-        Log($"[{logLevel}] {categoryName}: {message}");
+        if (string.IsNullOrEmpty(message)) return;
 
-        if (exception != null) Log($"Exception: {exception}");
-    }
-    #endregion
+        var logRecord = $"[{logLevel}] {_name}: {message}";
 
-    [MemberNotNull(nameof(dte))]
-    private static void EnsureDte()
-    {
-        if (dte != null) { return; }
-        ThreadHelper.ThrowIfNotOnUIThread();
-        dte = (Package.GetGlobalService(typeof(DTE)) as DTE2)!;
-    }
-
-    [MemberNotNullWhen(true, nameof(pane))]
-    private static bool EnsurePane()
-    {
-        EnsureDte();
-        ThreadHelper.ThrowIfNotOnUIThread();
-        if (pane == null)
+        // Append scope information, if any
+        var currentScope = _currentScope.Value;
+        if (currentScope != null)
         {
-            lock (_syncRoot)
+            var scopeInfo = new List<string>();
+            while (currentScope != null)
             {
-                pane ??= dte.ToolWindows.OutputWindow.OutputWindowPanes.Add(Vsix.Name);
+                scopeInfo.Insert(0, currentScope.State.ToString());
+                currentScope = currentScope.Parent;
+            }
+            logRecord = $"{string.Join(" => ", scopeInfo)}: {logRecord}";
+        }
+
+        if (exception != null)
+        {
+            logRecord += Environment.NewLine + exception.ToString();
+        }
+
+        // Ensure we're on the main thread to write to the Output window
+        ThreadHelper.ThrowIfNotOnUIThread();
+        _outputPane.OutputString(logRecord + Environment.NewLine);
+    }
+
+    private class Scope(OutputLogger logger, object state) : IDisposable
+    {
+        public readonly object State = state;
+        public readonly Scope Parent = _currentScope.Value;
+
+        public void Dispose()
+        {
+            if (_currentScope.Value == this)
+            {
+                // Restore the parent scope when disposed
+                _currentScope.Value = Parent;
             }
         }
-        return pane != null;
     }
 }
 #nullable restore

@@ -9,8 +9,10 @@ using Humanizer.Localisation;
 using Microsoft;
 using Microsoft.Build.Framework;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using Microsoft.VisualStudio;
 using Microsoft.VisualStudio.OLE.Interop;
 using Microsoft.VisualStudio.RpcContracts.Utilities;
@@ -30,6 +32,8 @@ using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Linq;
 using System.Net;
+using System.Reflection;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
@@ -108,6 +112,7 @@ public sealed class XrmGenPackage : MicrosoftDIToolkitPackage<XrmGenPackage>, IV
 
 {
     public const string OptionKeyDataverseUrl = "DataverseUrl";
+    private static readonly ExplicitInterfaceInvoker<Package> implicitInvoker = new();
     public DTE2? Dte;
 
     /// <summary>
@@ -135,6 +140,10 @@ public sealed class XrmGenPackage : MicrosoftDIToolkitPackage<XrmGenPackage>, IV
             .AddLogging(builder =>
             {
                 builder.SetMinimumLevel(GeneralOptions.Instance.LogLevel);
+                GeneralOptions.Instance.OptionsChanged += (sender, args) =>
+                {
+                    builder.SetMinimumLevel(GeneralOptions.Instance.LogLevel);
+                };
                 builder.AddOutputLogger();
             })
             //.AddHostedService<IXrmSchemaProviderFactory>()
@@ -192,7 +201,6 @@ public sealed class XrmGenPackage : MicrosoftDIToolkitPackage<XrmGenPackage>, IV
         // Usually happens when user opens Visual Studio with a solution already loaded.
         Dte.Events.SolutionEvents.Opened += () =>
         {
-            OutputLogger.Log("Solution Opened");
             ThreadHelper.JoinableTaskFactory.WithPriority(VsTaskRunContext.UIThreadIdlePriority).Run(async () =>
             {
                 await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync(alwaysYield: true);
@@ -325,30 +333,14 @@ public sealed class XrmGenPackage : MicrosoftDIToolkitPackage<XrmGenPackage>, IV
         }
     }
 
-    public int SaveUserOptions(IVsSolutionPersistence pPersistence)
-    {
-        ThreadHelper.ThrowIfNotOnUIThread();
-        ((IVsPersistSolutionOpts)this).SaveUserOptions(pPersistence);
-        return VSConstants.S_OK;
-    }
+    public int SaveUserOptions(IVsSolutionPersistence pPersistence) 
+        => implicitInvoker.Invoke<int>(this, nameof(SaveUserOptions), pPersistence);
     public int LoadUserOptions(IVsSolutionPersistence pPersistence, uint grfLoadOpts)
-    {
-        ThreadHelper.ThrowIfNotOnUIThread();
-        ((IVsPersistSolutionOpts)this).LoadUserOptions(pPersistence, grfLoadOpts);
-        return VSConstants.S_OK;
-    }
+        => implicitInvoker.Invoke<int>(this, nameof(LoadUserOptions), pPersistence);
     public int WriteUserOptions(IStream pOptionsStream, string pszKey)
-    {
-        ThreadHelper.ThrowIfNotOnUIThread();
-        ((IVsPersistSolutionOpts)this).WriteUserOptions(pOptionsStream, pszKey);
-        return VSConstants.S_OK;
-    }
+        => implicitInvoker.Invoke<int>(this, nameof(WriteUserOptions), pOptionsStream, pszKey);
     public int ReadUserOptions(IStream pOptionsStream, string pszKey)
-    {
-        ThreadHelper.ThrowIfNotOnUIThread();
-        ((IVsPersistSolutionOpts)this).ReadUserOptions(pOptionsStream, pszKey);
-        return VSConstants.S_OK;
-    }
+        => implicitInvoker.Invoke<int>(this, nameof(ReadUserOptions), pOptionsStream, pszKey);
     public int QuerySaveSolutionProps(IVsHierarchy pHierarchy, VSQUERYSAVESLNPROPS[] pqsspSave)
         => VSConstants.S_OK;
     public int SaveSolutionProps(IVsHierarchy pHierarchy, IVsSolutionPersistence pPersistence)
@@ -395,4 +387,45 @@ public sealed class XrmGenPackage : MicrosoftDIToolkitPackage<XrmGenPackage>, IV
     }
     public int OnProjectLoadFailure(IVsHierarchy pStubHierarchy, string pszProjectName, string pszProjectMk, string pszKey)
         => VSConstants.S_OK;
+}
+
+public class ExplicitInterfaceInvoker<T>
+{
+    private readonly Dictionary<string, MethodInfo> cache = [];
+    private readonly Type baseType = typeof(T);
+
+    private MethodInfo FindMethod(string methodName)
+    {
+        if (!cache.TryGetValue(methodName, out var method))
+        {
+            var methods = baseType.GetMethods(BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.DeclaredOnly);
+
+            foreach (var methodInfo in methods)
+            {
+                if (methodInfo.IsFinal && methodInfo.IsPrivate) //explicit interface implementation
+                {
+                    if (methodInfo.Name == methodName || methodInfo.Name.EndsWith("." + methodName))
+                    {
+                        method = methodInfo;
+                        break;
+                    }
+                }
+            }
+
+            cache.Add(methodName, method);
+        }
+
+        return method;
+    }
+
+    public RT Invoke<RT>(T obj, string methodName, params object[] parameters)
+    {
+        if (obj == null) throw new ArgumentNullException(nameof(obj));
+        if (!baseType.IsAssignableFrom(obj.GetType()))
+        {
+            throw new ArgumentException("Object is not of type " + baseType.Name);
+        }
+        var method = FindMethod(methodName) ?? throw new InvalidOperationException($"Method '{methodName}' not found.");
+        return (RT)method.Invoke(obj, parameters);
+    }
 }
