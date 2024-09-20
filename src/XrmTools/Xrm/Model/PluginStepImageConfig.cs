@@ -6,7 +6,7 @@ using System;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 
-namespace XrmGen.Xrm.Model;
+namespace XrmTools.Xrm.Model;
 
 public interface IMessageProcessingStepImageEntity
 {

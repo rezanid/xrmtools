@@ -1,4 +1,4 @@
-﻿namespace XrmGen.Tokens;
+﻿namespace XrmTools.Tokens;
 using System;
 using System.Collections.Generic;
 using System.Linq;

@@ -1,5 +1,5 @@
 ﻿#nullable enable
-namespace XrmGen;
+namespace XrmTools;
 
 using EnvDTE;
 using EnvDTE80;
@@ -9,7 +9,7 @@ using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Linq;
-using XrmGen.Helpers;
+using XrmTools.Helpers;
 
 public class NewItemTarget
 {

@@ -1,4 +1,4 @@
-﻿namespace XrmGen.Logging;
+﻿namespace XrmTools.Logging;
 
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;

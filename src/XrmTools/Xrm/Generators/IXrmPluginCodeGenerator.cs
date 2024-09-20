@@ -1,8 +1,8 @@
 ﻿using System.Runtime.InteropServices;
 #nullable enable
-namespace XrmGen.Xrm.Generators;
+namespace XrmTools.Xrm.Generators;
 
-using XrmGen.Xrm.Model;
+using XrmTools.Xrm.Model;
 
 [Guid(PackageGuids.guidXrmPluginCodeGeneratorString)]
 [ComVisible(true)]

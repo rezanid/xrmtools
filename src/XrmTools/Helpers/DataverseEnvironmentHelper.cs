@@ -1,5 +1,5 @@
 ﻿#nullable enable
-namespace XrmGen.Helpers;
+namespace XrmTools.Helpers;
 
 using Community.VisualStudio.Toolkit;
 using System;
@@ -7,7 +7,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using XrmGen.Options;
+using XrmTools.Options;
 
 internal class DataverseEnvironmentHelper
 {

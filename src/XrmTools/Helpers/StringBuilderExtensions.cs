@@ -1,7 +1,7 @@
 ﻿#nullable enable
 using System.Text;
 
-namespace XrmGen.Helpers;
+namespace XrmTools.Helpers;
 
 internal static class StringBuilderExtensions
 {

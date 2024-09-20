@@ -1,5 +1,5 @@
 ﻿#nullable enable
-namespace XrmGen.Helpers;
+namespace XrmTools.Helpers;
 
 using Microsoft.Xrm.Sdk;
 using Newtonsoft.Json;
@@ -9,8 +9,8 @@ using System.Diagnostics.CodeAnalysis;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using System.Text.Json.Serialization.Metadata;
-using XrmGen.Xrm.Model;
-using XrmGen.Xrm.Serialization;
+using XrmTools.Xrm.Model;
+using XrmTools.Xrm.Serialization;
 
 internal static class StringHelpers
 {

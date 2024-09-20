@@ -7,7 +7,7 @@ using System.Collections.Generic;
 using System.Linq.Expressions;
 using System.Reflection;
 
-namespace XrmGen.Xrm.Model;
+namespace XrmTools.Xrm.Model;
 
 public interface IPluginTypeEntity
 {

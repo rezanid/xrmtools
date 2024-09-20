@@ -1,4 +1,4 @@
-﻿namespace XrmGen.Xrm;
+﻿namespace XrmTools.Xrm;
 
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Primitives;
@@ -11,12 +11,14 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
-using XrmGen.Xrm.Extensions;
-using XrmGen.Xrm.Model;
+using XrmTools.Options;
+using XrmTools.Xrm.Extensions;
+using XrmTools.Xrm.Model;
 
 public interface IXrmSchemaProvider : IDisposable
 {
     string EnvironmentUrl { get; }
+    DataverseEnvironment Environment { get; }
     bool IsReady { get; }
     Exception LastException { get; }
     string LastError { get; }
@@ -35,14 +37,15 @@ internal class DataverseCacheKeys(string EnvironmentUrl)
     public string PluginTypes(Guid assemblyid) => $"{EnvironmentUrl}_PluginTypes_{assemblyid}";
 }
 
-public class XrmSchemaProvider(ServiceClient serviceClient, string environmentUrl, IMemoryCache cache) : IXrmSchemaProvider
+public class XrmSchemaProvider(ServiceClient serviceClient, DataverseEnvironment environment, IMemoryCache cache) : IXrmSchemaProvider
 {
     private bool disposed = false;
-    private readonly DataverseCacheKeys cacheKeys = new (environmentUrl);
+    private readonly DataverseCacheKeys cacheKeys = new (environment.Url);
     private readonly TimeSpan cacheExpiration = TimeSpan.FromMinutes(30);
     private CancellationTokenSource cacheEvictionTokenSource = new ();
 
-    public string EnvironmentUrl { get => environmentUrl; }
+    public string EnvironmentUrl { get => environment.Url; }
+    public DataverseEnvironment Environment { get => environment; }
     public bool IsReady { get => serviceClient.IsReady; }
     public Exception LastException { get => serviceClient.LastException; }
     public string LastError { get => serviceClient.LastError; }

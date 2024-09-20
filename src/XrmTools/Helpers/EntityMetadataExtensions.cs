@@ -1,5 +1,5 @@
 ﻿#nullable enable
-namespace XrmGen.Helpers;
+namespace XrmTools.Helpers;
 
 using Microsoft.Xrm.Sdk.Metadata;
 using System.Reflection;

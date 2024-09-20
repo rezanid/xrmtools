@@ -7,7 +7,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq.Expressions;
 
-namespace XrmGen.Xrm.Model;
+namespace XrmTools.Xrm.Model;
 
 public enum Stages 
 {

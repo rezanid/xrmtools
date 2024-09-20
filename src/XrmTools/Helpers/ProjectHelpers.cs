@@ -2,7 +2,7 @@
 // https://github.com/madskristensen/AddAnyFile/blob/master/src/Helpers/ProjectHelpers.cs
 
 #nullable enable
-namespace XrmGen.Helpers;
+namespace XrmTools.Helpers;
 using EnvDTE;
 using Microsoft.VisualStudio.ComponentModelHost;
 using Microsoft.VisualStudio.Editor;
@@ -23,7 +23,7 @@ using System.Runtime.CompilerServices;
 
 public static class ProjectHelpers
 {
-    public static XrmGenPackage ParentPackage { get; set; }
+    public static XrmToolsPackage ParentPackage { get; set; }
 
     public static string? GetRootNamespace(this Project project)
     {

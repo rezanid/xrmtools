@@ -1,30 +1,34 @@
 #nullable enable
-namespace XrmGen.UI;
+namespace XrmTools.UI;
 
 using Community.VisualStudio.Toolkit;
 using Microsoft.Extensions.Logging;
 using System.Threading.Tasks;
-using XrmGen.Xrm;
-using XrmGen.Xrm.Model;
+using XrmTools.Xrm;
+using XrmTools.Xrm.Model;
 
-internal static class AssemblySelector
+internal interface IAssemblySelector
 {
-    public static async Task<(PluginAssemblyConfig? config, string? filename)> ChooseAssemblyAsync(
-        IXrmSchemaProviderFactory? schemaProviderFactory, ILogger logger)
+    Task<(PluginAssemblyConfig config, string filename)> ChooseAssemblyAsync();
+}
+
+internal class AssemblySelector(IEnvironmentProvider environmentProvider, IXrmSchemaProviderFactory schemaProviderFactory, ILogger<AssemblySelector> logger) : IAssemblySelector
+{
+    public async Task<(PluginAssemblyConfig? config, string? filename)> ChooseAssemblyAsync()
     {
-        var url = await GetProjectPropertyAsync("EnvironmentUrl");
-        if (string.IsNullOrWhiteSpace(url)) { return (null, null); }
-        var schemaProvider = schemaProviderFactory?.GetOrNew(url!);
+        var environment = await environmentProvider.GetActiveEnvironmentAsync();
+        if (environment == null || !environment.IsValid()) { return (null, null); }
+        var schemaProvider = schemaProviderFactory?.GetOrNew(environment);
         if (schemaProvider == null)
         {
-            logger.LogWarning(url + " used in your EnvironmentUrl build property is not a valid environment URL.");
+            logger.LogWarning($"{environment} is not a valid environment.");
             return (null, null);
         }
         if (!schemaProvider.IsReady)
         {
-            logger.LogWarning($"Connection has failed to the environment: {url}");
+            logger.LogWarning($"Connection has failed to the environment: {environment.Url}");
             logger.LogWarning(string.IsNullOrEmpty(schemaProvider.LastError) ? "No error detected in Dataverse provider." : "Last Error: " + schemaProvider.LastError);
-            await VS.MessageBox.ShowErrorAsync("Dataverse Connection", $"Connection has failed to the environment: {url} check the Output window for more information.");
+            await VS.MessageBox.ShowErrorAsync("Dataverse Connection", $"Connection has failed to the environment: {environment.Url} check the Output window for more information.");
             return (null, null);
         }
         var dialog = new AssemblySelectionDialog(schemaProvider);

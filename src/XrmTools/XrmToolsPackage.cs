@@ -1,5 +1,5 @@
 ﻿#nullable enable
-namespace XrmGen;
+namespace XrmTools;
 
 using Community.VisualStudio.Toolkit;
 using Community.VisualStudio.Toolkit.DependencyInjection.Microsoft;
@@ -39,12 +39,13 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Threading;
 using VSLangProj;
-using XrmGen.Commands;
-using XrmGen.Helpers;
-using XrmGen.Logging;
-using XrmGen.Options;
-using XrmGen.Xrm;
-using XrmGen.Xrm.Generators;
+using XrmTools.Commands;
+using XrmTools.Helpers;
+using XrmTools.Logging;
+using XrmTools.Options;
+using XrmTools.UI;
+using XrmTools.Xrm;
+using XrmTools.Xrm.Generators;
 using YamlDotNet.Core.Tokens;
 using Task = System.Threading.Tasks.Task;
 
@@ -107,11 +108,12 @@ internal record ProjectDataverseSettings(
 [ProvideService(typeof(IXrmSchemaProviderFactory), IsAsyncQueryable = true, IsCacheable = true, IsFreeThreaded = true)]
 [ProvideService(typeof(IXrmPluginCodeGenerator), IsAsyncQueryable = true, IsCacheable = true, IsFreeThreaded = true)]
 [ProvideService(typeof(IXrmEntityCodeGenerator), IsAsyncQueryable = true, IsCacheable = true, IsFreeThreaded = true)]
+[ProvideService(typeof(IEnvironmentProvider), IsAsyncQueryable = true, IsCacheable = true, IsFreeThreaded = true)]
 [ProvideOptionPage(typeof(OptionsProvider.GeneralOptions), Vsix.Name, "General", 0, 0, true, SupportsProfiles = true)]
-public sealed class XrmGenPackage : MicrosoftDIToolkitPackage<XrmGenPackage>, IVsPersistSolutionProps
+public sealed class XrmToolsPackage : MicrosoftDIToolkitPackage<XrmToolsPackage>, IVsPersistSolutionProps
 
 {
-    public const string OptionKeyDataverseUrl = "DataverseUrl";
+    public const string DataverseUrlPropertyKey = "DataverseUrl";
     private static readonly ExplicitInterfaceInvoker<Package> implicitInvoker = new();
     public DTE2? Dte;
 
@@ -119,22 +121,31 @@ public sealed class XrmGenPackage : MicrosoftDIToolkitPackage<XrmGenPackage>, IV
     /// The initial configuration of the extension. The value can change after initialization if 
     /// the user changes the settings.
     /// </summary>
-    private GeneralOptions? InitialConfig;
+    private GeneralOptions? Options;
 
-    // Warning!
-    // MEF Doesn't work here. Use the ServiceProvider to get the requried service.
-    private IXrmSchemaProviderFactory? XrmSchemaProviderFactory;
+    private readonly IXrmSchemaProviderFactory XrmSchemaProviderFactory;
+    private readonly IEnvironmentProvider EnvironmentProvider;
+    private readonly ISettingsRepository SettingsRepository;
 
     public string? DataverseUrlOption { get; set; }
     public string? DataverseUrlSetting { get; set; }
 
-    public XrmGenPackage()
+    public XrmToolsPackage()
     {
-        AddOptionKey("DataverseUrl");
+        // User Options (settings per-user, per-solution) are handled by the base class.
+        // we only need to add them to the list of options to be saved.
+        SettingsRepository = new SettingsProvider();
+        foreach (var key in SettingsRepository.SolutionUserSettingKeys)
+        {
+            AddOptionKey(key);
+        }
+        XrmSchemaProviderFactory = new XrmSchemaProviderFactory();
+        EnvironmentProvider = new DataverseEnvironmentProvider((ISettingsProvider)SettingsRepository);
     }
 
     protected override void InitializeServices(IServiceCollection services)
     {
+
         services
             .AddMemoryCache()
             .AddLogging(builder =>
@@ -147,6 +158,14 @@ public sealed class XrmGenPackage : MicrosoftDIToolkitPackage<XrmGenPackage>, IV
                 builder.AddOutputLogger();
             })
             //.AddHostedService<IXrmSchemaProviderFactory>()
+            //.AddSingleton<IXrmSchemaProviderFactory, XrmSchemaProviderFactory>(() =>
+            //{
+            //    var factory = new XrmSchemaProviderFactory();
+            //})
+            .AddSingleton(SettingsRepository)
+            .AddSingleton(EnvironmentProvider)
+            .AddSingleton(XrmSchemaProviderFactory!)
+            .AddSingleton<IAssemblySelector, AssemblySelector>()
             .RegisterCommands(ServiceLifetime.Singleton);
         // Register your services here
         // services.AddSingleton<IYourService, YourService>();
@@ -158,7 +177,7 @@ public sealed class XrmGenPackage : MicrosoftDIToolkitPackage<XrmGenPackage>, IV
         //Alternatively, you can use the 'RegisterCommands' extension method to automatically register all commands in an assembly.
         //services.RegisterCommands(ServiceLifetime.Singleton);
         //...
-
+        StartBackgroundOperations();
     }
 
     /// <summary>
@@ -177,23 +196,18 @@ public sealed class XrmGenPackage : MicrosoftDIToolkitPackage<XrmGenPackage>, IV
 
         Dte = await GetServiceAsync(typeof(DTE)) as DTE2
             ?? throw new InvalidOperationException(
-                string.Format(Resources.Strings.Package_InitializationErroMissingDte, nameof(XrmGenPackage)));
+                string.Format(Resources.Strings.Package_InitializationErroMissingDte, nameof(XrmToolsPackage)));
         Assumes.Present(Dte);
 
-        InitialConfig = await GeneralOptions.GetLiveInstanceAsync();
+        Options = await GeneralOptions.GetLiveInstanceAsync();
 
         await InitializeMefServicesAsync();
-        if (XrmSchemaProviderFactory is null)
-        {
-            throw new InvalidOperationException("XrmSchemaProviderFactory is missing.");
-        }
 
         // When initialized asynchronously, the current thread may be a background thread at this point.
         // Do any initialization that requires the UI thread after switching to the UI thread.
         //await ApplyEntityGeneratorCommand.InitializeAsync(this);
         //await SetXrmPluginGeneratorCommand.InitializeAsync(this);
         //await GenerateRegistrationFileCommand.InitializeAsync(this);
-
 
         ProjectHelpers.ParentPackage = this;
 
@@ -209,14 +223,11 @@ public sealed class XrmGenPackage : MicrosoftDIToolkitPackage<XrmGenPackage>, IV
         };
         // This is for when extension is loaded after the solution is already open.
         // Usually happens when user opens Visual Studio and then opens a solution.
-        StartBackgroundOperations();
         await base.InitializeAsync(cancellationToken, progress);
     }
 
-    [MemberNotNull(nameof(XrmSchemaProviderFactory))]
     private async Task InitializeMefServicesAsync()
     {
-        XrmSchemaProviderFactory ??= new XrmSchemaProviderFactory();
         AddService(
             typeof(IXrmSchemaProviderFactory), 
             async (container, cancellationToken, type) =>
@@ -234,19 +245,29 @@ public sealed class XrmGenPackage : MicrosoftDIToolkitPackage<XrmGenPackage>, IV
                 await Task.FromResult(new TemplatedEntityCodeGenerator())
             // Add service at global level to make it available to Single-File generators.
             , promote: true);
+        //AddService(
+        //    typeof(ISettingsProvider),
+        //    async (container, cancellationToken, type) =>
+        //        await Task.FromResult(SettingsRepository)
+        //    // Add service at global level to make it available to Single-File generators.
+        //    , promote: true);
+        //AddService(
+        //    typeof(IEnvironmentProvider),
+        //    async (container, cancellationToken, type) =>
+        //        await Task.FromResult(EnvironmentProvider)
+        //        , promote: true);
         await Task.CompletedTask;
     }
 
     private void StartBackgroundOperations()
     {
-        var envs = GetProjectsDataverseEnvironments()
-            .Where(s => !string.IsNullOrWhiteSpace(s.EnvironmentUrl)
-                        && Uri.IsWellFormedUriString(s.EnvironmentUrl, UriKind.Absolute))
-            // The following grouping is to avoid having multiple environments with the same URL.
-            .GroupBy(s => s.EnvironmentUrl)
-            .Select(g => g.First())
-            .ToList();
-        if (!envs.Any()) { return; }
+        //var envs = GetProjectsDataverseEnvironments()
+        //    .Where(s => !string.IsNullOrWhiteSpace(s.EnvironmentUrl)
+        //                && Uri.IsWellFormedUriString(s.EnvironmentUrl, UriKind.Absolute))
+        //    // The following grouping is to avoid having multiple environments with the same URL.
+        //    .GroupBy(s => s.EnvironmentUrl)
+        //    .Select(g => g.First())
+        //    .ToList();
         var taskCenter = GetService(typeof(SVsTaskStatusCenterService)) as IVsTaskStatusCenterService;
         Assumes.Present(taskCenter);
         var options = default(TaskHandlerOptions);
@@ -257,62 +278,38 @@ public sealed class XrmGenPackage : MicrosoftDIToolkitPackage<XrmGenPackage>, IV
         data.CanBeCanceled = false;
 
         var handler = taskCenter.PreRegister(options, data);
-        handler.RegisterTask(InitializeXrmMetadataAsync(envs, data, handler));
+        handler.RegisterTask(InitializeXrmMetadataAsync(data, handler));
     }
 
-    private async Task InitializeXrmMetadataAsync(IList<ProjectDataverseSettings> envs, TaskProgressData data, ITaskHandler handler)
+    private async Task InitializeXrmMetadataAsync(TaskProgressData data, ITaskHandler handler)
     {
-        if (XrmSchemaProviderFactory is null)
-        {
-            data.ProgressText = "Failed to initialize XRM metadata.";
-            data.PercentComplete = 100;
-            handler.Progress.Report(data);
-            throw new InvalidOperationException("XrmSchemaProviderFactory is missing.");
-        }
+        var options = await GeneralOptions.GetLiveInstanceAsync();
+        var environments = options.Environments
+            .Where(e => e.IsValid()).ToList();
         var currentIndex = 0;
-        foreach (var env in envs)
+        foreach (var env in environments)
         {
-            data.ProgressText = $"Refreshing metadata for {env.EnvironmentUrl}";
-            data.PercentComplete = 100 * currentIndex / envs.Count;
+            data.ProgressText = $"Refreshing metadata for {env.Url}";
+            data.PercentComplete = 100 * currentIndex / environments.Count;
             handler.Progress.Report(data);
-
-            await XrmSchemaProviderFactory.EnsureInitializedAsync(env.EnvironmentUrl);
+            await XrmSchemaProviderFactory.EnsureInitializedAsync(env).ConfigureAwait(false);
         }
         data.ProgressText = "Metadata refresh complete";
         data.PercentComplete = 100;
         handler.Progress.Report(data);
     }
 
-    private IEnumerable<ProjectDataverseSettings> GetProjectsDataverseEnvironments()
-    {
-        ThreadHelper.ThrowIfNotOnUIThread();
-
-        var solution = (IVsSolution)GetService(typeof(SVsSolution));
-        var guid = Guid.Empty;
-        solution.GetProjectEnum((uint)__VSENUMPROJFLAGS.EPF_LOADEDINSOLUTION, ref guid, out var enumHierarchies);
-
-        var hierarchies = new IVsHierarchy[1];
-        while (enumHierarchies.Next(1, hierarchies, out var fetched) == VSConstants.S_OK && fetched == 1)
-        {
-            yield return new(
-                EnvironmentUrl: hierarchies[0].GetProjectProperty("EnvironmentUrl"),
-                ConnectionString: hierarchies[0].GetProjectProperty("ConnectionString"),
-                PluginCodeGenTemplatePath: hierarchies[0].GetProjectProperty("PluginCodeGenTemplatePath"),
-                EntityCodeGenTemplatePath: hierarchies[0].GetProjectProperty("EntityCodeGenTemplatePath"));
-        }
-    }
-
     protected override void OnLoadOptions(string key, Stream stream)
     {
-        if ("DataverseUrl".Equals(key, StringComparison.InvariantCultureIgnoreCase))
+        if (SettingsRepository.SolutionUserSettingKeys.Contains(key, StringComparer.InvariantCultureIgnoreCase))
         {
-            DataverseUrlOption = new StreamReader(stream).ReadToEnd();
+            SettingsRepository.SetSolutionUserSetting(key, new StreamReader(stream).ReadToEnd());
         }
     }
 
     protected override void OnSaveOptions(string key, Stream stream)
     {
-        if ("DataverseUrl".Equals(key, StringComparison.InvariantCultureIgnoreCase))
+        if (SettingsRepository.SolutionUserSettingKeys.Contains(key, StringComparer.InvariantCultureIgnoreCase))
         {
             var writer = new StreamWriter(stream);
             writer.Write(DataverseUrlOption);
@@ -333,25 +330,37 @@ public sealed class XrmGenPackage : MicrosoftDIToolkitPackage<XrmGenPackage>, IV
         }
     }
 
+    #region Solution User Options (Already implemented in Package)
     public int SaveUserOptions(IVsSolutionPersistence pPersistence) 
-        => implicitInvoker.Invoke<int>(this, nameof(SaveUserOptions), pPersistence);
+        => GeneralOptions.Instance.EnvironmentSettingLevel != EnvironmentSettingLevel.SolutionUser ? VSConstants.S_OK : implicitInvoker.Invoke<int>(this, nameof(SaveUserOptions), pPersistence);
     public int LoadUserOptions(IVsSolutionPersistence pPersistence, uint grfLoadOpts)
-        => implicitInvoker.Invoke<int>(this, nameof(LoadUserOptions), pPersistence);
+        => GeneralOptions.Instance.EnvironmentSettingLevel != EnvironmentSettingLevel.SolutionUser ? VSConstants.S_OK : implicitInvoker.Invoke<int>(this, nameof(LoadUserOptions), pPersistence);
     public int WriteUserOptions(IStream pOptionsStream, string pszKey)
-        => implicitInvoker.Invoke<int>(this, nameof(WriteUserOptions), pOptionsStream, pszKey);
+        => GeneralOptions.Instance.EnvironmentSettingLevel != EnvironmentSettingLevel.SolutionUser ? VSConstants.S_OK : implicitInvoker.Invoke<int>(this, nameof(WriteUserOptions), pOptionsStream, pszKey);
     public int ReadUserOptions(IStream pOptionsStream, string pszKey)
-        => implicitInvoker.Invoke<int>(this, nameof(ReadUserOptions), pOptionsStream, pszKey);
+        => GeneralOptions.Instance.EnvironmentSettingLevel != EnvironmentSettingLevel.SolutionUser ? VSConstants.S_OK : implicitInvoker.Invoke<int>(this, nameof(ReadUserOptions), pOptionsStream, pszKey);
+    #endregion
+    #region Solution Properties
     public int QuerySaveSolutionProps(IVsHierarchy pHierarchy, VSQUERYSAVESLNPROPS[] pqsspSave)
         => VSConstants.S_OK;
     public int SaveSolutionProps(IVsHierarchy pHierarchy, IVsSolutionPersistence pPersistence)
     {
+        if (GeneralOptions.Instance.EnvironmentSettingLevel != EnvironmentSettingLevel.Solution)
+        {
+            return VSConstants.S_OK;
+        }
         // Register to save our section in the solution
-        return pPersistence.SavePackageSolutionProps(1, pHierarchy, this, Vsix.Name);
+        return pPersistence.SavePackageSolutionProps(1, pHierarchy, this, Vsix.Name + "Properties");
     }
     public int WriteSolutionProps(IVsHierarchy pHierarchy, string pszKey, IPropertyBag pPropBag)
     {
+        if (GeneralOptions.Instance.EnvironmentSettingLevel != EnvironmentSettingLevel.Solution)
+        {
+            return VSConstants.S_OK;
+        }
         ThreadHelper.ThrowIfNotOnUIThread();
-        if (pszKey == OptionKeyDataverseUrl)
+        // TODO: Do we need this if block, or we should just always write the properties?
+        if (pszKey == DataverseUrlPropertyKey)
         {
             try
             {
@@ -366,14 +375,20 @@ public sealed class XrmGenPackage : MicrosoftDIToolkitPackage<XrmGenPackage>, IV
     }
     public int ReadSolutionProps(IVsHierarchy pHierarchy, string pszProjectName, string pszProjectMk, string pszKey, int fPreLoad, IPropertyBag pPropBag)
     {
+        if (GeneralOptions.Instance.EnvironmentSettingLevel != EnvironmentSettingLevel.Solution)
+        {
+            return VSConstants.S_OK;
+        }
         ThreadHelper.ThrowIfNotOnUIThread();
-        if (pszKey == OptionKeyDataverseUrl)
+        //if (pszKey == OptionKeyDataverseUrl)
+        if (pszKey == Vsix.Name + "Properties")
         {
             try
             {
                 // Create a placeholder for the property value
                 // VARTYPE for a string (VT_BSTR in COM) is 8, and we don't need an error log or unknown object
-                pPropBag.Read(pszKey, out var propValue, null, 8, null);
+                //pPropBag.Read(pszKey, out var propValue, null, 8, null);
+                pPropBag.Read(DataverseUrlPropertyKey, out var propValue, null, 8, null);
 
                 // Store the value
                 DataverseUrlSetting = propValue as string;
@@ -387,6 +402,7 @@ public sealed class XrmGenPackage : MicrosoftDIToolkitPackage<XrmGenPackage>, IV
     }
     public int OnProjectLoadFailure(IVsHierarchy pStubHierarchy, string pszProjectName, string pszProjectMk, string pszKey)
         => VSConstants.S_OK;
+    #endregion
 }
 
 public class ExplicitInterfaceInvoker<T>

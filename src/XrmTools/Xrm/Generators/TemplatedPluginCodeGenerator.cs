@@ -1,5 +1,5 @@
 ﻿#nullable enable
-namespace XrmGen.Xrm.Generators;
+namespace XrmTools.Xrm.Generators;
 
 using Scriban;
 using System;
@@ -7,7 +7,7 @@ using System.ComponentModel.Composition;
 using System.IO;
 using System.Linq;
 using System.Text;
-using XrmGen.Xrm.Model;
+using XrmTools.Xrm.Model;
 using Scriban.Runtime;
 using System.Collections.Generic;
 

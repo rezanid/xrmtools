@@ -1,9 +1,9 @@
-﻿namespace XrmGen.UI.Converters;
+﻿namespace XrmTools.UI.Converters;
 
 using System;
 using System.Globalization;
 using System.Windows.Data;
-using XrmGen.Helpers;
+using XrmTools.Helpers;
 
 public class ObjectToJsonConverter : IValueConverter
 {

@@ -2,7 +2,7 @@
 using Microsoft.Xrm.Sdk.Metadata;
 using System.Collections.Generic;
 
-namespace XrmGen;
+namespace XrmTools;
 
 public class OptionSetMetadataNameComparer : IEqualityComparer<OptionSetMetadata>
 {

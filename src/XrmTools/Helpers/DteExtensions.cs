@@ -1,5 +1,5 @@
 ﻿#nullable enable
-namespace XrmGen.Helpers;
+namespace XrmTools.Helpers;
 
 using EnvDTE;
 using EnvDTE80;

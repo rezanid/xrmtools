@@ -1,6 +1,6 @@
 ﻿using Microsoft.Xrm.Sdk;
 
-namespace XrmGen.Xrm.Extensions;
+namespace XrmTools.Xrm.Extensions;
 
 public static class LabelExtensions
 {

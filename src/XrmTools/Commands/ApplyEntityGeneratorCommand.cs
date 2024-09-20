@@ -1,4 +1,4 @@
-﻿namespace XrmGen.Commands;
+﻿namespace XrmTools.Commands;
 
 using Community.VisualStudio.Toolkit;
 using Community.VisualStudio.Toolkit.DependencyInjection;

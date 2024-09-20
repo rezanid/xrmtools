@@ -1,7 +1,7 @@
 ﻿#nullable enable
-namespace XrmGen.Xrm.Serialization;
+namespace XrmTools.Xrm.Serialization;
 
-using XrmGen.Xrm.Model;
+using XrmTools.Xrm.Model;
 using System;
 using System.Linq;
 using System.Text.Json;

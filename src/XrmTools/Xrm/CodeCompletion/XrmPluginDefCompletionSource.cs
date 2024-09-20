@@ -13,10 +13,10 @@ using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
-using XrmGen.Helpers;
-using XrmGen.Xrm.Extensions;
+using XrmTools.Helpers;
+using XrmTools.Xrm.Extensions;
 
-namespace XrmGen.Xrm.CodeCompletion;
+namespace XrmTools.Xrm.CodeCompletion;
 
 internal class XrmPluginDefCompletionSource(
     IXrmSchemaProvider catalog, ITextStructureNavigatorSelectorService structureNavigatorSelector, ITextBuffer textBuffer)

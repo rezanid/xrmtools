@@ -1,9 +1,9 @@
 ﻿#nullable enable
-namespace XrmGen.UI;
+namespace XrmTools.UI;
 
 using Microsoft.VisualStudio.PlatformUI;
 using System.Windows;
-using XrmGen.Xrm;
+using XrmTools.Xrm;
 using System.Reflection;
 using System.Linq;
 using System;

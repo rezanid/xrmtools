@@ -1,4 +1,4 @@
-﻿namespace XrmGen.Tokens;
+﻿namespace XrmTools.Tokens;
 
 internal interface ITokenExpander
 {

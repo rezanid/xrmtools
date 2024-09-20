@@ -14,14 +14,15 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading;
-using XrmGen.Helpers;
-using XrmGen.Xrm;
-using XrmGen.Xrm.Generators;
-using XrmGen.Xrm.Model;
+using XrmTools.Helpers;
+using XrmTools.Xrm;
+using XrmTools.Xrm.Generators;
+using XrmTools.Xrm.Model;
 using Microsoft.Extensions.DependencyInjection;
-using XrmGen.Options;
+using XrmTools.Options;
+using Community.VisualStudio.Toolkit;
 
-namespace XrmGen;
+namespace XrmTools;
 
 public class PluginCodeGenerator : BaseCodeGeneratorWithSite
 {
@@ -33,7 +34,7 @@ public class PluginCodeGenerator : BaseCodeGeneratorWithSite
     private bool disposed = false;
     private IXrmPluginCodeGenerator? _generator;
     private IXrmSchemaProviderFactory? _schemaProviderFactory;
-    private ILogger<PluginCodeGenerator>? _logger;
+    private IEnvironmentProvider? _environmentProvider;
 
     [Import]
     IXrmPluginCodeGenerator? Generator 
@@ -51,17 +52,23 @@ public class PluginCodeGenerator : BaseCodeGeneratorWithSite
         set => _schemaProviderFactory = value; 
     }
 
-    ILogger<PluginCodeGenerator> Logger
+    private IEnvironmentProvider? EnvironmentProvider
     {
-        get
-        {
-            if (_logger is not null) return _logger;
-            var serviceProvider = GlobalServiceProvider.GetService<SToolkitServiceProvider<XrmGenPackage>, IToolkitServiceProvider<XrmGenPackage>>();
-            return _logger = serviceProvider.GetRequiredService<ILogger<PluginCodeGenerator>>();
-        }
+        get => _environmentProvider ??= GlobalServiceProvider.GetService(typeof(IEnvironmentProvider)) as IEnvironmentProvider;
+        set => _environmentProvider = value;
     }
 
+    ILogger<PluginCodeGenerator> Logger { get; }
+
     public override string GetDefaultExtension() => ".cs";
+
+    public PluginCodeGenerator()
+    {
+        var serviceProvider = VS.GetRequiredService<SToolkitServiceProvider<XrmToolsPackage>, IToolkitServiceProvider<XrmToolsPackage>>();
+        EnvironmentProvider = serviceProvider.GetRequiredService<IEnvironmentProvider>();
+        SchemaProviderFactory = serviceProvider.GetRequiredService<IXrmSchemaProviderFactory>();
+        Logger = serviceProvider.GetRequiredService<ILogger<PluginCodeGenerator>>();
+    }
 
     protected override byte[]? GenerateCode(string inputFileName, string inputFileContent)
     {
@@ -133,9 +140,10 @@ public class PluginCodeGenerator : BaseCodeGeneratorWithSite
 
     private EntityMetadata? GetEntityMetadata(string logicalName, string[] attributes, IEnumerable<string> prefixesToRemove)
     {
-        var environmentUrl = GetProjectProperty("EnvironmentUrl");
-        if (string.IsNullOrWhiteSpace(environmentUrl)) { return null; }
-        var schemaProvider = SchemaProviderFactory?.Get(environmentUrl!);
+        var environment = EnvironmentProvider?.GetActiveEnvironmentAsync().WaitAndUnwrapException();
+        if (environment is null || !environment.IsValid()) return null;
+        var schemaProvider = SchemaProviderFactory?.Get(environment);
+        if (schemaProvider is null) return null;
         // Make a new cancellation token for 2 minutes.
         using var cts = new CancellationTokenSource(120000);
         var entityDefinition = schemaProvider?.GetEntityAsync(logicalName, cts.Token).WaitAndUnwrapException();

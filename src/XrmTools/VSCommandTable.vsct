@@ -111,6 +111,8 @@
     <GuidSymbol name="guidXrmCodeGenSetPluginGeneratorCommandUIRule" value="{ee3324f2-0e72-4af6-bcba-ac3af05df4e8}" />
     <GuidSymbol name="guidGeneratePluginConfigFileCommandUIRule" value="{87765b0d-0ab7-4812-9668-a2d621957cf9}" />
 
+    <!-- MEF Services-->
+    <GuidSymbol name="guidEnvironmentProvider" value="{b3322248-0f39-4073-b715-b25bc69dcf23}" />
     <GuidSymbol name="guidXrmSchemaProviderFactory" value="{b27d7354-9380-4c2e-ba0a-f423e727976e}" />
     <GuidSymbol name="guidXrmPluginCodeGenerator" value="{6b7af55b-dc3d-4bd7-ac39-3e3b60ef279b}" />
     <GuidSymbol name="guidXrmEntityCodeGenerator" value="{40f321f1-e206-4643-83d8-a14f3495c4ed}" />

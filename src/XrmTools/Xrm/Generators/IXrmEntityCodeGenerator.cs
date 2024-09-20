@@ -1,5 +1,5 @@
 ﻿#nullable enable
-namespace XrmGen.Xrm.Generators;
+namespace XrmTools.Xrm.Generators;
 
 using Microsoft.Xrm.Sdk.Metadata;
 using System.Runtime.InteropServices;

@@ -1,5 +1,5 @@
 ﻿#nullable enable
-namespace XrmGen.Helpers;
+namespace XrmTools.Helpers;
 
 using Microsoft.VisualStudio.Shell.Interop;
 using Microsoft.VisualStudio.Shell;

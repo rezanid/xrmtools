@@ -6,14 +6,12 @@ using Microsoft.VisualStudio.Text.Editor;
 using Microsoft.VisualStudio.Text.Operations;
 using Microsoft.VisualStudio.Utilities;
 using System.ComponentModel.Composition;
-using System.Diagnostics.CodeAnalysis;
-using XrmGen.Helpers;
+using XrmTools.Helpers;
 using Microsoft.VisualStudio.Text;
-using System.Diagnostics;
 using System;
-using System.Runtime.InteropServices;
+using Nito.AsyncEx.Synchronous;
 
-namespace XrmGen.Xrm.CodeCompletion;
+namespace XrmTools.Xrm.CodeCompletion;
 
 [Export(typeof(IAsyncCompletionSourceProvider))]
 [ContentType("JSON")]
@@ -23,18 +21,30 @@ public class XrmPluginDefCompletionProvider : IAsyncCompletionSourceProvider
 {
     private IVsRunningDocumentTable? _RunningDocumenTable;
 
-    [Import]
-    [SuppressMessage("Style", "IDE0044:Add readonly modifier", Justification = "MEF sets this property.")]
-    ITextStructureNavigatorSelectorService? StructureNavigatorSelector = null;
+    //[Import]
+    //[SuppressMessage("Style", "IDE0044:Add readonly modifier", Justification = "MEF sets this property.")]
+    ITextStructureNavigatorSelectorService StructureNavigatorSelector;
 
-    [Import]
-    public IXrmSchemaProviderFactory? XrmSchemaProviderFactory = null;
+    //[Import]
+    public IXrmSchemaProviderFactory XrmSchemaProviderFactory;
 
-    [Import]
-    public SVsServiceProvider? ServiceProvider;
+    //[Import(typeof(SVsServiceProvider))]
+    public IServiceProvider ServiceProvider;
 
-    private IVsRunningDocumentTable? RunningDocumenTable 
-        => _RunningDocumenTable ??= ServiceProvider?.GetService(typeof(SVsRunningDocumentTable)) as IVsRunningDocumentTable;
+    public IEnvironmentProvider EnvironmentProvider;
+
+    [ImportingConstructor]
+    public XrmPluginDefCompletionProvider(
+        [Import(typeof(SVsServiceProvider))]IServiceProvider serviceProvider,
+        [Import]IEnvironmentProvider environmentProvider,
+        [Import]IXrmSchemaProviderFactory xrmSchemaProviderFactory,
+        [Import]ITextStructureNavigatorSelectorService structureNavigatorSelector)
+    {
+        ServiceProvider = serviceProvider;
+        EnvironmentProvider = environmentProvider;
+        XrmSchemaProviderFactory = xrmSchemaProviderFactory;
+        StructureNavigatorSelector = structureNavigatorSelector;
+    }
 
     public IAsyncCompletionSource? GetOrCreate(ITextView textView)
     {
@@ -49,22 +59,22 @@ public class XrmPluginDefCompletionProvider : IAsyncCompletionSourceProvider
             // Get EnvironmentUrl and ApplicationId from project properties.
             if (textView.TextBuffer.Properties.GetProperty(typeof(ITextDocument)) is ITextDocument document)
             {
-                string? environmentUrl = GetProjectProperty(document.FilePath, "EnvironmentUrl");
-                string? applicationId = GetProjectProperty(document.FilePath, "ApplicationId");
-
-                if (string.IsNullOrEmpty(environmentUrl)) 
+                var environment = EnvironmentProvider?.GetActiveEnvironmentAsync().WaitAndUnwrapException();
+                if (environment is null || !environment.IsValid())
                 {
-                    // Write to debug that the properties are not set.
-                    Debugger.Log(0, "XrmPluginDefCompletionProvider", "EnvironmentUrl or ApplicationId is not set in project properties.");
-                    return null; 
+                    return null;
                 }
-
-                var xrmProvider = XrmSchemaProviderFactory.GetOrNew(environmentUrl!);
+                var schemaProvider = XrmSchemaProviderFactory.Get(environment);
+                if (schemaProvider is null) return null;
+                var xrmProvider = XrmSchemaProviderFactory.GetOrNew(environment);
                 return new XrmPluginDefCompletionSource(xrmProvider, StructureNavigatorSelector, textView.TextBuffer);
             }
             return null;
         });
     }
+
+    private IVsRunningDocumentTable? RunningDocumenTable
+        => _RunningDocumenTable ??= ServiceProvider?.GetService<SVsRunningDocumentTable, IVsRunningDocumentTable>();
 
     private string? GetProjectProperty(string inputFilePath, string propertyName) => RunningDocumenTable?.TryGetHierarchyAndItemID(inputFilePath, out var hierarchy, out _) == true
         ? hierarchy.GetProjectProperty(propertyName)

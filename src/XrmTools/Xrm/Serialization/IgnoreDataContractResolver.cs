@@ -1,5 +1,5 @@
 ﻿#nullable enable
-namespace XrmGen.Xrm.Serialization;
+namespace XrmTools.Xrm.Serialization;
 
 using Newtonsoft.Json;
 using Newtonsoft.Json.Serialization;

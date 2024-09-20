@@ -1,6 +1,7 @@
 ﻿#nullable enable
-namespace XrmGen;
+namespace XrmTools;
 
+using Community.VisualStudio.Toolkit;
 using Community.VisualStudio.Toolkit.DependencyInjection.Core;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
@@ -16,20 +17,21 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading;
-using XrmGen.Helpers;
-using XrmGen.Xrm;
-using XrmGen.Xrm.Generators;
+using XrmTools.Helpers;
+using XrmTools.Xrm;
+using XrmTools.Xrm.Generators;
 using YamlDotNet.Serialization;
 using YamlDotNet.Serialization.NamingConventions;
 
 public class EntityCodeGenerator : BaseCodeGeneratorWithSite
 {
-    public const string Name = "XrmGen Entity Generator";
+    public const string Name = "XrmTools Entity Generator";
     public const string Description = "Generates entity classes from metadata";
 
     private bool disposed = false;
     private IXrmEntityCodeGenerator? _generator;
     private IXrmSchemaProviderFactory? _schemaProviderFactory;
+    private IEnvironmentProvider? _environmentProvider;
     private ILogger<EntityCodeGenerator>? _logger;
 
     [Import]
@@ -40,7 +42,6 @@ public class EntityCodeGenerator : BaseCodeGeneratorWithSite
         set => _generator = value;
     }
 
-    [Import]
     private IXrmSchemaProviderFactory? SchemaProviderFactory
     {
         // MEF does not work, so this is a workaround.
@@ -48,17 +49,30 @@ public class EntityCodeGenerator : BaseCodeGeneratorWithSite
         set => _schemaProviderFactory = value;
     }
 
+    private IEnvironmentProvider? EnvironmentProvider
+    {
+        get => _environmentProvider ??= GlobalServiceProvider.GetService(typeof(IEnvironmentProvider)) as IEnvironmentProvider;
+        set => _environmentProvider = value;
+    }
+
     ILogger<EntityCodeGenerator> Logger
     {
         get
         {
             if (_logger is not null) return _logger;
-            var serviceProvider = GlobalServiceProvider.GetService<SToolkitServiceProvider<XrmGenPackage>, IToolkitServiceProvider<XrmGenPackage>>();
+            var serviceProvider = GlobalServiceProvider.GetService<SToolkitServiceProvider<XrmToolsPackage>, IToolkitServiceProvider<XrmToolsPackage>>();
             return _logger = serviceProvider.GetRequiredService<ILogger<EntityCodeGenerator>>();
         }
     }
 
     public override string GetDefaultExtension() => ".cs";
+
+    public EntityCodeGenerator()
+    {
+        var serviceProvider = VS.GetRequiredService<SToolkitServiceProvider<XrmToolsPackage>, IToolkitServiceProvider<XrmToolsPackage>>();
+        EnvironmentProvider = serviceProvider.GetRequiredService<IEnvironmentProvider>();
+        SchemaProviderFactory = serviceProvider.GetRequiredService<IXrmSchemaProviderFactory>();
+    }
 
     protected override byte[]? GenerateCode(string inputFileName, string inputFileContent)
     {
@@ -151,10 +165,11 @@ public class EntityCodeGenerator : BaseCodeGeneratorWithSite
 
     private EntityMetadata? GetEntityMetadata(string logicalName, string[] attributes)
     {
-        var environmentUrl = GetProjectProperty("EnvironmentUrl");
-        if (string.IsNullOrWhiteSpace(environmentUrl)) { return null; }
-        var schemaProvider = SchemaProviderFactory?.Get(environmentUrl!);
-        //make a new cancellation token for 2 minutes.
+        var environment = EnvironmentProvider?.GetActiveEnvironmentAsync().WaitAndUnwrapException();
+        if (environment is null || !environment.IsValid()) return null;
+        var schemaProvider = SchemaProviderFactory?.Get(environment);
+        if (schemaProvider is null) return null;
+        // Make a new cancellation token for 2 minutes.
         using var cts = new CancellationTokenSource(120000);
         var metadata = schemaProvider?.GetEntityAsync(logicalName, cts.Token).WaitAndUnwrapException();
         if (metadata == null) { return null; }

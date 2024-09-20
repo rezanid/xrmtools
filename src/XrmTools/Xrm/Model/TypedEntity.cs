@@ -1,5 +1,5 @@
 ﻿#nullable enable
-namespace XrmGen.Xrm.Model;
+namespace XrmTools.Xrm.Model;
 
 using Microsoft.Xrm.Sdk;
 using Microsoft.Xrm.Sdk.Client;

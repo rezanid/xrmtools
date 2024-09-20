@@ -1,5 +1,5 @@
 ﻿#nullable enable
-namespace XrmGen.Commands;
+namespace XrmTools.Commands;
 
 using Community.VisualStudio.Toolkit;
 using Community.VisualStudio.Toolkit.DependencyInjection.Core;
@@ -7,20 +7,20 @@ using Community.VisualStudio.Toolkit.DependencyInjection;
 using EnvDTE80;
 using Microsoft.VisualStudio.Shell;
 using System.ComponentModel.Composition;
-using XrmGen.Helpers;
-using XrmGen.Xrm;
+using XrmTools.Helpers;
+using XrmTools.Xrm;
 using Task = System.Threading.Tasks.Task;
 using Microsoft.Extensions.Logging;
-using XrmGen.UI;
+using XrmTools.UI;
 using System.Threading.Tasks;
 using System;
-using XrmGen.Xrm.Model;
+using XrmTools.Xrm.Model;
 
 [Command(PackageGuids.guidGenerateXrmPluginConfigCmdSetString, PackageIds.idGeneratePluginConfigFileCommand)]
 internal sealed class GenerateRegistrationFileCommand(
-    DIToolkitPackage parentPackage, ILogger<GenerateRegistrationFileCommand> logger) : BaseDICommand(parentPackage)
+    DIToolkitPackage parentPackage, ILogger<GenerateRegistrationFileCommand> logger, IAssemblySelector assemblySelector) : BaseDICommand(parentPackage)
 {
-    private readonly DTE2 dte = (parentPackage as XrmGenPackage)!.Dte!;
+    private readonly DTE2 dte = (parentPackage as XrmToolsPackage)!.Dte!;
     private IXrmSchemaProviderFactory? _schemaProviderFactory;
 
     [Import]
@@ -59,11 +59,11 @@ internal sealed class GenerateRegistrationFileCommand(
     {
         try
         {
-            return await AssemblySelector.ChooseAssemblyAsync(SchemaProviderFactory, logger);
+            return await assemblySelector.ChooseAssemblyAsync();
         }
         catch (Exception ex)
         {
-            logger.LogError(ex, "Error while choosing assembly: {0}", ex);
+            logger.LogError(ex, "Error while choosing assembly: {0}" + ex.InnerException?.Message, ex);
             await VS.MessageBox.ShowErrorAsync("Error while choosing assembly", ex.Message);
         }
         return (null, null);

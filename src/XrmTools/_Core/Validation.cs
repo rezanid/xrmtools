@@ -3,7 +3,7 @@ using EnvDTE80;
 using Microsoft.VisualStudio.Shell;
 using System.IO;
 
-namespace XrmGen;
+namespace XrmTools;
 
 public class Validation
 {
