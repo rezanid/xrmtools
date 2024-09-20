@@ -17,7 +17,7 @@ internal class AssemblySelector(IEnvironmentProvider environmentProvider, IXrmSc
     public async Task<(PluginAssemblyConfig? config, string? filename)> ChooseAssemblyAsync()
     {
         var environment = await environmentProvider.GetActiveEnvironmentAsync();
-        if (environment == null || !environment.IsValid()) { return (null, null); }
+        if (environment == null || !environment.IsValid) { return (null, null); }
         var schemaProvider = schemaProviderFactory?.GetOrNew(environment);
         if (schemaProvider == null)
         {

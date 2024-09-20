@@ -1,4 +1,5 @@
-﻿using Microsoft.VisualStudio.Core.Imaging;
+﻿using Microsoft.Extensions.Logging;
+using Microsoft.VisualStudio.Core.Imaging;
 using Microsoft.VisualStudio.Language.Intellisense.AsyncCompletion;
 using Microsoft.VisualStudio.Language.Intellisense.AsyncCompletion.Data;
 using Microsoft.VisualStudio.Text;
@@ -14,14 +15,16 @@ using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
 using XrmTools.Helpers;
+using XrmTools.Logging;
 using XrmTools.Xrm.Extensions;
 
 namespace XrmTools.Xrm.CodeCompletion;
 
 internal class XrmPluginDefCompletionSource(
-    IXrmSchemaProvider catalog, ITextStructureNavigatorSelectorService structureNavigatorSelector, ITextBuffer textBuffer)
-    : IAsyncCompletionSource
-
+    IOutputLoggerService logger,
+    IXrmSchemaProviderFactory xrmFactory, 
+    ITextStructureNavigatorSelectorService structureNavigatorSelector, 
+    ITextBuffer textBuffer) : IAsyncCompletionSource
 {
     private static readonly ImageElement StandardEntityIcon = new(new ImageId(new Guid("ae27a6b0-e345-4288-96df-5eaf394ee369"), 2708), "Standard");
     private static readonly ImageElement CustomEntityIcon = new(new ImageId(new Guid("ae27a6b0-e345-4288-96df-5eaf394ee369"), 2709), "Custom");
@@ -30,11 +33,14 @@ internal class XrmPluginDefCompletionSource(
     private static readonly ImmutableArray<CompletionFilter> StandardEntityFilters = [StandardEntityFilter];
     private static readonly ImmutableArray<CompletionFilter> CustomEntityFilters = [CustomEntityFilter];
 
+    private readonly IXrmSchemaProvider catalog = xrmFactory.GetOrAddActiveEnvironmentProvider();
+
     public CompletionStartData InitializeCompletion(CompletionTrigger trigger, SnapshotPoint triggerLocation, CancellationToken token)
     {
         if (catalog == null)
         {
             // Catalog is not initialized yet. We can't provide completion.
+            logger.LogWarning("Xrm code completion not available. Check if your environment setup is done under Tools > Options > Xrm Tools.");
             return CompletionStartData.DoesNotParticipateInCompletion;
         }
         var navigator = structureNavigatorSelector.GetTextStructureNavigator(triggerLocation.Snapshot.TextBuffer);
@@ -59,7 +65,7 @@ internal class XrmPluginDefCompletionSource(
         // - a punctuation character between quotes
         if (char.IsPunctuation(trigger.Character)
             && spanText.Length > 3 && spanText[0] == '\"'
-            && spanText[spanText.Length - 1] == '\"')
+            && spanText[^1] == '\"')
         {
             return new (CompletionParticipation.ProvidesItems, new SnapshotSpan(triggerLocation, 0));
         }

@@ -54,9 +54,10 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="Environments\DataverseEnvironmentProvider.cs" />
-    <Compile Include="Helpers\DataverseEnvironmentHelper.cs" />
+    <Compile Include="Helpers\ExplicitInterfaceInvoker.cs" />
     <Compile Include="Helpers\FileHelper.cs" />
     <Compile Include="Helpers\PackageHelper.cs" />
+    <Compile Include="Logging\OutputLoggerService.cs" />
     <Compile Include="Logging\OutputPaneLoggerExtensions.cs" />
     <Compile Include="Options\EnumDescriptionConverter.cs" />
     <Compile Include="SettingsProvider.cs" />

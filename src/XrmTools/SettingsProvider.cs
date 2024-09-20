@@ -16,16 +16,16 @@ internal interface ISettingsRepository
 
     string? GetSolutionSetting(string key);
     string? GetSolutionUserSetting(string key);
-    void SetSolutionSetting(string key, string value);
-    void SetSolutionUserSetting(string key, string value);
+    void SetSolutionSetting(string key, string? value);
+    void SetSolutionUserSetting(string key, string? value);
 
     IEnumerable<string> ProjectSettingKeys { get; }
     IEnumerable<string> ProjectUserSettingKeys { get; }
 
     Task<string?> GetProjectSettingAsync(string key);
     Task<string?> GetProjectUserSettingAsync(string key);
-    Task<bool> SetProjectSettingAsync(string key, string value);
-    Task<bool> SetProjectUserSettingAsync(string key, string value);
+    Task<bool> SetProjectSettingAsync(string key, string? value);
+    Task<bool> SetProjectUserSettingAsync(string key, string? value);
 }
 
 [Guid(PackageGuids.guidEnvironmentProviderString)]
@@ -41,7 +41,6 @@ internal interface ISettingsProvider
     ProjectSettingsAccessor ProjectUserSettings { get; }
 }
 
-[Export(typeof(ISettingsProvider))]
 [ComVisible(true)]
 internal class SettingsProvider : ISettingsProvider, ISettingsRepository
 {
@@ -88,15 +87,15 @@ internal class SettingsProvider : ISettingsProvider, ISettingsRepository
         ProjectUserSettings = new ProjectSettingsAccessor(AsRepository().GetProjectUserSettingAsync);
     }
 
-    void ISettingsRepository.SetSolutionSetting(string key, string value) => solutionSettings[key] = value;
-    void ISettingsRepository.SetSolutionUserSetting(string key, string value) => solutionUserSettings[key] = value;
-    async Task<bool> ISettingsRepository.SetProjectSettingAsync(string key, string value)
+    void ISettingsRepository.SetSolutionSetting(string key, string? value) => solutionSettings[key] = value;
+    void ISettingsRepository.SetSolutionUserSetting(string key, string? value) => solutionUserSettings[key] = value;
+    async Task<bool> ISettingsRepository.SetProjectSettingAsync(string key, string? value)
     {
         var proj = await VS.Solutions.GetActiveProjectAsync();
         if (proj is null) return false;
         return await proj.TrySetAttributeAsync(key, value, ProjectStorageType.ProjectFile);
     }
-    async Task<bool> ISettingsRepository.SetProjectUserSettingAsync(string key, string value)
+    async Task<bool> ISettingsRepository.SetProjectUserSettingAsync(string key, string? value)
     {
         var proj = await VS.Solutions.GetActiveProjectAsync();
         if (proj is null) return false;

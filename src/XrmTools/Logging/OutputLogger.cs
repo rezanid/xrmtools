@@ -3,15 +3,16 @@ namespace XrmTools.Logging;
 
 using Microsoft.Extensions.Logging;
 using Microsoft.VisualStudio.Shell;
-using Microsoft.VisualStudio.Shell.Interop;
 using System;
 using System.Collections.Generic;
 using System.Threading;
 
-public class OutputLogger(string name, IVsOutputWindowPane outputPane, LogLevel minLogLevel) : ILogger
+//public class OutputLogger(string name, IVsOutputWindowPane outputPane, LogLevel minLogLevel) : ILogger
+public class OutputLogger(string name, IOutputLoggerService outputLoggerService, LogLevel minLogLevel) : ILogger
 {
     private readonly string _name = name ?? throw new ArgumentNullException(nameof(name));
-    private readonly IVsOutputWindowPane _outputPane = outputPane ?? throw new ArgumentNullException(nameof(outputPane));
+    //private readonly IVsOutputWindowPane _outputPane = outputPane ?? throw new ArgumentNullException(nameof(outputPane));
+    private readonly IOutputLoggerService _outputLoggerService = outputLoggerService ?? throw new ArgumentNullException(nameof(outputLoggerService));
 
     // A thread-local dictionary to store scopes for each thread
     private static readonly AsyncLocal<Scope> _currentScope = new();
@@ -56,7 +57,8 @@ public class OutputLogger(string name, IVsOutputWindowPane outputPane, LogLevel 
 
         // Ensure we're on the main thread to write to the Output window
         ThreadHelper.ThrowIfNotOnUIThread();
-        _outputPane.OutputString(logRecord + Environment.NewLine);
+        //_outputPane.OutputString(logRecord + Environment.NewLine);
+        outputLoggerService.OutputString(logRecord + Environment.NewLine);
     }
 
     private class Scope(OutputLogger logger, object state) : IDisposable

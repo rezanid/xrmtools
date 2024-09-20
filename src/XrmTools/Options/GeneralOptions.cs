@@ -14,6 +14,7 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
+using System.Linq;
 using System.Runtime.InteropServices;
 using System.Windows;
 using System.Windows.Forms;
@@ -103,23 +104,39 @@ public enum EnvironmentSettingLevel
 [TypeConverter(typeof(DataverseEnvironmentConverter))]
 public record DataverseEnvironment
 {
+    private string? _url = string.Empty;
+    private string? _connectionstring = string.Empty;
+    private bool isValidConnectionString = false;
+
     [DisplayName("Environment Name")]
     [Description("The name of the environment, so you can easily identify it.")]
     [DefaultValue("Contoso Dev")]
     public string? Name { get; set; }
 
-    [DisplayName("Environment URL")]
-    [Description("The URL of the environment.")]
-    [DefaultValue("https://contoso.crm.dynamics.com")]
-    public string? Url { get; set; }
+    //[DisplayName("Environment URL")]
+    //[Description("The URL of the environment.")]
+    //[DefaultValue("https://contoso.crm.dynamics.com")]
+    [Browsable(false)]
+    public string? Url { get; }
 
     [DisplayName("Connection String")]
     [Description("The connection string to the environment according to https://learn.microsoft.com/en-us/power-apps/developer/data-platform/xrm-tooling/use-connection-strings-xrm-tooling-connect.")]
     [DefaultValue("AuthType=OAuth;Url=https://contoso.crm.dynamics.com;Integrated Security=True")]
-    public string? ConnectionString { get; set; }
+    public string? ConnectionString
+    {
+        get => _connectionstring;
+        set
+        {
+            _connectionstring = value;
+            var segments = value?.Split([';'], StringSplitOptions.RemoveEmptyEntries);
+            _url = segments.FirstOrDefault(s => s.StartsWith("Url=", StringComparison.OrdinalIgnoreCase))?.Substring(4);
+            isValidConnectionString = !string.IsNullOrWhiteSpace(value) && !string.IsNullOrWhiteSpace(Url);
+        }
+    }
 
     [MemberNotNullWhen(true, nameof(Url), nameof(ConnectionString))]
-    public bool IsValid() => !string.IsNullOrWhiteSpace(Url) && !string.IsNullOrWhiteSpace(ConnectionString);
+    [Browsable(false)]
+    public bool IsValid { get => isValidConnectionString; }
 
     public virtual bool Equals(DataverseEnvironment? other)
     {
@@ -133,7 +150,7 @@ public record DataverseEnvironment
     public override int GetHashCode()
     {
         int hash = 17;
-        hash = hash * 23 + (Url?.GetHashCode() ?? 0);
+        //hash = hash * 23 + (Url?.GetHashCode() ?? 0);
         hash = hash * 23 + (ConnectionString?.GetHashCode() ?? 0);
         return hash;
     }

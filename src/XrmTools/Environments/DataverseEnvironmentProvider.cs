@@ -11,25 +11,36 @@ using System.ComponentModel.Composition;
 [ComVisible(true)]
 public interface IEnvironmentProvider
 {
+    DataverseEnvironment? GetActiveEnvironment();
     Task<DataverseEnvironment?> GetActiveEnvironmentAsync();
     //Task SetActiveEnvironmentAsync(DataverseEnvironment environment);
 }
 
-[Export(typeof(IEnvironmentProvider))]
 [ComVisible(true)]
 [method: ImportingConstructor]
 internal class DataverseEnvironmentProvider([Import]ISettingsProvider settingsProvider) : IEnvironmentProvider
 {
     public async Task<DataverseEnvironment?> GetActiveEnvironmentAsync()
-        => (await GeneralOptions.GetLiveInstanceAsync()).EnvironmentSettingLevel switch
-        {
-            EnvironmentSettingLevel.Options => GeneralOptions.Instance.CurrentEnvironment,
-            EnvironmentSettingLevel.Solution => GetEnvironmentFromSolution(),
-            EnvironmentSettingLevel.SolutionUser => GetEnvironmentFromSolutionUserFile(),
-            EnvironmentSettingLevel.Project => await GetEnvironmentFromProjectAsync().ConfigureAwait(false),
-            EnvironmentSettingLevel.ProjectUser => await GetEnvironmentFromProjectUserFileAsync().ConfigureAwait(false),
-            _ => GeneralOptions.Instance.CurrentEnvironment,
-        };
+    => (await GeneralOptions.GetLiveInstanceAsync()).EnvironmentSettingLevel switch
+    {
+        EnvironmentSettingLevel.Options => (await GeneralOptions.GetLiveInstanceAsync().ConfigureAwait(false)).CurrentEnvironment,
+        EnvironmentSettingLevel.Solution => GetEnvironmentFromSolution(),
+        EnvironmentSettingLevel.SolutionUser => GetEnvironmentFromSolutionUserFile(),
+        EnvironmentSettingLevel.Project => await GetEnvironmentFromProjectAsync().ConfigureAwait(false),
+        EnvironmentSettingLevel.ProjectUser => await GetEnvironmentFromProjectUserFileAsync().ConfigureAwait(false),
+        _ => GeneralOptions.Instance.CurrentEnvironment,
+    };
+
+    public DataverseEnvironment? GetActiveEnvironment()
+    => (GeneralOptions.Instance).EnvironmentSettingLevel switch
+    {
+        EnvironmentSettingLevel.Options => GeneralOptions.Instance.CurrentEnvironment,
+        EnvironmentSettingLevel.Solution => GetEnvironmentFromSolution(),
+        EnvironmentSettingLevel.SolutionUser => GetEnvironmentFromSolutionUserFile(),
+        EnvironmentSettingLevel.Project => GetEnvironmentFromProjectAsync().ConfigureAwait(false).GetAwaiter().GetResult(),
+        EnvironmentSettingLevel.ProjectUser => GetEnvironmentFromProjectUserFileAsync().ConfigureAwait(false).GetAwaiter().GetResult(),
+        _ => GeneralOptions.Instance.CurrentEnvironment,
+    };
 
     //public async Task SetActiveEnvironmentAsync(DataverseEnvironment environment)
     //{

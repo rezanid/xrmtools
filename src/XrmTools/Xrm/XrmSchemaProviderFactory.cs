@@ -6,6 +6,7 @@ using Microsoft.PowerPlatform.Dataverse.Client;
 using System;
 using System.Collections.Concurrent;
 using System.ComponentModel.Composition;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Threading.Tasks;
 using XrmTools.Options;
@@ -14,17 +15,29 @@ using XrmTools.Options;
 [ComVisible(true)]
 public interface IXrmSchemaProviderFactory: IDisposable
 {
+    IXrmSchemaProvider? GetOrAddActiveEnvironmentProvider();
+    Task<IXrmSchemaProvider?> GetOrAddActiveEnvironmentProviderAsync();
     IXrmSchemaProvider Get(DataverseEnvironment environment);
     IXrmSchemaProvider GetOrNew(DataverseEnvironment environment);
     Task EnsureInitializedAsync(DataverseEnvironment environment);
 }
 
-[Export(typeof(IXrmSchemaProviderFactory))]
-public class XrmSchemaProviderFactory : IXrmSchemaProviderFactory
+[method: ImportingConstructor]
+public class XrmSchemaProviderFactory([Import]IEnvironmentProvider environmentProvider) : IXrmSchemaProviderFactory
 {
     private static readonly ConcurrentDictionary<string, IXrmSchemaProvider> Providers = [];
     private static readonly object _lock = new();
     private bool disposed = false;
+
+    public IXrmSchemaProvider? GetOrAddActiveEnvironmentProvider()
+        => environmentProvider.GetActiveEnvironment() is DataverseEnvironment env and { IsValid: true }
+            ? GetOrNew(env)
+            : null;
+
+    public async Task<IXrmSchemaProvider?> GetOrAddActiveEnvironmentProviderAsync()
+        => await environmentProvider.GetActiveEnvironmentAsync() is DataverseEnvironment env and { IsValid: true }
+            ? GetOrNew(env)
+            : null;
 
     /// <summary>
     /// Returns an existing provider.
@@ -34,7 +47,7 @@ public class XrmSchemaProviderFactory : IXrmSchemaProviderFactory
     /// <exception cref="InvalidOperationException">When environment has not been initialized.</exception>
     public IXrmSchemaProvider Get(DataverseEnvironment environment)
     {
-        if (!environment.IsValid()) return default!;
+        if (!environment.IsValid) return default!;
         if (Providers.TryGetValue(environment.Url, out var provider))
         {
             return provider;
@@ -43,11 +56,8 @@ public class XrmSchemaProviderFactory : IXrmSchemaProviderFactory
     }
 
     public IXrmSchemaProvider GetOrNew(DataverseEnvironment environment)
-    {
-        if (!environment.IsValid()) return default!;
-        return Providers.GetOrAdd(environment.Url, (key) => Initialize(environment));
-    }
-
+        => !environment.IsValid ? default! : Providers.GetOrAdd(environment.Url, (key) => Initialize(environment));
+    
     /// <summary>
     /// Refreshes cached metadata
     /// </summary>
@@ -69,7 +79,7 @@ public class XrmSchemaProviderFactory : IXrmSchemaProviderFactory
     /// </summary>
     public async Task EnsureInitializedAsync(DataverseEnvironment environment)
     {
-        if (!environment.IsValid()) return;
+        if (!environment.IsValid) return;
         var provider = Providers.AddOrUpdate(
             environment.Url,
             (key) => Initialize(environment),
@@ -84,7 +94,7 @@ public class XrmSchemaProviderFactory : IXrmSchemaProviderFactory
     /// </summary>
     private IXrmSchemaProvider Initialize(DataverseEnvironment environment)
     {
-        if (!environment.IsValid()) return default!;
+        if (!environment.IsValid) return default!;
         if (Providers.TryGetValue(environment.Url, out var provider))
         {
             return provider;

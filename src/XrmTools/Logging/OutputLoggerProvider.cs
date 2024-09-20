@@ -1,40 +1,37 @@
-﻿namespace XrmTools.Logging;
+﻿#nullable enable
+namespace XrmTools.Logging;
 
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
-using Microsoft.VisualStudio.Shell;
-using Microsoft.VisualStudio.Shell.Interop;
+using Microsoft.VisualStudio.ComponentModelHost;
 using System;
 using System.Collections.Concurrent;
+using System.ComponentModel.Composition;
 
 public class OutputLoggerProvider : ILoggerProvider
 {
     private readonly ConcurrentDictionary<string, OutputLogger> _loggers = new();
-    private readonly IVsOutputWindowPane _outputPane;
     private readonly IOptionsMonitor<LoggerFilterOptions> _options;
+
+    [Import]
+    IOutputLoggerService? OutputLoggerService { get; set; }
 
     public OutputLoggerProvider(IOptionsMonitor<LoggerFilterOptions> options)
     {
         _options = options ?? throw new ArgumentNullException(nameof(options));
 
-        // Get the Output window pane for our logger
-        ThreadHelper.ThrowIfNotOnUIThread();
-        var outputWindow = Package.GetGlobalService(typeof(SVsOutputWindow)) as IVsOutputWindow;
-
-        // Use a GUID to uniquely identify your output pane (use any GUID you prefer)
-        outputWindow.CreatePane(ref PackageGuids.guidXrmCodeGenPackage, Vsix.Name, 1, 1);
-        outputWindow.GetPane(ref PackageGuids.guidXrmCodeGenPackage, out _outputPane);
+        var componentModel = (IComponentModel)Microsoft.VisualStudio.Shell.Package.GetGlobalService(typeof(SComponentModel));
+        if (componentModel == null) return;
+        componentModel.DefaultCompositionService.SatisfyImportsOnce(this);
     }
 
     public ILogger CreateLogger(string categoryName)
     {
         // Retrieve the log level from the LoggerFilterOptions
         var minLogLevel = _options.CurrentValue.MinLevel;
-        return _loggers.GetOrAdd(categoryName, name => new OutputLogger(name, _outputPane, minLogLevel));
+        return _loggers.GetOrAdd(categoryName, name => new OutputLogger(name, OutputLoggerService, minLogLevel));
     }
 
-    public void Dispose()
-    {
-        _loggers.Clear();
-    }
+    public void Dispose() => _loggers.Clear();
 }
+#nullable restore

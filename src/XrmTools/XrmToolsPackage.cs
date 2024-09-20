@@ -24,7 +24,6 @@ using Microsoft.VisualStudio.TextTemplating.VSHost;
 using Microsoft.VisualStudio.Threading;
 using Newtonsoft.Json.Linq;
 using System;
-using System.Collections.Generic;
 using System.ComponentModel;
 using System.ComponentModel.Composition;
 using System.ComponentModel.Design;
@@ -32,7 +31,6 @@ using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Linq;
 using System.Net;
-using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Threading;
@@ -123,9 +121,10 @@ public sealed class XrmToolsPackage : MicrosoftDIToolkitPackage<XrmToolsPackage>
     /// </summary>
     private GeneralOptions? Options;
 
-    private readonly IXrmSchemaProviderFactory XrmSchemaProviderFactory;
-    private readonly IEnvironmentProvider EnvironmentProvider;
-    private readonly ISettingsRepository SettingsRepository;
+    [Export(typeof(IOutputLoggerService))] internal IOutputLoggerService OutputLoggerService { get; init; }
+    [Export(typeof(IXrmSchemaProviderFactory))] internal IXrmSchemaProviderFactory XrmSchemaProviderFactory { get; init; }
+    [Export(typeof(IEnvironmentProvider))] internal IEnvironmentProvider EnvironmentProvider { get; init; }
+    [Export(typeof(ISettingsProvider))] internal ISettingsRepository SettingsRepository { get; init; }
 
     public string? DataverseUrlOption { get; set; }
     public string? DataverseUrlSetting { get; set; }
@@ -134,13 +133,14 @@ public sealed class XrmToolsPackage : MicrosoftDIToolkitPackage<XrmToolsPackage>
     {
         // User Options (settings per-user, per-solution) are handled by the base class.
         // we only need to add them to the list of options to be saved.
+        OutputLoggerService = new OutputLoggerService();
         SettingsRepository = new SettingsProvider();
         foreach (var key in SettingsRepository.SolutionUserSettingKeys)
         {
             AddOptionKey(key);
         }
-        XrmSchemaProviderFactory = new XrmSchemaProviderFactory();
         EnvironmentProvider = new DataverseEnvironmentProvider((ISettingsProvider)SettingsRepository);
+        XrmSchemaProviderFactory = new XrmSchemaProviderFactory(EnvironmentProvider);
     }
 
     protected override void InitializeServices(IServiceCollection services)
@@ -148,6 +148,7 @@ public sealed class XrmToolsPackage : MicrosoftDIToolkitPackage<XrmToolsPackage>
 
         services
             .AddMemoryCache()
+            .AddSingleton(OutputLoggerService)
             .AddLogging(builder =>
             {
                 builder.SetMinimumLevel(GeneralOptions.Instance.LogLevel);
@@ -285,7 +286,7 @@ public sealed class XrmToolsPackage : MicrosoftDIToolkitPackage<XrmToolsPackage>
     {
         var options = await GeneralOptions.GetLiveInstanceAsync();
         var environments = options.Environments
-            .Where(e => e.IsValid()).ToList();
+            .Where(e => e.IsValid).ToList();
         var currentIndex = 0;
         foreach (var env in environments)
         {
@@ -350,7 +351,7 @@ public sealed class XrmToolsPackage : MicrosoftDIToolkitPackage<XrmToolsPackage>
             return VSConstants.S_OK;
         }
         // Register to save our section in the solution
-        return pPersistence.SavePackageSolutionProps(1, pHierarchy, this, Vsix.Name + "Properties");
+        return pPersistence.SavePackageSolutionProps(1, pHierarchy, this, Vsix.Name.Replace(" ", string.Empty) + "Properties");
     }
     public int WriteSolutionProps(IVsHierarchy pHierarchy, string pszKey, IPropertyBag pPropBag)
     {
@@ -359,12 +360,12 @@ public sealed class XrmToolsPackage : MicrosoftDIToolkitPackage<XrmToolsPackage>
             return VSConstants.S_OK;
         }
         ThreadHelper.ThrowIfNotOnUIThread();
-        // TODO: Do we need this if block, or we should just always write the properties?
-        if (pszKey == DataverseUrlPropertyKey)
+        // TODO: Do we need this `if` block, or we should just always write the properties?
+        if (SettingsRepository.SolutionSettingKeys.Contains(pszKey))
         {
             try
             {
-                pPropBag.Write(pszKey, DataverseUrlSetting);
+                pPropBag.Write(pszKey, SettingsRepository.GetSolutionSetting(pszKey));
             }
             catch (Exception ex)
             {
@@ -381,17 +382,20 @@ public sealed class XrmToolsPackage : MicrosoftDIToolkitPackage<XrmToolsPackage>
         }
         ThreadHelper.ThrowIfNotOnUIThread();
         //if (pszKey == OptionKeyDataverseUrl)
-        if (pszKey == Vsix.Name + "Properties")
+        if (pszKey == Vsix.Name.Replace(" ", string.Empty) + "Properties")
         {
             try
             {
                 // Create a placeholder for the property value
                 // VARTYPE for a string (VT_BSTR in COM) is 8, and we don't need an error log or unknown object
                 //pPropBag.Read(pszKey, out var propValue, null, 8, null);
-                pPropBag.Read(DataverseUrlPropertyKey, out var propValue, null, 8, null);
+                foreach (var settingKey in SettingsRepository.SolutionSettingKeys)
+                {
+                    pPropBag.Read(settingKey, out var propValue, null, 8, null);
+                    // Store the value
+                    SettingsRepository.SetSolutionSetting(settingKey, propValue as string);
+                }
 
-                // Store the value
-                DataverseUrlSetting = propValue as string;
             }
             catch (Exception ex)
             {
@@ -404,44 +408,4 @@ public sealed class XrmToolsPackage : MicrosoftDIToolkitPackage<XrmToolsPackage>
         => VSConstants.S_OK;
     #endregion
 }
-
-public class ExplicitInterfaceInvoker<T>
-{
-    private readonly Dictionary<string, MethodInfo> cache = [];
-    private readonly Type baseType = typeof(T);
-
-    private MethodInfo FindMethod(string methodName)
-    {
-        if (!cache.TryGetValue(methodName, out var method))
-        {
-            var methods = baseType.GetMethods(BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.DeclaredOnly);
-
-            foreach (var methodInfo in methods)
-            {
-                if (methodInfo.IsFinal && methodInfo.IsPrivate) //explicit interface implementation
-                {
-                    if (methodInfo.Name == methodName || methodInfo.Name.EndsWith("." + methodName))
-                    {
-                        method = methodInfo;
-                        break;
-                    }
-                }
-            }
-
-            cache.Add(methodName, method);
-        }
-
-        return method;
-    }
-
-    public RT Invoke<RT>(T obj, string methodName, params object[] parameters)
-    {
-        if (obj == null) throw new ArgumentNullException(nameof(obj));
-        if (!baseType.IsAssignableFrom(obj.GetType()))
-        {
-            throw new ArgumentException("Object is not of type " + baseType.Name);
-        }
-        var method = FindMethod(methodName) ?? throw new InvalidOperationException($"Method '{methodName}' not found.");
-        return (RT)method.Invoke(obj, parameters);
-    }
-}
+#nullable restore

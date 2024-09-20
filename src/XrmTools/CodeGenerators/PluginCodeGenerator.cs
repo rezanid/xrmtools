@@ -141,7 +141,7 @@ public class PluginCodeGenerator : BaseCodeGeneratorWithSite
     private EntityMetadata? GetEntityMetadata(string logicalName, string[] attributes, IEnumerable<string> prefixesToRemove)
     {
         var environment = EnvironmentProvider?.GetActiveEnvironmentAsync().WaitAndUnwrapException();
-        if (environment is null || !environment.IsValid()) return null;
+        if (environment is null || !environment.IsValid) return null;
         var schemaProvider = SchemaProviderFactory?.Get(environment);
         if (schemaProvider is null) return null;
         // Make a new cancellation token for 2 minutes.

@@ -24,6 +24,9 @@ namespace XrmTools
         public const string guidGeneratePluginConfigFileCommandUIRuleString = "87765b0d-0ab7-4812-9668-a2d621957cf9";
         public static Guid guidGeneratePluginConfigFileCommandUIRule = new Guid(guidGeneratePluginConfigFileCommandUIRuleString);
 
+        public const string guidOutputLoggerServiceString = "974d18b3-8c5f-464f-a589-40b1fd920d4c";
+        public static Guid guidOutputLoggerService = new Guid(guidOutputLoggerServiceString);
+
         public const string guidEnvironmentProviderString = "b3322248-0f39-4073-b715-b25bc69dcf23";
         public static Guid guidEnvironmentProvider = new Guid(guidEnvironmentProviderString);
 
