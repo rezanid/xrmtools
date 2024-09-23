@@ -1,24 +1,20 @@
 ﻿#nullable enable
 namespace XrmTools.Options;
-
 using Community.VisualStudio.Toolkit;
 using Community.VisualStudio.Toolkit.DependencyInjection.Core;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Logging.Configuration;
 using Microsoft.Extensions.Options;
-using Microsoft.VisualStudio.OLE.Interop;
-using Microsoft.VisualStudio.VCProjectEngine;
+using Microsoft.VisualStudio.Shell;
+using Microsoft.VisualStudio.Shell.Interop;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Diagnostics.CodeAnalysis;
-using System.Globalization;
+using System.Drawing.Design;
 using System.Linq;
 using System.Runtime.InteropServices;
-using System.Windows;
-using System.Windows.Forms;
-using XrmTools.Logging;
+using XrmTools.Helpers;
 
 internal partial class OptionsProvider
 {
@@ -41,7 +37,7 @@ public class GeneralOptions : BaseOptionModel<GeneralOptions>
     [DisplayName("Environments")]
     [Description("List of Power Platform environments.")]
     [DefaultValue(typeof(List<DataverseEnvironment>), "")]
-    public List<DataverseEnvironment> Environments { get; set; } = [];
+    public DataverseEnvironmentList Environments { get; set; } = [];
 
     [Category("Power Platform Environments")]
     [DisplayName("Current Environment Level")]
@@ -52,7 +48,9 @@ public class GeneralOptions : BaseOptionModel<GeneralOptions>
 
     [Category("Power Platform Environments")]
     [DisplayName("Current Environment")]
-    [Description("The current environment. only applicable when Current environment level is set to Visual Studio Profile.")]
+    [Description("The current environment. only applicable when Current environment level is set to Visual Studio Options.")]
+    [TypeConverter(typeof(CurrentEnvironmentConverter))]
+    [Editor(typeof(CurrentEnvironmentEditor), typeof(UITypeEditor))]
     public DataverseEnvironment CurrentEnvironment { get; set; } = DataverseEnvironment.Empty;
 
     public override void Save()
@@ -75,14 +73,16 @@ public class GeneralOptions : BaseOptionModel<GeneralOptions>
         // Ensure that the list is not null
         Environments ??= [];
 
-        UpdateLoggingLevel();
+        ApplyChanges();
     }
 
-    private void UpdateLoggingLevel()
+    private void ApplyChanges()
     {
         var serviceProvider = VS.GetRequiredService<SToolkitServiceProvider<XrmToolsPackage>, IToolkitServiceProvider<XrmToolsPackage>>();
         var loggerFilterOptions = serviceProvider.GetRequiredService<IConfigureOptions<LoggerFilterOptions>>();
         loggerFilterOptions.Configure(new LoggerFilterOptions { MinLevel = LogLevel });
+        var environmentProvider = serviceProvider.GetRequiredService<IEnvironmentProvider>();
+        environmentProvider.SetActiveEnvironmentAsync(CurrentEnvironment).ConfigureAwait(false).GetAwaiter().GetResult();
     }
 }
 
@@ -101,7 +101,7 @@ public enum EnvironmentSettingLevel
 [DisplayName("Power Platform Environment")]
 [Description("Properties of a Power Platform environment.")]
 [DefaultProperty(nameof(Name))]
-[TypeConverter(typeof(DataverseEnvironmentConverter))]
+//[TypeConverter(typeof(DataverseEnvironmentConverter))]
 public record DataverseEnvironment
 {
     private string? _url = string.Empty;
@@ -113,11 +113,12 @@ public record DataverseEnvironment
     [DefaultValue("Contoso Dev")]
     public string? Name { get; set; }
 
-    //[DisplayName("Environment URL")]
-    //[Description("The URL of the environment.")]
-    //[DefaultValue("https://contoso.crm.dynamics.com")]
-    [Browsable(false)]
-    public string? Url { get; }
+    [DisplayName("Environment URL")]
+    [Description("The URL of the environment.")]
+    [DefaultValue("https://contoso.crm.dynamics.com")]
+    [ReadOnly(true)]
+    //[Browsable(false)]
+    public string? Url { get => _url; }
 
     [DisplayName("Connection String")]
     [Description("The connection string to the environment according to https://learn.microsoft.com/en-us/power-apps/developer/data-platform/xrm-tooling/use-connection-strings-xrm-tooling-connect.")]
@@ -155,26 +156,11 @@ public record DataverseEnvironment
         return hash;
     }
 
+    public override string? ToString()
+    {
+        return !string.IsNullOrEmpty(Name) ? Name : "New";
+    }
+
     public static DataverseEnvironment Empty => new ();
 }
-
-public class DataverseEnvironmentConverter : ExpandableObjectConverter
-{
-    public override object ConvertTo(ITypeDescriptorContext context, CultureInfo culture, object value, Type destinationType)
-    {
-        if (destinationType == typeof(string) && value is DataverseEnvironment environment)
-        {
-            // Return the desired format when the object is collapsed
-            if (DataverseEnvironment.Empty.Equals(environment))
-            {
-                return "Empty";
-            }
-            return $"{environment.Name} ({environment.Url})";
-        }
-
-        // Call the base class to handle other conversions
-        return base.ConvertTo(context, culture, value, destinationType);
-    }
-}
-
 #nullable restore

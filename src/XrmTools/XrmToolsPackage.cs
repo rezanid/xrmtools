@@ -5,46 +5,29 @@ using Community.VisualStudio.Toolkit;
 using Community.VisualStudio.Toolkit.DependencyInjection.Microsoft;
 using EnvDTE;
 using EnvDTE80;
-using Humanizer.Localisation;
 using Microsoft;
-using Microsoft.Build.Framework;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.DependencyInjection.Extensions;
-using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Options;
 using Microsoft.VisualStudio;
 using Microsoft.VisualStudio.OLE.Interop;
-using Microsoft.VisualStudio.RpcContracts.Utilities;
 using Microsoft.VisualStudio.Shell;
-using Microsoft.VisualStudio.Shell.Events;
 using Microsoft.VisualStudio.Shell.Interop;
 using Microsoft.VisualStudio.TaskStatusCenter;
 using Microsoft.VisualStudio.TextTemplating.VSHost;
 using Microsoft.VisualStudio.Threading;
-using Newtonsoft.Json.Linq;
 using System;
-using System.ComponentModel;
 using System.ComponentModel.Composition;
-using System.ComponentModel.Design;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Linq;
-using System.Net;
-using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Threading;
-using System.Threading.Tasks;
-using System.Windows.Threading;
-using VSLangProj;
-using XrmTools.Commands;
 using XrmTools.Helpers;
 using XrmTools.Logging;
 using XrmTools.Options;
 using XrmTools.UI;
 using XrmTools.Xrm;
 using XrmTools.Xrm.Generators;
-using YamlDotNet.Core.Tokens;
 using Task = System.Threading.Tasks.Task;
 
 internal record ProjectDataverseSettings(
@@ -108,10 +91,10 @@ internal record ProjectDataverseSettings(
 [ProvideService(typeof(IXrmEntityCodeGenerator), IsAsyncQueryable = true, IsCacheable = true, IsFreeThreaded = true)]
 [ProvideService(typeof(IEnvironmentProvider), IsAsyncQueryable = true, IsCacheable = true, IsFreeThreaded = true)]
 [ProvideOptionPage(typeof(OptionsProvider.GeneralOptions), Vsix.Name, "General", 0, 0, true, SupportsProfiles = true)]
-public sealed class XrmToolsPackage : MicrosoftDIToolkitPackage<XrmToolsPackage>, IVsPersistSolutionProps
-
+[ProvideSolutionProperties(SolutionPersistanceKey)]
+public sealed class XrmToolsPackage : MicrosoftDIToolkitPackage<XrmToolsPackage>, IVsPersistSolutionProps, IVsPersistSolutionOpts
 {
-    public const string DataverseUrlPropertyKey = "DataverseUrl";
+    public const string SolutionPersistanceKey = "XrmToolsProperies";
     private static readonly ExplicitInterfaceInvoker<Package> implicitInvoker = new();
     public DTE2? Dte;
 
@@ -139,13 +122,12 @@ public sealed class XrmToolsPackage : MicrosoftDIToolkitPackage<XrmToolsPackage>
         {
             AddOptionKey(key);
         }
-        EnvironmentProvider = new DataverseEnvironmentProvider((ISettingsProvider)SettingsRepository);
+        EnvironmentProvider = new DataverseEnvironmentProvider(SettingsRepository);
         XrmSchemaProviderFactory = new XrmSchemaProviderFactory(EnvironmentProvider);
     }
 
     protected override void InitializeServices(IServiceCollection services)
     {
-
         services
             .AddMemoryCache()
             .AddSingleton(OutputLoggerService)
@@ -158,26 +140,11 @@ public sealed class XrmToolsPackage : MicrosoftDIToolkitPackage<XrmToolsPackage>
                 };
                 builder.AddOutputLogger();
             })
-            //.AddHostedService<IXrmSchemaProviderFactory>()
-            //.AddSingleton<IXrmSchemaProviderFactory, XrmSchemaProviderFactory>(() =>
-            //{
-            //    var factory = new XrmSchemaProviderFactory();
-            //})
             .AddSingleton(SettingsRepository)
             .AddSingleton(EnvironmentProvider)
             .AddSingleton(XrmSchemaProviderFactory!)
             .AddSingleton<IAssemblySelector, AssemblySelector>()
             .RegisterCommands(ServiceLifetime.Singleton);
-        // Register your services here
-        // services.AddSingleton<IYourService, YourService>();
-
-        // Register any commands.They can be registered as a 'Singleton' or 'Scoped'.
-        // 'Transient' will work but in practice it will behave the same as 'Scoped'.
-        // services.AddSingleton<YourCommand>();
-
-        //Alternatively, you can use the 'RegisterCommands' extension method to automatically register all commands in an assembly.
-        //services.RegisterCommands(ServiceLifetime.Singleton);
-        //...
         StartBackgroundOperations();
     }
 
@@ -190,9 +157,6 @@ public sealed class XrmToolsPackage : MicrosoftDIToolkitPackage<XrmToolsPackage>
     /// <returns>A task representing the async work of package initialization, or an already completed task if there is none. Do not return null from this method.</returns>
     protected override async Task InitializeAsync(CancellationToken cancellationToken, IProgress<ServiceProgressData> progress)
     {
-        var solutionPersistenceService = await GetServiceAsync(typeof(IVsSolutionPersistence)) as IVsSolutionPersistence;
-        solutionPersistenceService?.LoadPackageUserOpts(this, "DataverseUrl");
-
         await JoinableTaskFactory.SwitchToMainThreadAsync(cancellationToken);
 
         Dte = await GetServiceAsync(typeof(DTE)) as DTE2
@@ -343,15 +307,20 @@ public sealed class XrmToolsPackage : MicrosoftDIToolkitPackage<XrmToolsPackage>
     #endregion
     #region Solution Properties
     public int QuerySaveSolutionProps(IVsHierarchy pHierarchy, VSQUERYSAVESLNPROPS[] pqsspSave)
-        => VSConstants.S_OK;
+    {
+        if (pHierarchy == null) 
+            pqsspSave[0] = !SettingsRepository.IsDirty ? (VSQUERYSAVESLNPROPS)2 : (VSQUERYSAVESLNPROPS)1;
+        return VSConstants.S_OK;
+    }
     public int SaveSolutionProps(IVsHierarchy pHierarchy, IVsSolutionPersistence pPersistence)
     {
         if (GeneralOptions.Instance.EnvironmentSettingLevel != EnvironmentSettingLevel.Solution)
         {
             return VSConstants.S_OK;
         }
+        SettingsRepository.IsDirty = false;
         // Register to save our section in the solution
-        return pPersistence.SavePackageSolutionProps(1, pHierarchy, this, Vsix.Name.Replace(" ", string.Empty) + "Properties");
+        return pPersistence.SavePackageSolutionProps(1, pHierarchy, this, SolutionPersistanceKey);
     }
     public int WriteSolutionProps(IVsHierarchy pHierarchy, string pszKey, IPropertyBag pPropBag)
     {
@@ -360,12 +329,14 @@ public sealed class XrmToolsPackage : MicrosoftDIToolkitPackage<XrmToolsPackage>
             return VSConstants.S_OK;
         }
         ThreadHelper.ThrowIfNotOnUIThread();
-        // TODO: Do we need this `if` block, or we should just always write the properties?
-        if (SettingsRepository.SolutionSettingKeys.Contains(pszKey))
+        if (pszKey == SolutionPersistanceKey)
         {
             try
             {
-                pPropBag.Write(pszKey, SettingsRepository.GetSolutionSetting(pszKey));
+                foreach (var settingKey in SettingsRepository.SolutionSettingKeys.ToArray())
+                {
+                    pPropBag.Write(settingKey, SettingsRepository.GetSolutionSetting(settingKey));
+                }
             }
             catch (Exception ex)
             {
@@ -381,21 +352,19 @@ public sealed class XrmToolsPackage : MicrosoftDIToolkitPackage<XrmToolsPackage>
             return VSConstants.S_OK;
         }
         ThreadHelper.ThrowIfNotOnUIThread();
-        //if (pszKey == OptionKeyDataverseUrl)
-        if (pszKey == Vsix.Name.Replace(" ", string.Empty) + "Properties")
+        if (pszKey == SolutionPersistanceKey)
         {
             try
             {
                 // Create a placeholder for the property value
                 // VARTYPE for a string (VT_BSTR in COM) is 8, and we don't need an error log or unknown object
                 //pPropBag.Read(pszKey, out var propValue, null, 8, null);
-                foreach (var settingKey in SettingsRepository.SolutionSettingKeys)
+                foreach (var settingKey in SettingsRepository.SolutionSettingKeys.ToArray())
                 {
                     pPropBag.Read(settingKey, out var propValue, null, 8, null);
                     // Store the value
                     SettingsRepository.SetSolutionSetting(settingKey, propValue as string);
                 }
-
             }
             catch (Exception ex)
             {

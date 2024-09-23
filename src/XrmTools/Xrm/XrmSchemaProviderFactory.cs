@@ -100,7 +100,7 @@ public class XrmSchemaProviderFactory([Import]IEnvironmentProvider environmentPr
             return provider;
         }
         var cache = new MemoryCache(new MemoryCacheOptions());
-        provider = new XrmSchemaProvider(new ServiceClient(environment.ConnectionString), environment, cache);
+        provider = new XrmSchemaProvider(environment, cache);
         Providers[environment.Url] = provider;
         return provider;
     }

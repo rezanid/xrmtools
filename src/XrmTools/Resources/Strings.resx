@@ -157,4 +157,19 @@ Error details: {1}</value>
   <data name="PluginGenerator.TemplatePathNotSet" xml:space="preserve">
     <value>Configuration does contain the path to template file.</value>
   </data>
+  <data name="EnvironmentInvalid" xml:space="preserve">
+    <value>{0} is not a valid environment.</value>
+  </data>
+  <data name="EnvironmentConnectionFailed" xml:space="preserve">
+    <value>Failed to connect to {0}.</value>
+  </data>
+  <data name="EnvironmentConnectionError" xml:space="preserve">
+    <value>Failed to connect to {0}. Error: {1}</value>
+  </data>
+  <data name="EnvironmentConnectionStringError" xml:space="preserve">
+    <value>Connection string of the '{0}' is not valid. Please check the syntax in https://learn.microsoft.com/en-us/power-apps/developer/data-platform/xrm-tooling/use-connection-strings-xrm-tooling-connect.</value>
+  </data>
+  <data name="EnvironmentConnectionSuccess" xml:space="preserve">
+    <value>Connection to {0} was successful.</value>
+  </data>
 </root>

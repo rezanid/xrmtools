@@ -4,13 +4,14 @@ namespace XrmTools;
 using Community.VisualStudio.Toolkit;
 using System;
 using System.Collections.Generic;
-using System.ComponentModel.Composition;
 using System.Runtime.InteropServices;
 using System.Threading.Tasks;
 using XrmTools.Options;
 
 internal interface ISettingsRepository
 {
+    bool IsDirty { get; set; }
+
     IEnumerable<string> SolutionSettingKeys { get; }
     IEnumerable<string> SolutionUserSettingKeys { get; }
 
@@ -79,15 +80,21 @@ internal class SettingsProvider : ISettingsProvider, ISettingsRepository
     public ProjectSettingsAccessor ProjectSettings { get; }
     public ProjectSettingsAccessor ProjectUserSettings { get; }
 
+    bool ISettingsRepository.IsDirty { get; set; }
+
     public SettingsProvider()
     {
-        SolutionSettings = new SolutionSettingsAccessor(AsRepository().GetSolutionSetting);
-        SolutionUserSettings = new SolutionSettingsAccessor(AsRepository().GetSolutionUserSetting);
-        ProjectSettings = new ProjectSettingsAccessor(AsRepository().GetProjectSettingAsync);
-        ProjectUserSettings = new ProjectSettingsAccessor(AsRepository().GetProjectUserSettingAsync);
+        SolutionSettings = new SolutionSettingsAccessor(AsRepository().GetSolutionSetting, AsRepository().SetSolutionSetting);
+        SolutionUserSettings = new SolutionSettingsAccessor(AsRepository().GetSolutionUserSetting, AsRepository().SetSolutionUserSetting);
+        ProjectSettings = new ProjectSettingsAccessor(AsRepository().GetProjectSettingAsync, AsRepository().SetProjectSettingAsync);
+        ProjectUserSettings = new ProjectSettingsAccessor(AsRepository().GetProjectUserSettingAsync, AsRepository().SetProjectUserSettingAsync);
     }
 
-    void ISettingsRepository.SetSolutionSetting(string key, string? value) => solutionSettings[key] = value;
+    void ISettingsRepository.SetSolutionSetting(string key, string? value)
+    {
+        solutionSettings[key] = value;
+        AsRepository().IsDirty = true;
+    }
     void ISettingsRepository.SetSolutionUserSetting(string key, string? value) => solutionUserSettings[key] = value;
     async Task<bool> ISettingsRepository.SetProjectSettingAsync(string key, string? value)
     {
@@ -123,20 +130,23 @@ internal class SettingsProvider : ISettingsProvider, ISettingsRepository
 /// <summary>
 /// Strongly typed accessor for solution settings.
 /// </summary>
-internal class SolutionSettingsAccessor(Func<string, string?> accessorFunction)
+internal class SolutionSettingsAccessor(Func<string, string?> getterFunction, Action<string, string?> setterFunction)
 {
-    public string? EnvironmentUrl { get => accessorFunction("EnvironmentUrl"); }
+    public string? EnvironmentUrl { get => getterFunction("EnvironmentUrl"); set => setterFunction("EnvironmentUrl", value); }
 }
 
 /// <summary>
 /// Strongly typed accessor for project settings.
 /// </summary>
-/// <param name="accessorFunction"></param>
-internal class ProjectSettingsAccessor(Func<string, Task<string?>> accessorFunction)
+internal class ProjectSettingsAccessor(Func<string, Task<string?>> getterFunction, Func<string, string?, Task> setterFunction)
 {
-    public Task<string?> GetEnvironmentUrlAsync() => accessorFunction("EnvironmentUrl");
-    public Task<string?> GetConnectionStringAsync() => accessorFunction("ConnectionString");
-    public Task<string?> GetPluginCodeGenTemplateFilePathAsync() => accessorFunction("PluginCodeGenTemplateFilePath");
-    public Task<string?> GetEntityCodeGenTemplateFilePathAsync() => accessorFunction("EntityCodeGenTemplateFilePath");
+    public Task<string?> GetEnvironmentUrlAsync() => getterFunction("EnvironmentUrl");
+    public Task SetEnvironmentUrlAsync(string? value) => setterFunction("EnvironmentUrl", value);
+    public Task<string?> GetConnectionStringAsync() => getterFunction("ConnectionString");
+    public Task SetConnectionStringAsync(string? value) => setterFunction("ConnectionString", value);
+    public Task<string?> GetPluginCodeGenTemplateFilePathAsync() => getterFunction("PluginCodeGenTemplateFilePath");
+    public Task SetPluginCodeGenTemplateFilePathAsync(string? value) => setterFunction("PluginCodeGenTemplateFilePath", value);
+    public Task<string?> GetEntityCodeGenTemplateFilePathAsync() => getterFunction("EntityCodeGenTemplateFilePath");
+    public Task SetEntityCodeGenTemplateFilePathAsync(string? value) => setterFunction("EntityCodeGenTemplateFilePath", value);
 }
 #nullable restore

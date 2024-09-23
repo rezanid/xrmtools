@@ -57,8 +57,14 @@
     <Compile Include="Helpers\ExplicitInterfaceInvoker.cs" />
     <Compile Include="Helpers\FileHelper.cs" />
     <Compile Include="Helpers\PackageHelper.cs" />
+    <Compile Include="Helpers\ProvideSolutionProperties.cs" />
     <Compile Include="Logging\OutputLoggerService.cs" />
     <Compile Include="Logging\OutputPaneLoggerExtensions.cs" />
+    <Compile Include="NoOpMemoryCache.cs" />
+    <Compile Include="Options\CurrentEnvironmentConverter.cs" />
+    <Compile Include="Options\CurrentEnvironmentEditor.cs" />
+    <Compile Include="Options\DataverseEnvironmentConverter.cs" />
+    <Compile Include="Options\DataverseEnvironmentList.cs" />
     <Compile Include="Options\EnumDescriptionConverter.cs" />
     <Compile Include="SettingsProvider.cs" />
     <Compile Include="UI\AssemblySelector.cs" />

@@ -88,6 +88,51 @@ namespace XrmTools.Resources {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to Failed to connect to {0}. Error: {1}.
+        /// </summary>
+        internal static string EnvironmentConnectionError {
+            get {
+                return ResourceManager.GetString("EnvironmentConnectionError", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Failed to connect to {0}..
+        /// </summary>
+        internal static string EnvironmentConnectionFailed {
+            get {
+                return ResourceManager.GetString("EnvironmentConnectionFailed", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Connection string of the &apos;{0}&apos; is not valid. Please check the syntax in https://learn.microsoft.com/en-us/power-apps/developer/data-platform/xrm-tooling/use-connection-strings-xrm-tooling-connect..
+        /// </summary>
+        internal static string EnvironmentConnectionStringError {
+            get {
+                return ResourceManager.GetString("EnvironmentConnectionStringError", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Connection to {0} was successful..
+        /// </summary>
+        internal static string EnvironmentConnectionSuccess {
+            get {
+                return ResourceManager.GetString("EnvironmentConnectionSuccess", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to {0} is not a valid environment..
+        /// </summary>
+        internal static string EnvironmentInvalid {
+            get {
+                return ResourceManager.GetString("EnvironmentInvalid", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to Environment not initialized. You will have to first initialize the environment by calling {0}..
         /// </summary>
         internal static string EnvironmentNotInitialized {

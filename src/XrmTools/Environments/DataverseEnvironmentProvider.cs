@@ -1,6 +1,5 @@
 ﻿#nullable enable
 namespace XrmTools;
-
 using System.Linq;
 using System.Threading.Tasks;
 using XrmTools.Options;
@@ -13,13 +12,14 @@ public interface IEnvironmentProvider
 {
     DataverseEnvironment? GetActiveEnvironment();
     Task<DataverseEnvironment?> GetActiveEnvironmentAsync();
-    //Task SetActiveEnvironmentAsync(DataverseEnvironment environment);
+    Task SetActiveEnvironmentAsync(DataverseEnvironment environment);
 }
 
 [ComVisible(true)]
 [method: ImportingConstructor]
-internal class DataverseEnvironmentProvider([Import]ISettingsProvider settingsProvider) : IEnvironmentProvider
+internal class DataverseEnvironmentProvider([Import]ISettingsRepository settingsRepo) : IEnvironmentProvider
 {
+    ISettingsProvider settingsProvider = (ISettingsProvider)settingsRepo;
     public async Task<DataverseEnvironment?> GetActiveEnvironmentAsync()
     => (await GeneralOptions.GetLiveInstanceAsync()).EnvironmentSettingLevel switch
     {
@@ -42,48 +42,48 @@ internal class DataverseEnvironmentProvider([Import]ISettingsProvider settingsPr
         _ => GeneralOptions.Instance.CurrentEnvironment,
     };
 
-    //public async Task SetActiveEnvironmentAsync(DataverseEnvironment environment)
-    //{
-    //    var options = await GeneralOptions.GetLiveInstanceAsync();
-    //    switch (options.EnvironmentSettingLevel)
-    //    {
-    //        case EnvironmentSettingLevel.Options:
-    //            GeneralOptions.Instance.CurrentEnvironment = environment;
-    //            SetEnvironmentInSolution(null);
-    //            SetEnvironmentInSolutionUserFile(null);
-    //            await SetEnvironmentInProjectAsync(null);
-    //            await SetEnvironmentInProjectUserFileAsync(null);
-    //            break;
-    //        case EnvironmentSettingLevel.Solution:
-    //            SetEnvironmentInSolution(environment);
-    //            GeneralOptions.Instance.CurrentEnvironment = new DataverseEnvironment();
-    //            SetEnvironmentInSolutionUserFile(null);
-    //            await SetEnvironmentInProjectAsync(null);
-    //            await SetEnvironmentInProjectUserFileAsync(null);
-    //            break;
-    //        case EnvironmentSettingLevel.SolutionUser:
-    //            SetEnvironmentInSolutionUserFile(environment);
-    //            GeneralOptions.Instance.CurrentEnvironment = new DataverseEnvironment();
-    //            SetEnvironmentInSolution(null);
-    //            await SetEnvironmentInProjectAsync(null);
-    //            await SetEnvironmentInProjectUserFileAsync(null);
-    //            break;
-    //        case EnvironmentSettingLevel.Project:
-    //            await SetEnvironmentInProjectAsync(environment);
-    //            GeneralOptions.Instance.CurrentEnvironment = new DataverseEnvironment();
-    //            SetEnvironmentInSolution(null);
-    //            SetEnvironmentInSolutionUserFile(null);
-    //            await SetEnvironmentInProjectUserFileAsync(null);
-    //            break;
-    //        case EnvironmentSettingLevel.ProjectUser:
-    //            await SetEnvironmentInProjectUserFileAsync(environment);
-    //            GeneralOptions.Instance.CurrentEnvironment = new DataverseEnvironment();
-    //            SetEnvironmentInSolution(null);
-    //            SetEnvironmentInSolutionUserFile(null);
-    //            await SetEnvironmentInProjectAsync(null);
-    //            break;
-    //    }
-    //}
+    public async Task SetActiveEnvironmentAsync(DataverseEnvironment environment)
+    {
+        var options = await GeneralOptions.GetLiveInstanceAsync();
+        switch (options.EnvironmentSettingLevel)
+        {
+            case EnvironmentSettingLevel.Options:
+                //GeneralOptions.Instance.CurrentEnvironment = environment;
+                SetEnvironmentInSolution(null);
+                SetEnvironmentInSolutionUserFile(null);
+                await SetEnvironmentInProjectAsync(null);
+                await SetEnvironmentInProjectUserFileAsync(null);
+                break;
+            case EnvironmentSettingLevel.Solution:
+                SetEnvironmentInSolution(environment);
+                //GeneralOptions.Instance.CurrentEnvironment = new DataverseEnvironment();
+                SetEnvironmentInSolutionUserFile(null);
+                await SetEnvironmentInProjectAsync(null);
+                await SetEnvironmentInProjectUserFileAsync(null);
+                break;
+            case EnvironmentSettingLevel.SolutionUser:
+                SetEnvironmentInSolutionUserFile(environment);
+                //GeneralOptions.Instance.CurrentEnvironment = new DataverseEnvironment();
+                SetEnvironmentInSolution(null);
+                await SetEnvironmentInProjectAsync(null);
+                await SetEnvironmentInProjectUserFileAsync(null);
+                break;
+            case EnvironmentSettingLevel.Project:
+                await SetEnvironmentInProjectAsync(environment);
+                //GeneralOptions.Instance.CurrentEnvironment = new DataverseEnvironment();
+                SetEnvironmentInSolution(null);
+                SetEnvironmentInSolutionUserFile(null);
+                await SetEnvironmentInProjectUserFileAsync(null);
+                break;
+            case EnvironmentSettingLevel.ProjectUser:
+                await SetEnvironmentInProjectUserFileAsync(environment);
+                //GeneralOptions.Instance.CurrentEnvironment = new DataverseEnvironment();
+                SetEnvironmentInSolution(null);
+                SetEnvironmentInSolutionUserFile(null);
+                await SetEnvironmentInProjectAsync(null);
+                break;
+        }
+    }
 
     private DataverseEnvironment? GetEnvironmentFromSolution()
     {
@@ -109,29 +109,9 @@ internal class DataverseEnvironmentProvider([Import]ISettingsProvider settingsPr
         if (string.IsNullOrWhiteSpace(url)) return null;
         return GeneralOptions.Instance.Environments.FirstOrDefault(e => e.Url == url);
     }
-    //private void SetEnvironmentInSolution(DataverseEnvironment environment) => package.DataverseUrlSetting = environment?.Url;
-    //private void SetEnvironmentInSolutionUserFile(DataverseEnvironment environment) => package.DataverseUrlOption = environment?.Url;
-    //private async Task SetEnvironmentInProjectAsync(DataverseEnvironment environment)
-    //{
-    //    var project = await VS.Solutions.GetActiveProjectAsync();
-    //    if (project is null) return;
-    //    if (environment?.Url is null)
-    //    {
-    //        await project.RemoveAttributeAsync("DataverseUrl", ProjectStorageType.ProjectFile);
-    //        return;
-    //    }
-    //    await project.TrySetAttributeAsync("DataverseUrl", environment.Url, ProjectStorageType.ProjectFile);
-    //}
-    //private async Task SetEnvironmentInProjectUserFileAsync(DataverseEnvironment environment)
-    //{
-    //    var project = await VS.Solutions.GetActiveProjectAsync();
-    //    if (project is null) return;
-    //    if (environment?.Url is null)
-    //    {
-    //        await project.RemoveAttributeAsync("DataverseUrl", ProjectStorageType.UserFile);
-    //        return;
-    //    }
-    //    await project.TrySetAttributeAsync("DataverseUrl", environment.Url, ProjectStorageType.UserFile);
-    //}
+    private void SetEnvironmentInSolution(DataverseEnvironment environment) => settingsProvider.SolutionSettings.EnvironmentUrl = environment?.Url;
+    private void SetEnvironmentInSolutionUserFile(DataverseEnvironment environment) => settingsProvider.SolutionUserSettings.EnvironmentUrl = environment?.Url;
+    private async Task SetEnvironmentInProjectAsync(DataverseEnvironment environment) => await settingsProvider.ProjectSettings.SetEnvironmentUrlAsync(environment?.Url);
+    private async Task SetEnvironmentInProjectUserFileAsync(DataverseEnvironment environment) => await settingsProvider.ProjectUserSettings.SetEnvironmentUrlAsync(environment?.Url);
 }
 #nullable restore

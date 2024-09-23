@@ -37,25 +37,28 @@ internal class DataverseCacheKeys(string EnvironmentUrl)
     public string PluginTypes(Guid assemblyid) => $"{EnvironmentUrl}_PluginTypes_{assemblyid}";
 }
 
-public class XrmSchemaProvider(ServiceClient serviceClient, DataverseEnvironment environment, IMemoryCache cache) : IXrmSchemaProvider
+public class XrmSchemaProvider(DataverseEnvironment environment, IMemoryCache cache) : IXrmSchemaProvider
 {
     private bool disposed = false;
-    private readonly DataverseCacheKeys cacheKeys = new (environment.Url);
+    private readonly DataverseEnvironment environment = environment;
+    private readonly IMemoryCache cache = cache;
+    private readonly DataverseCacheKeys cacheKeys = new(environment.Url);
     private readonly TimeSpan cacheExpiration = TimeSpan.FromMinutes(30);
     private CancellationTokenSource cacheEvictionTokenSource = new ();
 
+    private ServiceClient ServiceClient { get; init; } = new(environment.ConnectionString);
     public string EnvironmentUrl { get => environment.Url; }
     public DataverseEnvironment Environment { get => environment; }
-    public bool IsReady { get => serviceClient.IsReady; }
-    public Exception LastException { get => serviceClient.LastException; }
-    public string LastError { get => serviceClient.LastError; }
+    public bool IsReady { get => ServiceClient.IsReady; }
+    public Exception LastException { get => ServiceClient.LastException; }
+    public string LastError { get => ServiceClient.LastError; }
 
     public async Task<IEnumerable<EntityMetadata>> GetEntitiesAsync(CancellationToken cancellationToken)
         => !IsReady ? [] : await cache.GetOrCreateAsync(cacheKeys.EntityDefinitions, async entry =>
         {
             entry.AbsoluteExpirationRelativeToNow = cacheExpiration;
             entry.AddExpirationToken(new CancellationChangeToken(cancellationToken));
-            return await FetchEntitiesAsync(serviceClient, cancellationToken);
+            return await FetchEntitiesAsync(ServiceClient, cancellationToken);
         });
 
     public async Task<EntityMetadata> GetEntityAsync(string entityLogicalName, CancellationToken cancellationToken)
@@ -63,15 +66,16 @@ public class XrmSchemaProvider(ServiceClient serviceClient, DataverseEnvironment
         {
             entry.AbsoluteExpirationRelativeToNow = cacheExpiration;
             entry.AddExpirationToken(new CancellationChangeToken(cancellationToken));
-            return await FetchEntityAsync(entityLogicalName, serviceClient, cancellationToken);
+            return await FetchEntityAsync(entityLogicalName, ServiceClient, cancellationToken);
         });
 
-    public EntityMetadata GetEntity(string entityLogicalName, CancellationToken cancellationToken)
+    public EntityMetadata GetEntity(string entityLogicalName)
         => !IsReady ? null : cache.GetOrCreate(cacheKeys.EntityDefinitionsExtensive(entityLogicalName), entry =>
         {
+            var cancellationToken = cacheEvictionTokenSource.Token;
             entry.AbsoluteExpirationRelativeToNow = cacheExpiration;
             entry.AddExpirationToken(new CancellationChangeToken(cancellationToken));
-            return FetchEntity(entityLogicalName, serviceClient);
+            return FetchEntity(entityLogicalName, ServiceClient);
         });
 
     public async Task<IEnumerable<PluginAssemblyConfig>> GetPluginAssembliesAsync(CancellationToken cancellationToken)
@@ -79,7 +83,7 @@ public class XrmSchemaProvider(ServiceClient serviceClient, DataverseEnvironment
         {
             entry.AbsoluteExpirationRelativeToNow = cacheExpiration;
             entry.AddExpirationToken(new CancellationChangeToken(cancellationToken));
-            return await FetchPluginAssembliesAsync(serviceClient, cancellationToken);
+            return await FetchPluginAssembliesAsync(ServiceClient, cancellationToken);
         });
 
     public async Task<IEnumerable<PluginTypeConfig>> GetPluginTypesAsync(Guid assemblyid, CancellationToken cancellationToken)
@@ -87,7 +91,7 @@ public class XrmSchemaProvider(ServiceClient serviceClient, DataverseEnvironment
         {
             entry.AbsoluteExpirationRelativeToNow = cacheExpiration;
             entry.AddExpirationToken(new CancellationChangeToken(cancellationToken));
-            return await FetchPluginTypesAsync(serviceClient, assemblyid, cancellationToken);
+            return await FetchPluginTypesAsync(ServiceClient, assemblyid, cancellationToken);
         });
     
     public Task RefreshCacheAsync()
@@ -238,7 +242,7 @@ public class XrmSchemaProvider(ServiceClient serviceClient, DataverseEnvironment
             if (disposing)
             {
                 // Dispose managed resources
-                serviceClient?.Dispose();
+                ServiceClient?.Dispose();
             }
 
             // Free unmanaged resources (if any)
