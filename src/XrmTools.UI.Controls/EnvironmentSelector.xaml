@@ -1,0 +1,49 @@
+﻿<UserControl x:Class="XrmTools.UI.Controls.EnvironmentSelector"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+             xmlns:local="clr-namespace:XrmTools.UI.Controls"
+             mc:Ignorable="d" 
+             d:DesignHeight="150" d:DesignWidth="450">
+    <Grid Margin="5">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto" />
+            <RowDefinition />
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="Auto" />
+            <ColumnDefinition />
+        </Grid.ColumnDefinitions>
+        <StackPanel Orientation="Horizontal" Grid.Row="0" Grid.Column="0" Grid.ColumnSpan="2" Margin="5">
+            <TextBlock Text="Select the environment for ZZZZ project." Grid.Row="0" Grid.Column="0">
+                <TextBlock.Style>
+                    <Style TargetType="TextBlock">
+                        <Setter Property="Visibility" Value="Collapsed"/>
+                        <Style.Triggers>
+                            <DataTrigger Binding="{Binding Path=SolutionItem}" Value="{x:Null}">
+                                <Setter Property="Text" Value="Select the environment:"/>
+                            </DataTrigger>
+                            <DataTrigger Binding="{Binding Path=SolutionItem.Type}" Value="SolutionItemType.Solution">
+                                <Setter Property="Text" Value="Select the environment for the solution: "/>
+                            </DataTrigger>
+                            <DataTrigger Binding="{Binding Path=SolutionItem.Type}" Value="SolutionItemType.Project">
+                                <Setter Property="Text" Value="Select the environment for the project: "/>
+                            </DataTrigger>
+                        </Style.Triggers>
+                    </Style>
+                </TextBlock.Style>
+            </TextBlock>
+            <TextBlock Text="{Binding Path=SolutionItem.Text}" />
+        </StackPanel>
+        <Label Content="Environment:" Grid.Row="1" Grid.Column="0" VerticalAlignment="Center" />
+        <ComboBox x:Name="cmbEnvironment" Grid.Row="1" Grid.Column="1" VerticalAlignment="Center" SelectedItem="{Binding Path=Environment}" ItemsSource="{Binding Path=Environments}" />
+        <StackPanel Orientation="Horizontal" Grid.Row="3" Grid.Column="0" Grid.ColumnSpan="2" HorizontalAlignment="Right">
+            <Button Content="Cancel" MinWidth="100" Margin="5" Command="{Binding Path=Cancel}"/>
+            <Button Content="Test" MinWidth="100" Margin="5" Command="{Binding Path=Test}"/>
+            <Button Content="Select" MinWidth="100" Margin="5" IsDefault="True" Command="{Binding Path=Select}"/>
+        </StackPanel>
+    </Grid>
+</UserControl>

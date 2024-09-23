@@ -8,7 +8,7 @@
     <SignAssembly>true</SignAssembly>
   </PropertyGroup>
   <PropertyGroup>
-    <AssemblyOriginatorKeyFile>key.snk</AssemblyOriginatorKeyFile>
+    <AssemblyOriginatorKeyFile>..\key.snk</AssemblyOriginatorKeyFile>
   </PropertyGroup>
   <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
   <PropertyGroup>
@@ -33,7 +33,7 @@
     <StartProgram Condition="'$(DevEnvDir)' != ''">$(DevEnvDir)devenv.exe</StartProgram>
     <StartArguments>/rootsuffix Exp</StartArguments>
     <LangVersion>12.0</LangVersion>
-    <PolySharpUsePublicAccessibilityForGeneratedTypes>True</PolySharpUsePublicAccessibilityForGeneratedTypes>
+    <PolySharpUsePublicAccessibilityForGeneratedTypes>False</PolySharpUsePublicAccessibilityForGeneratedTypes>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
     <DebugSymbols>true</DebugSymbols>
@@ -53,6 +53,7 @@
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="Commands\SelectEnvironmentCommand.cs" />
     <Compile Include="Environments\DataverseEnvironmentProvider.cs" />
     <Compile Include="Helpers\ExplicitInterfaceInvoker.cs" />
     <Compile Include="Helpers\FileHelper.cs" />
@@ -64,19 +65,20 @@
     <Compile Include="Options\CurrentEnvironmentConverter.cs" />
     <Compile Include="Options\CurrentEnvironmentEditor.cs" />
     <Compile Include="Options\DataverseEnvironmentConverter.cs" />
-    <Compile Include="Options\DataverseEnvironmentList.cs" />
     <Compile Include="Options\EnumDescriptionConverter.cs" />
     <Compile Include="SettingsProvider.cs" />
+    <Compile Include="UI\EnvironmentSelector.cs" />
     <Compile Include="UI\AssemblySelector.cs" />
+    <Compile Include="UI\EnvironmentSelectorDialog.xaml.cs">
+      <DependentUpon>EnvironmentSelectorDialog.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="UI\EnvironmentSelectorViewModel.cs" />
     <Compile Include="Xrm\OptionSetMetadataNameComparer.cs" />
     <Compile Include="Helpers\DteExtensions.cs" />
     <Compile Include="Helpers\ProjectHelpers.cs" />
     <Compile Include="Logging\OutputLoggerProvider.cs" />
     <Compile Include="NewItemTarget.cs" />
     <Compile Include="Options\GeneralOptions.cs" />
-    <Compile Include="Tokens\CredentialTokenExpander.cs" />
-    <Compile Include="Tokens\ITokenExpander.cs" />
-    <Compile Include="Tokens\TokenProcessorService.cs" />
     <Compile Include="UI\AssemblySelectionDialog.xaml.cs">
       <DependentUpon>AssemblySelectionDialog.xaml</DependentUpon>
     </Compile>
@@ -144,7 +146,9 @@
     <Content Include="UI\WebResources\preview.html" />
     <Content Include="UI\WebResources\themes\prism.css" />
     <Content Include="UI\WebResources\prism.js" />
-    <None Include="key.snk" />
+    <None Include="..\key.snk">
+      <Link>key.snk</Link>
+    </None>
     <None Include="Samples\AHRMBeOne_Plugin_Request.def.json" />
     <None Include="Samples\EntityConfigExample1.yaml" />
     <Content Include="Resources\npm.png" />
@@ -270,8 +274,16 @@
       <SubType>Designer</SubType>
       <Generator>XamlIntelliSenseFileGenerator</Generator>
     </Page>
+    <Page Include="UI\EnvironmentSelectorDialog.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="..\XrmTools.Core\XrmTools.Core.csproj">
+      <Project>{4e3f79aa-5694-4dd6-933d-aee2132486a5}</Project>
+      <Name>XrmTools.Core</Name>
+    </ProjectReference>
     <ProjectReference Include="..\XrmTools.UI.Controls\XrmTools.UI.Controls.csproj">
       <Project>{179df0ac-6f44-4656-8332-034d3c594ed1}</Project>
       <Name>XrmTools.UI.Controls</Name>

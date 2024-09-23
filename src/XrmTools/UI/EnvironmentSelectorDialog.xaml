@@ -1,0 +1,23 @@
+﻿<p:DialogWindow xmlns:p="clr-namespace:Microsoft.VisualStudio.PlatformUI;assembly=Microsoft.VisualStudio.Shell.15.0"
+                xmlns:toolkit="clr-namespace:Community.VisualStudio.Toolkit;assembly=Community.VisualStudio.Toolkit" 
+                xmlns:controls="clr-namespace:XrmTools.UI.Controls;assembly=XrmTools.UI.Controls"
+                x:Class="XrmTools.UI.EnvironmentSelectorDialog"
+                x:ClassModifier="internal"
+                xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+                xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+                xmlns:local="clr-namespace:XrmTools.UI" d:DataContext="{d:DesignInstance Type=local:EnvironmentSelectorViewModel}"
+                mc:Ignorable="d" 
+                p:HasMaximizeButton="False"
+                p:HasMinimizeButton="False"
+                toolkit:Themes.UseVsTheme="True"
+                Title="Select Environment"
+                d:DesignHeight="200" d:DesignWidth="400">
+    <Grid>
+        <controls:EnvironmentSelector 
+            Environment="{Binding Path=Environment}" Environments="{Binding Path=Environments}" SolutionItem="{Binding Path=SolutionItem}"
+            Select="{Binding Path=SelectCommand}" Cancel="{Binding Path=CancelComamnd}" Test="{Binding Path=TestCommand}">
+        </controls:EnvironmentSelector>
+    </Grid>
+</p:DialogWindow>

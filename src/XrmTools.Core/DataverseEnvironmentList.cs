@@ -1,5 +1,5 @@
 ﻿#nullable enable
-namespace XrmTools.Options;
+namespace XrmTools;
 using System;
 using System.Collections.Generic;
 

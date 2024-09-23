@@ -19,7 +19,8 @@ public interface IEnvironmentProvider
 [method: ImportingConstructor]
 internal class DataverseEnvironmentProvider([Import]ISettingsRepository settingsRepo) : IEnvironmentProvider
 {
-    ISettingsProvider settingsProvider = (ISettingsProvider)settingsRepo;
+    readonly ISettingsProvider settingsProvider = (ISettingsProvider)settingsRepo;
+
     public async Task<DataverseEnvironment?> GetActiveEnvironmentAsync()
     => (await GeneralOptions.GetLiveInstanceAsync()).EnvironmentSettingLevel switch
     {

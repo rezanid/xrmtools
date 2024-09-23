@@ -2,14 +2,11 @@
 namespace XrmTools.Xrm;
 
 using Microsoft.Extensions.Caching.Memory;
-using Microsoft.PowerPlatform.Dataverse.Client;
 using System;
 using System.Collections.Concurrent;
 using System.ComponentModel.Composition;
-using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Threading.Tasks;
-using XrmTools.Options;
 
 [Guid(PackageGuids.guidXrmSchemaProviderFactoryString)]
 [ComVisible(true)]

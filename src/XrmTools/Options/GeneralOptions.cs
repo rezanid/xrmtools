@@ -5,16 +5,11 @@ using Community.VisualStudio.Toolkit.DependencyInjection.Core;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
-using Microsoft.VisualStudio.Shell;
-using Microsoft.VisualStudio.Shell.Interop;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
-using System.Diagnostics.CodeAnalysis;
 using System.Drawing.Design;
-using System.Linq;
 using System.Runtime.InteropServices;
-using XrmTools.Helpers;
 
 internal partial class OptionsProvider
 {
@@ -98,69 +93,5 @@ public enum EnvironmentSettingLevel
     ProjectUser
 }
 
-[DisplayName("Power Platform Environment")]
-[Description("Properties of a Power Platform environment.")]
-[DefaultProperty(nameof(Name))]
-//[TypeConverter(typeof(DataverseEnvironmentConverter))]
-public record DataverseEnvironment
-{
-    private string? _url = string.Empty;
-    private string? _connectionstring = string.Empty;
-    private bool isValidConnectionString = false;
 
-    [DisplayName("Environment Name")]
-    [Description("The name of the environment, so you can easily identify it.")]
-    [DefaultValue("Contoso Dev")]
-    public string? Name { get; set; }
-
-    [DisplayName("Environment URL")]
-    [Description("The URL of the environment.")]
-    [DefaultValue("https://contoso.crm.dynamics.com")]
-    [ReadOnly(true)]
-    //[Browsable(false)]
-    public string? Url { get => _url; }
-
-    [DisplayName("Connection String")]
-    [Description("The connection string to the environment according to https://learn.microsoft.com/en-us/power-apps/developer/data-platform/xrm-tooling/use-connection-strings-xrm-tooling-connect.")]
-    [DefaultValue("AuthType=OAuth;Url=https://contoso.crm.dynamics.com;Integrated Security=True")]
-    public string? ConnectionString
-    {
-        get => _connectionstring;
-        set
-        {
-            _connectionstring = value;
-            var segments = value?.Split([';'], StringSplitOptions.RemoveEmptyEntries);
-            _url = segments.FirstOrDefault(s => s.StartsWith("Url=", StringComparison.OrdinalIgnoreCase))?.Substring(4);
-            isValidConnectionString = !string.IsNullOrWhiteSpace(value) && !string.IsNullOrWhiteSpace(Url);
-        }
-    }
-
-    [MemberNotNullWhen(true, nameof(Url), nameof(ConnectionString))]
-    [Browsable(false)]
-    public bool IsValid { get => isValidConnectionString; }
-
-    public virtual bool Equals(DataverseEnvironment? other)
-    {
-        if (other is null) return false;
-        if (ReferenceEquals(this, other)) return true;
-
-        // Only consider Url and ConnectionString in equality
-        return Url == other.Url && ConnectionString == other.ConnectionString;
-    }
-
-    public override int GetHashCode()
-    {
-        int hash = 17;
-        //hash = hash * 23 + (Url?.GetHashCode() ?? 0);
-        hash = hash * 23 + (ConnectionString?.GetHashCode() ?? 0);
-        return hash;
-    }
-
-    public override string? ToString()
-    {
-        return !string.IsNullOrEmpty(Name) ? Name : "New";
-    }
-
-    public static DataverseEnvironment Empty => new ();
-}
 #nullable restore
