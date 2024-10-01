@@ -37,6 +37,14 @@ public class CurrentEnvironmentEditor : UITypeEditor
             panel.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
             panel.ColumnStyles.Add(new ColumnStyle(SizeType.AutoSize));
 
+            // Create the "Test" button
+            var testButton = new Button
+            {
+                Text = "Test",
+                AutoSize = true,
+                Padding = new Padding(5, 0, 5, 0),
+            };
+
             // Create a ListBox to show the environments
             var listBox = new ListBox
             {
@@ -44,34 +52,27 @@ public class CurrentEnvironmentEditor : UITypeEditor
                 SelectionMode = SelectionMode.One,
                 BorderStyle = BorderStyle.None
             };
-
             // Add the environments to the ListBox
             foreach (var env in options.Environments)
             {
                 listBox.Items.Add(env);
             }
 
+            listBox.SelectedIndexChanged += (sender, e) =>
+            {
+                testButton.Visible = listBox.SelectedItem != null;
+            };
             // Pre-select the current environment in the list
             listBox.SelectedItem = value;
 
-            // Create the "Test" button
-            var testButton = new Button
-            {
-                Text = "Test",
-                AutoSize = true,
-                Padding = new Padding(5, 0, 5, 0)
-            };
-
-            // Add the List and Button to the panel
-            panel.Controls.Add(listBox, 0, 0);
-            panel.Controls.Add(testButton, 1, 0);
-
-            // Subscribe to the "Test" button click event
             testButton.Click += (sender, e) =>
             {
                 var selectedEnvironment = (DataverseEnvironment)listBox.SelectedItem;
                 TestEnvironment(selectedEnvironment);
             };
+
+            panel.Controls.Add(listBox, 0, 0);
+            panel.Controls.Add(testButton, 1, 0);
 
             // Show the panel as a dropdown in the PropertyGrid
             editorService.DropDownControl(panel);
@@ -98,6 +99,7 @@ public class CurrentEnvironmentEditor : UITypeEditor
 
     private (bool, string) TestConnection(DataverseEnvironment environment)
     {
+        if (environment is null) return (false, "Environment is not selected. Please select an environment first.");
         if (!environment.IsValid) return (false, string.Format(Strings.EnvironmentConnectionStringError, environment.Name));
         try
         {

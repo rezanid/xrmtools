@@ -41,9 +41,9 @@
         <Label Content="Environment:" Grid.Row="1" Grid.Column="0" VerticalAlignment="Center" />
         <ComboBox x:Name="cmbEnvironment" Grid.Row="1" Grid.Column="1" VerticalAlignment="Center" SelectedItem="{Binding Path=Environment}" ItemsSource="{Binding Path=Environments}" />
         <StackPanel Orientation="Horizontal" Grid.Row="3" Grid.Column="0" Grid.ColumnSpan="2" HorizontalAlignment="Right">
-            <Button Content="Cancel" MinWidth="100" Margin="5" Command="{Binding Path=Cancel}"/>
-            <Button Content="Test" MinWidth="100" Margin="5" Command="{Binding Path=Test}"/>
-            <Button Content="Select" MinWidth="100" Margin="5" IsDefault="True" Command="{Binding Path=Select}"/>
+            <Button Content="Cancel" MinWidth="100" Margin="5" Command="{Binding Path=CancelCommand}"/>
+            <Button Content="Test" MinWidth="100" Margin="5" Command="{Binding Path=TestCommand}"/>
+            <Button Content="Select" MinWidth="100" Margin="5" IsDefault="True" Command="{Binding Path=SelectCommand}"/>
         </StackPanel>
     </Grid>
 </UserControl>

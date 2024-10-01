@@ -4,11 +4,8 @@ namespace XrmTools.Commands;
 using Community.VisualStudio.Toolkit;
 using Community.VisualStudio.Toolkit.DependencyInjection.Core;
 using Community.VisualStudio.Toolkit.DependencyInjection;
-using EnvDTE80;
 using Microsoft.VisualStudio.Shell;
-using System.ComponentModel.Composition;
 using XrmTools.Helpers;
-using XrmTools.Xrm;
 using Task = System.Threading.Tasks.Task;
 using Microsoft.Extensions.Logging;
 using XrmTools.UI;
@@ -16,18 +13,20 @@ using System.Threading.Tasks;
 using System;
 using XrmTools.Xrm.Model;
 
-[Command(PackageGuids.guidGenerateXrmPluginConfigCmdSetString, PackageIds.idGeneratePluginConfigFileCommand)]
-internal sealed class GenerateRegistrationFileCommand(
-    DIToolkitPackage parentPackage, ILogger<GenerateRegistrationFileCommand> logger, IAssemblySelector assemblySelector) : BaseDICommand(parentPackage)
+[Command(PackageGuids.XrmToolsCmdSetIdString, PackageIds.NewPluginDefinitionCmdId)]
+internal sealed class NewPluginDefinitionFileCommand : BaseDICommand
 {
-    private readonly DTE2 dte = (parentPackage as XrmToolsPackage)!.Dte!;
-    private IXrmSchemaProviderFactory? _schemaProviderFactory;
+    private readonly ILogger<NewPluginDefinitionFileCommand> logger;
+    private readonly IAssemblySelector assemblySelector;
 
-    [Import]
-    IXrmSchemaProviderFactory? SchemaProviderFactory
+    public NewPluginDefinitionFileCommand(
+        DIToolkitPackage parentPackage, 
+        ILogger<NewPluginDefinitionFileCommand> logger, 
+        IAssemblySelector assemblySelector) : base(parentPackage)
     {
-        get => _schemaProviderFactory ??= VS.GetMefService<IXrmSchemaProviderFactory>();
-        set => _schemaProviderFactory = value;
+        Command.Supported = false;
+        this.logger = logger;
+        this.assemblySelector = assemblySelector;
     }
 
     protected override async Task ExecuteAsync(OleMenuCmdEventArgs e)

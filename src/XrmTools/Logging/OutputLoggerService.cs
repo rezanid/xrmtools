@@ -33,8 +33,8 @@ public class OutputLoggerService : IOutputLoggerService
         ThreadHelper.ThrowIfNotOnUIThread();
 
         if (Package.GetGlobalService(typeof(SVsOutputWindow)) is not IVsOutputWindow outputWindow) return null;
-        outputWindow.CreatePane(ref PackageGuids.guidXrmCodeGenPackage, Vsix.Name, 1, 1);
-        outputWindow.GetPane(ref PackageGuids.guidXrmCodeGenPackage, out var outputPane);
+        outputWindow.CreatePane(ref PackageGuids.XrmToolsPackageId, Vsix.Name, 1, 1);
+        outputWindow.GetPane(ref PackageGuids.XrmToolsPackageId, out var outputPane);
         return outputPane;
     }
 

@@ -37,7 +37,7 @@ public partial class AssemblySelectionDialog : DialogWindow
     */
     private void EnsureReferencedAssembliesInMarkupAreLoaded()
     {
-        var requiredAssemblyNames = new[] { "Microsoft.Xaml.Behaviors" };
+        var requiredAssemblyNames = new[] { "Microsoft.Xaml.Behaviors", "XrmTools.UI.Controls" };
         var loadedAssemblyNames = AppDomain.CurrentDomain.GetAssemblies().Select(a => a.GetName().Name);
         var notLoadedAssemblyNames = requiredAssemblyNames.Except(loadedAssemblyNames).ToList();
         notLoadedAssemblyNames.ForEach(a => Assembly.Load(a));

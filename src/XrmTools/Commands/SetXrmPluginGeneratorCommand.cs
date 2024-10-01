@@ -10,8 +10,8 @@ using Community.VisualStudio.Toolkit;
 /// <summary>
 /// Command handler to set the custom tool of the selected item to the Xrm Plugin Code Generator.
 /// </summary>
-[Command(PackageGuids.guidXrmCodeGenPackageCmdSetString, PackageIds.SetXrmPluginGeneratorCommandId)]
-internal sealed class SetXrmPluginGeneratorCommand(DIToolkitPackage package) : BaseDICommand(package)
+[Command(PackageGuids.XrmToolsCmdSetIdString, PackageIds.SetCustomToolPluginDefitionCmdId)]
+internal sealed class SetXrmPluginGeneratorCommand : BaseDICommand
 {
     protected override async Task ExecuteAsync(OleMenuCmdEventArgs e)
     {
@@ -19,4 +19,7 @@ internal sealed class SetXrmPluginGeneratorCommand(DIToolkitPackage package) : B
         if (i is null || i.Type != SolutionItemType.PhysicalFile) return;
         await (i as PhysicalFile).TrySetAttributeAsync(PhysicalFileAttribute.CustomTool, PluginCodeGenerator.Name);
     }
+
+    public SetXrmPluginGeneratorCommand(DIToolkitPackage package): base(package)
+        => Command.Supported = false;
 }

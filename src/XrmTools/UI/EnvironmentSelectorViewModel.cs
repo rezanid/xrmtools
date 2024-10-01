@@ -1,6 +1,8 @@
 ﻿namespace XrmTools.UI;
 
 using Community.VisualStudio.Toolkit;
+using CommunityToolkit.Mvvm.Input;
+using System;
 using System.Collections.ObjectModel;
 using System.Linq;
 using System.Windows.Input;
@@ -18,7 +20,11 @@ internal class EnvironmentSelectorViewModel : ViewModelBase
 
     private readonly ISettingsProvider settingsProvider;
 
-    public EnvironmentSelectorViewModel(SolutionItem solutionItem, ISettingsProvider settingsProvider, bool userMode = true)
+    public EnvironmentSelectorViewModel(
+        SolutionItem solutionItem, 
+        ISettingsProvider settingsProvider, 
+        Action onSelect, Action onCancel, Action onTest,
+        bool userMode = true)
     {
         this.settingsProvider = settingsProvider;
         SolutionItem = solutionItem;
@@ -29,6 +35,9 @@ internal class EnvironmentSelectorViewModel : ViewModelBase
             SolutionItemType.Project => userMode ? GetProjectUserEnvironment() : GetProjectEnvironment(),
             _ => GeneralOptions.Instance.CurrentEnvironment
         };
+        SelectCommand = new RelayCommand(onSelect);
+        CancelCommand = new RelayCommand(onCancel);
+        TestCommand = new RelayCommand(onTest);
     }
 
     private DataverseEnvironment GetSolutionEnvironment()

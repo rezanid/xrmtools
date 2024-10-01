@@ -1,21 +1,12 @@
-﻿namespace XrmTools.UI;
+﻿#nullable enable
+namespace XrmTools.UI;
 
 using Community.VisualStudio.Toolkit;
 using Microsoft.VisualStudio.PlatformUI;
+using Microsoft.VisualStudio.Shell.Interop;
 using System;
-using System.Collections.Generic;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using System.Windows;
-using System.Windows.Controls;
-using System.Windows.Data;
-using System.Windows.Documents;
-using System.Windows.Input;
-using System.Windows.Media;
-using System.Windows.Media.Imaging;
-using System.Windows.Navigation;
-using System.Windows.Shapes;
+using System.Reflection;
 
 /// <summary>
 /// Interaction logic for EnvironmentSelectorDialog.xaml
@@ -24,7 +15,34 @@ internal partial class EnvironmentSelectorDialog : DialogWindow
 {
     internal EnvironmentSelectorDialog(ISettingsProvider settingsProvider, SolutionItem solutionItem, bool userMode)
     {
-        DataContext = new EnvironmentSelectorViewModel(solutionItem, settingsProvider, userMode);
+        EnsureReferencedAssembliesInMarkupAreLoaded();
+        DataContext = new EnvironmentSelectorViewModel(solutionItem, settingsProvider, OnSelect, OnCancel, OnTest, userMode);
         InitializeComponent();
     }
+
+    private void OnSelect()
+    {
+        DialogResult = true;
+        Close();
+    }
+
+    private void OnCancel()
+    {
+        DialogResult = false;
+        Close();
+    }
+
+    private void OnTest()
+    {
+        VS.MessageBox.Show("TEST", "TEST", OLEMSGICON.OLEMSGICON_INFO);
+    }
+
+    private void EnsureReferencedAssembliesInMarkupAreLoaded()
+    {
+        var requiredAssemblyNames = new[] { "Microsoft.Xaml.Behaviors", "XrmTools.UI.Controls" };
+        var loadedAssemblyNames = AppDomain.CurrentDomain.GetAssemblies().Select(a => a.GetName().Name);
+        var notLoadedAssemblyNames = requiredAssemblyNames.Except(loadedAssemblyNames).ToList();
+        notLoadedAssemblyNames.ForEach(a => Assembly.Load(a));
+    }
 }
+#nullable restore

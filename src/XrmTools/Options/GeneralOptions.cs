@@ -35,11 +35,11 @@ public class GeneralOptions : BaseOptionModel<GeneralOptions>
     public DataverseEnvironmentList Environments { get; set; } = [];
 
     [Category("Power Platform Environments")]
-    [DisplayName("Current Environment Level")]
-    [Description("Current Environment is set at which level")]
-    [DefaultValue(EnvironmentSettingLevel.Options)]
+    [DisplayName("Current environment kept in")]
+    [Description("Where to remember your selected environment")]
+    [DefaultValue(CurrentEnvironmentStorageType.Options)]
     [TypeConverter(typeof(EnumDescriptionConverter))]
-    public EnvironmentSettingLevel EnvironmentSettingLevel { get; set; } = EnvironmentSettingLevel.Options;
+    public CurrentEnvironmentStorageType CurrentEnvironmentStorage { get; set; } = CurrentEnvironmentStorageType.Options;
 
     [Category("Power Platform Environments")]
     [DisplayName("Current Environment")]
@@ -81,7 +81,7 @@ public class GeneralOptions : BaseOptionModel<GeneralOptions>
     }
 }
 
-public enum EnvironmentSettingLevel
+public enum CurrentEnvironmentStorageType
 {
     [Description("Visual Studio Options")]
     Options,

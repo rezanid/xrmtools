@@ -11,22 +11,29 @@ using System.Threading.Tasks;
 using System;
 using XrmTools.Helpers;
 using XrmTools.UI;
-using XrmTools.Xrm.Model;
-using XrmTools.Xrm;
-using System.ComponentModel.Composition;
 using XrmTools.Options;
 
 /// <summary>
 /// Command handler to select the current environment.
 /// </summary>
-//TODO: Add the correct command GUID and ID, then wire it up to the package.
-[Command(PackageGuids.guidXrmCodeGenPackageCmdSetString, PackageIds.SetXrmPluginGeneratorCommandId)]
-internal sealed class SelectEnvironmentCommand(
-    DIToolkitPackage package, 
-    ILogger<GenerateRegistrationFileCommand> logger, 
-    IEnvironmentSelector environmentSelector,
-    IEnvironmentProvider environmentProvider) : BaseDICommand(package)
+[Command(PackageGuids.XrmToolsCmdSetIdString, PackageIds.SetEnvironmentCmdId)]
+internal sealed class SelectEnvironmentCommand : BaseDICommand
 {
+    private readonly ILogger<NewPluginDefinitionFileCommand> logger;
+    private readonly IEnvironmentSelector environmentSelector;
+    private readonly IEnvironmentProvider environmentProvider;
+
+    public SelectEnvironmentCommand(
+        DIToolkitPackage package, 
+        ILogger<NewPluginDefinitionFileCommand> logger, 
+        IEnvironmentSelector environmentSelector,
+        IEnvironmentProvider environmentProvider) : base(package)
+    {
+        this.logger = logger;
+        this.environmentSelector = environmentSelector;
+        this.environmentProvider = environmentProvider;
+    }
+
     protected override async Task ExecuteAsync(OleMenuCmdEventArgs e)
     {
         var activeItem = await FileHelper.FindActiveItemAsync();
@@ -60,31 +67,13 @@ internal sealed class SelectEnvironmentCommand(
         }
 
         await environmentProvider.SetActiveEnvironmentAsync(environment);
-        /*switch (options.EnvironmentSettingLevel)
-        {
-            case EnvironmentSettingLevel.Solution:
-                settingsProvider.SolutionSettings.EnvironmentUrl = environment.Url;
-                break;
-            case EnvironmentSettingLevel.SolutionUser:
-                settingsProvider.SolutionUserSettings.EnvironmentUrl = environment.Url;
-                break;
-            case EnvironmentSettingLevel.Project:
-                await settingsProvider.ProjectSettings.SetEnvironmentUrlAsync(environment.Url);
-                break;
-            case EnvironmentSettingLevel.ProjectUser:
-                await settingsProvider.ProjectUserSettings.SetEnvironmentUrlAsync(environment.Url);
-                break;
-            case EnvironmentSettingLevel.Options:
-                settingsProvider.Options.CurrentEnvironment = environment;
-                break;
-        }*/
     }
 
     private async Task<DataverseEnvironment> ChooseEnvironmentAsync(GeneralOptions options)
     {
         try
         {
-            return await environmentSelector.ChooseEnvironmentAsync(options.EnvironmentSettingLevel);
+            return await environmentSelector.ChooseEnvironmentAsync(options.CurrentEnvironmentStorage);
         }
         catch (Exception ex)
         {

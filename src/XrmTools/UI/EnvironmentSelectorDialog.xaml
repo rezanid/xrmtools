@@ -13,11 +13,13 @@
                 p:HasMinimizeButton="False"
                 toolkit:Themes.UseVsTheme="True"
                 Title="Select Environment"
+                MinWidth="400" MinHeight="200"
+                Width="400" Height="200"
                 d:DesignHeight="200" d:DesignWidth="400">
     <Grid>
         <controls:EnvironmentSelector 
             Environment="{Binding Path=Environment}" Environments="{Binding Path=Environments}" SolutionItem="{Binding Path=SolutionItem}"
-            Select="{Binding Path=SelectCommand}" Cancel="{Binding Path=CancelComamnd}" Test="{Binding Path=TestCommand}">
+            Select="{Binding Path=SelectCommand}" Cancel="{Binding Path=CancelCommand}" Test="{Binding Path=TestCommand}">
         </controls:EnvironmentSelector>
     </Grid>
 </p:DialogWindow>

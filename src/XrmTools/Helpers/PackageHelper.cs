@@ -15,9 +15,9 @@ internal static class PackageHelper
         {
             throw new InvalidOperationException("Cannot get the shell service.");
         }
-        ErrorHandler.ThrowOnFailure(shell.IsPackageLoaded(ref PackageGuids.guidXrmCodeGenPackage, out var package));
+        ErrorHandler.ThrowOnFailure(shell.IsPackageLoaded(ref PackageGuids.XrmToolsPackageId, out var package));
         if (package == null)
-            ErrorHandler.ThrowOnFailure(shell.LoadPackage(ref PackageGuids.guidXrmCodeGenPackage, out package));
+            ErrorHandler.ThrowOnFailure(shell.LoadPackage(ref PackageGuids.XrmToolsPackageId, out package));
         return (XrmToolsPackage)package;
     }
 

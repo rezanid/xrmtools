@@ -55,7 +55,7 @@ internal record ProjectDataverseSettings(
 /// </para>
 /// </remarks>
 [PackageRegistration(UseManagedResourcesOnly = true, AllowsBackgroundLoading = true)]
-[Guid(PackageGuids.guidXrmCodeGenPackageString)]
+[Guid(PackageGuids.XrmToolsPackageIdString)]
 [ProvideAutoLoad(UIContextGuids80.SolutionExists, PackageAutoLoadFlags.BackgroundLoad)]
 [ProvideCodeGenerator(typeof(EntityCodeGenerator), EntityCodeGenerator.Name, EntityCodeGenerator.Description, true, ProjectSystem = ProvideCodeGeneratorAttribute.CSharpProjectGuid, RegisterCodeBase = true)]
 [ProvideCodeGeneratorExtension(EntityCodeGenerator.Name, ".yaml")]
@@ -63,27 +63,25 @@ internal record ProjectDataverseSettings(
 [ProvideCodeGeneratorExtension(PluginCodeGenerator.Name, ".def.json")]
 [ProvideMenuResource("Menus.ctmenu", 1)]
 // Decide the visibility of our command when the command is NOT yet loaded.
-[ProvideUIContextRule(PackageGuids.guidXrmCodeGenUIRuleString,
+[ProvideUIContextRule(PackageGuids.SetCustomToolEntitiesCmdUIRuleString,
     name: "UI Context",
     expression: "(Yaml | Proj) & CSharp & (SingleProj | MultiProj)",
-    termNames: ["Yaml", "Proj", "CSharp", "SingleProj", "MultiProj"],
-    termValues: ["HierSingleSelectionName:.yaml$|.yml$", "HierSingleSelectionItemType:ProjectItem", "ActiveProjectCapability:CSharp", VSConstants.UICONTEXT.SolutionHasSingleProject_string, VSConstants.UICONTEXT.SolutionHasMultipleProjects_string])]
-[ProvideUIContextRule(PackageGuids.guidXrmCodeGenSetPluginGeneratorCommandUIRuleString,
+    termNames: ["Yaml", "CSharp", "SingleProj", "MultiProj"],
+    termValues: ["HierSingleSelectionName:.yaml$|.yml$", "ActiveProjectCapability:CSharp", VSConstants.UICONTEXT.SolutionHasSingleProject_string, VSConstants.UICONTEXT.SolutionHasMultipleProjects_string])]
+[ProvideUIContextRule(PackageGuids.SetCustomToolPluginDefitionCmdUIRuleString,
     name: "UI Context 2",
     expression: "(Json | Proj) & CSharp & (SingleProj | MultiProj)",
-    termNames: ["Json", "Proj", "CSharp", "SingleProj", "MultiProj"],
+    termNames: ["Json", "CSharp", "SingleProj", "MultiProj"],
     termValues: [
         "HierSingleSelectionName:.def.json$", 
-        "HierSingleSelectionItemType:ProjectItem", 
         "ActiveProjectCapability:CSharp", 
         VSConstants.UICONTEXT.SolutionHasSingleProject_string, 
         VSConstants.UICONTEXT.SolutionHasMultipleProjects_string])]
-[ProvideUIContextRule(PackageGuids.guidGeneratePluginConfigFileCommandUIRuleString,
+[ProvideUIContextRule(PackageGuids.NewPluginDefinitionCmdUIRuleString,
     name: "UI Context NewPluginConfigCommand",
-    expression: "Proj & CSharp & (SingleProj | MultiProj)",
-    termNames: ["Proj", "CSharp", "SingleProj", "MultiProj"],
-    termValues: ["HierSingleSelectionItemType:ProjectItem",
-        "ActiveProjectCapability:CSharp",
+    expression: "CSharp & (SingleProj | MultiProj)",
+    termNames: ["CSharp", "SingleProj", "MultiProj"],
+    termValues: ["ActiveProjectCapability:CSharp",
         VSConstants.UICONTEXT.SolutionHasSingleProject_string,
         VSConstants.UICONTEXT.SolutionHasMultipleProjects_string])]
 [ProvideService(typeof(IXrmSchemaProviderFactory), IsAsyncQueryable = true, IsCacheable = true, IsFreeThreaded = true)]
@@ -141,7 +139,9 @@ public sealed class XrmToolsPackage : MicrosoftDIToolkitPackage<XrmToolsPackage>
                 builder.AddOutputLogger();
             })
             .AddSingleton(SettingsRepository)
+            .AddSingleton((ISettingsProvider)SettingsRepository)
             .AddSingleton(EnvironmentProvider)
+            .AddSingleton<IEnvironmentSelector, EnvironmentSelector>()
             .AddSingleton(XrmSchemaProviderFactory!)
             .AddSingleton<IAssemblySelector, AssemblySelector>()
             .RegisterCommands(ServiceLifetime.Singleton);
@@ -297,13 +297,13 @@ public sealed class XrmToolsPackage : MicrosoftDIToolkitPackage<XrmToolsPackage>
 
     #region Solution User Options (Already implemented in Package)
     public int SaveUserOptions(IVsSolutionPersistence pPersistence) 
-        => GeneralOptions.Instance.EnvironmentSettingLevel != EnvironmentSettingLevel.SolutionUser ? VSConstants.S_OK : implicitInvoker.Invoke<int>(this, nameof(SaveUserOptions), pPersistence);
+        => GeneralOptions.Instance.CurrentEnvironmentStorage != CurrentEnvironmentStorageType.SolutionUser ? VSConstants.S_OK : implicitInvoker.Invoke<int>(this, nameof(SaveUserOptions), pPersistence);
     public int LoadUserOptions(IVsSolutionPersistence pPersistence, uint grfLoadOpts)
-        => GeneralOptions.Instance.EnvironmentSettingLevel != EnvironmentSettingLevel.SolutionUser ? VSConstants.S_OK : implicitInvoker.Invoke<int>(this, nameof(LoadUserOptions), pPersistence);
+        => GeneralOptions.Instance.CurrentEnvironmentStorage != CurrentEnvironmentStorageType.SolutionUser ? VSConstants.S_OK : implicitInvoker.Invoke<int>(this, nameof(LoadUserOptions), pPersistence);
     public int WriteUserOptions(IStream pOptionsStream, string pszKey)
-        => GeneralOptions.Instance.EnvironmentSettingLevel != EnvironmentSettingLevel.SolutionUser ? VSConstants.S_OK : implicitInvoker.Invoke<int>(this, nameof(WriteUserOptions), pOptionsStream, pszKey);
+        => GeneralOptions.Instance.CurrentEnvironmentStorage != CurrentEnvironmentStorageType.SolutionUser ? VSConstants.S_OK : implicitInvoker.Invoke<int>(this, nameof(WriteUserOptions), pOptionsStream, pszKey);
     public int ReadUserOptions(IStream pOptionsStream, string pszKey)
-        => GeneralOptions.Instance.EnvironmentSettingLevel != EnvironmentSettingLevel.SolutionUser ? VSConstants.S_OK : implicitInvoker.Invoke<int>(this, nameof(ReadUserOptions), pOptionsStream, pszKey);
+        => GeneralOptions.Instance.CurrentEnvironmentStorage != CurrentEnvironmentStorageType.SolutionUser ? VSConstants.S_OK : implicitInvoker.Invoke<int>(this, nameof(ReadUserOptions), pOptionsStream, pszKey);
     #endregion
     #region Solution Properties
     public int QuerySaveSolutionProps(IVsHierarchy pHierarchy, VSQUERYSAVESLNPROPS[] pqsspSave)
@@ -314,7 +314,7 @@ public sealed class XrmToolsPackage : MicrosoftDIToolkitPackage<XrmToolsPackage>
     }
     public int SaveSolutionProps(IVsHierarchy pHierarchy, IVsSolutionPersistence pPersistence)
     {
-        if (GeneralOptions.Instance.EnvironmentSettingLevel != EnvironmentSettingLevel.Solution)
+        if (GeneralOptions.Instance.CurrentEnvironmentStorage != CurrentEnvironmentStorageType.Solution)
         {
             return VSConstants.S_OK;
         }
@@ -324,7 +324,7 @@ public sealed class XrmToolsPackage : MicrosoftDIToolkitPackage<XrmToolsPackage>
     }
     public int WriteSolutionProps(IVsHierarchy pHierarchy, string pszKey, IPropertyBag pPropBag)
     {
-        if (GeneralOptions.Instance.EnvironmentSettingLevel != EnvironmentSettingLevel.Solution)
+        if (GeneralOptions.Instance.CurrentEnvironmentStorage != CurrentEnvironmentStorageType.Solution)
         {
             return VSConstants.S_OK;
         }
@@ -347,7 +347,7 @@ public sealed class XrmToolsPackage : MicrosoftDIToolkitPackage<XrmToolsPackage>
     }
     public int ReadSolutionProps(IVsHierarchy pHierarchy, string pszProjectName, string pszProjectMk, string pszKey, int fPreLoad, IPropertyBag pPropBag)
     {
-        if (GeneralOptions.Instance.EnvironmentSettingLevel != EnvironmentSettingLevel.Solution)
+        if (GeneralOptions.Instance.CurrentEnvironmentStorage != CurrentEnvironmentStorageType.Solution)
         {
             return VSConstants.S_OK;
         }

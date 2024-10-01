@@ -12,17 +12,17 @@ namespace XrmTools
     /// </summary>
     internal sealed partial class PackageGuids
     {
-        public const string guidXrmCodeGenPackageString = "9d0b1940-11e7-41cc-a95a-ad5a6ed3c73b";
-        public static Guid guidXrmCodeGenPackage = new Guid(guidXrmCodeGenPackageString);
+        public const string XrmToolsPackageIdString = "9d0b1940-11e7-41cc-a95a-ad5a6ed3c73b";
+        public static Guid XrmToolsPackageId = new Guid(XrmToolsPackageIdString);
 
-        public const string guidXrmCodeGenUIRuleString = "6b9f081c-67ed-43f3-8434-237387ae4f5d";
-        public static Guid guidXrmCodeGenUIRule = new Guid(guidXrmCodeGenUIRuleString);
+        public const string SetCustomToolEntitiesCmdUIRuleString = "6b9f081c-67ed-43f3-8434-237387ae4f5d";
+        public static Guid SetCustomToolEntitiesCmdUIRule = new Guid(SetCustomToolEntitiesCmdUIRuleString);
 
-        public const string guidXrmCodeGenSetPluginGeneratorCommandUIRuleString = "ee3324f2-0e72-4af6-bcba-ac3af05df4e8";
-        public static Guid guidXrmCodeGenSetPluginGeneratorCommandUIRule = new Guid(guidXrmCodeGenSetPluginGeneratorCommandUIRuleString);
+        public const string SetCustomToolPluginDefitionCmdUIRuleString = "ee3324f2-0e72-4af6-bcba-ac3af05df4e8";
+        public static Guid SetCustomToolPluginDefitionCmdUIRule = new Guid(SetCustomToolPluginDefitionCmdUIRuleString);
 
-        public const string guidGeneratePluginConfigFileCommandUIRuleString = "87765b0d-0ab7-4812-9668-a2d621957cf9";
-        public static Guid guidGeneratePluginConfigFileCommandUIRule = new Guid(guidGeneratePluginConfigFileCommandUIRuleString);
+        public const string NewPluginDefinitionCmdUIRuleString = "87765b0d-0ab7-4812-9668-a2d621957cf9";
+        public static Guid NewPluginDefinitionCmdUIRule = new Guid(NewPluginDefinitionCmdUIRuleString);
 
         public const string guidOutputLoggerServiceString = "974d18b3-8c5f-464f-a589-40b1fd920d4c";
         public static Guid guidOutputLoggerService = new Guid(guidOutputLoggerServiceString);
@@ -39,20 +39,20 @@ namespace XrmTools
         public const string guidXrmEntityCodeGeneratorString = "40f321f1-e206-4643-83d8-a14f3495c4ed";
         public static Guid guidXrmEntityCodeGenerator = new Guid(guidXrmEntityCodeGeneratorString);
 
-        public const string guidGenerateXrmPluginConfigCmdSetString = "5e7c248f-9676-4c64-a166-218379e01bad";
-        public static Guid guidGenerateXrmPluginConfigCmdSet = new Guid(guidGenerateXrmPluginConfigCmdSetString);
-
-        public const string guidXrmCodeGenPackageCmdSetString = "15d399a7-b2ae-4f1c-9771-3dae966a7134";
-        public static Guid guidXrmCodeGenPackageCmdSet = new Guid(guidXrmCodeGenPackageCmdSetString);
+        public const string XrmToolsCmdSetIdString = "15d399a7-b2ae-4f1c-9771-3dae966a7134";
+        public static Guid XrmToolsCmdSetId = new Guid(XrmToolsCmdSetIdString);
     }
     /// <summary>
     /// Helper class that encapsulates all CommandIDs uses across VS Package.
     /// </summary>
     internal sealed partial class PackageIds
     {
-        public const int idGeneratePluginConfigFileCommand = 0x0200;
-        public const int MyMenuGroup = 0x1020;
-        public const int EntityGeneratorCommandId = 0x0100;
-        public const int SetXrmPluginGeneratorCommandId = 0x0101;
+        public const int XrmToolsProjectContextMenuGroup = 0x0600;
+        public const int XrmToolsSolutionContextMenuGroup = 0x0700;
+        public const int XrmToolsContextMenuGroup = 0x0100;
+        public const int NewPluginDefinitionCmdId = 0x0200;
+        public const int SetCustomToolPluginDefitionCmdId = 0x0300;
+        public const int SetCustomToolEntitiesCmdId = 0x0400;
+        public const int SetEnvironmentCmdId = 0x0500;
     }
 }

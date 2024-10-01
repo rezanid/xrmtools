@@ -90,7 +90,7 @@
     <Compile Include="Helpers\IVsHierarchyExtensions.cs" />
     <Compile Include="Helpers\EntityMetadataExtensions.cs" />
     <Compile Include="Helpers\StringBuilderExtensions.cs" />
-    <Compile Include="Commands\GenerateRegistrationFileCommand.cs" />
+    <Compile Include="Commands\NewPluginDefinitionFileCommand.cs" />
     <Compile Include="Helpers\TypeExtensions.cs" />
     <Compile Include="UI\Converters\ObjectToJsonConverter.cs" />
     <Compile Include="UI\ViewModelBase.cs" />
