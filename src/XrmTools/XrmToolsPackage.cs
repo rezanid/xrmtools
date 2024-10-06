@@ -277,7 +277,7 @@ public sealed class XrmToolsPackage : MicrosoftDIToolkitPackage<XrmToolsPackage>
         if (SettingsRepository.SolutionUserSettingKeys.Contains(key, StringComparer.InvariantCultureIgnoreCase))
         {
             var writer = new StreamWriter(stream);
-            writer.Write(DataverseUrlOption);
+            writer.Write(SettingsRepository.GetSolutionUserSetting(key));
             writer.Flush();
         }
     }
@@ -297,13 +297,13 @@ public sealed class XrmToolsPackage : MicrosoftDIToolkitPackage<XrmToolsPackage>
 
     #region Solution User Options (Already implemented in Package)
     public int SaveUserOptions(IVsSolutionPersistence pPersistence) 
-        => GeneralOptions.Instance.CurrentEnvironmentStorage != CurrentEnvironmentStorageType.SolutionUser ? VSConstants.S_OK : implicitInvoker.Invoke<int>(this, nameof(SaveUserOptions), pPersistence);
+        => GeneralOptions.Instance.CurrentEnvironmentStorage != SettingsStorageTypes.SolutionUser ? VSConstants.S_OK : implicitInvoker.Invoke<int>(this, nameof(SaveUserOptions), pPersistence);
     public int LoadUserOptions(IVsSolutionPersistence pPersistence, uint grfLoadOpts)
-        => GeneralOptions.Instance.CurrentEnvironmentStorage != CurrentEnvironmentStorageType.SolutionUser ? VSConstants.S_OK : implicitInvoker.Invoke<int>(this, nameof(LoadUserOptions), pPersistence);
+        => GeneralOptions.Instance.CurrentEnvironmentStorage != SettingsStorageTypes.SolutionUser ? VSConstants.S_OK : implicitInvoker.Invoke<int>(this, nameof(LoadUserOptions), pPersistence, grfLoadOpts);
     public int WriteUserOptions(IStream pOptionsStream, string pszKey)
-        => GeneralOptions.Instance.CurrentEnvironmentStorage != CurrentEnvironmentStorageType.SolutionUser ? VSConstants.S_OK : implicitInvoker.Invoke<int>(this, nameof(WriteUserOptions), pOptionsStream, pszKey);
+        => GeneralOptions.Instance.CurrentEnvironmentStorage != SettingsStorageTypes.SolutionUser ? VSConstants.S_OK : implicitInvoker.Invoke<int>(this, nameof(WriteUserOptions), pOptionsStream, pszKey);
     public int ReadUserOptions(IStream pOptionsStream, string pszKey)
-        => GeneralOptions.Instance.CurrentEnvironmentStorage != CurrentEnvironmentStorageType.SolutionUser ? VSConstants.S_OK : implicitInvoker.Invoke<int>(this, nameof(ReadUserOptions), pOptionsStream, pszKey);
+        => GeneralOptions.Instance.CurrentEnvironmentStorage != SettingsStorageTypes.SolutionUser ? VSConstants.S_OK : implicitInvoker.Invoke<int>(this, nameof(ReadUserOptions), pOptionsStream, pszKey);
     #endregion
     #region Solution Properties
     public int QuerySaveSolutionProps(IVsHierarchy pHierarchy, VSQUERYSAVESLNPROPS[] pqsspSave)
@@ -314,7 +314,7 @@ public sealed class XrmToolsPackage : MicrosoftDIToolkitPackage<XrmToolsPackage>
     }
     public int SaveSolutionProps(IVsHierarchy pHierarchy, IVsSolutionPersistence pPersistence)
     {
-        if (GeneralOptions.Instance.CurrentEnvironmentStorage != CurrentEnvironmentStorageType.Solution)
+        if (GeneralOptions.Instance.CurrentEnvironmentStorage != SettingsStorageTypes.Solution)
         {
             return VSConstants.S_OK;
         }
@@ -324,7 +324,7 @@ public sealed class XrmToolsPackage : MicrosoftDIToolkitPackage<XrmToolsPackage>
     }
     public int WriteSolutionProps(IVsHierarchy pHierarchy, string pszKey, IPropertyBag pPropBag)
     {
-        if (GeneralOptions.Instance.CurrentEnvironmentStorage != CurrentEnvironmentStorageType.Solution)
+        if (GeneralOptions.Instance.CurrentEnvironmentStorage != SettingsStorageTypes.Solution)
         {
             return VSConstants.S_OK;
         }
@@ -347,7 +347,7 @@ public sealed class XrmToolsPackage : MicrosoftDIToolkitPackage<XrmToolsPackage>
     }
     public int ReadSolutionProps(IVsHierarchy pHierarchy, string pszProjectName, string pszProjectMk, string pszKey, int fPreLoad, IPropertyBag pPropBag)
     {
-        if (GeneralOptions.Instance.CurrentEnvironmentStorage != CurrentEnvironmentStorageType.Solution)
+        if (GeneralOptions.Instance.CurrentEnvironmentStorage != SettingsStorageTypes.Solution)
         {
             return VSConstants.S_OK;
         }

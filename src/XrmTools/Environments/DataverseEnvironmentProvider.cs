@@ -24,22 +24,22 @@ internal class DataverseEnvironmentProvider([Import]ISettingsRepository settings
     public async Task<DataverseEnvironment?> GetActiveEnvironmentAsync()
     => (await GeneralOptions.GetLiveInstanceAsync()).CurrentEnvironmentStorage switch
     {
-        CurrentEnvironmentStorageType.Options => (await GeneralOptions.GetLiveInstanceAsync().ConfigureAwait(false)).CurrentEnvironment,
-        CurrentEnvironmentStorageType.Solution => GetEnvironmentFromSolution(),
-        CurrentEnvironmentStorageType.SolutionUser => GetEnvironmentFromSolutionUserFile(),
-        CurrentEnvironmentStorageType.Project => await GetEnvironmentFromProjectAsync().ConfigureAwait(false),
-        CurrentEnvironmentStorageType.ProjectUser => await GetEnvironmentFromProjectUserFileAsync().ConfigureAwait(false),
+        SettingsStorageTypes.Options => (await GeneralOptions.GetLiveInstanceAsync().ConfigureAwait(false)).CurrentEnvironment,
+        SettingsStorageTypes.Solution => GetEnvironmentFromSolution(),
+        SettingsStorageTypes.SolutionUser => GetEnvironmentFromSolutionUserFile(),
+        SettingsStorageTypes.Project => await GetEnvironmentFromProjectAsync().ConfigureAwait(false),
+        SettingsStorageTypes.ProjectUser => await GetEnvironmentFromProjectUserFileAsync().ConfigureAwait(false),
         _ => GeneralOptions.Instance.CurrentEnvironment,
     };
 
     public DataverseEnvironment? GetActiveEnvironment()
     => (GeneralOptions.Instance).CurrentEnvironmentStorage switch
     {
-        CurrentEnvironmentStorageType.Options => GeneralOptions.Instance.CurrentEnvironment,
-        CurrentEnvironmentStorageType.Solution => GetEnvironmentFromSolution(),
-        CurrentEnvironmentStorageType.SolutionUser => GetEnvironmentFromSolutionUserFile(),
-        CurrentEnvironmentStorageType.Project => GetEnvironmentFromProjectAsync().ConfigureAwait(false).GetAwaiter().GetResult(),
-        CurrentEnvironmentStorageType.ProjectUser => GetEnvironmentFromProjectUserFileAsync().ConfigureAwait(false).GetAwaiter().GetResult(),
+        SettingsStorageTypes.Options => GeneralOptions.Instance.CurrentEnvironment,
+        SettingsStorageTypes.Solution => GetEnvironmentFromSolution(),
+        SettingsStorageTypes.SolutionUser => GetEnvironmentFromSolutionUserFile(),
+        SettingsStorageTypes.Project => GetEnvironmentFromProjectAsync().ConfigureAwait(false).GetAwaiter().GetResult(),
+        SettingsStorageTypes.ProjectUser => GetEnvironmentFromProjectUserFileAsync().ConfigureAwait(false).GetAwaiter().GetResult(),
         _ => GeneralOptions.Instance.CurrentEnvironment,
     };
 
@@ -48,40 +48,30 @@ internal class DataverseEnvironmentProvider([Import]ISettingsRepository settings
         var options = await GeneralOptions.GetLiveInstanceAsync();
         switch (options.CurrentEnvironmentStorage)
         {
-            case CurrentEnvironmentStorageType.Options:
-                //GeneralOptions.Instance.CurrentEnvironment = environment;
+            case SettingsStorageTypes.Options:
                 SetEnvironmentInSolution(null);
                 SetEnvironmentInSolutionUserFile(null);
                 await SetEnvironmentInProjectAsync(null);
-                await SetEnvironmentInProjectUserFileAsync(null);
                 break;
-            case CurrentEnvironmentStorageType.Solution:
+            case SettingsStorageTypes.Solution:
                 SetEnvironmentInSolution(environment);
-                //GeneralOptions.Instance.CurrentEnvironment = new DataverseEnvironment();
                 SetEnvironmentInSolutionUserFile(null);
                 await SetEnvironmentInProjectAsync(null);
-                await SetEnvironmentInProjectUserFileAsync(null);
                 break;
-            case CurrentEnvironmentStorageType.SolutionUser:
+            case SettingsStorageTypes.SolutionUser:
                 SetEnvironmentInSolutionUserFile(environment);
-                //GeneralOptions.Instance.CurrentEnvironment = new DataverseEnvironment();
                 SetEnvironmentInSolution(null);
                 await SetEnvironmentInProjectAsync(null);
-                await SetEnvironmentInProjectUserFileAsync(null);
                 break;
-            case CurrentEnvironmentStorageType.Project:
+            case SettingsStorageTypes.Project:
                 await SetEnvironmentInProjectAsync(environment);
-                //GeneralOptions.Instance.CurrentEnvironment = new DataverseEnvironment();
                 SetEnvironmentInSolution(null);
                 SetEnvironmentInSolutionUserFile(null);
-                await SetEnvironmentInProjectUserFileAsync(null);
                 break;
-            case CurrentEnvironmentStorageType.ProjectUser:
+            case SettingsStorageTypes.ProjectUser:
                 await SetEnvironmentInProjectUserFileAsync(environment);
-                //GeneralOptions.Instance.CurrentEnvironment = new DataverseEnvironment();
                 SetEnvironmentInSolution(null);
                 SetEnvironmentInSolutionUserFile(null);
-                await SetEnvironmentInProjectAsync(null);
                 break;
         }
     }

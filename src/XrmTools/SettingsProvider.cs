@@ -6,7 +6,6 @@ using System;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using System.Threading.Tasks;
-using XrmTools.Options;
 
 internal interface ISettingsRepository
 {
@@ -33,9 +32,6 @@ internal interface ISettingsRepository
 [ComVisible(true)]
 internal interface ISettingsProvider
 {
-    GeneralOptions Options { get; }
-    Task<GeneralOptions> GetOptionsAsync();
-
     SolutionSettingsAccessor SolutionSettings { get; }
     SolutionSettingsAccessor SolutionUserSettings { get; }
     ProjectSettingsAccessor ProjectSettings { get; }
@@ -55,18 +51,6 @@ internal class SettingsProvider : ISettingsProvider, ISettingsRepository
     {
         ["EnvironmentUrl"] = null
     };
-    private GeneralOptions? options;
-
-    public async Task<GeneralOptions> GetOptionsAsync()
-    {
-        if (options is not null) return options;
-        options = await GeneralOptions.GetLiveInstanceAsync();
-        return options;
-    }
-    public GeneralOptions Options 
-    {
-        get => options ??= GeneralOptions.Instance;
-    }
 
     IEnumerable<string> ISettingsRepository.SolutionSettingKeys => solutionSettings.Keys;
     IEnumerable<string> ISettingsRepository.SolutionUserSettingKeys => solutionUserSettings.Keys;
@@ -100,13 +84,16 @@ internal class SettingsProvider : ISettingsProvider, ISettingsRepository
     {
         var proj = await VS.Solutions.GetActiveProjectAsync();
         if (proj is null) return false;
+        var result = await proj.RemoveAttributeAsync(key, ProjectStorageType.UserFile);
+        result = await proj.RemoveAttributeAsync(key);
         return await proj.TrySetAttributeAsync(key, value, ProjectStorageType.ProjectFile);
     }
     async Task<bool> ISettingsRepository.SetProjectUserSettingAsync(string key, string? value)
     {
         var proj = await VS.Solutions.GetActiveProjectAsync();
         if (proj is null) return false;
-        return await proj.TrySetAttributeAsync(key, value, ProjectStorageType.ProjectFile);
+        var result = await proj.RemoveAttributeAsync(key, ProjectStorageType.ProjectFile);
+        return await proj.TrySetAttributeAsync(key, value, ProjectStorageType.UserFile);
     }
 
     string? ISettingsRepository.GetSolutionSetting(string key) => solutionSettings.TryGetValue(key, out var value) ? value : null;
@@ -130,23 +117,125 @@ internal class SettingsProvider : ISettingsProvider, ISettingsRepository
 /// <summary>
 /// Strongly typed accessor for solution settings.
 /// </summary>
-internal class SolutionSettingsAccessor(Func<string, string?> getterFunction, Action<string, string?> setterFunction)
-{
-    public string? EnvironmentUrl { get => getterFunction("EnvironmentUrl"); set => setterFunction("EnvironmentUrl", value); }
-}
+//internal class SolutionSettingsAccessor(Func<string, string?> getterFunction, Action<string, string?> setterFunction)
+//{
+//    public string? EnvironmentUrl { get => getterFunction("EnvironmentUrl"); set => setterFunction("EnvironmentUrl", value); }
+//}
 
 /// <summary>
 /// Strongly typed accessor for project settings.
 /// </summary>
-internal class ProjectSettingsAccessor(Func<string, Task<string?>> getterFunction, Func<string, string?, Task> setterFunction)
+//internal class ProjectSettingsAccessor(Func<string, Task<string?>> getterFunction, Func<string, string?, Task> setterFunction)
+//{
+//    public Task<string?> GetEnvironmentUrlAsync() => getterFunction("EnvironmentUrl");
+//    public Task SetEnvironmentUrlAsync(string? value) => setterFunction("EnvironmentUrl", value);
+//    public Task<string?> GetConnectionStringAsync() => getterFunction("ConnectionString");
+//    public Task SetConnectionStringAsync(string? value) => setterFunction("ConnectionString", value);
+//    public Task<string?> GetPluginCodeGenTemplateFilePathAsync() => getterFunction("DataversePluginTemplateFilePath");
+//    public Task SetPluginCodeGenTemplateFilePathAsync(string? value) => setterFunction("DataversePluginTemplateFilePath", value);
+//    public Task<string?> GetEntityCodeGenTemplateFilePathAsync() => getterFunction("DataverseEntityTemplateFilePath");
+//    public Task SetEntityCodeGenTemplateFilePathAsync(string? value) => setterFunction("DataverseEntityTemplateFilePath", value);
+//}
+
+public interface IXrmToolsSettings
 {
-    public Task<string?> GetEnvironmentUrlAsync() => getterFunction("EnvironmentUrl");
-    public Task SetEnvironmentUrlAsync(string? value) => setterFunction("EnvironmentUrl", value);
-    public Task<string?> GetConnectionStringAsync() => getterFunction("ConnectionString");
-    public Task SetConnectionStringAsync(string? value) => setterFunction("ConnectionString", value);
-    public Task<string?> GetPluginCodeGenTemplateFilePathAsync() => getterFunction("PluginCodeGenTemplateFilePath");
-    public Task SetPluginCodeGenTemplateFilePathAsync(string? value) => setterFunction("PluginCodeGenTemplateFilePath", value);
-    public Task<string?> GetEntityCodeGenTemplateFilePathAsync() => getterFunction("EntityCodeGenTemplateFilePath");
-    public Task SetEntityCodeGenTemplateFilePathAsync(string? value) => setterFunction("EntityCodeGenTemplateFilePath", value);
+    Task<string?> EnvironmentUrlAsync();
+    Task<string?> ConnectionStringAsync();
+    Task<string?> PluginTemplateFilePathAsync();
+    Task<string?> EntityTemplateFilePathAsync();
+    Task<bool> EnvironmentUrlAsync(string value);
+    Task<bool> ConnectionStringAsync(string value);
+    Task<bool> PluginTemplateFilePathAsync(string value);
+    Task<bool> EntityTemplateFilePathAsync(string value);
+}
+
+public class ProjectSettings(ProjectStorageType storageType) : IXrmToolsSettings
+{
+    public async Task<string?> EnvironmentUrlAsync() => await GetSettingAsync("EnvironmentUrl");
+    public async Task<string?> ConnectionStringAsync() => await GetSettingAsync("DataverseConnectionString");
+    public async Task<string?> PluginTemplateFilePathAsync() => await GetSettingAsync("DataversePluginTemplateFilePath");
+    public async Task<string?> EntityTemplateFilePathAsync() => await GetSettingAsync("DataverseEntityTemplateFilePath");
+    public async Task<bool> EnvironmentUrlAsync(string value) => await SetSettingAsync("EnvironmentUrl", value);
+    public async Task<bool> ConnectionStringAsync(string value) => await SetSettingAsync("DataverseConnectionString", value);
+    public async Task<bool> PluginTemplateFilePathAsync(string value) => await SetSettingAsync("DataversePluginTemplateFilePath", value);
+    public async Task<bool> EntityTemplateFilePathAsync(string value) => await SetSettingAsync("DataverseEntityTemplateFilePath", value);
+
+    private async Task<string?> GetSettingAsync(string name)
+    {
+        var proj = await VS.Solutions.GetActiveProjectAsync();
+        if (proj == null) return null;
+        return await proj.GetAttributeAsync(name);
+    }
+
+    private async Task<bool> SetSettingAsync(string name, string? value)
+    {
+        var proj = await VS.Solutions.GetActiveProjectAsync();
+        if (proj == null) return false;
+        return await proj.TrySetAttributeAsync(name, value, storageType);
+    }
+}
+
+public enum SolutionStorageType { Solution, SolutionUser }
+
+public class SolutionSettings(SolutionStorageType storageType) : IXrmToolsSettings
+{
+    private readonly Dictionary<string, string?> solutionSettings = new()
+    {
+        ["EnvironmentUrl"] = null,
+        ["ConnectionString"] = null,
+        ["PluginCodeGenTemplateFilePath"] = null,
+        ["EntityCodeGenTemplateFilePath"] = null
+    };
+    private readonly Dictionary<string, string?> solutionUserSettings = new()
+    {
+        ["EnvironmentUrl"] = null,
+        ["ConnectionString"] = null,
+        ["PluginCodeGenTemplateFilePath"] = null,
+        ["EntityCodeGenTemplateFilePath"] = null
+    };
+
+    public async Task<string?> EnvironmentUrlAsync() => await GetSettingAsync("EnvironmentUrl");
+    public async Task<string?> ConnectionStringAsync() => await GetSettingAsync("DataverseConnectionString");
+    public async Task<string?> PluginTemplateFilePathAsync() => await GetSettingAsync("DataversePluginTemplateFilePath");
+    public async Task<string?> EntityTemplateFilePathAsync() => await GetSettingAsync("DataverseEntityTemplateFilePath");
+    public async Task<bool> EnvironmentUrlAsync(string value) => await SetSettingAsync("EnvironmentUrl", value);
+    public async Task<bool> ConnectionStringAsync(string value) => await SetSettingAsync("DataverseConnectionString", value);
+    public async Task<bool> PluginTemplateFilePathAsync(string value) => await SetSettingAsync("DataversePluginTemplateFilePath", value);
+    public async Task<bool> EntityTemplateFilePathAsync(string value) => await SetSettingAsync("DataverseEntityTemplateFilePath", value);
+
+    private Task<string?> GetSettingAsync(string name)
+    {
+        if (storageType == SolutionStorageType.Solution)
+        {
+            solutionSettings.TryGetValue(name, out var value);
+            return Task.FromResult(value);
+        }
+        else if (storageType == SolutionStorageType.SolutionUser)
+        {
+            solutionUserSettings.TryGetValue(name, out var value);
+            return Task.FromResult(value);
+        }
+        else
+        {
+            throw new NotImplementedException();
+        }
+    }
+
+    private Task<bool> SetSettingAsync(string name, string? value)
+    {
+        if (storageType == SolutionStorageType.Solution)
+        {
+            solutionSettings[name] = value;
+        }
+        else if (storageType == SolutionStorageType.SolutionUser)
+        {
+            solutionUserSettings[name] = value;
+        }
+        else
+        {
+            throw new NotImplementedException();
+        }
+        return Task.FromResult(true);
+    }
 }
 #nullable restore

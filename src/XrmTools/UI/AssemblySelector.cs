@@ -24,9 +24,9 @@ internal class AssemblySelector(IEnvironmentProvider environmentProvider, IXrmSc
             var options = await GeneralOptions.GetLiveInstanceAsync();
             await VS.MessageBox.ShowAsync("No environment selected", options.CurrentEnvironmentStorage switch
             {
-                CurrentEnvironmentStorageType.Options => "No environment selected. Please select an environment from Tools > Options > Xrm Tools > Current Environment.",
-                CurrentEnvironmentStorageType.Solution or CurrentEnvironmentStorageType.SolutionUser => "No environment selected. Please select an environment from Solution context menu > Set Environment.",
-                CurrentEnvironmentStorageType.Project or CurrentEnvironmentStorageType.ProjectUser => "No environment selected. Please select an environment from Project context menu > Set Environment."
+                SettingsStorageTypes.Options => "No environment selected. Please select an environment from Tools > Options > Xrm Tools > Current Environment.",
+                SettingsStorageTypes.Solution or SettingsStorageTypes.SolutionUser => "No environment selected. Please select an environment from Solution context menu > Set Environment.",
+                SettingsStorageTypes.Project or SettingsStorageTypes.ProjectUser => "No environment selected. Please select an environment from Project context menu > Set Environment."
             }, Microsoft.VisualStudio.Shell.Interop.OLEMSGICON.OLEMSGICON_WARNING);
             return (null, null); 
         }

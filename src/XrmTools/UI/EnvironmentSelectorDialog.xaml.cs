@@ -7,16 +7,17 @@ using Microsoft.VisualStudio.Shell.Interop;
 using System;
 using System.Linq;
 using System.Reflection;
+using XrmTools.Options;
 
 /// <summary>
 /// Interaction logic for EnvironmentSelectorDialog.xaml
 /// </summary>
 internal partial class EnvironmentSelectorDialog : DialogWindow
 {
-    internal EnvironmentSelectorDialog(ISettingsProvider settingsProvider, SolutionItem solutionItem, bool userMode)
+    internal EnvironmentSelectorDialog(SettingsStorageTypes storageType, ISettingsProvider settingsProvider, SolutionItem solutionItem)
     {
         EnsureReferencedAssembliesInMarkupAreLoaded();
-        DataContext = new EnvironmentSelectorViewModel(solutionItem, settingsProvider, OnSelect, OnCancel, OnTest, userMode);
+        DataContext = new EnvironmentSelectorViewModel(storageType, solutionItem, settingsProvider, OnSelect, OnCancel, OnTest);
         InitializeComponent();
     }
 

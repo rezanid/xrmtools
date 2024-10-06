@@ -4,6 +4,8 @@
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
              xmlns:local="clr-namespace:XrmTools.UI.Controls"
+             xmlns:options="clr-namespace:XrmTools.Options;assembly=XrmTools.Core"
+             xmlns:toolkit="clr-namespace:Community.VisualStudio.Toolkit;assembly=Community.VisualStudio.Toolkit"
              mc:Ignorable="d" 
              d:DesignHeight="150" d:DesignWidth="450">
     <Grid Margin="5">
@@ -18,19 +20,15 @@
             <ColumnDefinition />
         </Grid.ColumnDefinitions>
         <StackPanel Orientation="Horizontal" Grid.Row="0" Grid.Column="0" Grid.ColumnSpan="2" Margin="5">
-            <TextBlock Text="Select the environment for ZZZZ project." Grid.Row="0" Grid.Column="0">
+            <TextBlock>
                 <TextBlock.Style>
                     <Style TargetType="TextBlock">
-                        <Setter Property="Visibility" Value="Collapsed"/>
                         <Style.Triggers>
-                            <DataTrigger Binding="{Binding Path=SolutionItem}" Value="{x:Null}">
-                                <Setter Property="Text" Value="Select the environment:"/>
+                            <DataTrigger Binding="{Binding Path=SolutionItem.Type}" Value="{x:Static toolkit:SolutionItemType.Project}">
+                                <Setter Property="Text" Value="Please select an environment for the project: "/>
                             </DataTrigger>
-                            <DataTrigger Binding="{Binding Path=SolutionItem.Type}" Value="SolutionItemType.Solution">
-                                <Setter Property="Text" Value="Select the environment for the solution: "/>
-                            </DataTrigger>
-                            <DataTrigger Binding="{Binding Path=SolutionItem.Type}" Value="SolutionItemType.Project">
-                                <Setter Property="Text" Value="Select the environment for the project: "/>
+                            <DataTrigger Binding="{Binding Path=SolutionItem.Type}" Value="{x:Static toolkit:SolutionItemType.Solution}">
+                                <Setter Property="Text" Value="Please select an environment for the solution: "/>
                             </DataTrigger>
                         </Style.Triggers>
                     </Style>
@@ -39,11 +37,34 @@
             <TextBlock Text="{Binding Path=SolutionItem.Text}" />
         </StackPanel>
         <Label Content="Environment:" Grid.Row="1" Grid.Column="0" VerticalAlignment="Center" />
-        <ComboBox x:Name="cmbEnvironment" Grid.Row="1" Grid.Column="1" VerticalAlignment="Center" SelectedItem="{Binding Path=Environment}" ItemsSource="{Binding Path=Environments}" />
+        <ComboBox x:Name="cmbEnvironment" Grid.Row="1" Grid.Column="1" VerticalAlignment="Center" Margin="5" Padding="3" SelectedItem="{Binding Path=Environment}" ItemsSource="{Binding Path=Environments}" />
+        <TextBlock Grid.Row="2" Grid.Column="0" Grid.ColumnSpan="2" Margin="5">
+            <TextBlock.Style>
+                <Style TargetType="TextBlock">
+                    <Style.Triggers>
+                        <DataTrigger Binding="{Binding Path=StorageType}" Value="{x:Static options:SettingsStorageTypes.Options}">
+                            <Setter Property="Text" Value="The environment will be saved in the options."/>
+                        </DataTrigger>
+                        <DataTrigger Binding="{Binding Path=StorageType}" Value="{x:Static options:SettingsStorageTypes.Project}">
+                            <Setter Property="Text" Value="The environment will be saved in the project file."/>
+                        </DataTrigger>
+                        <DataTrigger Binding="{Binding Path=StorageType}" Value="{x:Static options:SettingsStorageTypes.ProjectUser}">
+                            <Setter Property="Text" Value="The environment will be saved in the project user options."/>
+                        </DataTrigger>
+                        <DataTrigger Binding="{Binding Path=StorageType}" Value="{x:Static options:SettingsStorageTypes.Solution}">
+                            <Setter Property="Text" Value="The environment will be saved in the solution file."/>
+                        </DataTrigger>
+                        <DataTrigger Binding="{Binding Path=StorageType}" Value="{x:Static options:SettingsStorageTypes.SolutionUser}">
+                            <Setter Property="Text" Value="The environment will be saved in the solution user options."/>
+                        </DataTrigger>
+                    </Style.Triggers>
+                </Style>
+            </TextBlock.Style>
+        </TextBlock>
         <StackPanel Orientation="Horizontal" Grid.Row="3" Grid.Column="0" Grid.ColumnSpan="2" HorizontalAlignment="Right">
-            <Button Content="Cancel" MinWidth="100" Margin="5" Command="{Binding Path=CancelCommand}"/>
-            <Button Content="Test" MinWidth="100" Margin="5" Command="{Binding Path=TestCommand}"/>
-            <Button Content="Select" MinWidth="100" Margin="5" IsDefault="True" Command="{Binding Path=SelectCommand}"/>
+            <Button Content="Cancel" MinWidth="100" Margin="5" IsCancel="True" Command="{Binding Path=CancelCommand}" />
+            <Button Content="Test" MinWidth="100" Margin="5" Command="{Binding Path=TestCommand}" IsEnabled="{Binding Path=Environment.IsValid}"/>
+            <Button Content="Select" MinWidth="100" Margin="5" IsDefault="True" Command="{Binding Path=SelectCommand}" />
         </StackPanel>
     </Grid>
 </UserControl>

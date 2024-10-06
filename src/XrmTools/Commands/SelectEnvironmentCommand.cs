@@ -34,6 +34,21 @@ internal sealed class SelectEnvironmentCommand : BaseDICommand
         this.environmentProvider = environmentProvider;
     }
 
+    protected override void BeforeQueryStatus(EventArgs e)
+        => ThreadHelper.JoinableTaskFactory.Run(SetCommandVisibilityAsync);
+
+    private async Task SetCommandVisibilityAsync()
+    {
+        var activeItem = await VS.Solutions.GetActiveItemAsync();
+        var options = await GeneralOptions.GetLiveInstanceAsync();
+        Command.Visible = activeItem.Type switch
+        {
+            SolutionItemType.Solution => options.CurrentEnvironmentStorage is SettingsStorageTypes.Solution or SettingsStorageTypes.SolutionUser,
+            SolutionItemType.Project => options.CurrentEnvironmentStorage is SettingsStorageTypes.Project or SettingsStorageTypes.ProjectUser,
+            _ => false
+        };
+    }
+
     protected override async Task ExecuteAsync(OleMenuCmdEventArgs e)
     {
         var activeItem = await FileHelper.FindActiveItemAsync();

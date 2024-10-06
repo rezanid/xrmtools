@@ -49,6 +49,7 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="SettingsStorageTypes.cs" />
     <Compile Include="DataverseEnvironment.cs" />
     <Compile Include="DataverseEnvironmentList.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />

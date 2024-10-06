@@ -37,9 +37,9 @@ public class GeneralOptions : BaseOptionModel<GeneralOptions>
     [Category("Power Platform Environments")]
     [DisplayName("Current environment kept in")]
     [Description("Where to remember your selected environment")]
-    [DefaultValue(CurrentEnvironmentStorageType.Options)]
+    [DefaultValue(SettingsStorageTypes.Options)]
     [TypeConverter(typeof(EnumDescriptionConverter))]
-    public CurrentEnvironmentStorageType CurrentEnvironmentStorage { get; set; } = CurrentEnvironmentStorageType.Options;
+    public SettingsStorageTypes CurrentEnvironmentStorage { get; set; } = SettingsStorageTypes.Options;
 
     [Category("Power Platform Environments")]
     [DisplayName("Current Environment")]
@@ -80,18 +80,4 @@ public class GeneralOptions : BaseOptionModel<GeneralOptions>
         environmentProvider.SetActiveEnvironmentAsync(CurrentEnvironment).ConfigureAwait(false).GetAwaiter().GetResult();
     }
 }
-
-public enum CurrentEnvironmentStorageType
-{
-    [Description("Visual Studio Options")]
-    Options,
-    Solution,
-    Project,
-    [Description("Solution (User)")]
-    SolutionUser,
-    [Description("Project (User)")]
-    ProjectUser
-}
-
-
 #nullable restore
