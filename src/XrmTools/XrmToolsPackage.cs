@@ -25,6 +25,7 @@ using System.Threading;
 using XrmTools.Helpers;
 using XrmTools.Logging;
 using XrmTools.Options;
+using XrmTools.Settings;
 using XrmTools.UI;
 using XrmTools.Xrm;
 using XrmTools.Xrm.Generators;
@@ -88,10 +89,21 @@ internal record ProjectDataverseSettings(
 [ProvideService(typeof(IXrmPluginCodeGenerator), IsAsyncQueryable = true, IsCacheable = true, IsFreeThreaded = true)]
 [ProvideService(typeof(IXrmEntityCodeGenerator), IsAsyncQueryable = true, IsCacheable = true, IsFreeThreaded = true)]
 [ProvideService(typeof(IEnvironmentProvider), IsAsyncQueryable = true, IsCacheable = true, IsFreeThreaded = true)]
+[ProvideService(typeof(ISettingsProvider), IsAsyncQueryable = true, IsCacheable = true, IsFreeThreaded = true)]
 [ProvideOptionPage(typeof(OptionsProvider.GeneralOptions), Vsix.Name, "General", 0, 0, true, SupportsProfiles = true)]
 [ProvideSolutionProperties(SolutionPersistanceKey)]
 public sealed class XrmToolsPackage : MicrosoftDIToolkitPackage<XrmToolsPackage>, IVsPersistSolutionProps, IVsPersistSolutionOpts
 {
+    private static readonly object _lock = new();
+
+    // It has been observed that VS can call the constructor of the package twice! causing multiple instances of the singleton
+    // services to be created. To avoid side effects, we store them in static fields.
+    private readonly static IOutputLoggerService _loggerService;
+    private readonly static IXrmSchemaProviderFactory _xrmSchemaProviderFactory;
+    private readonly static IEnvironmentProvider _environmentProvider;
+    private readonly static ISettingsProvider _settingsProvider;
+
+
     public const string SolutionPersistanceKey = "XrmToolsProperies";
     private static readonly ExplicitInterfaceInvoker<Package> implicitInvoker = new();
     public DTE2? Dte;
@@ -102,27 +114,32 @@ public sealed class XrmToolsPackage : MicrosoftDIToolkitPackage<XrmToolsPackage>
     /// </summary>
     private GeneralOptions? Options;
 
-    [Export(typeof(IOutputLoggerService))] internal IOutputLoggerService OutputLoggerService { get; init; }
-    [Export(typeof(IXrmSchemaProviderFactory))] internal IXrmSchemaProviderFactory XrmSchemaProviderFactory { get; init; }
-    [Export(typeof(IEnvironmentProvider))] internal IEnvironmentProvider EnvironmentProvider { get; init; }
-    [Export(typeof(ISettingsProvider))] internal ISettingsRepository SettingsRepository { get; init; }
+    [Export(typeof(IOutputLoggerService))] internal IOutputLoggerService OutputLoggerService { get => _loggerService; }
+    [Export(typeof(IXrmSchemaProviderFactory))] internal IXrmSchemaProviderFactory XrmSchemaProviderFactory { get => _xrmSchemaProviderFactory; }
+    [Export(typeof(IEnvironmentProvider))] internal IEnvironmentProvider EnvironmentProvider { get => _environmentProvider; }
+    [Export(typeof(ISettingsProvider))] internal ISettingsProvider SettingsProvider { get => _settingsProvider; }
 
-    public string? DataverseUrlOption { get; set; }
-    public string? DataverseUrlSetting { get; set; }
-
-    public XrmToolsPackage()
+    static XrmToolsPackage()
     {
-        // User Options (settings per-user, per-solution) are handled by the base class.
-        // we only need to add them to the list of options to be saved.
-        OutputLoggerService = new OutputLoggerService();
-        SettingsRepository = new SettingsProvider();
-        foreach (var key in SettingsRepository.SolutionUserSettingKeys)
-        {
-            AddOptionKey(key);
-        }
-        EnvironmentProvider = new DataverseEnvironmentProvider(SettingsRepository);
-        XrmSchemaProviderFactory = new XrmSchemaProviderFactory(EnvironmentProvider);
+        _loggerService = new OutputLoggerService();
+        _settingsProvider = new SettingsProvider();
+        _environmentProvider = new DataverseEnvironmentProvider(_settingsProvider);
+        _xrmSchemaProviderFactory = new XrmSchemaProviderFactory(_environmentProvider);
     }
+
+    //public XrmToolsPackage()
+    //{
+    //    OutputLoggerService = new OutputLoggerService();
+    //    SettingsProvider = new SettingsProvider();
+    //    // User Options (settings per-user, per-solution) are handled by the base class.
+    //    // we only need to add them to the list of options to be saved.
+    //    foreach (var key in SettingsProvider.SolutionUserSettings.Keys)
+    //    {
+    //        AddOptionKey(key);
+    //    }
+    //    EnvironmentProvider = new DataverseEnvironmentProvider(SettingsProvider);
+    //    XrmSchemaProviderFactory = new XrmSchemaProviderFactory(EnvironmentProvider);
+    //}
 
     protected override void InitializeServices(IServiceCollection services)
     {
@@ -138,8 +155,7 @@ public sealed class XrmToolsPackage : MicrosoftDIToolkitPackage<XrmToolsPackage>
                 };
                 builder.AddOutputLogger();
             })
-            .AddSingleton(SettingsRepository)
-            .AddSingleton((ISettingsProvider)SettingsRepository)
+            .AddSingleton(SettingsProvider)
             .AddSingleton(EnvironmentProvider)
             .AddSingleton<IEnvironmentSelector, EnvironmentSelector>()
             .AddSingleton(XrmSchemaProviderFactory!)
@@ -157,6 +173,11 @@ public sealed class XrmToolsPackage : MicrosoftDIToolkitPackage<XrmToolsPackage>
     /// <returns>A task representing the async work of package initialization, or an already completed task if there is none. Do not return null from this method.</returns>
     protected override async Task InitializeAsync(CancellationToken cancellationToken, IProgress<ServiceProgressData> progress)
     {
+        foreach (var key in SettingsProvider.SolutionUserSettings.Keys)
+        {
+            AddOptionKey(key);
+        }
+
         await JoinableTaskFactory.SwitchToMainThreadAsync(cancellationToken);
 
         Dte = await GetServiceAsync(typeof(DTE)) as DTE2
@@ -194,7 +215,7 @@ public sealed class XrmToolsPackage : MicrosoftDIToolkitPackage<XrmToolsPackage>
     private async Task InitializeMefServicesAsync()
     {
         AddService(
-            typeof(IXrmSchemaProviderFactory), 
+            typeof(IXrmSchemaProviderFactory),
             async (container, cancellationToken, type) =>
                 await Task.FromResult(XrmSchemaProviderFactory)
             , promote: true);
@@ -202,7 +223,6 @@ public sealed class XrmToolsPackage : MicrosoftDIToolkitPackage<XrmToolsPackage>
             typeof(IXrmPluginCodeGenerator),
             async (container, cancellationToken, type) =>
                 await Task.FromResult(new TemplatedPluginCodeGenerator())
-            // Add service at global level to make it available to Single-File generators.
             , promote: true);
         AddService(
             typeof(IXrmEntityCodeGenerator),
@@ -210,17 +230,17 @@ public sealed class XrmToolsPackage : MicrosoftDIToolkitPackage<XrmToolsPackage>
                 await Task.FromResult(new TemplatedEntityCodeGenerator())
             // Add service at global level to make it available to Single-File generators.
             , promote: true);
-        //AddService(
-        //    typeof(ISettingsProvider),
-        //    async (container, cancellationToken, type) =>
-        //        await Task.FromResult(SettingsRepository)
-        //    // Add service at global level to make it available to Single-File generators.
-        //    , promote: true);
-        //AddService(
-        //    typeof(IEnvironmentProvider),
-        //    async (container, cancellationToken, type) =>
-        //        await Task.FromResult(EnvironmentProvider)
-        //        , promote: true);
+        AddService(
+            typeof(ISettingsProvider),
+            async (container, cancellationToken, type) =>
+                await Task.FromResult(SettingsProvider)
+            // Add service at global level to make it available to Single-File generators.
+            , promote: true);
+        AddService(
+            typeof(IEnvironmentProvider),
+            async (container, cancellationToken, type) =>
+                await Task.FromResult(EnvironmentProvider)
+                , promote: true);
         await Task.CompletedTask;
     }
 
@@ -266,18 +286,18 @@ public sealed class XrmToolsPackage : MicrosoftDIToolkitPackage<XrmToolsPackage>
 
     protected override void OnLoadOptions(string key, Stream stream)
     {
-        if (SettingsRepository.SolutionUserSettingKeys.Contains(key, StringComparer.InvariantCultureIgnoreCase))
+        if (SettingsProvider.SolutionUserSettings.Keys.Contains(key, StringComparer.InvariantCultureIgnoreCase))
         {
-            SettingsRepository.SetSolutionUserSetting(key, new StreamReader(stream).ReadToEnd());
+            SettingsProvider.SolutionUserSettings.Set(key, new StreamReader(stream).ReadToEnd());
         }
     }
 
     protected override void OnSaveOptions(string key, Stream stream)
     {
-        if (SettingsRepository.SolutionUserSettingKeys.Contains(key, StringComparer.InvariantCultureIgnoreCase))
+        if (SettingsProvider.SolutionUserSettings.Keys.Contains(key, StringComparer.InvariantCultureIgnoreCase))
         {
             var writer = new StreamWriter(stream);
-            writer.Write(SettingsRepository.GetSolutionUserSetting(key));
+            writer.Write(SettingsProvider.SolutionUserSettings.Get(key));
             writer.Flush();
         }
     }
@@ -309,7 +329,7 @@ public sealed class XrmToolsPackage : MicrosoftDIToolkitPackage<XrmToolsPackage>
     public int QuerySaveSolutionProps(IVsHierarchy pHierarchy, VSQUERYSAVESLNPROPS[] pqsspSave)
     {
         if (pHierarchy == null) 
-            pqsspSave[0] = !SettingsRepository.IsDirty ? (VSQUERYSAVESLNPROPS)2 : (VSQUERYSAVESLNPROPS)1;
+            pqsspSave[0] = !SettingsProvider.SolutionSettings.IsDirty ? (VSQUERYSAVESLNPROPS)2 : (VSQUERYSAVESLNPROPS)1;
         return VSConstants.S_OK;
     }
     public int SaveSolutionProps(IVsHierarchy pHierarchy, IVsSolutionPersistence pPersistence)
@@ -318,7 +338,6 @@ public sealed class XrmToolsPackage : MicrosoftDIToolkitPackage<XrmToolsPackage>
         {
             return VSConstants.S_OK;
         }
-        SettingsRepository.IsDirty = false;
         // Register to save our section in the solution
         return pPersistence.SavePackageSolutionProps(1, pHierarchy, this, SolutionPersistanceKey);
     }
@@ -333,10 +352,11 @@ public sealed class XrmToolsPackage : MicrosoftDIToolkitPackage<XrmToolsPackage>
         {
             try
             {
-                foreach (var settingKey in SettingsRepository.SolutionSettingKeys.ToArray())
+                foreach (var settingKey in SettingsProvider.SolutionSettings.Keys)
                 {
-                    pPropBag.Write(settingKey, SettingsRepository.GetSolutionSetting(settingKey));
+                    pPropBag.Write(settingKey, SettingsProvider.SolutionSettings.Get(settingKey));
                 }
+                SettingsProvider.SolutionSettings.IsDirty = false;
             }
             catch (Exception ex)
             {
@@ -359,12 +379,13 @@ public sealed class XrmToolsPackage : MicrosoftDIToolkitPackage<XrmToolsPackage>
                 // Create a placeholder for the property value
                 // VARTYPE for a string (VT_BSTR in COM) is 8, and we don't need an error log or unknown object
                 //pPropBag.Read(pszKey, out var propValue, null, 8, null);
-                foreach (var settingKey in SettingsRepository.SolutionSettingKeys.ToArray())
+                foreach (var settingKey in SettingsProvider.SolutionSettings.Keys)
                 {
                     pPropBag.Read(settingKey, out var propValue, null, 8, null);
                     // Store the value
-                    SettingsRepository.SetSolutionSetting(settingKey, propValue as string);
+                    SettingsProvider.SolutionSettings.Set(settingKey, propValue as string);
                 }
+                SettingsProvider.ProjectSettings.IsDirty = false;
             }
             catch (Exception ex)
             {

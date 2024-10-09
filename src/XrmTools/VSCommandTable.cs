@@ -30,6 +30,9 @@ namespace XrmTools
         public const string guidEnvironmentProviderString = "b3322248-0f39-4073-b715-b25bc69dcf23";
         public static Guid guidEnvironmentProvider = new Guid(guidEnvironmentProviderString);
 
+        public const string guidSettingsProviderString = "7d969eb6-a17f-431c-8a6e-fe3ea0a9dee3";
+        public static Guid guidSettingsProvider = new Guid(guidSettingsProviderString);
+
         public const string guidXrmSchemaProviderFactoryString = "b27d7354-9380-4c2e-ba0a-f423e727976e";
         public static Guid guidXrmSchemaProviderFactory = new Guid(guidXrmSchemaProviderFactoryString);
 

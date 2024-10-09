@@ -1,12 +1,15 @@
-﻿namespace XrmTools.UI;
+﻿#nullable enable
+namespace XrmTools.UI;
 
 using Community.VisualStudio.Toolkit;
 using CommunityToolkit.Mvvm.Input;
 using System;
 using System.Collections.ObjectModel;
+using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Windows.Input;
 using XrmTools.Options;
+using XrmTools.Settings;
 
 internal class EnvironmentSelectorViewModel : ViewModelBase
 {
@@ -31,7 +34,9 @@ internal class EnvironmentSelectorViewModel : ViewModelBase
 
     private readonly ISettingsProvider settingsProvider;
 
+#pragma warning disable CS8618 // False-positive: _environment is set via Environment property.
     public EnvironmentSelectorViewModel(
+#pragma warning restore CS8618 // False-positive: _environment is set via Environment property.
         SettingsStorageTypes storageType,
         SolutionItem solutionItem, 
         ISettingsProvider settingsProvider, 
@@ -41,12 +46,6 @@ internal class EnvironmentSelectorViewModel : ViewModelBase
         StorageType = storageType;
         SolutionItem = solutionItem;
         Environments = new ObservableCollection<DataverseEnvironment>(GeneralOptions.Instance.Environments);
-        //Environment = solutionItem.Type switch
-        //{
-        //    SolutionItemType.Solution => userMode ? GetSolutionUserEnvironment() : GetSolutionEnvironment(),
-        //    SolutionItemType.Project => userMode ? GetProjectUserEnvironment() : GetProjectEnvironment(),
-        //    _ => GeneralOptions.Instance.CurrentEnvironment
-        //};
         Environment = storageType switch
         {
             SettingsStorageTypes.Solution => GetSolutionEnvironment(),
@@ -62,29 +61,28 @@ internal class EnvironmentSelectorViewModel : ViewModelBase
 
     private DataverseEnvironment GetSolutionEnvironment()
     {
-        var url = settingsProvider.SolutionSettings.EnvironmentUrl;
+        var url = settingsProvider.SolutionSettings.EnvironmentUrl();
         return Environments.FirstOrDefault(e => e.Url == url);
     }
 
     private DataverseEnvironment GetSolutionUserEnvironment()
     {
-        var url = settingsProvider.SolutionUserSettings.EnvironmentUrl;
+        var url = settingsProvider.SolutionUserSettings.EnvironmentUrl();
         return Environments.FirstOrDefault(e => e.Url == url);
     }
 
     private DataverseEnvironment GetProjectEnvironment()
     {
-        var url = settingsProvider.ProjectSettings.GetEnvironmentUrlAsync()
+        var url = settingsProvider.ProjectSettings.EnvironmentUrlAsync()
             .ConfigureAwait(false).GetAwaiter().GetResult();
-        //var url = ((Project)SolutionItem).GetAttributeAsync("EnvironmentUrl", ProjectStorageType.ProjectFile).ConfigureAwait(false).GetAwaiter().GetResult();
         return Environments.FirstOrDefault(e => e.Url == url);
     }
 
     private DataverseEnvironment GetProjectUserEnvironment()
     {
-        var url = settingsProvider.ProjectUserSettings.GetEnvironmentUrlAsync()
+        var url = settingsProvider.ProjectUserSettings.EnvironmentUrlAsync()
             .ConfigureAwait(false).GetAwaiter().GetResult();
-        //var url = ((Project)SolutionItem).GetAttributeAsync("EnvironmentUrl", ProjectStorageType.UserFile).ConfigureAwait(false).GetAwaiter().GetResult();
         return Environments.FirstOrDefault(e => e.Url == url);
     }
 }
+#nullable restore

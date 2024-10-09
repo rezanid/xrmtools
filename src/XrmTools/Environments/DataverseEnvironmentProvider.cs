@@ -5,6 +5,7 @@ using System.Threading.Tasks;
 using XrmTools.Options;
 using System.Runtime.InteropServices;
 using System.ComponentModel.Composition;
+using XrmTools.Settings;
 
 [Guid(PackageGuids.guidEnvironmentProviderString)]
 [ComVisible(true)]
@@ -17,10 +18,8 @@ public interface IEnvironmentProvider
 
 [ComVisible(true)]
 [method: ImportingConstructor]
-internal class DataverseEnvironmentProvider([Import]ISettingsRepository settingsRepo) : IEnvironmentProvider
+internal class DataverseEnvironmentProvider([Import]ISettingsProvider settingsProvider) : IEnvironmentProvider
 {
-    readonly ISettingsProvider settingsProvider = (ISettingsProvider)settingsRepo;
-
     public async Task<DataverseEnvironment?> GetActiveEnvironmentAsync()
     => (await GeneralOptions.GetLiveInstanceAsync()).CurrentEnvironmentStorage switch
     {
@@ -78,31 +77,31 @@ internal class DataverseEnvironmentProvider([Import]ISettingsRepository settings
 
     private DataverseEnvironment? GetEnvironmentFromSolution()
     {
-        var url = settingsProvider.SolutionSettings.EnvironmentUrl;
+        var url = settingsProvider.SolutionSettings.EnvironmentUrl();
         if (string.IsNullOrWhiteSpace(url)) return null;
         return GeneralOptions.Instance.Environments.FirstOrDefault(e => e.Url == url);
     }
     private DataverseEnvironment? GetEnvironmentFromSolutionUserFile()
     {
-        var url = settingsProvider.SolutionUserSettings.EnvironmentUrl;
+        var url = settingsProvider.SolutionUserSettings.EnvironmentUrl();
         if (string.IsNullOrWhiteSpace(url)) return null;
         return GeneralOptions.Instance.Environments.FirstOrDefault(e => e.Url == url);
     }
     private async Task<DataverseEnvironment?> GetEnvironmentFromProjectAsync()
     {
-        var url = await settingsProvider.ProjectSettings.GetEnvironmentUrlAsync();
+        var url = await settingsProvider.ProjectSettings.EnvironmentUrlAsync();
         if (string.IsNullOrWhiteSpace(url)) return null;
         return GeneralOptions.Instance.Environments.FirstOrDefault(e => e.Url == url);
     }
     private async Task<DataverseEnvironment?> GetEnvironmentFromProjectUserFileAsync()
     {
-        var url = await settingsProvider.ProjectUserSettings.GetEnvironmentUrlAsync();
+        var url = await settingsProvider.ProjectUserSettings.EnvironmentUrlAsync();
         if (string.IsNullOrWhiteSpace(url)) return null;
         return GeneralOptions.Instance.Environments.FirstOrDefault(e => e.Url == url);
     }
-    private void SetEnvironmentInSolution(DataverseEnvironment environment) => settingsProvider.SolutionSettings.EnvironmentUrl = environment?.Url;
-    private void SetEnvironmentInSolutionUserFile(DataverseEnvironment environment) => settingsProvider.SolutionUserSettings.EnvironmentUrl = environment?.Url;
-    private async Task SetEnvironmentInProjectAsync(DataverseEnvironment environment) => await settingsProvider.ProjectSettings.SetEnvironmentUrlAsync(environment?.Url);
-    private async Task SetEnvironmentInProjectUserFileAsync(DataverseEnvironment environment) => await settingsProvider.ProjectUserSettings.SetEnvironmentUrlAsync(environment?.Url);
+    private void SetEnvironmentInSolution(DataverseEnvironment? environment) => settingsProvider.SolutionSettings.EnvironmentUrl(environment?.Url);
+    private void SetEnvironmentInSolutionUserFile(DataverseEnvironment? environment) => settingsProvider.SolutionUserSettings.EnvironmentUrl(environment?.Url);
+    private async Task SetEnvironmentInProjectAsync(DataverseEnvironment? environment) => await settingsProvider.ProjectSettings.EnvironmentUrlAsync(environment?.Url);
+    private async Task SetEnvironmentInProjectUserFileAsync(DataverseEnvironment? environment) => await settingsProvider.ProjectUserSettings.EnvironmentUrlAsync(environment?.Url);
 }
 #nullable restore

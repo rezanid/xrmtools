@@ -22,8 +22,6 @@ public interface IPluginAssemblyConfig : IPluginAssemblyEntity
 public interface IPluginAssemblyEntity
 {
     int? IsolationMode { get; set; }
-    int? Major { get; set; }
-    int? Minor { get; set; }
     string? Name { get; set; }
     ICollection<PluginTypeConfig> PluginTypes { get; set; }
     string? PublicKeyToken { get; set; }
@@ -101,20 +99,6 @@ public class PluginAssemblyConfig : TypedEntity<PluginAssemblyConfig>, IPluginAs
     {
         get => TryGetAttributeValue("sourcetype", out int? value) ? value : null;
         set => this["sourcetype"] = value;
-    }
-
-    [AttributeLogicalName("major")]
-    public int? Major
-    {
-        get => TryGetAttributeValue("major", out int? value) ? value : null;
-        set => this["major"] = value;
-    }
-
-    [AttributeLogicalName("minor")]
-    public int? Minor
-    {
-        get => TryGetAttributeValue("minor", out int? value) ? value : null;
-        set => this["minor"] = value;
     }
 
     [AttributeLogicalName("publickeytoken")]

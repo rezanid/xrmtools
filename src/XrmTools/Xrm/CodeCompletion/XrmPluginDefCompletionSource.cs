@@ -33,12 +33,11 @@ internal class XrmPluginDefCompletionSource(
     private static readonly ImmutableArray<CompletionFilter> StandardEntityFilters = [StandardEntityFilter];
     private static readonly ImmutableArray<CompletionFilter> CustomEntityFilters = [CustomEntityFilter];
 
-    private readonly IXrmSchemaProvider catalog = xrmFactory.GetOrAddActiveEnvironmentProvider();
-
     public CompletionStartData InitializeCompletion(CompletionTrigger trigger, SnapshotPoint triggerLocation, CancellationToken token)
     {
+        var catalog = xrmFactory.GetOrAddActiveEnvironmentProvider();
         if (catalog == null)
-        {
+        { 
             // Catalog is not initialized yet. We can't provide completion.
             logger.LogWarning("Xrm code completion not available. Check if your environment setup is done under Tools > Options > Xrm Tools.");
             return CompletionStartData.DoesNotParticipateInCompletion;
@@ -177,11 +176,13 @@ internal class XrmPluginDefCompletionSource(
 
     private async Task<CompletionContext> GetContextForEntityNameAsync(CancellationToken cancellationToken)
     {
+        var catalog = await xrmFactory.GetOrAddActiveEnvironmentProviderAsync();
         return new CompletionContext((await catalog.GetEntitiesAsync(cancellationToken)).Where(e => !e.IsLogicalEntity ?? false).Select(MakeItemFromMetadata).ToImmutableArray());
     }
 
     private async Task<CompletionContext> GetContextForAttributeNameAsync(string entityName, CancellationToken cancellationToken)
     {
+        var catalog = await xrmFactory.GetOrAddActiveEnvironmentProviderAsync();
         return new CompletionContext((await catalog.GetEntityAsync(entityName, cancellationToken)).Attributes.Where(a => !a.IsLogical ?? false).Select(MakeItemFromMetadata).ToImmutableArray());
     }
 

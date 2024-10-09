@@ -7,6 +7,8 @@ using System.Runtime.InteropServices;
 using Microsoft.Extensions.Logging;
 using System.Collections.Concurrent;
 using System.Diagnostics.CodeAnalysis;
+using System.ComponentModel.Composition;
+using XrmTools.Settings;
 
 [Guid(PackageGuids.guidOutputLoggerServiceString)]
 [ComVisible(true)]

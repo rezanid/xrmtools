@@ -66,7 +66,12 @@
     <Compile Include="Options\CurrentEnvironmentEditor.cs" />
     <Compile Include="Options\DataverseEnvironmentConverter.cs" />
     <Compile Include="Options\EnumDescriptionConverter.cs" />
-    <Compile Include="SettingsProvider.cs" />
+    <Compile Include="Settings\IAsyncXrmToolsSettings.cs" />
+    <Compile Include="Settings\IXrmToolsSettings.cs" />
+    <Compile Include="Settings\ProjectSettings.cs" />
+    <Compile Include="Settings\SettingsProvider.cs" />
+    <Compile Include="Settings\SolutionSettings.cs" />
+    <Compile Include="Settings\XrmSettingKeys.cs" />
     <Compile Include="UI\EnvironmentSelector.cs" />
     <Compile Include="UI\AssemblySelector.cs" />
     <Compile Include="UI\EnvironmentSelectorDialog.xaml.cs">

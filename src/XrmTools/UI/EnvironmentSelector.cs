@@ -6,6 +6,7 @@ using Microsoft.Extensions.Logging;
 using System.Threading.Tasks;
 using XrmTools.Helpers;
 using XrmTools.Options;
+using XrmTools.Settings;
 
 internal interface IEnvironmentSelector
 {

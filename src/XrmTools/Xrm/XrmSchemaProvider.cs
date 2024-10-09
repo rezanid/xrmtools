@@ -182,7 +182,7 @@ public class XrmSchemaProvider(DataverseEnvironment environment, IMemoryCache ca
         //The following line will also fail if developer doesn't have access to an EnvironmentUrl
         var response = await client.RetrieveMultipleAsync(
             PluginAssemblyConfig.CreateQuery(
-                a => new { a.Name, a.Major, a.Minor, a.PublicKeyToken, a.SolutionId, a.Version }), 
+                a => new { a.Name, a.PublicKeyToken, a.SolutionId, a.Version }), 
             cancellationToken);
 
         if (response == null || response.Entities == null)

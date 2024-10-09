@@ -12,6 +12,7 @@ using XrmTools.Helpers;
 using Microsoft.VisualStudio.Text;
 using System;
 using XrmTools.Logging;
+using XrmTools.Settings;
 
 [Export(typeof(IAsyncCompletionSourceProvider))]
 [ContentType("JSON")]

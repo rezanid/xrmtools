@@ -8,6 +8,7 @@ using System;
 using System.Linq;
 using System.Reflection;
 using XrmTools.Options;
+using XrmTools.Settings;
 
 /// <summary>
 /// Interaction logic for EnvironmentSelectorDialog.xaml
@@ -35,7 +36,8 @@ internal partial class EnvironmentSelectorDialog : DialogWindow
 
     private void OnTest()
     {
-        VS.MessageBox.Show("TEST", "TEST", OLEMSGICON.OLEMSGICON_INFO);
+        //TODO: Check if the connection is successfull and if the developer has enough previleges.
+        VS.MessageBox.Show("TEST", "Test is not implemented yet", OLEMSGICON.OLEMSGICON_INFO);
     }
 
     private void EnsureReferencedAssembliesInMarkupAreLoaded()
