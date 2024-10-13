@@ -19,7 +19,7 @@ public sealed class ProvideSolutionProperties(string propertyName) : Registratio
         try
         {
             key = context.CreateKey(string.Format(CultureInfo.InvariantCulture, "{0}\\{1}", "SolutionPersistence", PropertyName));
-            key.SetValue(string.Empty, context.ComponentType.GUID.ToString("B"));
+            key.SetValue(string.Empty, context.ComponentType.GUID.ToString("B").ToUpperInvariant());
         }
         finally
         {

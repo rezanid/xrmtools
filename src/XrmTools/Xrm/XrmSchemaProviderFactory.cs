@@ -7,6 +7,7 @@ using System.Collections.Concurrent;
 using System.ComponentModel.Composition;
 using System.Runtime.InteropServices;
 using System.Threading.Tasks;
+using XrmTools.Tokens;
 
 [Guid(PackageGuids.guidXrmSchemaProviderFactoryString)]
 [ComVisible(true)]
@@ -20,7 +21,9 @@ public interface IXrmSchemaProviderFactory: IDisposable
 }
 
 [method: ImportingConstructor]
-public class XrmSchemaProviderFactory([Import]IEnvironmentProvider environmentProvider) : IXrmSchemaProviderFactory
+public class XrmSchemaProviderFactory(
+    [Import]IEnvironmentProvider environmentProvider,
+    [Import]ITokenExpanderService tokenExpander) : IXrmSchemaProviderFactory
 {
     private static readonly ConcurrentDictionary<string, IXrmSchemaProvider> Providers = [];
     private static readonly object _lock = new();
@@ -97,7 +100,8 @@ public class XrmSchemaProviderFactory([Import]IEnvironmentProvider environmentPr
             return provider;
         }
         var cache = new MemoryCache(new MemoryCacheOptions());
-        provider = new XrmSchemaProvider(environment, cache);
+        var cnnStr = tokenExpander.ExpandTokens(environment.ConnectionString);
+        provider = new XrmSchemaProvider(environment, cnnStr,  cache);
         Providers[environment.Url] = provider;
         return provider;
     }

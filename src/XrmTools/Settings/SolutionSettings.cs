@@ -27,8 +27,8 @@ public class SolutionSettings(SolutionStorageType storageType) : IXrmToolsSettin
 
     public IEnumerable<string> Keys => 
         storageType == SolutionStorageType.Solution ? 
-        solutionSettings.Where(kv => kv.Value != null).Select(kv => kv.Key) : 
-        solutionUserSettings.Where(kv => kv.Value != null).Select(kv => kv.Key);
+        solutionSettings.Where(kv => kv.Value != null).Select(kv => kv.Key).ToList() : 
+        solutionUserSettings.Where(kv => kv.Value != null).Select(kv => kv.Key).ToList();
     public bool IsDirty { get; set; }
 
     public string? EnvironmentUrl() => Get(XrmSettingKeys.EnvironmentUrl);

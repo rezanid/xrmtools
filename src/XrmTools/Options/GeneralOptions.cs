@@ -5,11 +5,16 @@ using Community.VisualStudio.Toolkit.DependencyInjection.Core;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using Microsoft.VisualStudio;
+using Microsoft.VisualStudio.Shell.Interop;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
+using System.ComponentModel.Composition;
 using System.Drawing.Design;
+using System.Linq;
 using System.Runtime.InteropServices;
+using XrmTools.Tokens;
 
 internal partial class OptionsProvider
 {
@@ -59,6 +64,7 @@ public class GeneralOptions : BaseOptionModel<GeneralOptions>
         OptionsChanged?.Invoke(this, EventArgs.Empty);
         
         base.Save();
+        ApplyChanges();
     }
 
     public override void Load()
@@ -67,8 +73,6 @@ public class GeneralOptions : BaseOptionModel<GeneralOptions>
 
         // Ensure that the list is not null
         Environments ??= [];
-
-        ApplyChanges();
     }
 
     private void ApplyChanges()

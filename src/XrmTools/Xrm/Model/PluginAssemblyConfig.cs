@@ -1,32 +1,51 @@
 ﻿#nullable enable
-
 namespace XrmTools.Xrm.Model;
-
 using Microsoft.Xrm.Sdk;
 using Microsoft.Xrm.Sdk.Client;
 using Microsoft.Xrm.Sdk.Metadata;
 using Newtonsoft.Json;
+using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Runtime.Serialization;
+using System.Text.Json.Serialization;
+
+public enum IsolationMode
+{
+    [Obsolete]
+    None = 1,
+    Sandbox = 2,
+    [Obsolete]
+    External = 3
+}
+
+public enum SourceType
+{
+    Database = 0,
+	Disk = 1,
+	Normal = 2,
+	AzureWebApp = 3,
+	FileStore = 4
+}
 
 public interface IPluginAssemblyConfig : IPluginAssemblyEntity
 {
-    ICollection<EntityConfig> Entities { get; set; }
-    ICollection<EntityMetadata> EntityDefinitions { get; set; }
+    ICollection<EntityConfig>? Entities { get; set; }
+    ICollection<EntityMetadata>? EntityDefinitions { get; set; }
     string? RemovePrefixes { get; set; }
     IReadOnlyCollection<string> RemovePrefixesCollection { get; }
 }
 
 public interface IPluginAssemblyEntity
 {
-    int? IsolationMode { get; set; }
+    IsolationMode? IsolationMode { get; set; }
+    Guid? PluginAssemblyId { get; set; }
     string? Name { get; set; }
     ICollection<PluginTypeConfig> PluginTypes { get; set; }
     string? PublicKeyToken { get; set; }
     EntityReference? SolutionId { get; set; }
-    int? SourceType { get; set; }
+    SourceType? SourceType { get; set; }
     string? Version { get; set; }
 }
 
@@ -38,7 +57,6 @@ public class PluginAssemblyConfig : TypedEntity<PluginAssemblyConfig>, IPluginAs
     private ICollection<PluginTypeConfig> pluginTypes = [];
 
     #region IPluginAssemblyConfig-only Properties
-
     private string? removePrefixes;
 
     /// <summary>
@@ -52,6 +70,8 @@ public class PluginAssemblyConfig : TypedEntity<PluginAssemblyConfig>, IPluginAs
     [IgnoreDataMember]
     public ICollection<EntityMetadata>? EntityDefinitions { get; set; }
 
+    [JsonPropertyOrder(2)]
+    [JsonProperty(Order = 1)]
     public string? RemovePrefixes
     {
         get => removePrefixes;
@@ -66,7 +86,8 @@ public class PluginAssemblyConfig : TypedEntity<PluginAssemblyConfig>, IPluginAs
     [IgnoreDataMember]
     public IReadOnlyCollection<string> RemovePrefixesCollection { private set; get; } = [];
 
-    [JsonProperty("PluginTypes")]
+    [JsonPropertyOrder(1)]
+    [JsonProperty("PluginTypes", Order = 1)]
     public ICollection<PluginTypeConfig> PluginTypes
     {
         get => pluginTypes;
@@ -76,10 +97,17 @@ public class PluginAssemblyConfig : TypedEntity<PluginAssemblyConfig>, IPluginAs
             OnPropertyChanged(nameof(PluginTypes));
         }
     }
-
     #endregion
 
     #region IPluginAssemblyEntity Properties
+    [AttributeLogicalName("pluginassemblyid")]
+    [JsonPropertyName("Id")]
+    [JsonProperty("Id")]
+    public Guid? PluginAssemblyId
+    {
+        get => TryGetAttributeValue("pluginassemblyid", out Guid value) ? value : null;
+        set => this["pluginassemblyid"] = value;
+    }
     [AttributeLogicalName("name")]
     public string? Name
     {
@@ -88,17 +116,17 @@ public class PluginAssemblyConfig : TypedEntity<PluginAssemblyConfig>, IPluginAs
     }
 
     [AttributeLogicalName("isolationmode")]
-    public int? IsolationMode
+    public IsolationMode? IsolationMode
     {
-        get => TryGetAttributeValue("isolationmode", out int? value) ? value : null;
-        set => this["isolationmode"] = value;
+        get => TryGetAttributeValue("isolationmode", out OptionSetValue option) ? (IsolationMode)option.Value : null;
+        set => this["isolationmode"] = value == null ? null : new OptionSetValue((int)value);
     }
 
     [AttributeLogicalName("sourcetype")]
-    public int? SourceType
+    public SourceType? SourceType
     {
-        get => TryGetAttributeValue("sourcetype", out int? value) ? value : null;
-        set => this["sourcetype"] = value;
+        get => TryGetAttributeValue("sourcetype", out OptionSetValue option) ? (SourceType)option.Value : null;
+        set => this["sourcetype"] = value == null ? null : new OptionSetValue((int)value);
     }
 
     [AttributeLogicalName("publickeytoken")]

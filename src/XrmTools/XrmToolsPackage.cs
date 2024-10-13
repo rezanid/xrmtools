@@ -29,6 +29,7 @@ using XrmTools.Settings;
 using XrmTools.UI;
 using XrmTools.Xrm;
 using XrmTools.Xrm.Generators;
+using XrmTools.Tokens;
 using Task = System.Threading.Tasks.Task;
 
 internal record ProjectDataverseSettings(
@@ -91,8 +92,7 @@ internal record ProjectDataverseSettings(
 [ProvideService(typeof(IEnvironmentProvider), IsAsyncQueryable = true, IsCacheable = true, IsFreeThreaded = true)]
 [ProvideService(typeof(ISettingsProvider), IsAsyncQueryable = true, IsCacheable = true, IsFreeThreaded = true)]
 [ProvideOptionPage(typeof(OptionsProvider.GeneralOptions), Vsix.Name, "General", 0, 0, true, SupportsProfiles = true)]
-[ProvideSolutionProperties(SolutionPersistanceKey)]
-public sealed class XrmToolsPackage : MicrosoftDIToolkitPackage<XrmToolsPackage>, IVsPersistSolutionProps, IVsPersistSolutionOpts
+public sealed partial class XrmToolsPackage : MicrosoftDIToolkitPackage<XrmToolsPackage>
 {
     private static readonly object _lock = new();
 
@@ -124,22 +124,12 @@ public sealed class XrmToolsPackage : MicrosoftDIToolkitPackage<XrmToolsPackage>
         _loggerService = new OutputLoggerService();
         _settingsProvider = new SettingsProvider();
         _environmentProvider = new DataverseEnvironmentProvider(_settingsProvider);
-        _xrmSchemaProviderFactory = new XrmSchemaProviderFactory(_environmentProvider);
+        _xrmSchemaProviderFactory = new XrmSchemaProviderFactory(
+            _environmentProvider, 
+            new TokenExpanderService([
+                new CredentialTokenExpander(new CredentialManager()), 
+                new EnvironmentTokenExpander()]));
     }
-
-    //public XrmToolsPackage()
-    //{
-    //    OutputLoggerService = new OutputLoggerService();
-    //    SettingsProvider = new SettingsProvider();
-    //    // User Options (settings per-user, per-solution) are handled by the base class.
-    //    // we only need to add them to the list of options to be saved.
-    //    foreach (var key in SettingsProvider.SolutionUserSettings.Keys)
-    //    {
-    //        AddOptionKey(key);
-    //    }
-    //    EnvironmentProvider = new DataverseEnvironmentProvider(SettingsProvider);
-    //    XrmSchemaProviderFactory = new XrmSchemaProviderFactory(EnvironmentProvider);
-    //}
 
     protected override void InitializeServices(IServiceCollection services)
     {
@@ -160,6 +150,10 @@ public sealed class XrmToolsPackage : MicrosoftDIToolkitPackage<XrmToolsPackage>
             .AddSingleton<IEnvironmentSelector, EnvironmentSelector>()
             .AddSingleton(XrmSchemaProviderFactory!)
             .AddSingleton<IAssemblySelector, AssemblySelector>()
+            .AddSingleton<ICredentialManager, CredentialManager>()
+            .AddSingleton<ITokenExpander, CredentialTokenExpander>()
+            .AddSingleton<ITokenExpander, EnvironmentTokenExpander>()
+            .AddSingleton<ITokenExpanderService, TokenExpanderService>()
             .RegisterCommands(ServiceLifetime.Singleton);
         StartBackgroundOperations();
     }
@@ -283,119 +277,5 @@ public sealed class XrmToolsPackage : MicrosoftDIToolkitPackage<XrmToolsPackage>
         data.PercentComplete = 100;
         handler.Progress.Report(data);
     }
-
-    protected override void OnLoadOptions(string key, Stream stream)
-    {
-        if (SettingsProvider.SolutionUserSettings.Keys.Contains(key, StringComparer.InvariantCultureIgnoreCase))
-        {
-            SettingsProvider.SolutionUserSettings.Set(key, new StreamReader(stream).ReadToEnd());
-        }
-    }
-
-    protected override void OnSaveOptions(string key, Stream stream)
-    {
-        if (SettingsProvider.SolutionUserSettings.Keys.Contains(key, StringComparer.InvariantCultureIgnoreCase))
-        {
-            var writer = new StreamWriter(stream);
-            writer.Write(SettingsProvider.SolutionUserSettings.Get(key));
-            writer.Flush();
-        }
-    }
-
-    [MemberNotNull(nameof(Dte), nameof(XrmSchemaProviderFactory))]
-    private void ThrowIfNotInitialized()
-    {
-        if (XrmSchemaProviderFactory is null)
-        {
-            throw new InvalidOperationException("XrmSchemaProviderFactory is missing. Extension package not initialized successfully.");
-        }
-        if (Dte is null)
-        {
-            throw new InvalidOperationException("DTE is missing. Extension package not initialized successfully.");
-        }
-    }
-
-    #region Solution User Options (Already implemented in Package)
-    public int SaveUserOptions(IVsSolutionPersistence pPersistence) 
-        => GeneralOptions.Instance.CurrentEnvironmentStorage != SettingsStorageTypes.SolutionUser ? VSConstants.S_OK : implicitInvoker.Invoke<int>(this, nameof(SaveUserOptions), pPersistence);
-    public int LoadUserOptions(IVsSolutionPersistence pPersistence, uint grfLoadOpts)
-        => GeneralOptions.Instance.CurrentEnvironmentStorage != SettingsStorageTypes.SolutionUser ? VSConstants.S_OK : implicitInvoker.Invoke<int>(this, nameof(LoadUserOptions), pPersistence, grfLoadOpts);
-    public int WriteUserOptions(IStream pOptionsStream, string pszKey)
-        => GeneralOptions.Instance.CurrentEnvironmentStorage != SettingsStorageTypes.SolutionUser ? VSConstants.S_OK : implicitInvoker.Invoke<int>(this, nameof(WriteUserOptions), pOptionsStream, pszKey);
-    public int ReadUserOptions(IStream pOptionsStream, string pszKey)
-        => GeneralOptions.Instance.CurrentEnvironmentStorage != SettingsStorageTypes.SolutionUser ? VSConstants.S_OK : implicitInvoker.Invoke<int>(this, nameof(ReadUserOptions), pOptionsStream, pszKey);
-    #endregion
-    #region Solution Properties
-    public int QuerySaveSolutionProps(IVsHierarchy pHierarchy, VSQUERYSAVESLNPROPS[] pqsspSave)
-    {
-        if (pHierarchy == null) 
-            pqsspSave[0] = !SettingsProvider.SolutionSettings.IsDirty ? (VSQUERYSAVESLNPROPS)2 : (VSQUERYSAVESLNPROPS)1;
-        return VSConstants.S_OK;
-    }
-    public int SaveSolutionProps(IVsHierarchy pHierarchy, IVsSolutionPersistence pPersistence)
-    {
-        if (GeneralOptions.Instance.CurrentEnvironmentStorage != SettingsStorageTypes.Solution)
-        {
-            return VSConstants.S_OK;
-        }
-        // Register to save our section in the solution
-        return pPersistence.SavePackageSolutionProps(1, pHierarchy, this, SolutionPersistanceKey);
-    }
-    public int WriteSolutionProps(IVsHierarchy pHierarchy, string pszKey, IPropertyBag pPropBag)
-    {
-        if (GeneralOptions.Instance.CurrentEnvironmentStorage != SettingsStorageTypes.Solution)
-        {
-            return VSConstants.S_OK;
-        }
-        ThreadHelper.ThrowIfNotOnUIThread();
-        if (pszKey == SolutionPersistanceKey)
-        {
-            try
-            {
-                foreach (var settingKey in SettingsProvider.SolutionSettings.Keys)
-                {
-                    pPropBag.Write(settingKey, SettingsProvider.SolutionSettings.Get(settingKey));
-                }
-                SettingsProvider.SolutionSettings.IsDirty = false;
-            }
-            catch (Exception ex)
-            {
-                return Marshal.GetHRForException(ex);
-            }
-        }
-        return VSConstants.S_OK;
-    }
-    public int ReadSolutionProps(IVsHierarchy pHierarchy, string pszProjectName, string pszProjectMk, string pszKey, int fPreLoad, IPropertyBag pPropBag)
-    {
-        if (GeneralOptions.Instance.CurrentEnvironmentStorage != SettingsStorageTypes.Solution)
-        {
-            return VSConstants.S_OK;
-        }
-        ThreadHelper.ThrowIfNotOnUIThread();
-        if (pszKey == SolutionPersistanceKey)
-        {
-            try
-            {
-                // Create a placeholder for the property value
-                // VARTYPE for a string (VT_BSTR in COM) is 8, and we don't need an error log or unknown object
-                //pPropBag.Read(pszKey, out var propValue, null, 8, null);
-                foreach (var settingKey in SettingsProvider.SolutionSettings.Keys)
-                {
-                    pPropBag.Read(settingKey, out var propValue, null, 8, null);
-                    // Store the value
-                    SettingsProvider.SolutionSettings.Set(settingKey, propValue as string);
-                }
-                SettingsProvider.ProjectSettings.IsDirty = false;
-            }
-            catch (Exception ex)
-            {
-                return Marshal.GetHRForException(ex);
-            }
-        }
-        return VSConstants.S_OK;
-    }
-    public int OnProjectLoadFailure(IVsHierarchy pStubHierarchy, string pszProjectName, string pszProjectMk, string pszKey)
-        => VSConstants.S_OK;
-    #endregion
 }
 #nullable restore

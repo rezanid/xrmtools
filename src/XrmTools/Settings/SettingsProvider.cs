@@ -16,10 +16,6 @@ public interface ISettingsProvider
 [ComVisible(true)]
 public class SettingsProvider : ISettingsProvider
 {
-    public SettingsProvider()
-    {
-        
-    }
     // NOTE!
     // * Solution settings (.sln, .suo) are kept in dictionaries and loaded and replaced from ther package.
     // * Project settings are directly written to and read from the project (and project user) file.

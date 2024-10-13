@@ -75,7 +75,7 @@ public class AssemblySelectionViewModel : ViewModelBase
         LoadAssembliesCommand = new AsyncRelayCommand(LoadAssembliesAsync);
         LoadAssemblyDetailsCommand = new AsyncRelayCommand(LoadAssemblyDetailsAsync, CanSelectAssembly);
         ChooseAssemblyCommand = new RelayCommand(SelectAssembly, CanSelectAssembly);
-        GenerateCodeCommand = new RelayCommand<object>(GenerateCode);
+        GenerateCodeCommand = new RelayCommand<object>(Serialize);
     }
 
     private bool FilterAssemblies(object item)
@@ -109,12 +109,12 @@ public class AssemblySelectionViewModel : ViewModelBase
             using CancellationTokenSource cancellationTokenSource = new(10000);
             var pluginTypes = await _schemaProvider.GetPluginTypesAsync(SelectedAssembly.Id, cancellationTokenSource.Token);
             SelectedAssembly.PluginTypes = new ObservableCollection<PluginTypeConfig>(pluginTypes);
-            GenerateCode(SelectedAssembly);
+            Serialize(SelectedAssembly);
             IsLoading = false;
         }
     }
 
-    private void GenerateCode(object input)
+    private void Serialize(object input)
     {
         if (input is null) { return; }
         GeneratedCode = StringHelpers.SerializeJson(input);

@@ -1,16 +1,17 @@
 ﻿#nullable enable
+namespace XrmTools.Xrm.Model;
 using Microsoft.Xrm.Sdk;
 using Microsoft.Xrm.Sdk.Client;
 using Microsoft.Xrm.Sdk.Query;
+using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
 using System.Linq.Expressions;
-using System.Reflection;
-
-namespace XrmTools.Xrm.Model;
+using System.Text.Json.Serialization;
 
 public interface IPluginTypeEntity
 {
+    Guid? PluginTypeId { get; set; }
     string? Description { get; set; }
     string? FriendlyName { get; set; }
     string? Name { get; set; }
@@ -28,10 +29,19 @@ public class PluginTypeConfig : TypedEntity<PluginTypeConfig>, IPluginTypeConfig
 {
     public const string EntityLogicalName = "plugintype";
 
+    [JsonPropertyName("Id")]
+    [JsonProperty("Id")]
+    [AttributeLogicalName("plugintypeid")]
+    public Guid? PluginTypeId
+    {
+        get => TryGetAttributeValue("plugintypeid", out Guid value) ? value : null;
+        set => this["plugintypeid"] = value;
+    }
+
     [AttributeLogicalName("pluginassemblyid")]
     public EntityReference? PluginAssemblyId
     {
-        get => TryGetAttributeValue<EntityReference>("pluginassemblyid", out var value) ? value : null;
+        get => TryGetAttributeValue("pluginassemblyid", out EntityReference value) ? value : null;
         set => this["pluginassemblyid"] = value;
     }
     [AttributeLogicalName("name")]
@@ -65,6 +75,8 @@ public class PluginTypeConfig : TypedEntity<PluginTypeConfig>, IPluginTypeConfig
         set => this["workflowactivitygroupname"] = value;
     }
 
+    [JsonProperty(Order = 1)]
+    [JsonPropertyOrder(1)]
     public ICollection<PluginStepConfig> Steps { get; set; } = [];
 
     public static LinkEntity LinkWithSteps(ColumnSet columns, JoinOperator join = JoinOperator.LeftOuter)

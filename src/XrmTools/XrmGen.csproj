@@ -53,6 +53,15 @@
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="..\XrmTools.Core\System\Runtime\CompilerServices\Index.cs">
+      <Link>System\Runtime\CompilerServices\Index.cs</Link>
+    </Compile>
+    <Compile Include="..\XrmTools.Core\System\Runtime\CompilerServices\Range.cs">
+      <Link>System\Runtime\CompilerServices\Range.cs</Link>
+    </Compile>
+    <Compile Include="..\XrmTools.Core\System\Runtime\CompilerServices\RuntimeHelpers.cs">
+      <Link>System\Runtime\CompilerServices\RuntimeHelpers.cs</Link>
+    </Compile>
     <Compile Include="Commands\SelectEnvironmentCommand.cs" />
     <Compile Include="Environments\DataverseEnvironmentProvider.cs" />
     <Compile Include="Helpers\ExplicitInterfaceInvoker.cs" />
@@ -78,6 +87,7 @@
       <DependentUpon>EnvironmentSelectorDialog.xaml</DependentUpon>
     </Compile>
     <Compile Include="UI\EnvironmentSelectorViewModel.cs" />
+    <Compile Include="XrmToolsPackage.SolutionProperties.cs" />
     <Compile Include="Xrm\OptionSetMetadataNameComparer.cs" />
     <Compile Include="Helpers\DteExtensions.cs" />
     <Compile Include="Helpers\ProjectHelpers.cs" />

@@ -53,7 +53,7 @@ public record DataverseEnvironment
         if (ReferenceEquals(this, other)) return true;
 
         // Only consider Url and ConnectionString in equality
-        return Url == other.Url && ConnectionString == other.ConnectionString;
+        return ConnectionString == other.ConnectionString;
     }
 
     public override int GetHashCode()

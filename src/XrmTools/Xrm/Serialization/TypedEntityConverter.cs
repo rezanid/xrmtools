@@ -9,9 +9,12 @@ using System.Text.Json.Serialization;
 using XrmTools.Helpers;
 using XrmTools.Xrm.Model;
 
+/// <summary>
+/// This converter is applied to types deriving from <see cref="TypedEntity{T}"/>. All properties inherited from Entity
+/// are ignored, apart from <c>Id</c>.
+/// </summary>
 public class IgnoreEntityPropertiesConverter : JsonConverter<object>
 {
-    // This converter is used to ignore properties in the base class (TypedEntity<T>) and types deriving from it.
     public override bool CanConvert(Type typeToConvert)
         => !typeToConvert.IsValueType && IsSubclassOfRawGeneric(typeof(TypedEntity<>), typeToConvert);
 
@@ -28,14 +31,16 @@ public class IgnoreEntityPropertiesConverter : JsonConverter<object>
 
             if (reader.TokenType == JsonTokenType.PropertyName)
             {
-                string jsonPropertyName = reader.GetString();
+                var jsonPropertyName = reader.GetString();
                 reader.Read();
 
                 // Find the property by JsonPropertyName or property name
-                var property = typeToConvert.GetProperties(BindingFlags.Instance | BindingFlags.Public | BindingFlags.DeclaredOnly)
-                    .FirstOrDefault(p =>
-                        string.Equals(p.GetCustomAttribute<JsonPropertyNameAttribute>()?.Name ?? p.Name,
-                                      jsonPropertyName, StringComparison.OrdinalIgnoreCase));
+                var property =
+                    typeToConvert.GetProperties(BindingFlags.Instance | BindingFlags.Public | BindingFlags.DeclaredOnly)
+                                 .FirstOrDefault(p =>
+                                    string.Equals(
+                                        p.GetCustomAttribute<JsonPropertyNameAttribute>()?.Name ?? p.Name,
+                                        jsonPropertyName, StringComparison.OrdinalIgnoreCase));
 
                 if (property != null && !property.GetCustomAttributes<JsonIgnoreAttribute>(true).Any())
                 {
@@ -58,8 +63,12 @@ public class IgnoreEntityPropertiesConverter : JsonConverter<object>
         writer.WriteStartObject();
 
         // Get the properties of the derived class (TypedEntity<T>)
-        var properties = value.GetType()
-            .GetProperties(BindingFlags.Instance | BindingFlags.Public | BindingFlags.DeclaredOnly);
+        var type = value.GetType();
+        var properties = type
+            .GetProperties(BindingFlags.Instance | BindingFlags.Public | BindingFlags.DeclaredOnly | BindingFlags.GetProperty)
+            //.Union([type.GetProperty("Id")])
+            .Where(p => p != null)
+            .OrderBy(p => p.GetCustomAttribute<JsonPropertyOrderAttribute>()?.Order ?? 0);
 
         foreach (var property in properties)
         {

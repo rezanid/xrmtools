@@ -16,7 +16,6 @@ using XrmTools.Xrm.Model;
 
 public interface IXrmSchemaProvider : IDisposable
 {
-    string EnvironmentUrl { get; }
     DataverseEnvironment Environment { get; }
     bool IsReady { get; }
     Exception LastException { get; }
@@ -36,7 +35,7 @@ internal class DataverseCacheKeys(string EnvironmentUrl)
     public string PluginTypes(Guid assemblyid) => $"{EnvironmentUrl}_PluginTypes_{assemblyid}";
 }
 
-public class XrmSchemaProvider(DataverseEnvironment environment, IMemoryCache cache) : IXrmSchemaProvider
+public class XrmSchemaProvider(DataverseEnvironment environment, string connectionString, IMemoryCache cache) : IXrmSchemaProvider
 {
     private bool disposed = false;
     private readonly DataverseEnvironment environment = environment;
@@ -45,8 +44,7 @@ public class XrmSchemaProvider(DataverseEnvironment environment, IMemoryCache ca
     private readonly TimeSpan cacheExpiration = TimeSpan.FromMinutes(30);
     private CancellationTokenSource cacheEvictionTokenSource = new ();
 
-    private ServiceClient ServiceClient { get; init; } = new(environment.ConnectionString);
-    public string EnvironmentUrl { get => environment.Url; }
+    private ServiceClient ServiceClient { get; init; } = new(connectionString);
     public DataverseEnvironment Environment { get => environment; }
     public bool IsReady { get => ServiceClient.IsReady; }
     public Exception LastException { get => ServiceClient.LastException; }
@@ -182,7 +180,7 @@ public class XrmSchemaProvider(DataverseEnvironment environment, IMemoryCache ca
         //The following line will also fail if developer doesn't have access to an EnvironmentUrl
         var response = await client.RetrieveMultipleAsync(
             PluginAssemblyConfig.CreateQuery(
-                a => new { a.Name, a.PublicKeyToken, a.SolutionId, a.Version }), 
+                a => new {a.PluginAssemblyId, a.Name, a.PublicKeyToken, a.SolutionId, a.Version, a.IsolationMode, a.SourceType }), 
             cancellationToken);
 
         if (response == null || response.Entities == null)
@@ -196,15 +194,17 @@ public class XrmSchemaProvider(DataverseEnvironment environment, IMemoryCache ca
     private static async Task<IEnumerable<PluginTypeConfig>> FetchPluginTypesAsync(
         ServiceClient client, Guid assemblyid, CancellationToken cancellationToken)
     {
-        var query = PluginTypeConfig.CreateQuery(s => new { s.Name, s.TypeName })
+        var query = PluginTypeConfig.CreateQuery(s => new { s.PluginTypeId, s.Name, s.TypeName, s.FriendlyName, s.Description, s.WorkflowActivityGroupName })
             .WithCondition(
             new ConditionExpression(
                 PluginTypeConfig.Select.ColumnName((e) => e.PluginAssemblyId), 
                 ConditionOperator.Equal, 
                 assemblyid));
         query.LinkWith(
-            PluginTypeConfig.LinkWithSteps(s => new { s.Name, s.Stage })
-            .LinkWith(PluginStepConfig.LinkWithImages(s => new { s.Name })));
+            //s.CustomConfiguration
+            PluginTypeConfig.LinkWithSteps(s => new {s.PluginStepId, s.Name, s.Stage, s.AsyncAutoDelete, s.Description, s.FilteringAttributes, s.InvocationSource, s.Mode, s.Rank, s.SdkMessageId, s.State, s.SupportedDeployment})
+            .LinkWith(
+                PluginStepConfig.LinkWithImages(s => new {s.PluginStepImageId, s.Name })));//, s.ImageAttributes, s.EntityAlias, s.ImageType, s.MessagePropertyName })));
 
         var pluginTypes = new List<PluginTypeConfig>();
         var response = await client.RetrieveMultipleAsync(query, cancellationToken);

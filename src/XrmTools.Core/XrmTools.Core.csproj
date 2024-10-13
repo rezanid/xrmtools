@@ -53,11 +53,19 @@
     <Compile Include="DataverseEnvironment.cs" />
     <Compile Include="DataverseEnvironmentList.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="System\Runtime\CompilerServices\Index.cs" />
+    <Compile Include="System\Runtime\CompilerServices\Range.cs" />
+    <Compile Include="System\Runtime\CompilerServices\RuntimeHelpers.cs" />
+    <Compile Include="Tokens\CredentialManager.cs" />
     <Compile Include="Tokens\CredentialTokenExpander.cs" />
+    <Compile Include="Tokens\EnvironmentTokenExpander.cs" />
     <Compile Include="Tokens\ITokenExpander.cs" />
-    <Compile Include="Tokens\TokenProcessorService.cs" />
+    <Compile Include="Tokens\TokenExpanderService.cs" />
   </ItemGroup>
   <ItemGroup>
+    <PackageReference Include="CredentialManagement">
+      <Version>1.0.2</Version>
+    </PackageReference>
     <PackageReference Include="PolySharp">
       <Version>1.14.1</Version>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
@@ -69,5 +77,6 @@
       <Link>key.snk</Link>
     </None>
   </ItemGroup>
+  <ItemGroup />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>

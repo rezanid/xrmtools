@@ -89,7 +89,7 @@ public class PluginCodeGenerator : BaseCodeGeneratorWithSite
 
         if (GeneralOptions.Instance.LogLevel == LogLevel.Trace)
         {
-            var serializedConfig = inputModel.SerializeJson(useNewtonsoft: false);
+            var serializedConfig = inputModel.SerializeJson();
             File.WriteAllText(Path.ChangeExtension(inputFileName, ".config.json"), serializedConfig);
         }
 
