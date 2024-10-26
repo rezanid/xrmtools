@@ -166,10 +166,28 @@ Error details: {1}</value>
   <data name="EnvironmentConnectionError" xml:space="preserve">
     <value>Failed to connect to {0}. Error: {1}</value>
   </data>
+  <data name="EnvironmentConnectionErrorUIDesc" xml:space="preserve">
+    <value>Failed to connect to {0}. Please check the Output window for more information.</value>
+  </data>
+  <data name="EnvironmentConnectionErrorUITitle" xml:space="preserve">
+    <value>Failed to connect to Dataverse.</value>
+  </data>
   <data name="EnvironmentConnectionStringError" xml:space="preserve">
     <value>Connection string of the '{0}' is not valid. Please check the syntax in https://learn.microsoft.com/en-us/power-apps/developer/data-platform/xrm-tooling/use-connection-strings-xrm-tooling-connect.</value>
   </data>
   <data name="EnvironmentConnectionSuccess" xml:space="preserve">
     <value>Connection to {0} was successful.</value>
+  </data>
+  <data name="EnvironmentErrorNoneSelected" xml:space="preserve">
+    <value>No environment selected</value>
+  </data>
+  <data name="EnvironmentErrorNoneSelectedOptions" xml:space="preserve">
+    <value>No environment selected. Please select an environment from Tools &gt; Options &gt; Xrm Tools &gt; Current Environment.</value>
+  </data>
+  <data name="EnvironmentErrorNoneSelectedSolution" xml:space="preserve">
+    <value>No environment selected. Please select an environment from Project context menu &gt; Set Environment.</value>
+  </data>
+  <data name="EnvironmentErrorNoneSelectedProject" xml:space="preserve">
+    <value>No environment selected. Please select an environment from Solution context menu &gt; Set Environment.</value>
   </data>
 </root>

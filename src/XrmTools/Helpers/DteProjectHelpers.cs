@@ -21,7 +21,7 @@ using System.IO;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 
-public static class ProjectHelpers
+public static class DteProjectHelpers
 {
     public static XrmToolsPackage ParentPackage { get; set; }
 

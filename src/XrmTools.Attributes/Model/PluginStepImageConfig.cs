@@ -7,13 +7,7 @@ using Newtonsoft.Json;
 using System;
 using System.Text.Json;
 using System.Text.Json.Serialization;
-
-public enum ImageTypes
-{
-    PreImage = 0,
-    PostImage = 1,
-    Both = 2
-}
+using XrmTools.Meta.Model;
 
 public interface IMessageProcessingStepImageEntity
 {
@@ -23,6 +17,7 @@ public interface IMessageProcessingStepImageEntity
     ImageTypes? ImageType { get; set; }
     string? MessagePropertyName { get; set; }
     string? Name { get; set; }
+    string? Description { get; set; }
 }
 
 public interface IMessageProcessingStepImageConfig : IMessageProcessingStepImageEntity
@@ -85,6 +80,12 @@ public class PluginStepImageConfig : TypedEntity<PluginStepImageConfig>, IMessag
     { 
         get => TryGetAttributeValue("messagepropertyname", out string value) ? value : null;
         set => this["messagepropertyname"] = value;
+    }
+    [AttributeLogicalName("description")]
+    public string? Description
+    {
+        get => TryGetAttributeValue("description", out string value) ? value : null;
+        set => this["description"] = value;
     }
     #endregion
 

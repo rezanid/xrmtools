@@ -85,6 +85,7 @@ internal static class StringHelpers
     /// `null` which seems to be a bug, so we have to rely on a fully custom `TypeConversion` unfortunately.
     /// </summary>
     /// <param name="typeInfo"></param>
+    [SuppressMessage("CodeQuality", "IDE0051:Remove unused private members", Justification = "Demonstration Only")]
     private static void IgnoreInheritedEntityPropertiesModifier([DisallowNull] JsonTypeInfo typeInfo)
     {
         if (IsSubclassOfRawGeneric(typeof(TypedEntity<>), typeInfo.Type))

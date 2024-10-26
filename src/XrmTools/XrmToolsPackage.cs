@@ -189,7 +189,7 @@ public sealed partial class XrmToolsPackage : MicrosoftDIToolkitPackage<XrmTools
         //await SetXrmPluginGeneratorCommand.InitializeAsync(this);
         //await GenerateRegistrationFileCommand.InitializeAsync(this);
 
-        ProjectHelpers.ParentPackage = this;
+        //ProjectHelpers.ParentPackage = this;
 
         // This is for when extension is loaded before the solution is opened.
         // Usually happens when user opens Visual Studio with a solution already loaded.
@@ -203,6 +203,9 @@ public sealed partial class XrmToolsPackage : MicrosoftDIToolkitPackage<XrmTools
         };
         // This is for when extension is loaded after the solution is already open.
         // Usually happens when user opens Visual Studio and then opens a solution.
+
+        //TODO: In one article, the following call is at the begining of the method:
+        // https://learn.microsoft.com/en-us/visualstudio/extensibility/how-to-provide-an-asynchronous-visual-studio-service?view=vs-2022
         await base.InitializeAsync(cancellationToken, progress);
     }
 

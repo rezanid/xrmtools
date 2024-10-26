@@ -1,7 +1,5 @@
 ﻿#nullable enable
 namespace XrmTools.Xrm.Model;
-
-using HandyControl.Tools.Extension;
 using Microsoft.Xrm.Sdk;
 using Microsoft.Xrm.Sdk.Client;
 using Microsoft.Xrm.Sdk.Metadata;
@@ -11,47 +9,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq.Expressions;
 using System.Text.Json.Serialization;
-
-public enum PluginStepStates
-{
-    Active = 0,
-    Inactive = 1
-}
-
-public enum Stages 
-{
-    /// <summary>
-    /// pre-validation (not in transaction).
-    /// </summary>
-    PreValidation = 10,
-    /// <summary>
-    /// pre-operation (in transaction, ownerid cannot be changed).
-    /// </summary>
-    PreOperation = 20,
-    //
-    // Summary:
-    //     
-    /// <summary>
-    /// Main operation (in transaction, only used in Custom APIs).
-    /// </summary>
-    MainOperation = 30,
-    /// <summary>
-    /// post-operation (operation executed, but still in transaction).
-    /// </summary>
-    PostOperation = 40,
-    /// <summary>
-    /// post-operation, deprecated.
-    /// </summary>
-    [Obsolete("Deprecated according to MS", true)]
-    DepecratedPostOperation = 50
-}
-
-public enum SupportedDeployments
-{
-    ServerOnly = 0,
-    ClientForOutlook = 1,
-    Both = 2
-}
+using XrmTools.Meta.Model;
 
 public interface IMessageProcessingStepEntity
 {
@@ -61,33 +19,36 @@ public interface IMessageProcessingStepEntity
     string? Description { get; set; }
     string? FilteringAttributes { get; set; }
     int? InvocationSource { get; set; }
-    //TODO: MessageName does not exist, instead there is SdkMessageId
     string? MessageName { get; set; }
     string? Name { get; set; }
-    //TODO: PrimaryEntityName does not exist, instead there is EventHandlerTypeCode (maybe?)
     string? PrimaryEntityName { get; set; }
     object? CustomConfiguration { get; set; }
-    int? Mode { get; set; }
+    ExecutionMode? Mode { get; set; }
     int? Rank { get; set; }
     Stages? Stage { get; set; }
     PluginStepStates? State { get; set; }
     SupportedDeployments? SupportedDeployment { get; set; }
-    //TODO: ImpersonatingUserFullname does not exist, instead there is ImpersonatingUserId
-    //string? ImpersonatingUserFullname { get; set; }
+    EntityReference? ImpersonatingUserId { get; set; }
+    public string? ImpersonatingUserFullname { get; set; }
     string? WorkflowActivityGroupName { get; set; }
-    string? FriendlyName { get; set; }
+    bool? CanBeBypassed { get; set;}
 }
 
 public interface IMessageProcessingStepConfig : IMessageProcessingStepEntity
 {
     ICollection<PluginStepImageConfig> Images { get; set; }
     EntityMetadata? PrimaryEntityDefinition { get; set; }
-    public string? StageName { get; }
+    string? StageName { get; }
+    object? ActionDefinition { get; set; }
 }
 
 [EntityLogicalName(EntityLogicalName)]
 public class PluginStepConfig : TypedEntity<PluginStepConfig>, IMessageProcessingStepConfig
 {
+    //Fields not present in the entity:
+    // - PrimaryEntityName
+    // - ImpersonatingUserFullname (ImpersonatingUserId is present)
+    // - MessageName (SdkMessageId is present)
     public const string EntityLogicalName = "sdkmessageprocessingstep";
 
     //TODO: Do we need to support secure config?
@@ -104,7 +65,7 @@ public class PluginStepConfig : TypedEntity<PluginStepConfig>, IMessageProcessin
     [JsonProperty(Order = 1)]
     [JsonPropertyOrder(1)]
     public ICollection<PluginStepImageConfig> Images { get; set; } = [];
-    public object ActionDefinition { get; set; }
+    public object? ActionDefinition { get; set; }
     public object? CustomConfiguration { get; set; }
     public string? StageName
     {
@@ -137,12 +98,6 @@ public class PluginStepConfig : TypedEntity<PluginStepConfig>, IMessageProcessin
     {
         get => TryGetAttributeValue("name", out string value) ? value : null;
         set => this["name"] = value;
-    }
-    [AttributeLogicalName("friendlyname")]
-    public string? FriendlyName
-    {
-        get => TryGetAttributeValue("friendlyname", out string value) ? value : null;
-        set => this["friendlyname"] = value;
     }
     [AttributeLogicalName("workflowactivitygroupname")]
     public string? WorkflowActivityGroupName
@@ -181,12 +136,11 @@ public class PluginStepConfig : TypedEntity<PluginStepConfig>, IMessageProcessin
     /// Required, Picklist
     /// </summary>
     [AttributeLogicalName("mode")]
-    public int? Mode 
-    { 
-        get => TryGetAttributeValue("mode", out int? value) ? value : null;
-        set => this["mode"] = value;
+    public ExecutionMode? Mode 
+    {
+        get => TryGetAttributeValue("mode", out OptionSetValue? value) ? (ExecutionMode)value.Value : null;
+        set => this["mode"] = value == null ? null : new OptionSetValue((int)value);
     }
-    //TODO: PrimaryEntityName does not exist, instead there is EventHandlerTypeCode (maybe?)
     //[AttributeLogicalName("primaryentityname")]
     public string? PrimaryEntityName { get; set; }
     //{
@@ -222,7 +176,6 @@ public class PluginStepConfig : TypedEntity<PluginStepConfig>, IMessageProcessin
             this["sdkmessageid"] = currentValue;
         }
     }
-    //TODO: MessageName does not exist, instead there is SdkMessageId
     public string? MessageName
     {
         get => TryGetAttributeValue("sdkmessageid", out EntityReference? value) ? value?.Name : null;
@@ -266,13 +219,31 @@ public class PluginStepConfig : TypedEntity<PluginStepConfig>, IMessageProcessin
         get => TryGetAttributeValue("supporteddeployment", out OptionSetValue option) ? (SupportedDeployments)option.Value : null;
         set => this["supporteddeployment"] = value == null ? null : new OptionSetValue((int)value);
     }
-    //TODO: The following field does not exist:
-    //[AttributeLogicalName("impersonatinguserfullname")]
-    //public string? ImpersonatingUserFullname
-    //{
-    //    get => TryGetAttributeValue("impersonatinguserfullname", out string value) ? value : null;
-    //    set => this["impersonatinguserfullname"] = value;
-    //}
+    [System.Text.Json.Serialization.JsonIgnore]
+    [Newtonsoft.Json.JsonIgnore]
+    [AttributeLogicalName("Impersonatinguserid")]
+    public EntityReference? ImpersonatingUserId
+    {
+        get => TryGetAttributeValue("Impersonatinguserid", out EntityReference value) ? value : null;
+        set => this["Impersonatinguserid"] = value;
+    }
+    [AttributeLogicalName("impersonatinguserfullname")]
+    public string? ImpersonatingUserFullname
+    {
+        get => ImpersonatingUserId?.Name;
+        set
+        {
+            var impersonatingUserId = ImpersonatingUserId ?? new EntityReference("systemuser", Guid.Empty);
+            impersonatingUserId.Name = value;
+            ImpersonatingUserId = impersonatingUserId;
+        }
+    }
+    [AttributeLogicalName("canbebypassed")]
+    public bool? CanBeBypassed
+    {
+        get => TryGetAttributeValue("canbebypassed", out bool value) && value;
+        set => this["canbebypassed"] = value;
+    }
     #endregion
 
     public static LinkEntity LinkWithImages(ColumnSet columns, JoinOperator join = JoinOperator.LeftOuter)

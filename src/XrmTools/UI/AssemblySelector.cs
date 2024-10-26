@@ -22,11 +22,12 @@ internal class AssemblySelector(IEnvironmentProvider environmentProvider, IXrmSc
         if (environment == null || !environment.IsValid) 
         {
             var options = await GeneralOptions.GetLiveInstanceAsync();
-            await VS.MessageBox.ShowAsync("No environment selected", options.CurrentEnvironmentStorage switch
+            await VS.MessageBox.ShowAsync(Strings.EnvironmentErrorNoneSelected, options.CurrentEnvironmentStorage switch
             {
-                SettingsStorageTypes.Options => "No environment selected. Please select an environment from Tools > Options > Xrm Tools > Current Environment.",
-                SettingsStorageTypes.Solution or SettingsStorageTypes.SolutionUser => "No environment selected. Please select an environment from Solution context menu > Set Environment.",
-                SettingsStorageTypes.Project or SettingsStorageTypes.ProjectUser => "No environment selected. Please select an environment from Project context menu > Set Environment."
+                SettingsStorageTypes.Options => Strings.EnvironmentErrorNoneSelectedOptions,
+                SettingsStorageTypes.Solution or SettingsStorageTypes.SolutionUser => Strings.EnvironmentErrorNoneSelectedSolution,
+                SettingsStorageTypes.Project or SettingsStorageTypes.ProjectUser => Strings.EnvironmentErrorNoneSelectedProject,
+                _ => throw new System.NotImplementedException()
             }, Microsoft.VisualStudio.Shell.Interop.OLEMSGICON.OLEMSGICON_WARNING);
             return (null, null); 
         }
@@ -40,7 +41,7 @@ internal class AssemblySelector(IEnvironmentProvider environmentProvider, IXrmSc
         {
             logger.LogWarning(string.Format(Strings.EnvironmentConnectionFailed, environment));
             logger.LogWarning(string.IsNullOrEmpty(schemaProvider.LastError) ? "No error detected in Dataverse provider." : "Last Error: " + schemaProvider.LastError);
-            await VS.MessageBox.ShowErrorAsync("Dataverse Connection", $"Connection has failed to the environment: {environment.Url} check the Output window for more information.");
+            await VS.MessageBox.ShowErrorAsync(Strings.EnvironmentConnectionErrorUITitle, string.Format(Strings.EnvironmentConnectionErrorUIDesc, environment));
             return (null, null);
         }
         var dialog = new AssemblySelectionDialog(schemaProvider);

@@ -10,24 +10,7 @@ using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Runtime.Serialization;
 using System.Text.Json.Serialization;
-
-public enum IsolationMode
-{
-    [Obsolete]
-    None = 1,
-    Sandbox = 2,
-    [Obsolete]
-    External = 3
-}
-
-public enum SourceType
-{
-    Database = 0,
-	Disk = 1,
-	Normal = 2,
-	AzureWebApp = 3,
-	FileStore = 4
-}
+using XrmTools.Meta.Model;
 
 public interface IPluginAssemblyConfig : IPluginAssemblyEntity
 {
@@ -39,13 +22,13 @@ public interface IPluginAssemblyConfig : IPluginAssemblyEntity
 
 public interface IPluginAssemblyEntity
 {
-    IsolationMode? IsolationMode { get; set; }
+    IsolationModes? IsolationMode { get; set; }
     Guid? PluginAssemblyId { get; set; }
     string? Name { get; set; }
     ICollection<PluginTypeConfig> PluginTypes { get; set; }
     string? PublicKeyToken { get; set; }
     EntityReference? SolutionId { get; set; }
-    SourceType? SourceType { get; set; }
+    SourceTypes? SourceType { get; set; }
     string? Version { get; set; }
 }
 
@@ -116,16 +99,16 @@ public class PluginAssemblyConfig : TypedEntity<PluginAssemblyConfig>, IPluginAs
     }
 
     [AttributeLogicalName("isolationmode")]
-    public IsolationMode? IsolationMode
+    public IsolationModes? IsolationMode
     {
-        get => TryGetAttributeValue("isolationmode", out OptionSetValue option) ? (IsolationMode)option.Value : null;
+        get => TryGetAttributeValue("isolationmode", out OptionSetValue option) ? (IsolationModes)option.Value : null;
         set => this["isolationmode"] = value == null ? null : new OptionSetValue((int)value);
     }
 
     [AttributeLogicalName("sourcetype")]
-    public SourceType? SourceType
+    public SourceTypes? SourceType
     {
-        get => TryGetAttributeValue("sourcetype", out OptionSetValue option) ? (SourceType)option.Value : null;
+        get => TryGetAttributeValue("sourcetype", out OptionSetValue option) ? (SourceTypes)option.Value : null;
         set => this["sourcetype"] = value == null ? null : new OptionSetValue((int)value);
     }
 

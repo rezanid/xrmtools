@@ -97,6 +97,24 @@ namespace XrmTools.Resources {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to Failed to connect to {0}. Please check the Output window for more information..
+        /// </summary>
+        internal static string EnvironmentConnectionErrorUIDesc {
+            get {
+                return ResourceManager.GetString("EnvironmentConnectionErrorUIDesc", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Failed to connect to Dataverse..
+        /// </summary>
+        internal static string EnvironmentConnectionErrorUITitle {
+            get {
+                return ResourceManager.GetString("EnvironmentConnectionErrorUITitle", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to Failed to connect to {0}..
         /// </summary>
         internal static string EnvironmentConnectionFailed {
@@ -120,6 +138,42 @@ namespace XrmTools.Resources {
         internal static string EnvironmentConnectionSuccess {
             get {
                 return ResourceManager.GetString("EnvironmentConnectionSuccess", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to No environment selected.
+        /// </summary>
+        internal static string EnvironmentErrorNoneSelected {
+            get {
+                return ResourceManager.GetString("EnvironmentErrorNoneSelected", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to No environment selected. Please select an environment from Tools &gt; Options &gt; Xrm Tools &gt; Current Environment..
+        /// </summary>
+        internal static string EnvironmentErrorNoneSelectedOptions {
+            get {
+                return ResourceManager.GetString("EnvironmentErrorNoneSelectedOptions", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to No environment selected. Please select an environment from Solution context menu &gt; Set Environment..
+        /// </summary>
+        internal static string EnvironmentErrorNoneSelectedProject {
+            get {
+                return ResourceManager.GetString("EnvironmentErrorNoneSelectedProject", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to No environment selected. Please select an environment from Project context menu &gt; Set Environment..
+        /// </summary>
+        internal static string EnvironmentErrorNoneSelectedSolution {
+            get {
+                return ResourceManager.GetString("EnvironmentErrorNoneSelectedSolution", resourceCulture);
             }
         }
         

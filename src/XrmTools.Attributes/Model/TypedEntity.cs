@@ -13,7 +13,7 @@ public interface ITypedEntity { }
 
 public abstract class TypedEntity<T>(string entityLogicalName) : Entity(entityLogicalName), ITypedEntity where T : Entity, ITypedEntity, new()
 {
-    internal static class Select
+    public static class Select
     {
         public static ColumnSet AllColumns => new(true);
         public static ColumnSet NoColumns => new(false);
@@ -39,7 +39,7 @@ public abstract class TypedEntity<T>(string entityLogicalName) : Entity(entityLo
     }
 
 
-    internal static string GetEntityLogicalName()
+    public static string GetEntityLogicalName()
     {
         var entityType = typeof(T);
         var entityLogicalName = entityType.GetCustomAttributes(typeof(EntityLogicalNameAttribute), true)
@@ -49,7 +49,7 @@ public abstract class TypedEntity<T>(string entityLogicalName) : Entity(entityLo
         return entityLogicalName?.LogicalName ?? throw new InvalidOperationException($"EntityLogicalNameAttribute not found on {entityType.Name}");
     }
     
-    internal static string GetAliasedAttributeName(Expression<Func<T, object>> expression)
+    public static string GetAliasedAttributeName(Expression<Func<T, object>> expression)
     {
         if (expression.Body is not MemberExpression memberExpression)
         {
@@ -73,10 +73,10 @@ public abstract class TypedEntity<T>(string entityLogicalName) : Entity(entityLo
             + (attributeLogicalName?.LogicalName ?? throw new InvalidOperationException($"AttributeLogicalNameAttribute not found on {memberExpression.Member.Name}"));
     }
 
-    internal static QueryExpression CreateQuery(Expression<Func<T, object>> expression)
+    public static QueryExpression CreateQuery(Expression<Func<T, object>> expression)
         => new(GetEntityLogicalName()) { ColumnSet = Select.From(expression)};
 
-    internal static T? FromAlias(Entity entity)
+    public static T? FromAlias(Entity entity)
     {
         string aliasPrefix = GetEntityLogicalName() + ".";
         var t = new T();

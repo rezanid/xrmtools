@@ -1,4 +1,5 @@
 ﻿#nullable enable
+namespace XrmTools;
 using Community.VisualStudio.Toolkit.DependencyInjection.Core;
 using Microsoft.Extensions.Logging;
 using Microsoft.VisualStudio;
@@ -21,15 +22,15 @@ using XrmTools.Xrm.Model;
 using Microsoft.Extensions.DependencyInjection;
 using XrmTools.Options;
 using Community.VisualStudio.Toolkit;
-
-namespace XrmTools;
+using System.Threading.Tasks;
+using Microsoft.VisualStudio.LanguageServices;
+using XrmTools.Analyzers;
+using Microsoft.VisualStudio.ComponentModelHost;
 
 public class PluginCodeGenerator : BaseCodeGeneratorWithSite
 {
     public const string Name = Vsix.Name + " Plugin Code Generator";
     public const string Description = "Generates plugin code from .dej.json file.";
-
-    private readonly static OptionSetMetadataNameComparer OptionSetMetadataComparer = new ();
 
     private bool disposed = false;
     private IXrmPluginCodeGenerator? _generator;
@@ -75,7 +76,17 @@ public class PluginCodeGenerator : BaseCodeGeneratorWithSite
         if (string.IsNullOrWhiteSpace(inputFileContent)) { return null; }
         if (Generator is null) { return Encoding.UTF8.GetBytes("// No generator found."); }
         if (GetTemplateFilePath() is not string templateFilePath) { return Encoding.UTF8.GetBytes("// Template not found."); ; }
-        var inputModel = ParseInputFile(inputFileName, inputFileContent);
+        PluginAssemblyConfig? inputModel;
+        if (".cs".Equals(Path.GetExtension(inputFileName), StringComparison.OrdinalIgnoreCase))
+        {
+            inputModel = ThreadHelper.JoinableTaskFactory.Run(async () =>
+                await ParseCSharpInputFileAsync(inputFileName, inputFileContent));
+        }
+        else
+        {
+            inputModel = ParseJsonInputFile(inputFileName, inputFileContent);
+        }
+
         if (inputModel?.PluginTypes?.Any() != true) { return null; }
 
         Generator.Config = new XrmCodeGenConfig
@@ -101,7 +112,7 @@ public class PluginCodeGenerator : BaseCodeGeneratorWithSite
         return Encoding.UTF8.GetBytes(Generator.GenerateCode(inputModel));
     }
 
-    private PluginAssemblyConfig? ParseInputFile(string inputFileName, string inputFileContent)
+    private PluginAssemblyConfig? ParseJsonInputFile(string inputFileName, string inputFileContent)
     {
         try
         {
@@ -112,6 +123,47 @@ public class PluginCodeGenerator : BaseCodeGeneratorWithSite
             Logger.LogError(ex, Resources.Strings.PluginGenerator_DeserializationError, inputFileName);
         }
         return null;
+    }
+
+    private async Task<PluginAssemblyConfig?> ParseCSharpInputFileAsync(string inputFileName, string inputFileContent)
+    {
+        var proj = await VS.Solutions.GetActiveProjectAsync();
+        if (proj is null)
+        {
+            Logger.LogWarning("No active project found.");
+            return null;
+        }
+        var assemblyPath = proj.GetOutputAssemblyPath();
+        if (assemblyPath == null || !File.Exists(assemblyPath))
+        {
+            Logger.LogWarning("Assembly not found: {0}", assemblyPath);
+            return null;
+        }
+
+        var pluginAssemblyConfig = await QueryCurrentProjectAssemblyAsync();
+
+        return pluginAssemblyConfig;
+    }
+
+    private async Task<PluginAssemblyConfig?> QueryCurrentProjectAssemblyAsync()
+    {
+        await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync();
+        var activeDocument = Dte.ActiveDocument;
+        //var textDocument = activeDocument.Object("TextDocument") as TextDocument;
+
+        var componentModel = (IComponentModel)Package.GetGlobalService(typeof(SComponentModel));
+        var workspace = componentModel.GetService<VisualStudioWorkspace>();
+        var documentId = workspace.CurrentSolution.GetDocumentIdsWithFilePath(activeDocument.FullName).FirstOrDefault();
+        if (documentId == null) return null;
+        var document = workspace.CurrentSolution.GetDocument(documentId);
+        if ( document == null)
+        {
+            return null;
+        }
+        var attributeExtractor = new AttributeExtractor();
+        var pluginAssemblyMetaService = new PluginAssemblyMetadataService(workspace, attributeExtractor);
+        var pluginAssemblyInfo = await pluginAssemblyMetaService.GetAssemblyConfigAsync(document);
+        return pluginAssemblyInfo;
     }
 
     private string? GetTemplateFilePath()
