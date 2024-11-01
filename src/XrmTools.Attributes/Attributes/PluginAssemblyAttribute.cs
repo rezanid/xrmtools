@@ -3,6 +3,7 @@ namespace XrmTools.Meta.Attributes;
 using System;
 using XrmTools.Meta.Model;
 
+// Any change in the constructors of this class requires a change in PluginAttributeExtractor.
 [AttributeUsage(AttributeTargets.Assembly, Inherited = false)]
 public class PluginAssemblyAttribute : Attribute
 {

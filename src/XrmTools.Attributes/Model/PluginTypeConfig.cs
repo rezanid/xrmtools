@@ -21,6 +21,7 @@ public interface IPluginTypeEntity
 
 public interface IPluginTypeConfig : IPluginTypeEntity
 {
+    string? Namespace { get; set; }
     ICollection<PluginStepConfig> Steps { get; set; }
 }
 
@@ -78,6 +79,8 @@ public class PluginTypeConfig : TypedEntity<PluginTypeConfig>, IPluginTypeConfig
     [JsonProperty(Order = 1)]
     [JsonPropertyOrder(1)]
     public ICollection<PluginStepConfig> Steps { get; set; } = [];
+
+    public string? Namespace { get; set; }
 
     public static LinkEntity LinkWithSteps(ColumnSet columns, JoinOperator join = JoinOperator.LeftOuter)
         => new (EntityLogicalName, PluginStepConfig.EntityLogicalName, "plugintypeid", "plugintypeid", join)

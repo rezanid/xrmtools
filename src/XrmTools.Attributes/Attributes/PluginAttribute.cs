@@ -2,6 +2,7 @@
 namespace XrmTools.Meta.Attributes;
 using System;
 
+// Any change in the constructors of this class requires a change in PluginAttributeExtractor.
 /// <summary>
 /// Marks a class as a plugin. The type name will be inferred from the class name.
 /// </summary>

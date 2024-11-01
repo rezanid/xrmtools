@@ -10,8 +10,8 @@ using Task = System.Threading.Tasks.Task;
 /// <summary>
 /// Command handler to set the custom tool of the selected item to the Xrm Entity Code Generator.
 /// </summary>
-[Command(PackageGuids.XrmToolsCmdSetIdString, PackageIds.SetCustomToolEntitiesCmdId)]
-internal sealed class ApplyEntityGeneratorCommand : BaseDICommand
+[Command(PackageGuids.XrmToolsCmdSetIdString, PackageIds.SetCustomToolEntityGeneratorCmdId)]
+internal sealed class SetCustomToolEntityGeneratorCommand : BaseDICommand
 {
     protected override async Task ExecuteAsync(OleMenuCmdEventArgs e)
     {
@@ -20,6 +20,6 @@ internal sealed class ApplyEntityGeneratorCommand : BaseDICommand
         await (i as PhysicalFile).TrySetAttributeAsync(PhysicalFileAttribute.CustomTool, EntityCodeGenerator.Name);
     }
 
-    public ApplyEntityGeneratorCommand(DIToolkitPackage package) : base(package)
+    public SetCustomToolEntityGeneratorCommand(DIToolkitPackage package) : base(package)
         => Command.Supported = false;
 }

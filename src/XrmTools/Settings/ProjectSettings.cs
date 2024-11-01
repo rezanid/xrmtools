@@ -29,7 +29,15 @@ public class ProjectSettings(ProjectStorageType storageType) : IAsyncXrmToolsSet
     {
         var proj = await VS.Solutions.GetActiveProjectAsync();
         if (proj == null) return false;
-        return await proj.TrySetAttributeAsync(name, value, storageType);
+        if (value is null)
+        {
+            return await proj.RemoveAttributeAsync(name);
+        }
+        else
+        {
+            return await proj.TrySetAttributeAsync(name, value, storageType);
+
+        }
     }
 }
 #nullable restore

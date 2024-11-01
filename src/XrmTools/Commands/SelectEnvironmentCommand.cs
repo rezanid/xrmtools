@@ -17,22 +17,15 @@ using XrmTools.Options;
 /// Command handler to select the current environment.
 /// </summary>
 [Command(PackageGuids.XrmToolsCmdSetIdString, PackageIds.SetEnvironmentCmdId)]
-internal sealed class SelectEnvironmentCommand : BaseDICommand
+internal sealed class SelectEnvironmentCommand(
+    DIToolkitPackage package,
+    ILogger<NewPluginDefinitionFileCommand> logger,
+    IEnvironmentSelector environmentSelector,
+    IEnvironmentProvider environmentProvider) : BaseDICommand(package)
 {
-    private readonly ILogger<NewPluginDefinitionFileCommand> logger;
-    private readonly IEnvironmentSelector environmentSelector;
-    private readonly IEnvironmentProvider environmentProvider;
-
-    public SelectEnvironmentCommand(
-        DIToolkitPackage package, 
-        ILogger<NewPluginDefinitionFileCommand> logger, 
-        IEnvironmentSelector environmentSelector,
-        IEnvironmentProvider environmentProvider) : base(package)
-    {
-        this.logger = logger;
-        this.environmentSelector = environmentSelector;
-        this.environmentProvider = environmentProvider;
-    }
+    private readonly ILogger<NewPluginDefinitionFileCommand> logger = logger;
+    private readonly IEnvironmentSelector environmentSelector = environmentSelector;
+    private readonly IEnvironmentProvider environmentProvider = environmentProvider;
 
     protected override void BeforeQueryStatus(EventArgs e)
         => ThreadHelper.JoinableTaskFactory.Run(SetCommandVisibilityAsync);

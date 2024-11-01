@@ -1,6 +1,7 @@
 ﻿#nullable enable
 namespace XrmTools.Analyzers;
 using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.VisualStudio.LanguageServices;
 using Microsoft.Xrm.Sdk;
 using System;
@@ -56,7 +57,11 @@ public class PluginAssemblyMetadataService : IPluginAssemblyMetadataService
             {
                 // Get the symbol for the class declaration
                 if (semanticModel.GetDeclaredSymbol(classDeclaration) is not INamedTypeSymbol typeSymbol) continue;
-                pluginAssemblyConfig.PluginTypes = _attributeExtractor.ExtractAttributes(typeSymbol).ToList();
+                var pluginType = _attributeExtractor.ExtractAttributes(typeSymbol);
+                if (pluginType != null)
+                {
+                    pluginAssemblyConfig.PluginTypes.Add(pluginType);
+                }
             }
             return pluginAssemblyConfig;
         }

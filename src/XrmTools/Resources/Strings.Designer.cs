@@ -251,11 +251,29 @@ namespace XrmTools.Resources {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to The template file not found. It might have moved to another location. Please make sure that you have set the right template and try again. Missing file: {0}.
+        /// </summary>
+        internal static string PluginGenerator_TemplateFileNotFound {
+            get {
+                return ResourceManager.GetString("PluginGenerator.TemplateFileNotFound", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to The path provided for plugin code generator is invalid. Path: {0}.
         /// </summary>
         internal static string PluginGenerator_TemplateInvalidPath {
             get {
                 return ResourceManager.GetString("PluginGenerator.TemplateInvalidPath", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to No plugin code generation template has been specified. You need to create a Scriban template for the code generator to work. For more information please visit https://rezanid.github.io/xrmtools/docs/howto/write-a-plugin-template.
+        /// </summary>
+        internal static string PluginGenerator_TemplateNotSet {
+            get {
+                return ResourceManager.GetString("PluginGenerator.TemplateNotSet", resourceCulture);
             }
         }
         

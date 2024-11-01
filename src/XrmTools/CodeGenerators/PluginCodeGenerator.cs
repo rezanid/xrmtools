@@ -26,6 +26,9 @@ using System.Threading.Tasks;
 using Microsoft.VisualStudio.LanguageServices;
 using XrmTools.Analyzers;
 using Microsoft.VisualStudio.ComponentModelHost;
+using XrmTools.Settings;
+using XrmTools.Resources;
+using Microsoft.CodeAnalysis.Elfie.Model.Strings;
 
 public class PluginCodeGenerator : BaseCodeGeneratorWithSite
 {
@@ -53,6 +56,9 @@ public class PluginCodeGenerator : BaseCodeGeneratorWithSite
         set => _schemaProviderFactory = value; 
     }
 
+    [Import]
+    ISettingsProvider SettingsProvider { get; set; }
+
     private IEnvironmentProvider? EnvironmentProvider
     {
         get => _environmentProvider ??= GlobalServiceProvider.GetService(typeof(IEnvironmentProvider)) as IEnvironmentProvider;
@@ -66,16 +72,24 @@ public class PluginCodeGenerator : BaseCodeGeneratorWithSite
     public PluginCodeGenerator()
     {
         var serviceProvider = VS.GetRequiredService<SToolkitServiceProvider<XrmToolsPackage>, IToolkitServiceProvider<XrmToolsPackage>>();
+        Logger = serviceProvider.GetRequiredService<ILogger<PluginCodeGenerator>>();
         EnvironmentProvider = serviceProvider.GetRequiredService<IEnvironmentProvider>();
         SchemaProviderFactory = serviceProvider.GetRequiredService<IXrmSchemaProviderFactory>();
-        Logger = serviceProvider.GetRequiredService<ILogger<PluginCodeGenerator>>();
+        SettingsProvider = serviceProvider.GetRequiredService<ISettingsProvider>();
     }
 
     protected override byte[]? GenerateCode(string inputFileName, string inputFileContent)
     {
         if (string.IsNullOrWhiteSpace(inputFileContent)) { return null; }
         if (Generator is null) { return Encoding.UTF8.GetBytes("// No generator found."); }
-        if (GetTemplateFilePath() is not string templateFilePath) { return Encoding.UTF8.GetBytes("// Template not found."); ; }
+        if (GetTemplateFilePath() is not string templateFilePath) 
+        { 
+            return Encoding.UTF8.GetBytes("// " + Strings.PluginGenerator_TemplateNotSet); 
+        }
+        if (!File.Exists(templateFilePath))
+        { 
+            return Encoding.UTF8.GetBytes("// " + string.Format(Strings.PluginGenerator_TemplateFileNotFound, templateFilePath));
+        }
         PluginAssemblyConfig? inputModel;
         if (".cs".Equals(Path.GetExtension(inputFileName), StringComparison.OrdinalIgnoreCase))
         {
@@ -140,23 +154,13 @@ public class PluginCodeGenerator : BaseCodeGeneratorWithSite
             return null;
         }
 
-        var pluginAssemblyConfig = await QueryCurrentProjectAssemblyAsync();
-
-        return pluginAssemblyConfig;
-    }
-
-    private async Task<PluginAssemblyConfig?> QueryCurrentProjectAssemblyAsync()
-    {
         await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync();
-        var activeDocument = Dte.ActiveDocument;
-        //var textDocument = activeDocument.Object("TextDocument") as TextDocument;
-
         var componentModel = (IComponentModel)Package.GetGlobalService(typeof(SComponentModel));
         var workspace = componentModel.GetService<VisualStudioWorkspace>();
-        var documentId = workspace.CurrentSolution.GetDocumentIdsWithFilePath(activeDocument.FullName).FirstOrDefault();
+        var documentId = workspace.CurrentSolution.GetDocumentIdsWithFilePath(inputFileName).FirstOrDefault();
         if (documentId == null) return null;
         var document = workspace.CurrentSolution.GetDocument(documentId);
-        if ( document == null)
+        if (document == null)
         {
             return null;
         }
@@ -178,16 +182,7 @@ public class PluginCodeGenerator : BaseCodeGeneratorWithSite
         {
             return templateFilePath;
         }
-        templateFilePath = GetProjectProperty("EntityCodeGenTemplatePath");
-        if (string.IsNullOrWhiteSpace(templateFilePath))
-        {
-            return null;
-        }
-        if (!Path.IsPathRooted(templateFilePath))
-        {
-            templateFilePath = Path.GetFullPath(templateFilePath);
-        }
-        return File.Exists(templateFilePath) ? templateFilePath : null;
+        return ThreadHelper.JoinableTaskFactory.Run(SettingsProvider.PluginTemplateFilePathAsync);
     }
 
     private EntityMetadata? GetEntityMetadata(string logicalName, string[] attributes, IEnumerable<string> prefixesToRemove)
@@ -198,7 +193,7 @@ public class PluginCodeGenerator : BaseCodeGeneratorWithSite
         if (schemaProvider is null) return null;
         // Make a new cancellation token for 2 minutes.
         using var cts = new CancellationTokenSource(120000);
-        var entityDefinition = schemaProvider?.GetEntityAsync(logicalName, cts.Token).WaitAndUnwrapException();
+        var entityDefinition = ThreadHelper.JoinableTaskFactory.Run(async () => await schemaProvider.GetEntityAsync(logicalName, cts.Token));
         if (entityDefinition == null) { return null; }
 
         //NOTE!
@@ -278,56 +273,6 @@ public class PluginCodeGenerator : BaseCodeGeneratorWithSite
             }
         }
         return string.Empty;
-    }
-
-    private string? GetProjectProperty(string propertyName)
-    {
-        ThreadHelper.ThrowIfNotOnUIThread();
-        if (GetService(typeof(IVsHierarchy)) is IVsHierarchy hierarchy)
-        {
-            return hierarchy.GetProjectProperty(propertyName);
-        }
-        return null;
-    }
-
-    private void AddEntityMetadataToPluginDefinitionOLD(PluginAssemblyConfig config)
-    {
-        static bool IsEnumAttribute(AttributeMetadata a) => (a.AttributeType is AttributeTypeCode.Picklist or AttributeTypeCode.Virtual or AttributeTypeCode.State or AttributeTypeCode.Status) && a.IsLogical == false;
-
-        var optionsetMetadataList = new List<OptionSetMetadata>();
-        foreach (var step in config.PluginTypes.SelectMany(plugin => plugin.Steps))
-        {
-            if (!string.IsNullOrWhiteSpace(step.PrimaryEntityName))
-            {
-                var metadata = GetEntityMetadata(step.PrimaryEntityName!, step.FilteringAttributes?.Split(',') ?? [], config.RemovePrefixesCollection);
-                step.PrimaryEntityDefinition = metadata;
-                if (metadata is not null)
-                {
-                    optionsetMetadataList.AddRange(metadata.Attributes
-                        .Where(IsEnumAttribute)
-                        .Cast<EnumAttributeMetadata>()
-                        .Select(a => a.OptionSet));
-                }
-            }
-
-            foreach (var image in step.Images)
-            {
-                if (!string.IsNullOrWhiteSpace(image.EntityAlias))
-                {
-                    var metadata = GetEntityMetadata(step.PrimaryEntityName!, image.ImageAttributes?.Split(',') ?? [], config.RemovePrefixesCollection);
-                    image.MessagePropertyDefinition = metadata;
-                    if (metadata is not null)
-                    {
-                        optionsetMetadataList.AddRange(metadata.Attributes
-                            .Where(IsEnumAttribute)
-                            .Cast<EnumAttributeMetadata>()
-                            .Select(a => a.OptionSet));
-                    }
-
-                }
-            }
-        }
-        //pluginDefinition.OptionSetMetadatas = optionsetMetadataList.Distinct(OptionSetMetadataComparer).ToList();
     }
 
     private void AddEntityMetadataToPluginDefinition(PluginAssemblyConfig config)

@@ -65,7 +65,12 @@
     <Compile Include="Analyzers\PluginAssemblyInfo.cs" />
     <Compile Include="Analyzers\PluginAssemblyMetadataService.cs" />
     <Compile Include="Analyzers\PluginAttributeExtractor.cs" />
+    <Compile Include="Classifiers\XrmStringClassifierProvider.cs" />
+    <Compile Include="CodeCompletion\XrmPluginCompletionProvider.cs" />
+    <Compile Include="CodeCompletion\XrmPluginCompletionSource.cs" />
     <Compile Include="Commands\SelectEnvironmentCommand.cs" />
+    <Compile Include="Commands\SetPluginGeneratorTemplateInProjectCommand.cs" />
+    <Compile Include="Commands\SetPluginGeneratorTemplateInSolutionCommand.cs" />
     <Compile Include="Environments\DataverseEnvironmentProvider.cs" />
     <Compile Include="Helpers\AttributeDataHelper.cs" />
     <Compile Include="Helpers\ByteExtensions.cs" />
@@ -106,8 +111,8 @@
     <Compile Include="UI\AssemblySelectionViewModel.cs" />
     <Compile Include="CodeGenerators\PluginCodeGenerator.cs" />
     <Compile Include="CodeGenerators\EntityCodeGenerator.cs" />
-    <Compile Include="Commands\ApplyEntityGeneratorCommand.cs" />
-    <Compile Include="Commands\SetXrmPluginGeneratorCommand.cs" />
+    <Compile Include="Commands\SetCustomToolEntityGeneratorCommand.cs" />
+    <Compile Include="Commands\SetCustomToolPluginGeneratorCommand.cs" />
     <Compile Include="Helpers\IVsHierarchyExtensions.cs" />
     <Compile Include="Helpers\EntityMetadataExtensions.cs" />
     <Compile Include="Helpers\StringBuilderExtensions.cs" />

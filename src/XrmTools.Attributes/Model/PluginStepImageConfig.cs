@@ -46,7 +46,8 @@ public class PluginStepImageConfig : TypedEntity<PluginStepImageConfig>, IMessag
     [AttributeLogicalName("name")]
     public string? Name
     {
-        get => TryGetAttributeValue("name", out string value) ? value : null;
+        get => TryGetAttributeValue("name", out string value) 
+            ? value : (string?)(this["name"] = ImageType?.ToString());
         set => this["name"] = value; 
     }
 
@@ -66,7 +67,8 @@ public class PluginStepImageConfig : TypedEntity<PluginStepImageConfig>, IMessag
     [AttributeLogicalName("entityalias")]
     public string? EntityAlias 
     { 
-        get => TryGetAttributeValue("entityalias", out string value) ? value : null;
+        get => TryGetAttributeValue("entityalias", out string value) 
+            ? value : (string?)(this["entityalias"] = ImageType?.ToString());
         set => this["entityalias"] = value;
     }
     [AttributeLogicalName("imagetype")]
@@ -90,6 +92,17 @@ public class PluginStepImageConfig : TypedEntity<PluginStepImageConfig>, IMessag
     #endregion
 
     public PluginStepImageConfig() : base(EntityLogicalName) { }
+    public PluginStepImageConfig(ImageTypes type, string messagePropertyName) : this() 
+    { 
+        ImageType = type;
+        MessagePropertyName = messagePropertyName;
+        EntityAlias = type.ToString();
+        Name = type.ToString();
+    }
+    public PluginStepImageConfig(ImageTypes type, string messagePropertyName, string attributes) : this(type, messagePropertyName)
+    {
+        ImageAttributes = attributes;
+    }
 }
 
 public class MessageProcessingStepImageConverter : System.Text.Json.Serialization.JsonConverter<PluginStepImageConfig>

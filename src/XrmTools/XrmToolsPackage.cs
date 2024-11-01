@@ -9,7 +9,6 @@ using Microsoft;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.VisualStudio;
-using Microsoft.VisualStudio.OLE.Interop;
 using Microsoft.VisualStudio.Shell;
 using Microsoft.VisualStudio.Shell.Interop;
 using Microsoft.VisualStudio.TaskStatusCenter;
@@ -17,8 +16,6 @@ using Microsoft.VisualStudio.TextTemplating.VSHost;
 using Microsoft.VisualStudio.Threading;
 using System;
 using System.ComponentModel.Composition;
-using System.Diagnostics.CodeAnalysis;
-using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices;
 using System.Threading;
@@ -64,21 +61,27 @@ internal record ProjectDataverseSettings(
 [ProvideCodeGenerator(typeof(PluginCodeGenerator), PluginCodeGenerator.Name, PluginCodeGenerator.Description, true, ProjectSystem = ProvideCodeGeneratorAttribute.CSharpProjectGuid, RegisterCodeBase = true)]
 [ProvideCodeGeneratorExtension(PluginCodeGenerator.Name, ".def.json")]
 [ProvideMenuResource("Menus.ctmenu", 1)]
-// Decide the visibility of our command when the command is NOT yet loaded.
+// Decide the visibility of our commands when the commands are NOT yet loaded.
 [ProvideUIContextRule(PackageGuids.SetCustomToolEntitiesCmdUIRuleString,
     name: "UI Context",
     expression: "(Yaml | Proj) & CSharp & (SingleProj | MultiProj)",
     termNames: ["Yaml", "CSharp", "SingleProj", "MultiProj"],
     termValues: ["HierSingleSelectionName:.yaml$|.yml$", "ActiveProjectCapability:CSharp", VSConstants.UICONTEXT.SolutionHasSingleProject_string, VSConstants.UICONTEXT.SolutionHasMultipleProjects_string])]
 [ProvideUIContextRule(PackageGuids.SetCustomToolPluginDefitionCmdUIRuleString,
-    name: "UI Context 2",
-    expression: "(Json | Proj) & CSharp & (SingleProj | MultiProj)",
-    termNames: ["Json", "CSharp", "SingleProj", "MultiProj"],
+    name: "UI Context Plugin Definition",
+    expression: "(Json | CSPlugin) & CSharp & (SingleProj | MultiProj)",
+    termNames: ["Json", "CSPlugin", "CSharp", "SingleProj", "MultiProj"],
     termValues: [
-        "HierSingleSelectionName:.def.json$", 
+        "HierSingleSelectionName:.def.json$",
+        "HierSingleSelectionName:.+?Plugin.+?\\.cs$",
         "ActiveProjectCapability:CSharp", 
         VSConstants.UICONTEXT.SolutionHasSingleProject_string, 
         VSConstants.UICONTEXT.SolutionHasMultipleProjects_string])]
+[ProvideUIContextRule(PackageGuids.SetPluginGeneratorTemplateCmdUIRuleString,
+    name: "UI Context Plugin Generator Template",
+    expression: "Sbn & CSharp & (SingleProj | MultiProj)",
+    termNames: ["Sbn", "CSharp", "SingleProj", "MultiProj"],
+    termValues: ["HierSingleSelectionName:.sbn$", "ActiveProjectCapability:CSharp", VSConstants.UICONTEXT.SolutionHasSingleProject_string, VSConstants.UICONTEXT.SolutionHasMultipleProjects_string])]
 [ProvideUIContextRule(PackageGuids.NewPluginDefinitionCmdUIRuleString,
     name: "UI Context NewPluginConfigCommand",
     expression: "CSharp & (SingleProj | MultiProj)",

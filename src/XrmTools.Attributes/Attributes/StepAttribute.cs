@@ -3,12 +3,13 @@ namespace XrmTools.Meta.Attributes;
 using System;
 using XrmTools.Meta.Model;
 
+// Any change in the constructors of this class requires a change in PluginAttributeExtractor.
 /// <summary>
 /// Adds plugin step to a plugin type.
 /// </summary>
 [AttributeUsage(AttributeTargets.Class, AllowMultiple = true, Inherited = true)]
 public class StepAttribute(
-    MessageNames message, string entityName, string filteringAttributes, Stages stage, ExecutionMode mode) : Attribute
+    string entityName, string message, string filteringAttributes, Stages stage, ExecutionMode mode) : Attribute
 {
     // Constructor (aka positional) parameters
     public ExecutionMode Mode { get; set; } = mode;
