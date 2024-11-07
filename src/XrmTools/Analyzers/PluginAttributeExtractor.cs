@@ -76,14 +76,15 @@ public class AttributeExtractor : IAttributeExtractor
         const int filteringAttributesIndex = 2;
         const int stageIndex = 3;
         const int modeIndex = 4;
+        var argumentCount = attributeData.ConstructorArguments.Length;
 
         var pluginStepConfig = new PluginStepConfig
         {
-            PrimaryEntityName = attributeData.ConstructorArguments[primaryEntityNameIndex].Value!.ToString(),
-            MessageName = attributeData.ConstructorArguments[messageNameIndex].Value!.ToString(),
-            FilteringAttributes = attributeData.ConstructorArguments[filteringAttributesIndex].Value!.ToString(),
-            Stage = (Stages)(int)attributeData.ConstructorArguments[stageIndex].Value!,
-            Mode = (ExecutionMode)(int)attributeData.ConstructorArguments[modeIndex].Value!
+            PrimaryEntityName = argumentCount > primaryEntityNameIndex ? attributeData.ConstructorArguments[primaryEntityNameIndex].Value!.ToString() : null,
+            MessageName = argumentCount > messageNameIndex ? attributeData.ConstructorArguments[messageNameIndex].Value!.ToString() : null,
+            FilteringAttributes = argumentCount > filteringAttributesIndex ? attributeData.ConstructorArguments[filteringAttributesIndex].Value!.ToString() : null,
+            Stage = argumentCount > stageIndex ? (Stages)(int)attributeData.ConstructorArguments[stageIndex].Value! : null,
+            Mode = argumentCount > modeIndex ? (ExecutionMode)(int)attributeData.ConstructorArguments[modeIndex].Value! : null
         };
         pluginStepConfig.Rank = attributeData.GetValue<int?>(nameof(StepAttribute.ExecutionOrder)) ?? pluginStepConfig.Rank;
         pluginStepConfig.PluginStepId = attributeData.GetValue<string?>(nameof(StepAttribute.Id)) is string stepId
@@ -109,21 +110,17 @@ public class AttributeExtractor : IAttributeExtractor
         const int messagePropertyNameIndex = 1;
         const int attributesIndex = 2;
 
-        var imageConfig = attributeData.ConstructorArguments.Length > attributesIndex ?
-            new PluginStepImageConfig(
-                type: (ImageTypes)(int)attributeData.ConstructorArguments[imageTypeIndex].Value!,
-                messagePropertyName: attributeData.ConstructorArguments[messagePropertyNameIndex].Value!.ToString(),
-                attributes: attributeData.ConstructorArguments[attributesIndex].Value!.ToString()!
-            ) :
-            new PluginStepImageConfig(
-                type: (ImageTypes)(int)attributeData.ConstructorArguments[imageTypeIndex].Value!,
-                messagePropertyName: attributeData.ConstructorArguments[messagePropertyNameIndex].Value!.ToString()
-            );
-        imageConfig.Name = attributeData.GetValue<string?>(nameof(ImageAttribute.Name)) ?? imageConfig.Name;
-        imageConfig.PluginStepImageId = attributeData.GetValue<string?>(nameof(ImageAttribute.Id)) is string imageId 
-            ? Guid.Parse(imageId) : imageConfig.PluginStepImageId;
-        imageConfig.Description = attributeData.GetValue<string?>(nameof(ImageAttribute.Description)) ?? imageConfig.Description;
-        imageConfig.EntityAlias = attributeData.GetValue<string?>(nameof(ImageAttribute.EntityAlias)) ?? imageConfig.EntityAlias;
+        var argumentCount = attributeData.ConstructorArguments.Length;
+        var imageConfig = new PluginStepImageConfig
+        {
+            ImageType = argumentCount > imageTypeIndex ? (ImageTypes)(int)attributeData.ConstructorArguments[imageTypeIndex].Value! : null,
+            MessagePropertyName = argumentCount > messagePropertyNameIndex ? attributeData.ConstructorArguments[messagePropertyNameIndex].Value!.ToString() : null,
+            ImageAttributes = argumentCount > attributesIndex ? attributeData.ConstructorArguments[attributesIndex].Value!.ToString() : null,
+            PluginStepImageId = attributeData.GetValue<string?>(nameof(ImageAttribute.Id)) is string imageId ? Guid.Parse(imageId) : null,
+            Description = attributeData.GetValue<string?>(nameof(ImageAttribute.Description))
+        };
+        imageConfig.Name = attributeData.GetValue<string?>(nameof(ImageAttribute.Name)) ?? imageConfig.ImageType?.ToString();
+        imageConfig.EntityAlias = attributeData.GetValue<string?>(nameof(ImageAttribute.EntityAlias)) ?? imageConfig.ImageType?.ToString();
         return imageConfig;
     }
 }
