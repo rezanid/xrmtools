@@ -1,31 +1,36 @@
 ﻿namespace XrmTools.Commands;
 
-using Community.VisualStudio.Toolkit.DependencyInjection.Core;
-using Community.VisualStudio.Toolkit.DependencyInjection;
 using EnvDTE;
 using Microsoft.VisualStudio.Shell;
 using Task = System.Threading.Tasks.Task;
 using Community.VisualStudio.Toolkit;
-using Microsoft.Extensions.Logging;
 using System.Threading.Tasks;
 using System;
 using XrmTools.Helpers;
 using XrmTools.UI;
 using XrmTools.Options;
+using System.ComponentModel.Composition;
+using Microsoft.VisualStudio.ComponentModelHost;
+using XrmTools.Logging.Compatibility;
 
 /// <summary>
 /// Command handler to select the current environment.
 /// </summary>
 [Command(PackageGuids.XrmToolsCmdSetIdString, PackageIds.SetEnvironmentCmdId)]
-internal sealed class SelectEnvironmentCommand(
-    DIToolkitPackage package,
-    ILogger<NewPluginDefinitionFileCommand> logger,
-    IEnvironmentSelector environmentSelector,
-    IEnvironmentProvider environmentProvider) : BaseDICommand(package)
+internal sealed class SelectEnvironmentCommand : BaseCommand<SelectEnvironmentCommand>
 {
-    private readonly ILogger<NewPluginDefinitionFileCommand> logger = logger;
-    private readonly IEnvironmentSelector environmentSelector = environmentSelector;
-    private readonly IEnvironmentProvider environmentProvider = environmentProvider;
+    [Import]
+    public ILogger<NewPluginDefinitionFileCommand> Logger {  get; set; }
+    [Import]
+    public IEnvironmentSelector EnvironmentSelector { get; set; }
+    [Import]
+    public IEnvironmentProvider EnvironmentProvider {  get; set; }
+
+    protected override async Task InitializeCompletedAsync()
+    {
+        var componentModel = await Package.GetServiceAsync<SComponentModel, IComponentModel>();
+        componentModel?.DefaultCompositionService.SatisfyImportsOnce(this);
+    }
 
     protected override void BeforeQueryStatus(EventArgs e)
         => ThreadHelper.JoinableTaskFactory.Run(SetCommandVisibilityAsync);
@@ -66,26 +71,26 @@ internal sealed class SelectEnvironmentCommand(
         var environment = await ChooseEnvironmentAsync(options);
         if (environment is not null)
         {
-            logger.LogInformation("Environment selected: " + environment);
+            Logger.LogInformation("Environment selected: " + environment);
         }
         else
         {
-            logger.LogInformation("No environment selected.");
+            Logger.LogInformation("No environment selected.");
             return;
         }
 
-        await environmentProvider.SetActiveEnvironmentAsync(environment);
+        await EnvironmentProvider.SetActiveEnvironmentAsync(environment);
     }
 
     private async Task<DataverseEnvironment> ChooseEnvironmentAsync(GeneralOptions options)
     {
         try
         {
-            return await environmentSelector.ChooseEnvironmentAsync(options.CurrentEnvironmentStorage);
+            return await EnvironmentSelector.ChooseEnvironmentAsync(options.CurrentEnvironmentStorage);
         }
         catch (Exception ex)
         {
-            logger.LogError(ex, "Error while choosing environment: {0}" + ex.InnerException?.Message, ex);
+            Logger.LogError(ex, "Error while choosing environment: {0}" + ex.InnerException?.Message, ex);
             await VS.MessageBox.ShowErrorAsync("Error while choosing environment", ex.Message);
         }
         return null;

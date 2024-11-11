@@ -1,32 +1,33 @@
 ﻿#nullable enable
 namespace XrmTools.Commands;
-
 using Community.VisualStudio.Toolkit;
-using Community.VisualStudio.Toolkit.DependencyInjection.Core;
-using Community.VisualStudio.Toolkit.DependencyInjection;
 using Microsoft.VisualStudio.Shell;
 using XrmTools.Helpers;
 using Task = System.Threading.Tasks.Task;
-using Microsoft.Extensions.Logging;
 using XrmTools.UI;
 using System.Threading.Tasks;
 using System;
 using XrmTools.Xrm.Model;
+using System.ComponentModel.Composition;
+using Microsoft.VisualStudio.ComponentModelHost;
+using System.Diagnostics.CodeAnalysis;
+using XrmTools.Resources;
+using XrmTools.Logging.Compatibility;
 
 [Command(PackageGuids.XrmToolsCmdSetIdString, PackageIds.NewPluginDefinitionCmdId)]
-internal sealed class NewPluginDefinitionFileCommand : BaseDICommand
+internal sealed class NewPluginDefinitionFileCommand : BaseCommand<NewPluginDefinitionFileCommand>
 {
-    private readonly ILogger<NewPluginDefinitionFileCommand> logger;
-    private readonly IAssemblySelector assemblySelector;
+    [Import]
+    public ILogger<NewPluginDefinitionFileCommand>? Logger { get; set; }
+    [Import]
+    public IAssemblySelector? AssemblySelector { get; set; }
 
-    public NewPluginDefinitionFileCommand(
-        DIToolkitPackage parentPackage, 
-        ILogger<NewPluginDefinitionFileCommand> logger, 
-        IAssemblySelector assemblySelector) : base(parentPackage)
+    protected override async Task InitializeCompletedAsync()
     {
         Command.Supported = false;
-        this.logger = logger;
-        this.assemblySelector = assemblySelector;
+        var componentModel = await Package.GetServiceAsync<SComponentModel, IComponentModel>().ConfigureAwait(false);
+        componentModel?.DefaultCompositionService.SatisfyImportsOnce(this);
+        EnsureDependencies();
     }
 
     protected override async Task ExecuteAsync(OleMenuCmdEventArgs e)
@@ -44,25 +45,32 @@ internal sealed class NewPluginDefinitionFileCommand : BaseDICommand
         var (selectedAssembly, filename) = await ChooseAssemblyAsync();
         if (selectedAssembly is not null && filename is not null)
         {
-            logger.LogInformation("Assembly selected: " + selectedAssembly.Name);
+            Logger.LogInformation("Assembly selected: " + selectedAssembly.Name);
         }
         else
         {
-            logger.LogInformation("No assembly selected.");
+            Logger.LogInformation("No assembly selected.");
             return;
         }
         await WriteAssemblyConfigAsync(selectedAssembly, activeItem, filename);
+    }
+
+    [MemberNotNull(nameof(Logger), nameof(AssemblySelector))]
+    private void EnsureDependencies()
+    {
+        if (Logger == null) throw new InvalidOperationException(string.Format(Strings.MissingServiceDependency, nameof(NewPluginDefinitionFileCommand), nameof(Logger)));
+        if (AssemblySelector == null) throw new InvalidOperationException(string.Format(Strings.MissingServiceDependency, nameof(NewPluginDefinitionFileCommand), nameof(AssemblySelector)));
     }
 
     private async Task<(PluginAssemblyConfig? selectedAssembly, string? filename)> ChooseAssemblyAsync()
     {
         try
         {
-            return await assemblySelector.ChooseAssemblyAsync();
+            return await AssemblySelector!.ChooseAssemblyAsync();
         }
         catch (Exception ex)
         {
-            logger.LogError(ex, "Error while choosing assembly: {0}" + ex.InnerException?.Message, ex);
+            Logger.LogError(ex, "Error while choosing assembly: {0}" + ex.InnerException?.Message, ex);
             await VS.MessageBox.ShowErrorAsync("Error while choosing assembly", ex.Message);
         }
         return (null, null);
@@ -75,7 +83,7 @@ internal sealed class NewPluginDefinitionFileCommand : BaseDICommand
             var content = StringHelpers.SerializeJson(selectedAssembly);
             if (string.IsNullOrWhiteSpace(content))
             {
-                logger.LogCritical("Failed to serialize plugin assembly configuration.", []);
+                Logger.LogCritical("Failed to serialize plugin assembly configuration.", []);
                 await VS.MessageBox.ShowWarningAsync(Vsix.Name, "Failed to serialize plugin assembly configuration.");
                 return;
             }
@@ -84,7 +92,7 @@ internal sealed class NewPluginDefinitionFileCommand : BaseDICommand
         }
         catch (Exception ex)
         {
-            logger.LogError(ex, "Error while generating plugin assembly config. {filename}", filename);
+            Logger.LogError(ex, "Error while generating plugin assembly config. {filename}", filename);
             await VS.MessageBox.ShowErrorAsync("Error while generating plugin assembly config", ex.Message);
         }
     }

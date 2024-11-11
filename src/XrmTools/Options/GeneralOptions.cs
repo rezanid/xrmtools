@@ -1,28 +1,20 @@
 ﻿#nullable enable
 namespace XrmTools.Options;
 using Community.VisualStudio.Toolkit;
-using Community.VisualStudio.Toolkit.DependencyInjection.Core;
-using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Options;
-using Microsoft.VisualStudio;
-using Microsoft.VisualStudio.Shell.Interop;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
-using System.ComponentModel.Composition;
 using System.Drawing.Design;
-using System.Linq;
 using System.Runtime.InteropServices;
-using XrmTools.Tokens;
+using XrmTools.Logging.Compatibility;
 
 internal partial class OptionsProvider
 {
     [ComVisible(true)]
-    public class GeneralOptions : BaseOptionPage<XrmTools.Options.GeneralOptions> { }
+    public class GeneralOptions : BaseOptionPage<Options.GeneralOptions> { }
 }
 
-public class GeneralOptions : BaseOptionModel<GeneralOptions>
+internal class GeneralOptions : BaseOptionModel<GeneralOptions>
 {
     public event EventHandler? OptionsChanged;
 
@@ -64,7 +56,6 @@ public class GeneralOptions : BaseOptionModel<GeneralOptions>
         OptionsChanged?.Invoke(this, EventArgs.Empty);
         
         base.Save();
-        ApplyChanges();
     }
 
     public override void Load()
@@ -73,15 +64,6 @@ public class GeneralOptions : BaseOptionModel<GeneralOptions>
 
         // Ensure that the list is not null
         Environments ??= [];
-    }
-
-    private void ApplyChanges()
-    {
-        var serviceProvider = VS.GetRequiredService<SToolkitServiceProvider<XrmToolsPackage>, IToolkitServiceProvider<XrmToolsPackage>>();
-        var loggerFilterOptions = serviceProvider.GetRequiredService<IConfigureOptions<LoggerFilterOptions>>();
-        loggerFilterOptions.Configure(new LoggerFilterOptions { MinLevel = LogLevel });
-        var environmentProvider = serviceProvider.GetRequiredService<IEnvironmentProvider>();
-        environmentProvider.SetActiveEnvironmentAsync(CurrentEnvironment).ConfigureAwait(false).GetAwaiter().GetResult();
     }
 }
 #nullable restore

@@ -67,7 +67,8 @@
     <Compile Include="Analyzers\PluginAttributeExtractor.cs" />
     <Compile Include="Classifiers\XrmStringClassifierProvider.cs" />
     <Compile Include="CodeCompletion\XrmPluginCompletionProvider.cs" />
-    <Compile Include="CodeCompletion\XrmPluginCompletionSource.cs" />
+    <Compile Include="CodeCompletion\XrmPluginDefinitionCompletionSource.cs" />
+    <Compile Include="CodeCompletion\XrmPluginTextBasedCompletionSource.cs" />
     <Compile Include="Commands\SelectEnvironmentCommand.cs" />
     <Compile Include="Commands\SetPluginGeneratorTemplateInProjectCommand.cs" />
     <Compile Include="Commands\SetPluginGeneratorTemplateInSolutionCommand.cs" />
@@ -79,9 +80,14 @@
     <Compile Include="Helpers\PackageHelper.cs" />
     <Compile Include="Helpers\ProjectExtensions.cs" />
     <Compile Include="Helpers\ProvideSolutionProperties.cs" />
+    <Compile Include="Logging\Compatibility\EventId.cs" />
+    <Compile Include="Logging\Compatibility\FormattedValues.cs" />
+    <Compile Include="Logging\Compatibility\ILogger.cs" />
+    <Compile Include="Logging\Compatibility\ILoggerProvider.cs" />
+    <Compile Include="Logging\Compatibility\LoggerExtensions.cs" />
+    <Compile Include="Logging\Compatibility\LogValuesFormatter.cs" />
+    <Compile Include="Logging\LoggerFactory.cs" />
     <Compile Include="Logging\OutputLoggerService.cs" />
-    <Compile Include="Logging\OutputPaneLoggerExtensions.cs" />
-    <Compile Include="NoOpMemoryCache.cs" />
     <Compile Include="Options\CurrentEnvironmentConverter.cs" />
     <Compile Include="Options\CurrentEnvironmentEditor.cs" />
     <Compile Include="Options\DataverseEnvironmentConverter.cs" />
@@ -164,6 +170,10 @@
     <Compile Include="_Core\Validation.cs" />
   </ItemGroup>
   <ItemGroup>
+    <Content Include="Microsoft.Extensions.Caching.Abstractions\Microsoft.Extensions.Caching.Abstractions.dll">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <IncludeInVSIX>true</IncludeInVSIX>
+    </Content>
     <Content Include="UI\WebResources\preview.html" />
     <Content Include="UI\WebResources\themes\prism.css" />
     <Content Include="UI\WebResources\prism.js" />
@@ -204,9 +214,6 @@
     <PackageReference Include="Community.VisualStudio.Toolkit.17">
       <Version>17.0.527</Version>
     </PackageReference>
-    <PackageReference Include="Community.VisualStudio.Toolkit.DependencyInjection.Microsoft.17">
-      <Version>17.0.27</Version>
-    </PackageReference>
     <PackageReference Include="CommunityToolkit.Mvvm">
       <Version>8.3.2</Version>
     </PackageReference>
@@ -218,18 +225,6 @@
     </PackageReference>
     <PackageReference Include="Microsoft.CodeAnalysis.CSharp">
       <Version>4.11.0</Version>
-    </PackageReference>
-    <PackageReference Include="Microsoft.Extensions.Configuration">
-      <Version>3.1.8</Version>
-    </PackageReference>
-    <PackageReference Include="Microsoft.Extensions.Configuration.Abstractions">
-      <Version>3.1.8</Version>
-    </PackageReference>
-    <PackageReference Include="Microsoft.Extensions.Hosting">
-      <Version>3.1.8</Version>
-    </PackageReference>
-    <PackageReference Include="Microsoft.Extensions.Options.ConfigurationExtensions">
-      <Version>3.1.8</Version>
     </PackageReference>
     <PackageReference Include="Microsoft.PowerPlatform.Dataverse.Client">
       <Version>1.1.32</Version>
@@ -246,7 +241,7 @@
     <PackageReference Include="Microsoft.VisualStudio.SDK" Version="17.11.40262" ExcludeAssets="runtime">
       <IncludeAssets>compile; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageReference>
-    <PackageReference Include="Microsoft.VSSDK.BuildTools" Version="17.11.435">
+    <PackageReference Include="Microsoft.VSSDK.BuildTools" Version="17.12.2069">
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
       <PrivateAssets>all</PrivateAssets>
     </PackageReference>
@@ -262,12 +257,15 @@
       <PrivateAssets>all</PrivateAssets>
     </PackageReference>
     <PackageReference Include="Scriban">
-      <Version>5.10.0</Version>
+      <Version>5.11.0</Version>
     </PackageReference>
     <PackageReference Include="StrongNamer">
       <Version>0.2.5</Version>
     </PackageReference>
     <PackageReference Include="System.Reflection.MetadataLoadContext">
+      <Version>8.0.1</Version>
+    </PackageReference>
+    <PackageReference Include="System.Runtime.Caching">
       <Version>8.0.1</Version>
     </PackageReference>
     <PackageReference Include="YamlDotNet" Version="16.1.3" />

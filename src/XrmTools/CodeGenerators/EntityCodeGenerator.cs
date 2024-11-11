@@ -1,11 +1,8 @@
 ﻿#nullable enable
 namespace XrmTools;
 
-using Community.VisualStudio.Toolkit;
-using Community.VisualStudio.Toolkit.DependencyInjection.Core;
-using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Logging;
 using Microsoft.VisualStudio;
+using Microsoft.VisualStudio.ComponentModelHost;
 using Microsoft.VisualStudio.Shell;
 using Microsoft.VisualStudio.Shell.Interop;
 using Microsoft.VisualStudio.TextTemplating.VSHost;
@@ -22,6 +19,9 @@ using XrmTools.Xrm;
 using XrmTools.Xrm.Generators;
 using YamlDotNet.Serialization;
 using YamlDotNet.Serialization.NamingConventions;
+using System.Diagnostics.CodeAnalysis;
+using XrmTools.Resources;
+using XrmTools.Logging.Compatibility;
 
 public class EntityCodeGenerator : BaseCodeGeneratorWithSite
 {
@@ -29,49 +29,32 @@ public class EntityCodeGenerator : BaseCodeGeneratorWithSite
     public const string Description = "Generates entity classes from metadata";
 
     private bool disposed = false;
-    private IXrmEntityCodeGenerator? _generator;
-    private IXrmSchemaProviderFactory? _schemaProviderFactory;
-    private IEnvironmentProvider? _environmentProvider;
-    private ILogger<EntityCodeGenerator>? _logger;
 
     [Import]
-    private IXrmEntityCodeGenerator? Generator
-    {
-        // MEF does not work, so this is a workaround.
-        get => _generator ??= GlobalServiceProvider.GetService(typeof(IXrmEntityCodeGenerator)) as IXrmEntityCodeGenerator;
-        set => _generator = value;
-    }
+    public IXrmEntityCodeGenerator? Generator { get; set; }
 
-    private IXrmSchemaProviderFactory? SchemaProviderFactory
-    {
-        // MEF does not work, so this is a workaround.
-        get => _schemaProviderFactory ??= GlobalServiceProvider.GetService(typeof(IXrmSchemaProviderFactory)) as IXrmSchemaProviderFactory;
-        set => _schemaProviderFactory = value;
-    }
+    [Import]
+    public IXrmSchemaProviderFactory? SchemaProviderFactory { get; set; }
 
-    private IEnvironmentProvider? EnvironmentProvider
-    {
-        get => _environmentProvider ??= GlobalServiceProvider.GetService(typeof(IEnvironmentProvider)) as IEnvironmentProvider;
-        set => _environmentProvider = value;
-    }
+    [Import]
+    public IEnvironmentProvider? EnvironmentProvider { get; set; }
 
-    ILogger<EntityCodeGenerator> Logger
-    {
-        get
-        {
-            if (_logger is not null) return _logger;
-            var serviceProvider = GlobalServiceProvider.GetService<SToolkitServiceProvider<XrmToolsPackage>, IToolkitServiceProvider<XrmToolsPackage>>();
-            return _logger = serviceProvider.GetRequiredService<ILogger<EntityCodeGenerator>>();
-        }
-    }
+    [Import]
+    internal ILogger<EntityCodeGenerator> Logger {  get; set; }
 
     public override string GetDefaultExtension() => ".cs";
 
-    public EntityCodeGenerator()
+    public EntityCodeGenerator() => SatisfyImports();
+
+    [MemberNotNull(nameof(Generator), nameof(SchemaProviderFactory), nameof(EnvironmentProvider), nameof(Logger))]
+    private void SatisfyImports()
     {
-        var serviceProvider = VS.GetRequiredService<SToolkitServiceProvider<XrmToolsPackage>, IToolkitServiceProvider<XrmToolsPackage>>();
-        EnvironmentProvider = serviceProvider.GetRequiredService<IEnvironmentProvider>();
-        SchemaProviderFactory = serviceProvider.GetRequiredService<IXrmSchemaProviderFactory>();
+        var componentModel = (IComponentModel)Package.GetGlobalService(typeof(SComponentModel));
+        componentModel?.DefaultCompositionService.SatisfyImportsOnce(this);
+        if (Generator == null) throw new InvalidOperationException(string.Format(Strings.MissingServiceDependency, nameof(EntityCodeGenerator), nameof(Generator)));
+        if (SchemaProviderFactory == null) throw new InvalidOperationException(string.Format(Strings.MissingServiceDependency, nameof(EntityCodeGenerator), nameof(SchemaProviderFactory)));
+        if (EnvironmentProvider == null) throw new InvalidOperationException(string.Format(Strings.MissingServiceDependency, nameof(EntityCodeGenerator), nameof(EnvironmentProvider)));
+        if (Logger == null) throw new InvalidOperationException(string.Format(Strings.MissingServiceDependency, nameof(EntityCodeGenerator), nameof(Logger)));
     }
 
     protected override byte[]? GenerateCode(string inputFileName, string inputFileContent)

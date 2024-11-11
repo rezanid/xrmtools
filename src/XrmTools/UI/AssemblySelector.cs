@@ -2,19 +2,25 @@
 namespace XrmTools.UI;
 
 using Community.VisualStudio.Toolkit;
-using Microsoft.Extensions.Logging;
+using System.ComponentModel.Composition;
 using System.Threading.Tasks;
+using XrmTools.Logging.Compatibility;
 using XrmTools.Options;
 using XrmTools.Resources;
 using XrmTools.Xrm;
 using XrmTools.Xrm.Model;
 
-internal interface IAssemblySelector
+public interface IAssemblySelector
 {
     Task<(PluginAssemblyConfig? config, string? filename)> ChooseAssemblyAsync();
 }
 
-internal class AssemblySelector(IEnvironmentProvider environmentProvider, IXrmSchemaProviderFactory schemaProviderFactory, ILogger<AssemblySelector> logger) : IAssemblySelector
+[Export(typeof(IAssemblySelector))]
+[method: ImportingConstructor]
+public class AssemblySelector(
+    [Import] IEnvironmentProvider environmentProvider, 
+    [Import] IXrmSchemaProviderFactory schemaProviderFactory, 
+    [Import] ILogger<AssemblySelector> logger) : IAssemblySelector
 {
     public async Task<(PluginAssemblyConfig? config, string? filename)> ChooseAssemblyAsync()
     {

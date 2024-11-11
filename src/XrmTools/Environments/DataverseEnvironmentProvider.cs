@@ -6,6 +6,7 @@ using XrmTools.Options;
 using System.Runtime.InteropServices;
 using System.ComponentModel.Composition;
 using XrmTools.Settings;
+using Microsoft.VisualStudio.Shell;
 
 [Guid(PackageGuids.guidEnvironmentProviderString)]
 [ComVisible(true)]
@@ -17,9 +18,21 @@ public interface IEnvironmentProvider
 }
 
 [ComVisible(true)]
-[method: ImportingConstructor]
-internal class DataverseEnvironmentProvider([Import]ISettingsProvider settingsProvider) : IEnvironmentProvider
+internal class DataverseEnvironmentProvider : IEnvironmentProvider
 {
+    private readonly ISettingsProvider settingsProvider;
+
+    [ImportingConstructor]
+    public DataverseEnvironmentProvider([Import] ISettingsProvider settingsProvider)
+    {
+        this.settingsProvider = settingsProvider; 
+        var options = GeneralOptions.Instance;
+        options.OptionsChanged += (s, e) =>
+        {
+            ThreadHelper.JoinableTaskFactory.Run(async () => await SetActiveEnvironmentAsync(options.CurrentEnvironment));
+        };
+    }
+
     public async Task<DataverseEnvironment?> GetActiveEnvironmentAsync()
     => (await GeneralOptions.GetLiveInstanceAsync()).CurrentEnvironmentStorage switch
     {

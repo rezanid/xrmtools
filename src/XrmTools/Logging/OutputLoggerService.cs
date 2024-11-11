@@ -4,11 +4,9 @@ namespace XrmTools.Logging;
 using Microsoft.VisualStudio.Shell.Interop;
 using Microsoft.VisualStudio.Shell;
 using System.Runtime.InteropServices;
-using Microsoft.Extensions.Logging;
 using System.Collections.Concurrent;
 using System.Diagnostics.CodeAnalysis;
-using System.ComponentModel.Composition;
-using XrmTools.Settings;
+using XrmTools.Logging.Compatibility;
 
 [Guid(PackageGuids.guidOutputLoggerServiceString)]
 [ComVisible(true)]
@@ -26,8 +24,19 @@ public interface IOutputLoggerService
 public class OutputLoggerService : IOutputLoggerService
 {
     private readonly ConcurrentQueue<string> logQueue = new();
-    private IVsOutputWindowPane? _outputPane;
-    private IVsOutputWindowPane? OutputPane { get => _outputPane ??= InitializeOutputPane(); }
+    private static IVsOutputWindowPane? _outputPane;
+    private readonly object _lock = new();
+    private IVsOutputWindowPane? OutputPane 
+    {
+        get
+        {
+            if (_outputPane != null) return _outputPane;
+            lock (_lock)
+            {
+                return _outputPane ??= InitializeOutputPane();
+            }
+        }
+    }
 
     private IVsOutputWindowPane? InitializeOutputPane()
     {

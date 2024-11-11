@@ -1,10 +1,10 @@
 ﻿#nullable enable
 namespace XrmTools.Xrm;
 
-using Microsoft.Extensions.Caching.Memory;
 using System;
 using System.Collections.Concurrent;
 using System.ComponentModel.Composition;
+using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Threading.Tasks;
 using XrmTools.Tokens;
@@ -99,9 +99,8 @@ public class XrmSchemaProviderFactory(
         {
             return provider;
         }
-        var cache = new MemoryCache(new MemoryCacheOptions());
         var cnnStr = tokenExpander.ExpandTokens(environment.ConnectionString);
-        provider = new XrmSchemaProvider(environment, cnnStr,  cache);
+        provider = new XrmSchemaProvider(environment, cnnStr);
         Providers[environment.Url] = provider;
         return provider;
     }

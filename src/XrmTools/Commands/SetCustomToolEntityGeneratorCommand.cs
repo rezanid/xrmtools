@@ -1,8 +1,6 @@
 ﻿namespace XrmTools.Commands;
 
 using Community.VisualStudio.Toolkit;
-using Community.VisualStudio.Toolkit.DependencyInjection;
-using Community.VisualStudio.Toolkit.DependencyInjection.Core;
 using EnvDTE;
 using Microsoft.VisualStudio.Shell;
 using Task = System.Threading.Tasks.Task;
@@ -11,7 +9,7 @@ using Task = System.Threading.Tasks.Task;
 /// Command handler to set the custom tool of the selected item to the Xrm Entity Code Generator.
 /// </summary>
 [Command(PackageGuids.XrmToolsCmdSetIdString, PackageIds.SetCustomToolEntityGeneratorCmdId)]
-internal sealed class SetCustomToolEntityGeneratorCommand : BaseDICommand
+internal sealed class SetCustomToolEntityGeneratorCommand : BaseCommand<SetCustomToolEntityGeneratorCommand>
 {
     protected override async Task ExecuteAsync(OleMenuCmdEventArgs e)
     {
@@ -20,6 +18,9 @@ internal sealed class SetCustomToolEntityGeneratorCommand : BaseDICommand
         await (i as PhysicalFile).TrySetAttributeAsync(PhysicalFileAttribute.CustomTool, EntityCodeGenerator.Name);
     }
 
-    public SetCustomToolEntityGeneratorCommand(DIToolkitPackage package) : base(package)
-        => Command.Supported = false;
+    protected override Task InitializeCompletedAsync()
+    {
+        Command.Supported = false;
+        return Task.CompletedTask;
+    }
 }

@@ -51,7 +51,7 @@ public class PluginAssemblyMetadataService : IPluginAssemblyMetadataService
             if (syntaxTree == null || semanticModel == null) return null;
 
             var root = await syntaxTree.GetRootAsync(cancellationToken).ConfigureAwait(false);
-            var classDeclarations = root.DescendantNodes().OfType<Microsoft.CodeAnalysis.CSharp.Syntax.ClassDeclarationSyntax>();
+            var classDeclarations = root.DescendantNodes().OfType<ClassDeclarationSyntax>();
 
             foreach (var classDeclaration in classDeclarations)
             {

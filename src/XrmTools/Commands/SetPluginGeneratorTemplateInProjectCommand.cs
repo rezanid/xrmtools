@@ -1,9 +1,9 @@
 ﻿namespace XrmTools.Commands;
 using Community.VisualStudio.Toolkit;
-using Community.VisualStudio.Toolkit.DependencyInjection;
-using Community.VisualStudio.Toolkit.DependencyInjection.Core;
 using EnvDTE;
+using Microsoft.VisualStudio.ComponentModelHost;
 using Microsoft.VisualStudio.Shell;
+using System.ComponentModel.Composition;
 using XrmTools.Settings;
 using Task = System.Threading.Tasks.Task;
 
@@ -11,14 +11,16 @@ using Task = System.Threading.Tasks.Task;
 /// Command handler to set the selected file as template for plugin code generation.
 /// </summary>
 [Command(PackageGuids.XrmToolsCmdSetIdString, PackageIds.SetPluginGeneratorTemplateInProjectCmdId)]
-internal sealed class SetPluginGeneratorTemplateInProjectCommand : BaseDICommand
+internal sealed class SetPluginGeneratorTemplateInProjectCommand : BaseCommand<SetPluginGeneratorTemplateInProjectCommand>
 {
-    private readonly ISettingsProvider settingsProvider;
+    [Import]
+    public ISettingsProvider SettingsProvider { get; set; }
 
-    public SetPluginGeneratorTemplateInProjectCommand(DIToolkitPackage package, ISettingsProvider settingsProvider) : base(package)
+    protected override async Task InitializeCompletedAsync()
     {
         Command.Supported = false;
-        this.settingsProvider = settingsProvider;
+        var componentModel = await Package.GetServiceAsync<SComponentModel, IComponentModel>();
+        componentModel?.DefaultCompositionService.SatisfyImportsOnce(this);
     }
 
     protected override async Task ExecuteAsync(OleMenuCmdEventArgs e)
@@ -28,6 +30,6 @@ internal sealed class SetPluginGeneratorTemplateInProjectCommand : BaseDICommand
 
         var solution = await VS.Solutions.GetCurrentSolutionAsync();
         var path = solution is not null && i.FullPath.StartsWith(solution.FullPath) ? i.FullPath[solution.FullPath.Length..] : i.FullPath;
-        await settingsProvider.ProjectSettings.PluginTemplateFilePathAsync(path);
+        await SettingsProvider.ProjectSettings.PluginTemplateFilePathAsync(path);
     }
 }

@@ -1,7 +1,5 @@
 ﻿#nullable enable
 namespace XrmTools;
-using Community.VisualStudio.Toolkit.DependencyInjection.Core;
-using Microsoft.Extensions.Logging;
 using Microsoft.VisualStudio;
 using Microsoft.VisualStudio.Shell;
 using Microsoft.VisualStudio.Shell.Interop;
@@ -19,7 +17,6 @@ using XrmTools.Helpers;
 using XrmTools.Xrm;
 using XrmTools.Xrm.Generators;
 using XrmTools.Xrm.Model;
-using Microsoft.Extensions.DependencyInjection;
 using XrmTools.Options;
 using Community.VisualStudio.Toolkit;
 using System.Threading.Tasks;
@@ -28,7 +25,8 @@ using XrmTools.Analyzers;
 using Microsoft.VisualStudio.ComponentModelHost;
 using XrmTools.Settings;
 using XrmTools.Resources;
-using Microsoft.CodeAnalysis.Elfie.Model.Strings;
+using System.Diagnostics.CodeAnalysis;
+using XrmTools.Logging.Compatibility;
 
 public class PluginCodeGenerator : BaseCodeGeneratorWithSite
 {
@@ -41,41 +39,34 @@ public class PluginCodeGenerator : BaseCodeGeneratorWithSite
     private IEnvironmentProvider? _environmentProvider;
 
     [Import]
-    IXrmPluginCodeGenerator? Generator 
-    { 
-        // MEF does not work here, so this is our only option.
-        get => _generator ??= GlobalServiceProvider.GetService(typeof(IXrmPluginCodeGenerator)) as IXrmPluginCodeGenerator;
-        set => _generator = value;
-    }
+    IXrmPluginCodeGenerator Generator { get; set; }
 
     [Import]
-    IXrmSchemaProviderFactory? SchemaProviderFactory 
-    {
-        // MEF does not work here, so this is our only option.
-        get => _schemaProviderFactory ??= GlobalServiceProvider.GetService(typeof(IXrmSchemaProviderFactory)) as IXrmSchemaProviderFactory;
-        set => _schemaProviderFactory = value; 
-    }
+    internal IXrmSchemaProviderFactory SchemaProviderFactory { get; set; }
 
     [Import]
-    ISettingsProvider SettingsProvider { get; set; }
+    internal ISettingsProvider SettingsProvider { get; set; }
 
-    private IEnvironmentProvider? EnvironmentProvider
-    {
-        get => _environmentProvider ??= GlobalServiceProvider.GetService(typeof(IEnvironmentProvider)) as IEnvironmentProvider;
-        set => _environmentProvider = value;
-    }
+    [Import]
+    internal IEnvironmentProvider EnvironmentProvider { get; set; }
 
-    ILogger<PluginCodeGenerator> Logger { get; }
+    [Import]
+    internal ILogger<PluginCodeGenerator> Logger { get; set; }
 
     public override string GetDefaultExtension() => ".cs";
 
-    public PluginCodeGenerator()
+    public PluginCodeGenerator() => SatisfyImports();
+
+    [MemberNotNull(nameof(Generator), nameof(SchemaProviderFactory), nameof(SettingsProvider), nameof(EnvironmentProvider), nameof(Logger))]
+    private void SatisfyImports()
     {
-        var serviceProvider = VS.GetRequiredService<SToolkitServiceProvider<XrmToolsPackage>, IToolkitServiceProvider<XrmToolsPackage>>();
-        Logger = serviceProvider.GetRequiredService<ILogger<PluginCodeGenerator>>();
-        EnvironmentProvider = serviceProvider.GetRequiredService<IEnvironmentProvider>();
-        SchemaProviderFactory = serviceProvider.GetRequiredService<IXrmSchemaProviderFactory>();
-        SettingsProvider = serviceProvider.GetRequiredService<ISettingsProvider>();
+        var componentModel = (IComponentModel)Package.GetGlobalService(typeof(SComponentModel));
+        componentModel?.DefaultCompositionService.SatisfyImportsOnce(this);
+        if (Generator == null) throw new InvalidOperationException($"Missing {nameof(PluginCodeGenerator)} service depndency. {nameof(Generator)} is not available.");
+        if (SchemaProviderFactory == null) throw new InvalidOperationException($"Missing {nameof(PluginCodeGenerator)} service depndency. {nameof(SchemaProviderFactory)} is not available.");
+        if (SettingsProvider == null) throw new InvalidOperationException($"Missing {nameof(PluginCodeGenerator)} service depndency. {nameof(SettingsProvider)} is not available.");
+        if (EnvironmentProvider == null) throw new InvalidOperationException($"Missing {nameof(PluginCodeGenerator)} service depndency. {nameof(EnvironmentProvider)} is not available.");
+        if (Logger == null) throw new InvalidOperationException($"Missing {nameof(PluginCodeGenerator)} service depndency. {nameof(Logger)} is not available.");
     }
 
     protected override byte[]? GenerateCode(string inputFileName, string inputFileContent)

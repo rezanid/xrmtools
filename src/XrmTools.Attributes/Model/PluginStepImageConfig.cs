@@ -1,12 +1,6 @@
 ﻿#nullable enable
 namespace XrmTools.Xrm.Model;
-using Microsoft.Xrm.Sdk;
-using Microsoft.Xrm.Sdk.Client;
-using Microsoft.Xrm.Sdk.Metadata;
-using Newtonsoft.Json;
 using System;
-using System.Text.Json;
-using System.Text.Json.Serialization;
 using XrmTools.Meta.Model;
 
 public interface IMessageProcessingStepImageEntity
@@ -92,17 +86,6 @@ public class PluginStepImageConfig : TypedEntity<PluginStepImageConfig>, IMessag
     #endregion
 
     public PluginStepImageConfig() : base(EntityLogicalName) { }
-    public PluginStepImageConfig(ImageTypes type, string messagePropertyName) : this() 
-    { 
-        ImageType = type;
-        MessagePropertyName = messagePropertyName;
-        EntityAlias = type.ToString();
-        Name = type.ToString();
-    }
-    public PluginStepImageConfig(ImageTypes type, string messagePropertyName, string attributes) : this(type, messagePropertyName)
-    {
-        ImageAttributes = attributes;
-    }
 }
 
 public class MessageProcessingStepImageConverter : System.Text.Json.Serialization.JsonConverter<PluginStepImageConfig>

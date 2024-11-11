@@ -196,4 +196,7 @@ Error details: {1}</value>
   <data name="PluginGenerator.TemplateFileNotFound" xml:space="preserve">
     <value>The template file not found. It might have moved to another location. Please make sure that you have set the right template and try again. Missing file: {0}</value>
   </data>
+  <data name="MissingServiceDependency" xml:space="preserve">
+    <value>Missing {0} service depndency. {0} is not available.</value>
+  </data>
 </root>

@@ -2,12 +2,9 @@
 namespace XrmTools;
 
 using Community.VisualStudio.Toolkit;
-using Community.VisualStudio.Toolkit.DependencyInjection.Microsoft;
 using EnvDTE;
 using EnvDTE80;
 using Microsoft;
-using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Logging;
 using Microsoft.VisualStudio;
 using Microsoft.VisualStudio.Shell;
 using Microsoft.VisualStudio.Shell.Interop;
@@ -23,11 +20,11 @@ using XrmTools.Helpers;
 using XrmTools.Logging;
 using XrmTools.Options;
 using XrmTools.Settings;
-using XrmTools.UI;
 using XrmTools.Xrm;
 using XrmTools.Xrm.Generators;
 using XrmTools.Tokens;
 using Task = System.Threading.Tasks.Task;
+using XrmTools.Commands;
 
 internal record ProjectDataverseSettings(
     string EnvironmentUrl, 
@@ -66,14 +63,18 @@ internal record ProjectDataverseSettings(
     name: "UI Context",
     expression: "(Yaml | Proj) & CSharp & (SingleProj | MultiProj)",
     termNames: ["Yaml", "CSharp", "SingleProj", "MultiProj"],
-    termValues: ["HierSingleSelectionName:.yaml$|.yml$", "ActiveProjectCapability:CSharp", VSConstants.UICONTEXT.SolutionHasSingleProject_string, VSConstants.UICONTEXT.SolutionHasMultipleProjects_string])]
+    termValues: [
+        "HierSingleSelectionName:.yaml$|.yml$", 
+        "ActiveProjectCapability:CSharp", 
+        VSConstants.UICONTEXT.SolutionHasSingleProject_string, 
+        VSConstants.UICONTEXT.SolutionHasMultipleProjects_string])]
 [ProvideUIContextRule(PackageGuids.SetCustomToolPluginDefitionCmdUIRuleString,
     name: "UI Context Plugin Definition",
     expression: "(Json | CSPlugin) & CSharp & (SingleProj | MultiProj)",
     termNames: ["Json", "CSPlugin", "CSharp", "SingleProj", "MultiProj"],
     termValues: [
         "HierSingleSelectionName:.def.json$",
-        "HierSingleSelectionName:.+?Plugin.+?\\.cs$",
+        "HierSingleSelectionName:.*Plugin.*\\.cs$",
         "ActiveProjectCapability:CSharp", 
         VSConstants.UICONTEXT.SolutionHasSingleProject_string, 
         VSConstants.UICONTEXT.SolutionHasMultipleProjects_string])]
@@ -81,12 +82,17 @@ internal record ProjectDataverseSettings(
     name: "UI Context Plugin Generator Template",
     expression: "Sbn & CSharp & (SingleProj | MultiProj)",
     termNames: ["Sbn", "CSharp", "SingleProj", "MultiProj"],
-    termValues: ["HierSingleSelectionName:.sbn$", "ActiveProjectCapability:CSharp", VSConstants.UICONTEXT.SolutionHasSingleProject_string, VSConstants.UICONTEXT.SolutionHasMultipleProjects_string])]
+    termValues: [
+        "HierSingleSelectionName:.sbn$", 
+        "ActiveProjectCapability:CSharp", 
+        VSConstants.UICONTEXT.SolutionHasSingleProject_string, 
+        VSConstants.UICONTEXT.SolutionHasMultipleProjects_string])]
 [ProvideUIContextRule(PackageGuids.NewPluginDefinitionCmdUIRuleString,
     name: "UI Context NewPluginConfigCommand",
     expression: "CSharp & (SingleProj | MultiProj)",
     termNames: ["CSharp", "SingleProj", "MultiProj"],
-    termValues: ["ActiveProjectCapability:CSharp",
+    termValues: [
+        "ActiveProjectCapability:CSharp",
         VSConstants.UICONTEXT.SolutionHasSingleProject_string,
         VSConstants.UICONTEXT.SolutionHasMultipleProjects_string])]
 [ProvideService(typeof(IXrmSchemaProviderFactory), IsAsyncQueryable = true, IsCacheable = true, IsFreeThreaded = true)]
@@ -95,7 +101,7 @@ internal record ProjectDataverseSettings(
 [ProvideService(typeof(IEnvironmentProvider), IsAsyncQueryable = true, IsCacheable = true, IsFreeThreaded = true)]
 [ProvideService(typeof(ISettingsProvider), IsAsyncQueryable = true, IsCacheable = true, IsFreeThreaded = true)]
 [ProvideOptionPage(typeof(OptionsProvider.GeneralOptions), Vsix.Name, "General", 0, 0, true, SupportsProfiles = true)]
-public sealed partial class XrmToolsPackage : MicrosoftDIToolkitPackage<XrmToolsPackage>
+public sealed partial class XrmToolsPackage : ToolkitPackage
 {
     private static readonly object _lock = new();
 
@@ -120,7 +126,7 @@ public sealed partial class XrmToolsPackage : MicrosoftDIToolkitPackage<XrmTools
     [Export(typeof(IOutputLoggerService))] internal IOutputLoggerService OutputLoggerService { get => _loggerService; }
     [Export(typeof(IXrmSchemaProviderFactory))] internal IXrmSchemaProviderFactory XrmSchemaProviderFactory { get => _xrmSchemaProviderFactory; }
     [Export(typeof(IEnvironmentProvider))] internal IEnvironmentProvider EnvironmentProvider { get => _environmentProvider; }
-    [Export(typeof(ISettingsProvider))] internal ISettingsProvider SettingsProvider { get => _settingsProvider; }
+    [Export(typeof(ISettingsProvider))] public ISettingsProvider SettingsProvider { get => _settingsProvider; }
 
     static XrmToolsPackage()
     {
@@ -134,31 +140,14 @@ public sealed partial class XrmToolsPackage : MicrosoftDIToolkitPackage<XrmTools
                 new EnvironmentTokenExpander()]));
     }
 
-    protected override void InitializeServices(IServiceCollection services)
+    private async Task RegisterCommandsAsync()
     {
-        services
-            .AddMemoryCache()
-            .AddSingleton(OutputLoggerService)
-            .AddLogging(builder =>
-            {
-                builder.SetMinimumLevel(GeneralOptions.Instance.LogLevel);
-                GeneralOptions.Instance.OptionsChanged += (sender, args) =>
-                {
-                    builder.SetMinimumLevel(GeneralOptions.Instance.LogLevel);
-                };
-                builder.AddOutputLogger();
-            })
-            .AddSingleton(SettingsProvider)
-            .AddSingleton(EnvironmentProvider)
-            .AddSingleton<IEnvironmentSelector, EnvironmentSelector>()
-            .AddSingleton(XrmSchemaProviderFactory!)
-            .AddSingleton<IAssemblySelector, AssemblySelector>()
-            .AddSingleton<ICredentialManager, CredentialManager>()
-            .AddSingleton<ITokenExpander, CredentialTokenExpander>()
-            .AddSingleton<ITokenExpander, EnvironmentTokenExpander>()
-            .AddSingleton<ITokenExpanderService, TokenExpanderService>()
-            .RegisterCommands(ServiceLifetime.Singleton);
-        StartBackgroundOperations();
+        await NewPluginDefinitionFileCommand.InitializeAsync(this);
+        await SetPluginGeneratorTemplateInProjectCommand.InitializeAsync(this);
+        await SetPluginGeneratorTemplateInSolutionCommand.InitializeAsync(this);
+        await SetCustomToolEntityGeneratorCommand.InitializeAsync(this);
+        await SetCustomToolPluginGeneratorCommand.InitializeAsync(this);
+        await SelectEnvironmentCommand.InitializeAsync(this);
     }
 
     /// <summary>
@@ -185,6 +174,8 @@ public sealed partial class XrmToolsPackage : MicrosoftDIToolkitPackage<XrmTools
         Options = await GeneralOptions.GetLiveInstanceAsync();
 
         await InitializeMefServicesAsync();
+
+        await RegisterCommandsAsync();
 
         // When initialized asynchronously, the current thread may be a background thread at this point.
         // Do any initialization that requires the UI thread after switching to the UI thread.

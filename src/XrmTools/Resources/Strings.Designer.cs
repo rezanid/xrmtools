@@ -196,6 +196,15 @@ namespace XrmTools.Resources {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to Missing {0} service depndency. {0} is not available..
+        /// </summary>
+        internal static string MissingServiceDependency {
+            get {
+                return ResourceManager.GetString("MissingServiceDependency", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to Failed to acquire DTE from Visual Studio. Consequently {0} is not initialized successfully..
         /// </summary>
         internal static string Package_InitializationErroMissingDte {
