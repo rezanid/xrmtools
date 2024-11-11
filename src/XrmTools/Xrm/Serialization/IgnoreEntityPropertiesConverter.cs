@@ -1,5 +1,5 @@
 ﻿#nullable enable
-namespace XrmGen.Xrm.Serialization;
+namespace XrmTools.Xrm.Serialization;
 
 using System.Linq;
 using System;
@@ -7,7 +7,7 @@ using System.Text.Json;
 using System.Text.Json.Serialization;
 using System.Reflection;
 using Microsoft.Xrm.Sdk;
-using XrmGen.Xrm.Model;
+using XrmTools.Xrm.Model;
 
 public class IgnoreEntityPropertiesConverter<T> : JsonConverter<T> where T : Entity, ITypedEntity, new()
 {

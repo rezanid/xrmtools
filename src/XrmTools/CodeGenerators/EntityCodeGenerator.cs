@@ -1,7 +1,8 @@
 ﻿#nullable enable
-namespace XrmGen;
+namespace XrmTools;
 
 using Microsoft.VisualStudio;
+using Microsoft.VisualStudio.ComponentModelHost;
 using Microsoft.VisualStudio.Shell;
 using Microsoft.VisualStudio.Shell.Interop;
 using Microsoft.VisualStudio.TextTemplating.VSHost;
@@ -13,39 +14,48 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading;
-using XrmGen._Core;
-using XrmGen.Extensions;
-using XrmGen.Xrm;
-using XrmGen.Xrm.Generators;
+using XrmTools.Helpers;
+using XrmTools.Xrm;
+using XrmTools.Xrm.Generators;
 using YamlDotNet.Serialization;
 using YamlDotNet.Serialization.NamingConventions;
+using System.Diagnostics.CodeAnalysis;
+using XrmTools.Resources;
+using XrmTools.Logging.Compatibility;
 
 public class EntityCodeGenerator : BaseCodeGeneratorWithSite
 {
-    public const string Name = "XrmGen Entity Generator";
+    public const string Name = "XrmTools Entity Generator";
     public const string Description = "Generates entity classes from metadata";
 
     private bool disposed = false;
-    private IXrmEntityCodeGenerator? _generator;
-    private IXrmSchemaProviderFactory? _schemaProviderFactory;
 
     [Import]
-    private IXrmEntityCodeGenerator? Generator
-    {
-        // MEF does not work, so this is a workaround.
-        get => _generator ??= GlobalServiceProvider.GetService(typeof(IXrmEntityCodeGenerator)) as IXrmEntityCodeGenerator;
-        set => _generator = value;
-    }
+    public IXrmEntityCodeGenerator? Generator { get; set; }
 
     [Import]
-    private IXrmSchemaProviderFactory? SchemaProviderFactory
-    {
-        // MEF does not work, so this is a workaround.
-        get => _schemaProviderFactory ??= GlobalServiceProvider.GetService(typeof(IXrmSchemaProviderFactory)) as IXrmSchemaProviderFactory;
-        set => _schemaProviderFactory = value;
-    }
+    public IXrmSchemaProviderFactory? SchemaProviderFactory { get; set; }
+
+    [Import]
+    public IEnvironmentProvider? EnvironmentProvider { get; set; }
+
+    [Import]
+    internal ILogger<EntityCodeGenerator> Logger {  get; set; }
 
     public override string GetDefaultExtension() => ".cs";
+
+    public EntityCodeGenerator() => SatisfyImports();
+
+    [MemberNotNull(nameof(Generator), nameof(SchemaProviderFactory), nameof(EnvironmentProvider), nameof(Logger))]
+    private void SatisfyImports()
+    {
+        var componentModel = (IComponentModel)Package.GetGlobalService(typeof(SComponentModel));
+        componentModel?.DefaultCompositionService.SatisfyImportsOnce(this);
+        if (Generator == null) throw new InvalidOperationException(string.Format(Strings.MissingServiceDependency, nameof(EntityCodeGenerator), nameof(Generator)));
+        if (SchemaProviderFactory == null) throw new InvalidOperationException(string.Format(Strings.MissingServiceDependency, nameof(EntityCodeGenerator), nameof(SchemaProviderFactory)));
+        if (EnvironmentProvider == null) throw new InvalidOperationException(string.Format(Strings.MissingServiceDependency, nameof(EntityCodeGenerator), nameof(EnvironmentProvider)));
+        if (Logger == null) throw new InvalidOperationException(string.Format(Strings.MissingServiceDependency, nameof(EntityCodeGenerator), nameof(Logger)));
+    }
 
     protected override byte[]? GenerateCode(string inputFileName, string inputFileContent)
     {
@@ -53,16 +63,7 @@ public class EntityCodeGenerator : BaseCodeGeneratorWithSite
         if (Generator is null) { return Encoding.UTF8.GetBytes("// No generator found."); }
         if (GetTemplateFilePath() is not string templateFilePath) { return Encoding.UTF8.GetBytes("// Template not found."); ; }
 
-        XrmCodeGenConfig? entityDefinitions = null;
-        try
-        {
-            entityDefinitions = ParseConfig(inputFileContent);
-        }
-        catch (Exception ex)
-        {
-            Logger.Log(string.Format(Resources.Strings.PluginGenerator_DeserializationError, inputFileName));
-            Logger.Log(ex.ToString());
-        }
+        var entityDefinitions = ParseInputFile(inputFileName, inputFileContent);
         if (entityDefinitions?.Entities?.Any() != true) { return null; }
 
         Generator.Config = new XrmCodeGenConfig
@@ -88,12 +89,20 @@ public class EntityCodeGenerator : BaseCodeGeneratorWithSite
         return Encoding.UTF8.GetBytes(sb.ToString());
     }
 
-    private XrmCodeGenConfig ParseConfig(string inputFileContent)
+    private XrmCodeGenConfig? ParseInputFile(string inputFileName, string inputFileContent)
     {
         var deserializer = new DeserializerBuilder()
             .WithNamingConvention(CamelCaseNamingConvention.Instance)
             .Build();
-        return deserializer.Deserialize<XrmCodeGenConfig>(inputFileContent);
+        try
+        {
+            return deserializer.Deserialize<XrmCodeGenConfig>(inputFileContent);
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, Resources.Strings.PluginGenerator_DeserializationError, inputFileName);
+        }
+        return null;
     }
 
     private string? GetTemplateFilePath()
@@ -139,10 +148,11 @@ public class EntityCodeGenerator : BaseCodeGeneratorWithSite
 
     private EntityMetadata? GetEntityMetadata(string logicalName, string[] attributes)
     {
-        var environmentUrl = GetProjectProperty("EnvironmentUrl");
-        if (string.IsNullOrWhiteSpace(environmentUrl)) { return null; }
-        var schemaProvider = SchemaProviderFactory?.Get(environmentUrl!);
-        //make a new cancellation token for 2 minutes.
+        var environment = EnvironmentProvider?.GetActiveEnvironmentAsync().WaitAndUnwrapException();
+        if (environment is null || !environment.IsValid) return null;
+        var schemaProvider = SchemaProviderFactory?.Get(environment);
+        if (schemaProvider is null) return null;
+        // Make a new cancellation token for 2 minutes.
         using var cts = new CancellationTokenSource(120000);
         var metadata = schemaProvider?.GetEntityAsync(logicalName, cts.Token).WaitAndUnwrapException();
         if (metadata == null) { return null; }
@@ -179,3 +189,4 @@ public class EntityCodeGenerator : BaseCodeGeneratorWithSite
     ~EntityCodeGenerator() => Dispose(false);
     #endregion
 }
+#nullable restore

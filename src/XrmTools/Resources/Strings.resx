@@ -133,7 +133,7 @@
     <value>Failed to acquire DTE from Visual Studio. Consequently {0} is not initialized successfully.</value>
   </data>
   <data name="PluginGenerator.DeserializationError" xml:space="preserve">
-    <value>Failed to deserialize plugin definition from {0}.</value>
+    <value>Failed to deserialize plugin definition from {inputFileName}.</value>
   </data>
   <data name="PluginGenerator.InvalidConfig" xml:space="preserve">
     <value>// Code generation failed due to invalid input file.</value>
@@ -156,5 +156,47 @@ Error details: {1}</value>
   </data>
   <data name="PluginGenerator.TemplatePathNotSet" xml:space="preserve">
     <value>Configuration does contain the path to template file.</value>
+  </data>
+  <data name="EnvironmentInvalid" xml:space="preserve">
+    <value>{0} is not a valid environment.</value>
+  </data>
+  <data name="EnvironmentConnectionFailed" xml:space="preserve">
+    <value>Failed to connect to {0}.</value>
+  </data>
+  <data name="EnvironmentConnectionError" xml:space="preserve">
+    <value>Failed to connect to {0}. Error: {1}</value>
+  </data>
+  <data name="EnvironmentConnectionErrorUIDesc" xml:space="preserve">
+    <value>Failed to connect to {0}. Please check the Output window for more information.</value>
+  </data>
+  <data name="EnvironmentConnectionErrorUITitle" xml:space="preserve">
+    <value>Failed to connect to Dataverse.</value>
+  </data>
+  <data name="EnvironmentConnectionStringError" xml:space="preserve">
+    <value>Connection string of the '{0}' is not valid. Please check the syntax in https://learn.microsoft.com/en-us/power-apps/developer/data-platform/xrm-tooling/use-connection-strings-xrm-tooling-connect.</value>
+  </data>
+  <data name="EnvironmentConnectionSuccess" xml:space="preserve">
+    <value>Connection to {0} was successful.</value>
+  </data>
+  <data name="EnvironmentErrorNoneSelected" xml:space="preserve">
+    <value>No environment selected</value>
+  </data>
+  <data name="EnvironmentErrorNoneSelectedOptions" xml:space="preserve">
+    <value>No environment selected. Please select an environment from Tools &gt; Options &gt; Xrm Tools &gt; Current Environment.</value>
+  </data>
+  <data name="EnvironmentErrorNoneSelectedSolution" xml:space="preserve">
+    <value>No environment selected. Please select an environment from Project context menu &gt; Set Environment.</value>
+  </data>
+  <data name="EnvironmentErrorNoneSelectedProject" xml:space="preserve">
+    <value>No environment selected. Please select an environment from Solution context menu &gt; Set Environment.</value>
+  </data>
+  <data name="PluginGenerator.TemplateNotSet" xml:space="preserve">
+    <value>No plugin code generation template has been specified. You need to create a Scriban template for the code generator to work. For more information please visit https://rezanid.github.io/xrmtools/docs/howto/write-a-plugin-template</value>
+  </data>
+  <data name="PluginGenerator.TemplateFileNotFound" xml:space="preserve">
+    <value>The template file not found. It might have moved to another location. Please make sure that you have set the right template and try again. Missing file: {0}</value>
+  </data>
+  <data name="MissingServiceDependency" xml:space="preserve">
+    <value>Missing {0} service depndency. {0} is not available.</value>
   </data>
 </root>

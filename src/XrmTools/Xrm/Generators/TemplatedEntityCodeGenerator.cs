@@ -3,7 +3,7 @@ using Microsoft.Xrm.Sdk.Metadata;
 using System;
 using System.ComponentModel.Composition;
 
-namespace XrmGen.Xrm.Generators;
+namespace XrmTools.Xrm.Generators;
 
 [Export(typeof(IXrmEntityCodeGenerator))]
 public class TemplatedEntityCodeGenerator : IXrmEntityCodeGenerator

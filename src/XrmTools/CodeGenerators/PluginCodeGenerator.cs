@@ -1,10 +1,10 @@
 ﻿#nullable enable
+namespace XrmTools;
 using Microsoft.VisualStudio;
 using Microsoft.VisualStudio.Shell;
 using Microsoft.VisualStudio.Shell.Interop;
 using Microsoft.VisualStudio.TextTemplating.VSHost;
 using Microsoft.Xrm.Sdk.Metadata;
-using Newtonsoft.Json;
 using Nito.AsyncEx.Synchronous;
 using System;
 using System.Collections.Generic;
@@ -13,60 +13,86 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading;
-using XrmGen._Core;
-using XrmGen.Extensions;
-using XrmGen.Xrm;
-using XrmGen.Xrm.Generators;
-using XrmGen.Xrm.Model;
-
-namespace XrmGen;
+using XrmTools.Helpers;
+using XrmTools.Xrm;
+using XrmTools.Xrm.Generators;
+using XrmTools.Xrm.Model;
+using XrmTools.Options;
+using Community.VisualStudio.Toolkit;
+using System.Threading.Tasks;
+using Microsoft.VisualStudio.LanguageServices;
+using XrmTools.Analyzers;
+using Microsoft.VisualStudio.ComponentModelHost;
+using XrmTools.Settings;
+using XrmTools.Resources;
+using System.Diagnostics.CodeAnalysis;
+using XrmTools.Logging.Compatibility;
 
 public class PluginCodeGenerator : BaseCodeGeneratorWithSite
 {
-    public const string Name = "XrmGen Plugin Generator";
-    public const string Description = "Generates plugin classes from .dej.json file.";
-
-    private readonly static OptionSetMetadataNameComparer OptionSetMetadataComparer = new ();
+    public const string Name = Vsix.Name + " Plugin Code Generator";
+    public const string Description = "Generates plugin code from .dej.json file.";
 
     private bool disposed = false;
     private IXrmPluginCodeGenerator? _generator;
     private IXrmSchemaProviderFactory? _schemaProviderFactory;
+    private IEnvironmentProvider? _environmentProvider;
 
     [Import]
-    IXrmPluginCodeGenerator? Generator 
-    { 
-        // MEF does not work here, so this is our only option.
-        get => _generator ??= GlobalServiceProvider.GetService(typeof(IXrmPluginCodeGenerator)) as IXrmPluginCodeGenerator;
-        set => _generator = value;
-    }
+    IXrmPluginCodeGenerator Generator { get; set; }
 
     [Import]
-    IXrmSchemaProviderFactory? SchemaProviderFactory 
-    {
-        // MEF does not work here, so this is our only option.
-        get => _schemaProviderFactory ??= GlobalServiceProvider.GetService(typeof(IXrmSchemaProviderFactory)) as IXrmSchemaProviderFactory;
-        set => _schemaProviderFactory = value; 
-    }
+    internal IXrmSchemaProviderFactory SchemaProviderFactory { get; set; }
+
+    [Import]
+    internal ISettingsProvider SettingsProvider { get; set; }
+
+    [Import]
+    internal IEnvironmentProvider EnvironmentProvider { get; set; }
+
+    [Import]
+    internal ILogger<PluginCodeGenerator> Logger { get; set; }
 
     public override string GetDefaultExtension() => ".cs";
+
+    public PluginCodeGenerator() => SatisfyImports();
+
+    [MemberNotNull(nameof(Generator), nameof(SchemaProviderFactory), nameof(SettingsProvider), nameof(EnvironmentProvider), nameof(Logger))]
+    private void SatisfyImports()
+    {
+        var componentModel = (IComponentModel)Package.GetGlobalService(typeof(SComponentModel));
+        componentModel?.DefaultCompositionService.SatisfyImportsOnce(this);
+        if (Generator == null) throw new InvalidOperationException($"Missing {nameof(PluginCodeGenerator)} service depndency. {nameof(Generator)} is not available.");
+        if (SchemaProviderFactory == null) throw new InvalidOperationException($"Missing {nameof(PluginCodeGenerator)} service depndency. {nameof(SchemaProviderFactory)} is not available.");
+        if (SettingsProvider == null) throw new InvalidOperationException($"Missing {nameof(PluginCodeGenerator)} service depndency. {nameof(SettingsProvider)} is not available.");
+        if (EnvironmentProvider == null) throw new InvalidOperationException($"Missing {nameof(PluginCodeGenerator)} service depndency. {nameof(EnvironmentProvider)} is not available.");
+        if (Logger == null) throw new InvalidOperationException($"Missing {nameof(PluginCodeGenerator)} service depndency. {nameof(Logger)} is not available.");
+    }
 
     protected override byte[]? GenerateCode(string inputFileName, string inputFileContent)
     {
         if (string.IsNullOrWhiteSpace(inputFileContent)) { return null; }
         if (Generator is null) { return Encoding.UTF8.GetBytes("// No generator found."); }
-        if (GetTemplateFilePath() is not string templateFilePath) { return Encoding.UTF8.GetBytes("// Template not found."); ; }
+        if (GetTemplateFilePath() is not string templateFilePath) 
+        { 
+            return Encoding.UTF8.GetBytes("// " + Strings.PluginGenerator_TemplateNotSet); 
+        }
+        if (!File.Exists(templateFilePath))
+        { 
+            return Encoding.UTF8.GetBytes("// " + string.Format(Strings.PluginGenerator_TemplateFileNotFound, templateFilePath));
+        }
+        PluginAssemblyConfig? inputModel;
+        if (".cs".Equals(Path.GetExtension(inputFileName), StringComparison.OrdinalIgnoreCase))
+        {
+            inputModel = ThreadHelper.JoinableTaskFactory.Run(async () =>
+                await ParseCSharpInputFileAsync(inputFileName, inputFileContent));
+        }
+        else
+        {
+            inputModel = ParseJsonInputFile(inputFileName, inputFileContent);
+        }
 
-        PluginAssemblyConfig? config = null;
-        try
-        {
-            config = inputFileContent.DeserializeJson<PluginAssemblyConfig>();
-        }
-        catch (Exception ex)
-        {
-            Logger.Log(string.Format(Resources.Strings.PluginGenerator_DeserializationError, inputFileName));
-            Logger.Log(ex.ToString());
-        }
-        if (config?.PluginTypes?.Any() != true) { return null; }
+        if (inputModel?.PluginTypes?.Any() != true) { return null; }
 
         Generator.Config = new XrmCodeGenConfig
         {
@@ -75,23 +101,64 @@ public class PluginCodeGenerator : BaseCodeGeneratorWithSite
             TemplateFilePath = templateFilePath
         };
 
-        AddEntityMetadataToPluginDefinition(config!);
+        AddEntityMetadataToPluginDefinition(inputModel!);
 
-        //TODO: The following temporary code is used for troubleshooting and can be removed.
-        //var serializedConfig = JsonConvert.SerializeObject(config);
-        // Polymorphic serialization is not supported by System.Text.Json.
-        //var serializedConfig  = System.Text.Json.JsonSerializer.Serialize(config, new System.Text.Json.JsonSerializerOptions { WriteIndented = true });
-        var serializedConfig = config.SerializeJson(useNewtonsoft: false);
-        File.WriteAllText(Path.ChangeExtension(inputFileName, ".config.json"), serializedConfig);
+        if (GeneralOptions.Instance.LogLevel == LogLevel.Trace)
+        {
+            var serializedConfig = inputModel.SerializeJson();
+            File.WriteAllText(Path.ChangeExtension(inputFileName, ".config.json"), serializedConfig);
+        }
 
-        //End of TODO.
-
-        var (isValid, validationMessage) = Generator.IsValid(config);
+        var (isValid, validationMessage) = Generator.IsValid(inputModel);
         if (!isValid)
         {
             return Encoding.UTF8.GetBytes(validationMessage);
         }
-        return Encoding.UTF8.GetBytes(Generator.GenerateCode(config));
+        return Encoding.UTF8.GetBytes(Generator.GenerateCode(inputModel));
+    }
+
+    private PluginAssemblyConfig? ParseJsonInputFile(string inputFileName, string inputFileContent)
+    {
+        try
+        {
+            return inputFileContent.DeserializeJson<PluginAssemblyConfig>();
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, Resources.Strings.PluginGenerator_DeserializationError, inputFileName);
+        }
+        return null;
+    }
+
+    private async Task<PluginAssemblyConfig?> ParseCSharpInputFileAsync(string inputFileName, string inputFileContent)
+    {
+        var proj = await VS.Solutions.GetActiveProjectAsync();
+        if (proj is null)
+        {
+            Logger.LogWarning("No active project found.");
+            return null;
+        }
+        var assemblyPath = proj.GetOutputAssemblyPath();
+        if (assemblyPath == null || !File.Exists(assemblyPath))
+        {
+            Logger.LogWarning("Assembly not found: {0}", assemblyPath);
+            return null;
+        }
+
+        await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync();
+        var componentModel = (IComponentModel)Package.GetGlobalService(typeof(SComponentModel));
+        var workspace = componentModel.GetService<VisualStudioWorkspace>();
+        var documentId = workspace.CurrentSolution.GetDocumentIdsWithFilePath(inputFileName).FirstOrDefault();
+        if (documentId == null) return null;
+        var document = workspace.CurrentSolution.GetDocument(documentId);
+        if (document == null)
+        {
+            return null;
+        }
+        var attributeExtractor = new AttributeExtractor();
+        var pluginAssemblyMetaService = new PluginAssemblyMetadataService(workspace, attributeExtractor);
+        var pluginAssemblyInfo = await pluginAssemblyMetaService.GetAssemblyConfigAsync(document);
+        return pluginAssemblyInfo;
     }
 
     private string? GetTemplateFilePath()
@@ -106,26 +173,18 @@ public class PluginCodeGenerator : BaseCodeGeneratorWithSite
         {
             return templateFilePath;
         }
-        templateFilePath = GetProjectProperty("EntityCodeGenTemplatePath");
-        if (string.IsNullOrWhiteSpace(templateFilePath))
-        {
-            return null;
-        }
-        if (!Path.IsPathRooted(templateFilePath))
-        {
-            templateFilePath = Path.GetFullPath(templateFilePath);
-        }
-        return File.Exists(templateFilePath) ? templateFilePath : null;
+        return ThreadHelper.JoinableTaskFactory.Run(SettingsProvider.PluginTemplateFilePathAsync);
     }
 
     private EntityMetadata? GetEntityMetadata(string logicalName, string[] attributes, IEnumerable<string> prefixesToRemove)
     {
-        var environmentUrl = GetProjectProperty("EnvironmentUrl");
-        if (string.IsNullOrWhiteSpace(environmentUrl)) { return null; }
-        var schemaProvider = SchemaProviderFactory?.Get(environmentUrl!);
-        //make a new cancellation token for 2 minutes.
+        var environment = EnvironmentProvider?.GetActiveEnvironmentAsync().WaitAndUnwrapException();
+        if (environment is null || !environment.IsValid) return null;
+        var schemaProvider = SchemaProviderFactory?.Get(environment);
+        if (schemaProvider is null) return null;
+        // Make a new cancellation token for 2 minutes.
         using var cts = new CancellationTokenSource(120000);
-        var entityDefinition = schemaProvider?.GetEntityAsync(logicalName, cts.Token).WaitAndUnwrapException();
+        var entityDefinition = ThreadHelper.JoinableTaskFactory.Run(async () => await schemaProvider.GetEntityAsync(logicalName, cts.Token));
         if (entityDefinition == null) { return null; }
 
         //NOTE!
@@ -205,56 +264,6 @@ public class PluginCodeGenerator : BaseCodeGeneratorWithSite
             }
         }
         return string.Empty;
-    }
-
-    private string? GetProjectProperty(string propertyName)
-    {
-        ThreadHelper.ThrowIfNotOnUIThread();
-        if (GetService(typeof(IVsHierarchy)) is IVsHierarchy hierarchy)
-        {
-            return hierarchy.GetProjectProperty(propertyName);
-        }
-        return null;
-    }
-
-    private void AddEntityMetadataToPluginDefinitionOLD(PluginAssemblyConfig config)
-    {
-        static bool IsEnumAttribute(AttributeMetadata a) => (a.AttributeType is AttributeTypeCode.Picklist or AttributeTypeCode.Virtual or AttributeTypeCode.State or AttributeTypeCode.Status) && a.IsLogical == false;
-
-        var optionsetMetadataList = new List<OptionSetMetadata>();
-        foreach (var step in config.PluginTypes.SelectMany(plugin => plugin.Steps))
-        {
-            if (!string.IsNullOrWhiteSpace(step.PrimaryEntityName))
-            {
-                var metadata = GetEntityMetadata(step.PrimaryEntityName!, step.FilteringAttributes?.Split(',') ?? [], config.RemovePrefixesCollection);
-                step.PrimaryEntityDefinition = metadata;
-                if (metadata is not null)
-                {
-                    optionsetMetadataList.AddRange(metadata.Attributes
-                        .Where(IsEnumAttribute)
-                        .Cast<EnumAttributeMetadata>()
-                        .Select(a => a.OptionSet));
-                }
-            }
-
-            foreach (var image in step.Images)
-            {
-                if (!string.IsNullOrWhiteSpace(image.EntityAlias))
-                {
-                    var metadata = GetEntityMetadata(step.PrimaryEntityName!, image.ImageAttributes?.Split(',') ?? [], config.RemovePrefixesCollection);
-                    image.MessagePropertyDefinition = metadata;
-                    if (metadata is not null)
-                    {
-                        optionsetMetadataList.AddRange(metadata.Attributes
-                            .Where(IsEnumAttribute)
-                            .Cast<EnumAttributeMetadata>()
-                            .Select(a => a.OptionSet));
-                    }
-
-                }
-            }
-        }
-        //pluginDefinition.OptionSetMetadatas = optionsetMetadataList.Distinct(OptionSetMetadataComparer).ToList();
     }
 
     private void AddEntityMetadataToPluginDefinition(PluginAssemblyConfig config)
@@ -346,11 +355,5 @@ public class PluginCodeGenerator : BaseCodeGeneratorWithSite
     ~PluginCodeGenerator() => Dispose(false);
     #endregion
 
-}
-
-public class OptionSetMetadataNameComparer : IEqualityComparer<OptionSetMetadata>
-{
-    public bool Equals(OptionSetMetadata x, OptionSetMetadata y) => x.Name == y.Name;
-    public int GetHashCode(OptionSetMetadata obj) => obj.Name.GetHashCode();
 }
 #nullable restore

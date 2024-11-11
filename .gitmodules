@@ -1,0 +1,3 @@
+[submodule "Community.VisualStudio.Toolkit.DependencyInjection"]
+	path = submodules/Community.VisualStudio.Toolkit.DependencyInjection
+	url = https://github.com/VsixCommunity/Community.VisualStudio.Toolkit.DependencyInjection

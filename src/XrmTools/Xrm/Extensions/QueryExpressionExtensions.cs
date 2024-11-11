@@ -1,4 +1,4 @@
-﻿namespace XrmGen.Xrm.Extensions;
+﻿namespace XrmTools.Xrm.Extensions;
 
 using Microsoft.Xrm.Sdk.Query;
 

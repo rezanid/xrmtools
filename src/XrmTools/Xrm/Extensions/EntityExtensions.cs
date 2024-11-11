@@ -1,11 +1,11 @@
 ﻿#nullable enable
-namespace XrmGen.Xrm.Extensions;
+namespace XrmTools.Xrm.Extensions;
 
 using Microsoft.Xrm.Sdk;
 using System;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
-using XrmGen.Xrm.Model;
+using XrmTools.Xrm.Model;
 
 internal static class EntityExtensions
 {
