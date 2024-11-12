@@ -13,8 +13,7 @@ internal class IntegratedAuthenticator : DelegatingAuthenticator
     }
 
     public override bool CanAuthenticate(AuthenticationParameters parameters) =>
-        !parameters.UseDeviceFlow &&
-        !string.IsNullOrEmpty(parameters.ClientId) &&
-        (!string.IsNullOrEmpty(parameters.ClientSecret) || !string.IsNullOrEmpty(parameters.CertificateThumbprint));
+        parameters.UseCurrentUser &&
+        !string.IsNullOrEmpty(parameters.ClientId);
 
 }

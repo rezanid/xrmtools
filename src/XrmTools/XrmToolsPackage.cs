@@ -26,6 +26,7 @@ using XrmTools.Tokens;
 using Task = System.Threading.Tasks.Task;
 using XrmTools.Commands;
 using XrmTools.Xrm.Auth;
+using System.Diagnostics;
 
 internal record ProjectDataverseSettings(
     string EnvironmentUrl, 
@@ -188,8 +189,20 @@ public sealed partial class XrmToolsPackage : ToolkitPackage
         await RegisterCommandsAsync();
 
         /////////// TEST ////////////
-        var cnnString = "Integrate Security=True;Url=https://orgd67e4e96.crm4.dynamics.com/;"
-        var authresult = AuthenticationService.AuthenticateAsync()
+        //var cnnString = "Integrate Security=True;Url=https://orgd67e4e96.crm4.dynamics.com/;"
+        var cnnString = "Integrated Security=True;Url=https://aguflowt.crm4.dynamics.com;TenantId=acd889b8-4843-42e8-9100-9a0fa223b8f5";
+        try
+        {
+            var parameters = AuthenticationParameters.Parse(cnnString);
+            var authresult = await AuthenticationService.AuthenticateAsync(parameters, (message) =>
+            {
+                Debug.WriteLine(message);
+            }, CancellationToken.None);
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine(ex);
+        }
         /////////////////////////////
 
         // When initialized asynchronously, the current thread may be a background thread at this point.

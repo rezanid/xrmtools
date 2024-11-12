@@ -1,6 +1,13 @@
 ﻿#nullable enable
 namespace XrmTools.Xrm.Model;
+
+using Microsoft.Xrm.Sdk;
+using Microsoft.Xrm.Sdk.Client;
+using Microsoft.Xrm.Sdk.Metadata;
+using Newtonsoft.Json;
 using System;
+using System.Text.Json;
+using System.Text.Json.Serialization;
 using XrmTools.Meta.Model;
 
 public interface IMessageProcessingStepImageEntity
