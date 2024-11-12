@@ -1,0 +1,20 @@
+﻿namespace XrmTools.Xrm.Auth;
+using Microsoft.Identity.Client;
+using System;
+using System.Threading;
+using System.Threading.Tasks;
+
+internal class IntegratedAuthenticator : DelegatingAuthenticator
+{
+    public override async Task<AuthenticationResult> AuthenticateAsync(AuthenticationParameters parameters, Action<string> onMessageForUser = default, CancellationToken cancellationToken = default)
+    {
+        var app = GetClient(parameters);
+        return await app.AsPublicClient().AcquireTokenByIntegratedWindowsAuth(parameters.Scopes).ExecuteAsync(cancellationToken).ConfigureAwait(false);
+    }
+
+    public override bool CanAuthenticate(AuthenticationParameters parameters) =>
+        !parameters.UseDeviceFlow &&
+        !string.IsNullOrEmpty(parameters.ClientId) &&
+        (!string.IsNullOrEmpty(parameters.ClientSecret) || !string.IsNullOrEmpty(parameters.CertificateThumbprint));
+
+}

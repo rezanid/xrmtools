@@ -5,19 +5,13 @@ using Microsoft.CodeAnalysis;
 using Microsoft.VisualStudio.Language.Intellisense.AsyncCompletion;
 using Microsoft.VisualStudio.Language.Intellisense.AsyncCompletion.Data;
 using Microsoft.VisualStudio.Text;
-using System;
-using System.Collections.Generic;
 using System.Linq;
-using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using XrmTools.Logging;
 using XrmTools.Xrm;
-using System.Collections.Immutable;
 using Microsoft.CodeAnalysis.Text;
-using Microsoft.VisualStudio.ComponentModelHost;
 using Microsoft.VisualStudio.LanguageServices;
-using Microsoft.VisualStudio.Shell;
 using XrmTools.Meta.Attributes;
 
 internal class XrmPluginDefinitionCompletionSource(
@@ -31,8 +25,8 @@ internal class XrmPluginDefinitionCompletionSource(
         CancellationToken cancellationToken)
     {
         // Get the VisualStudioWorkspace service
-        var componentModel = (IComponentModel)Package.GetGlobalService(typeof(SComponentModel));
-        var workspace = componentModel.GetService<VisualStudioWorkspace>();
+        //var componentModel = (IComponentModel)Package.GetGlobalService(typeof(SComponentModel));
+        //var workspace = componentModel.GetService<VisualStudioWorkspace>();
 
         // Retrieve the document associated with the trigger location
         //var documentId = workspace.CurrentSolution.GetDocumentId(triggerLocation.Snapshot.TextBuffer.AsTextContainer());
@@ -64,16 +58,13 @@ internal class XrmPluginDefinitionCompletionSource(
         var argumentIndex = GetArgumentIndexAtPosition(argumentList.Value, triggerLocation.Position);
         if (argumentIndex == -1) return CompletionContext.Empty;
 
-        switch (argumentIndex)
+        return argumentIndex switch
         {
-            case 0:
-                return await GetEntityCompletionsAsync(cancellationToken);
-            case 1:
-                return await GetMessageCompletionsAsync(argumentList.Value[0], semanticModel, cancellationToken);
-            case 2:
-                return await GetAttributeCompletionsAsync(argumentList.Value[0], semanticModel, triggerLocation, cancellationToken);
-        }
-        return CompletionContext.Empty;
+            0 => await GetEntityCompletionsAsync(cancellationToken),
+            1 => await GetMessageCompletionsAsync(argumentList.Value[0], semanticModel, cancellationToken),
+            2 => await GetAttributeCompletionsAsync(argumentList.Value[0], semanticModel, triggerLocation, cancellationToken),
+            _ => CompletionContext.Empty,
+        };
     }
 
     private async Task<CompletionContext> GetEntityCompletionsAsync(CancellationToken cancellationToken)

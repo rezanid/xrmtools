@@ -25,6 +25,7 @@ using XrmTools.Xrm.Generators;
 using XrmTools.Tokens;
 using Task = System.Threading.Tasks.Task;
 using XrmTools.Commands;
+using XrmTools.Xrm.Auth;
 
 internal record ProjectDataverseSettings(
     string EnvironmentUrl, 
@@ -111,6 +112,7 @@ public sealed partial class XrmToolsPackage : ToolkitPackage
     private readonly static IXrmSchemaProviderFactory _xrmSchemaProviderFactory;
     private readonly static IEnvironmentProvider _environmentProvider;
     private readonly static ISettingsProvider _settingsProvider;
+    private readonly static IAuthenticationService _authentionService;
 
 
     public const string SolutionPersistanceKey = "XrmToolsProperies";
@@ -126,13 +128,21 @@ public sealed partial class XrmToolsPackage : ToolkitPackage
     [Export(typeof(IOutputLoggerService))] internal IOutputLoggerService OutputLoggerService { get => _loggerService; }
     [Export(typeof(IXrmSchemaProviderFactory))] internal IXrmSchemaProviderFactory XrmSchemaProviderFactory { get => _xrmSchemaProviderFactory; }
     [Export(typeof(IEnvironmentProvider))] internal IEnvironmentProvider EnvironmentProvider { get => _environmentProvider; }
-    [Export(typeof(ISettingsProvider))] public ISettingsProvider SettingsProvider { get => _settingsProvider; }
+    [Export(typeof(ISettingsProvider))] internal ISettingsProvider SettingsProvider { get => _settingsProvider; }
+    [Export(typeof(IAuthenticationService))] internal IAuthenticationService AuthenticationService { get => _authentionService; }
 
     static XrmToolsPackage()
     {
         _loggerService = new OutputLoggerService();
         _settingsProvider = new SettingsProvider();
         _environmentProvider = new DataverseEnvironmentProvider(_settingsProvider);
+        _authentionService = new AuthenticationService(new ClientAppAuthenticator
+        {
+            NextAuthenticator = new DeviceCodeAuthenticator
+            {
+                NextAuthenticator = new IntegratedAuthenticator()
+            }
+        });
         _xrmSchemaProviderFactory = new XrmSchemaProviderFactory(
             _environmentProvider, 
             new TokenExpanderService([
@@ -176,6 +186,11 @@ public sealed partial class XrmToolsPackage : ToolkitPackage
         await InitializeMefServicesAsync();
 
         await RegisterCommandsAsync();
+
+        /////////// TEST ////////////
+        var cnnString = "Integrate Security=True;Url=https://orgd67e4e96.crm4.dynamics.com/;"
+        var authresult = AuthenticationService.AuthenticateAsync()
+        /////////////////////////////
 
         // When initialized asynchronously, the current thread may be a background thread at this point.
         // Do any initialization that requires the UI thread after switching to the UI thread.

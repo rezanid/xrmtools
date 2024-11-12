@@ -105,6 +105,15 @@
     </Compile>
     <Compile Include="UI\EnvironmentSelectorViewModel.cs" />
     <Compile Include="XrmToolsPackage.SolutionProperties.cs" />
+    <Compile Include="Xrm\Auth\AuthenticationHelper.cs" />
+    <Compile Include="Xrm\Auth\AuthenticationParameters.cs" />
+    <Compile Include="Xrm\Auth\AuthenticationService.cs" />
+    <Compile Include="Xrm\Auth\IntegratedAuthenticator.cs" />
+    <Compile Include="Xrm\Auth\ClientAppAuthenticator.cs" />
+    <Compile Include="Xrm\Auth\ClientApplicationExtensions.cs" />
+    <Compile Include="Xrm\Auth\DelegatingAuthenticator.cs" />
+    <Compile Include="Xrm\Auth\DeviceCodeAuthenticator.cs" />
+    <Compile Include="Xrm\Auth\IAuthenticator.cs" />
     <Compile Include="Xrm\OptionSetMetadataNameComparer.cs" />
     <Compile Include="Helpers\DteExtensions.cs" />
     <Compile Include="Helpers\DteProjectHelpers.cs" />
@@ -164,6 +173,7 @@
     <Compile Include="Xrm\Serialization\IgnoreEntityPropertiesConverter.cs" />
     <Compile Include="Xrm\Serialization\TypedEntityConverter.cs" />
     <Compile Include="Xrm\Serialization\TypedEntityConverter_T.cs" />
+    <Compile Include="Xrm\XrmMetadataSource.cs" />
     <Compile Include="Xrm\XrmSchemaProvider.cs" />
     <Compile Include="Xrm\XrmSchemaProviderFactory.cs" />
     <Compile Include="Logging\OutputLogger.cs" />
