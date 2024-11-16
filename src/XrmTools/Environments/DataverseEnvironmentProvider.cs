@@ -3,21 +3,11 @@ namespace XrmTools;
 using System.Linq;
 using System.Threading.Tasks;
 using XrmTools.Options;
-using System.Runtime.InteropServices;
 using System.ComponentModel.Composition;
 using XrmTools.Settings;
 using Microsoft.VisualStudio.Shell;
+using XrmTools.Environments;
 
-[Guid(PackageGuids.guidEnvironmentProviderString)]
-[ComVisible(true)]
-public interface IEnvironmentProvider
-{
-    DataverseEnvironment? GetActiveEnvironment();
-    Task<DataverseEnvironment?> GetActiveEnvironmentAsync();
-    Task SetActiveEnvironmentAsync(DataverseEnvironment environment);
-}
-
-[ComVisible(true)]
 internal class DataverseEnvironmentProvider : IEnvironmentProvider
 {
     private readonly ISettingsProvider settingsProvider;

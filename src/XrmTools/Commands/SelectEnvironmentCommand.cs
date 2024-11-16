@@ -12,6 +12,7 @@ using XrmTools.Options;
 using System.ComponentModel.Composition;
 using Microsoft.VisualStudio.ComponentModelHost;
 using XrmTools.Logging.Compatibility;
+using XrmTools.Environments;
 
 /// <summary>
 /// Command handler to select the current environment.

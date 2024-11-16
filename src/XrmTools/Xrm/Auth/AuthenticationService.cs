@@ -1,7 +1,6 @@
 ﻿namespace XrmTools.Xrm.Auth;
 using Microsoft.Identity.Client;
 using System;
-using System.ComponentModel.Composition;
 using System.Threading;
 using System.Threading.Tasks;
 

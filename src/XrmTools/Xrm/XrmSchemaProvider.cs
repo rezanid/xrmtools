@@ -13,19 +13,6 @@ using System.Threading.Tasks;
 using XrmTools.Xrm.Extensions;
 using XrmTools.Xrm.Model;
 
-public interface IXrmSchemaProvider : IDisposable
-{
-    DataverseEnvironment Environment { get; }
-    bool IsReady { get; }
-    Exception LastException { get; }
-    string LastError { get; }
-    Task<IEnumerable<EntityMetadata>> GetEntitiesAsync(CancellationToken cancellationToken);
-    Task<EntityMetadata> GetEntityAsync(string entityLogicalName, CancellationToken cancellationToken);
-    Task<IEnumerable<PluginAssemblyConfig>> GetPluginAssembliesAsync(CancellationToken cancellationToken);
-    Task<IEnumerable<PluginTypeConfig>> GetPluginTypesAsync(Guid assemblyid, CancellationToken cancellationToken);
-    Task RefreshCacheAsync();
-}
-
 internal class DataverseCacheKeys(string EnvironmentUrl)
 {
     public string EntityDefinitions => $"{EnvironmentUrl}_EntityDefinitions";
@@ -42,8 +29,8 @@ public class XrmSchemaProvider(DataverseEnvironment environment, string connecti
     private readonly DataverseCacheKeys cacheKeys = new(environment.Url);
     private readonly TimeSpan cacheExpiration = TimeSpan.FromMinutes(30);
     private CancellationTokenSource cacheEvictionTokenSource = new ();
-
     private ServiceClient ServiceClient { get; init; } = new(connectionString);
+
     public DataverseEnvironment Environment { get => environment; }
     public bool IsReady { get => ServiceClient.IsReady; }
     public Exception LastException { get => ServiceClient.LastException; }

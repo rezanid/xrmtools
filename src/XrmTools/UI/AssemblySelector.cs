@@ -4,6 +4,7 @@ namespace XrmTools.UI;
 using Community.VisualStudio.Toolkit;
 using System.ComponentModel.Composition;
 using System.Threading.Tasks;
+using XrmTools.Environments;
 using XrmTools.Logging.Compatibility;
 using XrmTools.Options;
 using XrmTools.Resources;

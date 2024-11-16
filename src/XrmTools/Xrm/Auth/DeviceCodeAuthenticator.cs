@@ -12,7 +12,7 @@ internal class DeviceCodeAuthenticator : DelegatingAuthenticator
         Action<string> onMessageForUser = default,
         CancellationToken cancellationToken = default)
     {
-        var app = GetClient(parameters);
+        var app = await GetClientAppAsync(parameters, cancellationToken);
 
         // Attempt to get a token silently from the cache
         //TODO: Currently accounts returned from GetAccountAsync is always null.

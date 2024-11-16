@@ -22,6 +22,7 @@ using YamlDotNet.Serialization.NamingConventions;
 using System.Diagnostics.CodeAnalysis;
 using XrmTools.Resources;
 using XrmTools.Logging.Compatibility;
+using XrmTools.Environments;
 
 public class EntityCodeGenerator : BaseCodeGeneratorWithSite
 {

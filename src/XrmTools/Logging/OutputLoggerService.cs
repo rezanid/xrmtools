@@ -3,23 +3,9 @@ namespace XrmTools.Logging;
 
 using Microsoft.VisualStudio.Shell.Interop;
 using Microsoft.VisualStudio.Shell;
-using System.Runtime.InteropServices;
 using System.Collections.Concurrent;
 using System.Diagnostics.CodeAnalysis;
 using XrmTools.Logging.Compatibility;
-
-[Guid(PackageGuids.guidOutputLoggerServiceString)]
-[ComVisible(true)]
-public interface IOutputLoggerService
-{
-    void OutputString(string value);
-    void Log(LogLevel level, string message);
-    void LogWarning(string message);
-    void LogInformation(string message);
-    void LogCritical(string message);
-    void LogDebug(string message);
-    void LogError(string message);
-}
 
 public class OutputLoggerService : IOutputLoggerService
 {

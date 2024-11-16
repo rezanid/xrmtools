@@ -27,6 +27,7 @@ using Task = System.Threading.Tasks.Task;
 using XrmTools.Commands;
 using XrmTools.Xrm.Auth;
 using System.Diagnostics;
+using XrmTools.Environments;
 
 internal record ProjectDataverseSettings(
     string EnvironmentUrl, 

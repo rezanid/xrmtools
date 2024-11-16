@@ -1,4 +1,7 @@
 ﻿using Microsoft.Identity.Client;
+using Microsoft.Identity.Client.Extensions.Msal;
+using Microsoft.VisualStudio.Shell.Interop;
+using Microsoft.VisualStudio.Shell;
 using System;
 using System.Linq;
 using System.Security.Cryptography.X509Certificates;
@@ -8,25 +11,48 @@ using System.Threading.Tasks;
 namespace XrmTools.Xrm.Auth;
 internal abstract class DelegatingAuthenticator : IAuthenticator
 {
+    private AuthenticationParameters lastParameters;
+    private IClientApplicationBase lastClientApp;
+
     public IAuthenticator NextAuthenticator { get; set; }
 
     public virtual async Task<AuthenticationResult> AuthenticateAsync(
         AuthenticationParameters parameters, Action<string> onMessageForUser = default, CancellationToken cancellationToken = default)
     {
-        var app = GetClient(parameters);
-
-        var account = parameters.Account ?? (await app.GetAccountsAsync()).FirstOrDefault();
-        if (account == null) { return null; }
+        var app = await GetClientAppAsync(parameters, cancellationToken);
+        var accounts = await app.GetAccountsAsync();
+        var firstAccount = accounts.FirstOrDefault();
 
         try
         {
-            return await app.AcquireTokenSilent(parameters.Scopes, account)
-                .ExecuteAsync(CancellationToken.None)
+            return await app.AcquireTokenSilent(parameters.Scopes, firstAccount)
+                .ExecuteAsync(cancellationToken)
                 .ConfigureAwait(false);
         }
-        catch (MsalUiRequiredException)
+        catch (MsalUiRequiredException ex)
         {
-            //TODO: Needs logging
+            try
+            {
+                await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync();
+                var vsUIShell = (IVsUIShell)Package.GetGlobalService(typeof(SVsUIShell));
+                if (0 != vsUIShell.GetDialogOwnerHwnd(out var phwnd)) return null;
+                if (app.AsPublicClient() is PublicClientApplication appClient)
+                {
+                    return await appClient.AcquireTokenInteractive(parameters.Scopes)
+                        .WithAccount(accounts.FirstOrDefault())
+                        .WithPrompt(Prompt.SelectAccount)
+                        .WithParentActivityOrWindow(phwnd)
+                        .ExecuteAsync();
+                }
+            }
+            catch (MsalException)
+            {
+                //TODO: Logging
+            }
+        }
+        catch (Exception)
+        {
+            //TODO: Logging.
         }
 
         return null;
@@ -34,26 +60,29 @@ internal abstract class DelegatingAuthenticator : IAuthenticator
 
     public abstract bool CanAuthenticate(AuthenticationParameters parameters);
 
-    public virtual IClientApplicationBase GetClient(AuthenticationParameters parameters, string redirectUri = null)
+    public virtual async Task<IClientApplicationBase> GetClientAppAsync(AuthenticationParameters parameters, CancellationToken cancellationToken)
     {
+        if (lastParameters == parameters && lastClientApp != null) return lastClientApp;
+        lastParameters = parameters;
+
         if (!parameters.UseDeviceFlow & (
             !string.IsNullOrEmpty(parameters.CertificateThumbprint) ||
             !string.IsNullOrEmpty(parameters.ClientSecret)))
         {
-            return CreateConfidentialClient(
+            return lastClientApp = CreateConfidentialClient(
                 parameters.Authority,
                 parameters.ClientId,
                 parameters.ClientSecret,
-                FindCertificate(parameters.CertificateThumbprint),
-                redirectUri,
-                parameters.TenantId);
+                FindCertificate(parameters.CertificateThumbprint, parameters.CertificateStoreName),
+                parameters.RedirectUri,
+                parameters.Tenant);
         }
 
-        return CreatePublicClient(
+        return lastClientApp = await CreatePublicClientAsync(
             parameters.Authority,
             parameters.ClientId,
-            redirectUri,
-            parameters.TenantId);
+            parameters.RedirectUri,
+            parameters.Tenant);
     }
 
     public async Task<AuthenticationResult> TryAuthenticateAsync(
@@ -105,38 +134,46 @@ internal abstract class DelegatingAuthenticator : IAuthenticator
         return client;
     }
 
-    private static IPublicClientApplication CreatePublicClient(
+    private static async Task<IPublicClientApplication> CreatePublicClientAsync(
         string authority,
         string clientId = null,
         string redirectUri = null,
         string tenantId = null)
     {
-        var builder = PublicClientApplicationBuilder.Create(clientId)
-            .WithAuthority(authority);
+        var builder = PublicClientApplicationBuilder.Create(clientId);
+        
+        if (!string.IsNullOrEmpty(authority)) builder.WithAuthority(authority);
+        if (!string.IsNullOrEmpty(redirectUri)) builder.WithRedirectUri(redirectUri);
+        if (!string.IsNullOrEmpty(tenantId)) builder.WithTenantId(tenantId);
 
-        if (!string.IsNullOrEmpty(redirectUri))
-        { builder = builder.WithRedirectUri(redirectUri); }
-
-        if (!string.IsNullOrEmpty(tenantId))
-        { builder = builder.WithTenantId(tenantId); }
-
-        var client = builder.WithLogging((level, message, pii) =>
+        var publicClientApp = builder.WithLogging((level, message, pii) =>
         {
             // TODO: Replace the following line when logging is in-place.
             // PartnerSession.Instance.DebugMessages.Enqueue($"[MSAL] {level} {message}");
         }).Build();
 
-        return client;
-    }
+        var storageProperties = new StorageCreationPropertiesBuilder("msal_cache",
+                MsalCacheHelper.UserRootDirectory)
+            // No need to support non-Windows platforms yet.
+            //.WithLinuxKeyring(
+            //    "com.vs.xrmtools", MsalCacheHelper.LinuxKeyRingDefaultCollection, "Xrm Tools Credentials", 
+            //    new("Version", "1"), new("Product", "Xrm Tools"))
+            //.WithMacKeyChain("xrmtools_msal_service", "xrmtools_msa_account")
+            .Build();
 
-    public static X509Certificate2 FindCertificate(string thumbprint) => FindCertificate(thumbprint, StoreName.My);
+        // Create and register the cache helper to enable persistent caching
+        var cacheHelper = await MsalCacheHelper.CreateAsync(storageProperties).ConfigureAwait(false);
+        cacheHelper.VerifyPersistence();
+        cacheHelper.RegisterCache(publicClientApp.UserTokenCache);
+
+        return publicClientApp;
+    }
 
     public static X509Certificate2 FindCertificate(
         string thumbprint,
         StoreName storeName)
     {
-        if (thumbprint == null)
-        { return null; }
+        if (thumbprint == null) return null;
 
         var source = new StoreLocation[2] { StoreLocation.CurrentUser, StoreLocation.LocalMachine };
         X509Certificate2 certificate = null;
@@ -146,9 +183,6 @@ internal abstract class DelegatingAuthenticator : IAuthenticator
         }
         return null;
     }
-
-    private static bool TryFindCertificatesInStore(string thumbprint, StoreLocation location, out X509Certificate2 certificate)
-        => TryFindCertificatesInStore(thumbprint, location, StoreName.My, out certificate);
 
     private static bool TryFindCertificatesInStore(string thumbprint, StoreLocation location, StoreName storeName, out X509Certificate2 certificate)
     {

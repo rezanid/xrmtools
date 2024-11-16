@@ -27,6 +27,7 @@ using XrmTools.Settings;
 using XrmTools.Resources;
 using System.Diagnostics.CodeAnalysis;
 using XrmTools.Logging.Compatibility;
+using XrmTools.Environments;
 
 public class PluginCodeGenerator : BaseCodeGeneratorWithSite
 {
