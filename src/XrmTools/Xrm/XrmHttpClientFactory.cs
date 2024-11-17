@@ -10,8 +10,10 @@ using Microsoft.Extensions.Http;
 using XrmTools.Environments;
 using XrmTools.Logging.Compatibility;
 using System.ComponentModel.Composition;
+using XrmTools.Xrm.Auth;
+using System.Net.Http.Headers;
 
-public class XrmHttpClientFactory : IXrmHttpClientFactory, IDisposable
+internal class XrmHttpClientFactory : IXrmHttpClientFactory, IDisposable
 {
     private readonly ConcurrentDictionary<string, HttpClientConfig> _clientConfigs = new();
     private readonly ConcurrentDictionary<string, HttpClientEntry> _clients = new();
@@ -19,24 +21,30 @@ public class XrmHttpClientFactory : IXrmHttpClientFactory, IDisposable
     private readonly object _lock = new();
     private readonly TimeProvider timeProvider;
     private readonly IEnvironmentProvider environmentProvider;
+    private readonly IAuthenticationService authenticationService;
     private readonly ILogger<XrmHttpClientFactory> logger;
 
     [ImportingConstructor]
-    public XrmHttpClientFactory(TimeProvider timeProvider, IEnvironmentProvider environmentProvider, ILogger<XrmHttpClientFactory> logger)
+    public XrmHttpClientFactory(
+        TimeProvider timeProvider, 
+        IEnvironmentProvider environmentProvider,
+        IAuthenticationService authenticationService,
+        ILogger<XrmHttpClientFactory> logger)
     {
         this.timeProvider = timeProvider;
         timer = timeProvider.CreateTimer(_ => RecycleHandlers(), null, TimeSpan.FromMinutes(1), TimeSpan.FromMinutes(1));
         this.environmentProvider = environmentProvider;
+        this.authenticationService = authenticationService;
         this.logger = logger;
     }
 
     public async Task<HttpClient> CreateHttpClientAsync()
     {
         var environment = await environmentProvider.GetActiveEnvironmentAsync();
-        return environment == null ? throw new InvalidOperationException("No environment selected.") : CreateHttpClient(environment);
+        return environment == null ? throw new InvalidOperationException("No environment selected.") : await CreateHttpClientAsync(environment);
     }
 
-    private HttpClient CreateHttpClient(DataverseEnvironment environment)
+    private async Task<HttpClient> CreateHttpClientAsync(DataverseEnvironment environment)
     {
         var name = environment.ConnectionString;
         if (string.IsNullOrEmpty(name))
@@ -47,7 +55,11 @@ public class XrmHttpClientFactory : IXrmHttpClientFactory, IDisposable
         {
             config = CreateDefaultConfig(name!);
         }
-        return _clients.GetOrAdd(name!, new HttpClientEntry(new Lazy<HttpClient>(() => CreateHttpClient(config)), timeProvider.GetUtcNow())).Client.Value;
+        var authParams = AuthenticationParameters.Parse(environment.ConnectionString);
+        var authResult = await authenticationService.AuthenticateAsync(authParams, msg => logger.LogInformation(msg), CancellationToken.None);
+        var client = _clients.GetOrAdd(name!, new HttpClientEntry(new Lazy<HttpClient>(() => CreateHttpClient(config)), timeProvider.GetUtcNow())).Client.Value;
+        client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", authResult.AccessToken);
+        return client;
     }
 
     private HttpClient CreateHttpClient(HttpClientConfig config)

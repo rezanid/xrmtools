@@ -165,6 +165,7 @@
       <DependentUpon>Strings.resx</DependentUpon>
     </Compile>
     <Compile Include="Xrm\Repositories\PluginAssemblyRepository.cs" />
+    <Compile Include="Xrm\Repositories\RepositoryFactory.cs" />
     <Compile Include="Xrm\Serialization\IgnoreDataContractResolver.cs" />
     <Compile Include="Xrm\Serialization\IgnoreEntityPropertiesConverter.cs" />
     <Compile Include="Xrm\Serialization\TypedEntityConverter.cs" />

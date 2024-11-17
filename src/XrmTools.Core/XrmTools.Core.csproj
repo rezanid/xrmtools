@@ -50,6 +50,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="AsyncDictionary.cs" />
+    <Compile Include="AsyncTimer.cs" />
     <Compile Include="Environments\DataverseEnvironment.cs" />
     <Compile Include="Environments\DataverseEnvironmentList.cs" />
     <Compile Include="Environments\IEnvironmentProvider.cs" />
