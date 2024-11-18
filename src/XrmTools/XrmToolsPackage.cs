@@ -26,6 +26,7 @@ using XrmTools.Tokens;
 using Task = System.Threading.Tasks.Task;
 using XrmTools.Commands;
 using XrmTools.Xrm.Auth;
+using XrmTools.Authentication;
 using System.Diagnostics;
 using XrmTools.Environments;
 
@@ -127,6 +128,7 @@ public sealed partial class XrmToolsPackage : ToolkitPackage
     /// </summary>
     private GeneralOptions? Options;
 
+    [Export(typeof(TimeProvider))] internal TimeProvider TimeProvider { get => TimeProvider.System; }
     [Export(typeof(IOutputLoggerService))] internal IOutputLoggerService OutputLoggerService { get => _loggerService; }
     [Export(typeof(IXrmSchemaProviderFactory))] internal IXrmSchemaProviderFactory XrmSchemaProviderFactory { get => _xrmSchemaProviderFactory; }
     [Export(typeof(IEnvironmentProvider))] internal IEnvironmentProvider EnvironmentProvider { get => _environmentProvider; }

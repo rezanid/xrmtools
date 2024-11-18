@@ -1,4 +1,4 @@
-﻿namespace XrmTools;
+﻿namespace XrmTools.Http;
 
 using Microsoft.VisualStudio.Threading;
 using System;

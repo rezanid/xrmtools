@@ -1,4 +1,4 @@
-﻿namespace XrmTools;
+﻿namespace XrmTools.Http;
 
 using Polly.Wrap;
 using System;

@@ -1,5 +1,5 @@
 ﻿#nullable enable
-namespace XrmTools.Xrm;
+namespace XrmTools.Http;
 using System;
 using System.Threading.Tasks;
 using System.Collections.Concurrent;
@@ -10,18 +10,22 @@ using Microsoft.Extensions.Http;
 using XrmTools.Environments;
 using XrmTools.Logging.Compatibility;
 using System.ComponentModel.Composition;
+using XrmTools.Authentication;
 using System.Net.Http.Headers;
 using Microsoft.VisualStudio.Threading;
-using XrmTools.Http;
-using XrmTools.Authentication;
+using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.DependencyInjection;
+using System.Threading.RateLimiting;
+using Polly.RateLimiting;
+using Microsoft.Extensions.Http.Resilience;
+using Polly.Retry;
 
 internal class XrmHttpClientFactory : IXrmHttpClientFactory, System.IAsyncDisposable, IDisposable
 {
-    //private readonly ConcurrentDictionary<string, HttpClientConfig> _clientConfigs = new();
-    //private readonly ConcurrentDictionary<string, HttpClientEntry> _clients = new();
     private readonly ConcurrentDictionary<DataverseEnvironment, HttpClientConfig> _clientConfigs = new();
     private readonly ConcurrentDictionary<DataverseEnvironment, HttpClientEntry> _clients = new();
     private readonly AsyncTimer timer;
+    private readonly object _lock = new();
     private readonly SemaphoreSlim _semaphore = new(1, 1);
     private readonly TimeProvider timeProvider;
     private readonly IEnvironmentProvider environmentProvider;
@@ -95,7 +99,8 @@ internal class XrmHttpClientFactory : IXrmHttpClientFactory, System.IAsyncDispos
         return client;
     }
 
-    private async Task RecycleHandlersAsync()
+
+    internal async Task RecycleHandlersAsync()
     {
         try
         {
@@ -134,15 +139,28 @@ internal class XrmHttpClientFactory : IXrmHttpClientFactory, System.IAsyncDispos
     => _clientConfigs[environment] = new HttpClientConfig
     {
         HandlerLifetime = TimeSpan.FromMinutes(5),
+        //ResiliencePolicy = 
         ConfigureClient = async client =>
         {
             client.Timeout = TimeSpan.FromSeconds(100);
-
             var authParams = AuthenticationParameters.Parse(environment.ConnectionString);
             var authResult = await authenticationService.AuthenticateAsync(authParams, msg => logger.LogInformation(msg), CancellationToken.None);
             client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", authResult.AccessToken);
-        }
+        },
+        ResiliencePolicy = Policy.WrapAsync(CreateDefaultPolicy())
     };
+
+    private IAsyncPolicy<HttpResponseMessage> CreateDefaultPolicy()
+        => new ResiliencePipelineBuilder<HttpResponseMessage>()
+            .AddRateLimiter(new HttpRateLimiterStrategyOptions() { Name = "Standard-RateLimiter" })
+            .AddTimeout(new HttpTimeoutStrategyOptions() { Name = "Standard-TotalRequestTimeout" })
+            .AddRetry(new HttpRetryStrategyOptions() { Name = "Standard-Retry" })
+            .AddCircuitBreaker(new HttpCircuitBreakerStrategyOptions() { Name = "Standard-CircuitBreaker" })
+            .AddTimeout(new HttpTimeoutStrategyOptions
+            {
+                Timeout = TimeSpan.FromSeconds(10.0),
+                Name = "Standard-AttemptTimeout"
+            }).Build().AsAsyncPolicy();
 
     #region IDisposable Implementation
     private void Dispose(bool disposing)

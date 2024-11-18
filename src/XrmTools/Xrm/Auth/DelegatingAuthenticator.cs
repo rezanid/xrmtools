@@ -7,6 +7,7 @@ using System.Linq;
 using System.Security.Cryptography.X509Certificates;
 using System.Threading;
 using System.Threading.Tasks;
+using XrmTools.Authentication;
 
 namespace XrmTools.Xrm.Auth;
 internal abstract class DelegatingAuthenticator : IAuthenticator

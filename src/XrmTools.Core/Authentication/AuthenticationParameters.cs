@@ -1,4 +1,4 @@
-﻿namespace XrmTools.Xrm.Auth;
+﻿namespace XrmTools.Authentication;
 using Microsoft.Identity.Client;
 using System;
 using System.Collections.Generic;

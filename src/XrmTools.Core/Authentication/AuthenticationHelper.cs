@@ -1,9 +1,9 @@
-﻿using Microsoft.Identity.Client;
+﻿namespace XrmTools.Authentication;
+using Microsoft.Identity.Client;
 using System;
 using System.Linq;
 using System.Security.Cryptography.X509Certificates;
 
-namespace XrmTools.Xrm.Auth;
 internal static class AuthenticationHelper
 {
     public static AuthenticationResult Authenticate(AuthenticationParameters connectionString)

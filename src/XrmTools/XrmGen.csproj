@@ -99,15 +99,10 @@
     </Compile>
     <Compile Include="UI\EnvironmentSelectorViewModel.cs" />
     <Compile Include="XrmToolsPackage.SolutionProperties.cs" />
-    <Compile Include="Xrm\Auth\AuthenticationHelper.cs" />
-    <Compile Include="Xrm\Auth\AuthenticationParameters.cs" />
-    <Compile Include="Xrm\Auth\AuthenticationService.cs" />
-    <Compile Include="Xrm\Auth\IntegratedAuthenticator.cs" />
     <Compile Include="Xrm\Auth\ClientAppAuthenticator.cs" />
-    <Compile Include="Xrm\Auth\ClientApplicationExtensions.cs" />
     <Compile Include="Xrm\Auth\DelegatingAuthenticator.cs" />
     <Compile Include="Xrm\Auth\DeviceCodeAuthenticator.cs" />
-    <Compile Include="Xrm\Auth\IAuthenticator.cs" />
+    <Compile Include="Xrm\Auth\IntegratedAuthenticator.cs" />
     <Compile Include="Xrm\IXrmSchemaProvider.cs" />
     <Compile Include="Xrm\OptionSetMetadataNameComparer.cs" />
     <Compile Include="Helpers\DteExtensions.cs" />

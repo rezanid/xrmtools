@@ -40,6 +40,7 @@
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="System" />
+    <Reference Include="System.ComponentModel.Composition" />
     <Reference Include="System.Core" />
     <Reference Include="System.Xml.Linq" />
     <Reference Include="System.Data.DataSetExtensions" />
@@ -51,11 +52,19 @@
   <ItemGroup>
     <Compile Include="AsyncDictionary.cs" />
     <Compile Include="AsyncTimer.cs" />
+    <Compile Include="Authentication\AuthenticationHelper.cs" />
+    <Compile Include="Authentication\AuthenticationParameters.cs" />
+    <Compile Include="Authentication\AuthenticationService.cs" />
+    <Compile Include="Authentication\ClientApplicationExtensions.cs" />
+    <Compile Include="Authentication\IAuthenticationService.cs" />
+    <Compile Include="Authentication\IAuthenticator.cs" />
     <Compile Include="Environments\DataverseEnvironment.cs" />
     <Compile Include="Environments\DataverseEnvironmentList.cs" />
     <Compile Include="Environments\IEnvironmentProvider.cs" />
-    <Compile Include="HttpClientConfig.cs" />
-    <Compile Include="HttpClientEntry.cs" />
+    <Compile Include="Http\HttpClientConfig.cs" />
+    <Compile Include="Http\HttpClientEntry.cs" />
+    <Compile Include="Http\IXrmHttpClientFactory.cs" />
+    <Compile Include="Http\XrmHttpClientFactory.cs" />
     <Compile Include="Logging\Compatibility\EventId.cs" />
     <Compile Include="Logging\Compatibility\FormattedValues.cs" />
     <Compile Include="Logging\Compatibility\ILogger.cs" />
@@ -63,7 +72,6 @@
     <Compile Include="Logging\Compatibility\LoggerExtensions.cs" />
     <Compile Include="Logging\Compatibility\LogValuesFormatter.cs" />
     <Compile Include="Logging\IOutputLoggerService.cs" />
-    <Compile Include="IXrmHttpClientFactory.cs" />
     <Compile Include="PolicyHandler.cs" />
     <Compile Include="SettingsStorageTypes.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
@@ -80,6 +88,9 @@
     <PackageReference Include="CredentialManagement">
       <Version>1.0.2</Version>
     </PackageReference>
+    <PackageReference Include="Microsoft.Extensions.Hosting">
+      <Version>9.0.0</Version>
+    </PackageReference>
     <PackageReference Include="Microsoft.Extensions.Http">
       <Version>3.1.8</Version>
     </PackageReference>
@@ -88,6 +99,9 @@
     </PackageReference>
     <PackageReference Include="Microsoft.Extensions.Http.Resilience">
       <Version>9.0.0</Version>
+    </PackageReference>
+    <PackageReference Include="Microsoft.Identity.Client">
+      <Version>4.61.3</Version>
     </PackageReference>
     <PackageReference Include="Microsoft.VisualStudio.Threading">
       <Version>17.12.19</Version>

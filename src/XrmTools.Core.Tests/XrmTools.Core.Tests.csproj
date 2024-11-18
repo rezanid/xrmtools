@@ -60,6 +60,7 @@
     </Compile>
     <Compile Include="AsyncDictionaryTests.cs" />
     <Compile Include="AsyncTimerTests.cs" />
+    <Compile Include="Http\XrmHttpClientFactoryTests.cs" />
     <Compile Include="Tokens\CredentialTokenExpanderTest.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Tokens\EnvironmentTokenExpanderTests.cs" />

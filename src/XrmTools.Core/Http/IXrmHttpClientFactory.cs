@@ -1,5 +1,5 @@
 ﻿#nullable enable
-namespace XrmTools;
+namespace XrmTools.Http;
 using System.Net.Http;
 using System.Threading.Tasks;
 
