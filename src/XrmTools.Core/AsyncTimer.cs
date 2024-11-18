@@ -1,39 +1,42 @@
-﻿namespace XrmTools;
+﻿#nullable enable
+namespace XrmTools;
 using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
 using System.Threading.Tasks;
-
-using System;
 using System.Threading;
-using System.Threading.Tasks;
 
-public class AsyncTimer : IDisposable
+public class AsyncTimer(Func<CancellationToken, Task> callback, TimeProvider? timeProvider = null) : IDisposable
 {
-    private readonly ITimer timer;
-    private readonly Func<CancellationToken, Task> callback;
-    private readonly CancellationTokenSource cancellationSource = new CancellationTokenSource();
-    private readonly SemaphoreSlim semaphore = new SemaphoreSlim(1, 1);
-    private volatile bool isRunning;
+    private readonly Func<CancellationToken, Task> callback = callback ?? throw new ArgumentNullException(nameof(callback));
+    private readonly TimeProvider timeProvider = timeProvider ?? TimeProvider.System;
+    private readonly CancellationTokenSource cancellationSource = new();
+    private readonly SemaphoreSlim semaphore = new(1, 1);
+    private IDisposable? internalTimer;
+    private bool isRunning;
 
-    public AsyncTimer(Func<CancellationToken, Task> callback, TimeProvider timeProvider)
-    {
-        this.callback = callback ?? throw new ArgumentNullException(nameof(callback));
-        this.timer = timeProvider.CreateTimer(this.OnTimerElapsed);
-    }
+    public AsyncTimer(Func<CancellationToken, Task> callback, TimeSpan interval, TimeProvider? timeProvider = null) : this(callback, timeProvider)
+        => Start(interval);
+    public AsyncTimer(Func<CancellationToken, Task> callback, TimeSpan dueTime, TimeSpan period, TimeProvider? timeProvider = null) : this(callback, timeProvider)
+        => Start(dueTime, period);
 
-    public void Start(TimeSpan interval)
+    public void Start(TimeSpan interval) => Start(interval, interval);
+
+    public void Start(TimeSpan dueTime, TimeSpan period)
     {
-        timer.Change(interval, interval);
+        if (internalTimer != null)
+        {
+            throw new InvalidOperationException("Timer is already running.");
+        }
+        internalTimer = timeProvider.CreateTimer(OnTimerElapsed, null, dueTime, period);
     }
 
     public void Stop()
     {
-        timer.Change(Timeout.InfiniteTimeSpan, Timeout.InfiniteTimeSpan);
+        cancellationSource.Cancel();
+        internalTimer?.Dispose();
+        internalTimer = null;
     }
 
-    private async void OnTimerElapsed(object state)
+    private async void OnTimerElapsed(object? state)
     {
         if (isRunning) return;
 
@@ -63,28 +66,8 @@ public class AsyncTimer : IDisposable
     {
         Stop();
         cancellationSource.Cancel();
-        timer.Dispose();
         cancellationSource.Dispose();
         semaphore.Dispose();
     }
 }
-
-//public class TimerTimer : ITimer
-//{
-//    private readonly Timer timer;
-
-//    public TimerTimer(TimerCallback callback)
-//    {
-//        timer = new Timer(callback);
-//    }
-
-//    public void Change(TimeSpan dueTime, TimeSpan period)
-//    {
-//        timer.Change(dueTime, period);
-//    }
-
-//    public void Dispose()
-//    {
-//        timer.Dispose();
-//    }
-//}
+#nullable restore

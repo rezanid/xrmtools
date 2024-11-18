@@ -12,17 +12,22 @@ using XrmTools.Logging.Compatibility;
 using System.ComponentModel.Composition;
 using XrmTools.Xrm.Auth;
 using System.Net.Http.Headers;
+using Microsoft.VisualStudio.Threading;
 
-internal class XrmHttpClientFactory : IXrmHttpClientFactory, IDisposable
+internal class XrmHttpClientFactory : IXrmHttpClientFactory, System.IAsyncDisposable, IDisposable
 {
-    private readonly ConcurrentDictionary<string, HttpClientConfig> _clientConfigs = new();
-    private readonly ConcurrentDictionary<string, HttpClientEntry> _clients = new();
-    private readonly ITimer timer;
+    //private readonly ConcurrentDictionary<string, HttpClientConfig> _clientConfigs = new();
+    //private readonly ConcurrentDictionary<string, HttpClientEntry> _clients = new();
+    private readonly ConcurrentDictionary<DataverseEnvironment, HttpClientConfig> _clientConfigs = new();
+    private readonly ConcurrentDictionary<DataverseEnvironment, HttpClientEntry> _clients = new();
+    private readonly AsyncTimer timer;
     private readonly object _lock = new();
+    private readonly SemaphoreSlim _semaphore = new(1, 1);
     private readonly TimeProvider timeProvider;
     private readonly IEnvironmentProvider environmentProvider;
     private readonly IAuthenticationService authenticationService;
     private readonly ILogger<XrmHttpClientFactory> logger;
+    private bool disposedValue;
 
     [ImportingConstructor]
     public XrmHttpClientFactory(
@@ -32,7 +37,7 @@ internal class XrmHttpClientFactory : IXrmHttpClientFactory, IDisposable
         ILogger<XrmHttpClientFactory> logger)
     {
         this.timeProvider = timeProvider;
-        timer = timeProvider.CreateTimer(_ => RecycleHandlers(), null, TimeSpan.FromMinutes(1), TimeSpan.FromMinutes(1));
+        timer = new AsyncTimer(async _ => await RecycleHandlersAsync(), TimeSpan.FromMinutes(1), TimeSpan.FromMinutes(1), timeProvider);
         this.environmentProvider = environmentProvider;
         this.authenticationService = authenticationService;
         this.logger = logger;
@@ -44,25 +49,30 @@ internal class XrmHttpClientFactory : IXrmHttpClientFactory, IDisposable
         return environment == null ? throw new InvalidOperationException("No environment selected.") : await CreateHttpClientAsync(environment);
     }
 
-    private async Task<HttpClient> CreateHttpClientAsync(DataverseEnvironment environment)
+    public async Task<HttpClient> CreateHttpClientAsync(DataverseEnvironment environment)
     {
-        var name = environment.ConnectionString;
-        if (string.IsNullOrEmpty(name))
+        if (string.IsNullOrEmpty(environment.ConnectionString))
         {
             throw new InvalidOperationException($"Environment '{environment.Name}' connection string is empty.");
         }
-        if (!_clientConfigs.TryGetValue(name!, out var config))
+        if (!_clientConfigs.TryGetValue(environment, out var config))
         {
-            config = CreateDefaultConfig(name!);
+            config = CreateDefaultConfig(environment);
         }
-        var authParams = AuthenticationParameters.Parse(environment.ConnectionString);
-        var authResult = await authenticationService.AuthenticateAsync(authParams, msg => logger.LogInformation(msg), CancellationToken.None);
-        var client = _clients.GetOrAdd(name!, new HttpClientEntry(new Lazy<HttpClient>(() => CreateHttpClient(config)), timeProvider.GetUtcNow())).Client.Value;
-        client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", authResult.AccessToken);
-        return client;
+        var entry = _clients.GetOrAdd(environment, _ => new HttpClientEntry(new AsyncLazy<HttpClient>(async () => await CreateHttpClientAsync(config), null), timeProvider.GetUtcNow()));
+        return await entry.Client.GetValueAsync();
     }
 
-    private HttpClient CreateHttpClient(HttpClientConfig config)
+    public void RegisterClient(DataverseEnvironment environment, Func<HttpClient, Task> configureClient, TimeSpan? handlerLifetime = null, IAsyncPolicy<HttpResponseMessage>? resiliencePolicy = null, params DelegatingHandler[] customHandlers)
+        => _clientConfigs[environment] = new HttpClientConfig
+        {
+            ConfigureClient = configureClient,
+            HandlerLifetime = handlerLifetime ?? TimeSpan.FromMinutes(2),
+            ResiliencePolicy = resiliencePolicy == null ? null : Policy.WrapAsync(resiliencePolicy),
+            CustomHandlers = customHandlers
+        };
+
+    private async Task<HttpClient> CreateHttpClientAsync(HttpClientConfig config)
     {
         var handler = new HttpClientHandler();
 
@@ -77,12 +87,15 @@ internal class XrmHttpClientFactory : IXrmHttpClientFactory, IDisposable
         }
 
         var client = new HttpClient(new PolicyHttpMessageHandler(config.ResiliencePolicy) { InnerHandler = pipeline }, disposeHandler: true);
-        config.ConfigureClient?.Invoke(client);
+        if (config.ConfigureClient != null)
+        {
+            await config.ConfigureClient(client);
+        }
 
         return client;
     }
 
-    private void RecycleHandlers()
+    private async Task RecycleHandlersAsync()
     {
         try
         {
@@ -95,12 +108,17 @@ internal class XrmHttpClientFactory : IXrmHttpClientFactory, IDisposable
                     var handlerLifetimeExceeded = timeProvider.GetUtcNow() - entry.CreatedAt >= config.HandlerLifetime;
                     if (handlerLifetimeExceeded)
                     {
-                        lock (_lock)
+                        await _semaphore.WaitAsync();
+                        try
                         {
-                            if (_clients.TryUpdate(name, new HttpClientEntry(new Lazy<HttpClient>(() => CreateHttpClient(config)), timeProvider.GetUtcNow()), entry))
+                            if (_clients.TryUpdate(name, new HttpClientEntry(new AsyncLazy<HttpClient>(async () => await CreateHttpClientAsync(config), null), timeProvider.GetUtcNow()), entry))
                             {
-                                entry.Client.Value.Dispose();
+                                await entry.Client.DisposeValueAsync();
                             }
+                        }
+                        finally
+                        {
+                            _semaphore.Release();
                         }
                     }
                 }
@@ -112,41 +130,72 @@ internal class XrmHttpClientFactory : IXrmHttpClientFactory, IDisposable
         }
     }
 
-    private HttpClientConfig CreateDefaultConfig(string name)
-        => _clientConfigs[name] = new HttpClientConfig
-        {
-            HandlerLifetime = TimeSpan.FromMinutes(5),
-            ConfigureClient = client =>
-            {
-                client.Timeout = TimeSpan.FromSeconds(100);
-            }
-        };
-
-    public void RegisterClient(string name, Action<HttpClient> configureClient, TimeSpan? handlerLifetime = null, IAsyncPolicy<HttpResponseMessage>? resiliencePolicy = null, params DelegatingHandler[] customHandlers)
-        => _clientConfigs[name] = new HttpClientConfig
-        {
-            ConfigureClient = configureClient,
-            HandlerLifetime = handlerLifetime ?? TimeSpan.FromMinutes(2),
-            ResiliencePolicy = resiliencePolicy == null ? null : Policy.WrapAsync(resiliencePolicy),
-            CustomHandlers = customHandlers
-        };
-
-    public void RegisterClient<T>(Action<HttpClient> configureClient, TimeSpan? handlerLifetime = null, IAsyncPolicy<HttpResponseMessage>? resiliencePolicy = null, params DelegatingHandler[] customHandlers) where T : class
+    private HttpClientConfig CreateDefaultConfig(DataverseEnvironment environment)
+    => _clientConfigs[environment] = new HttpClientConfig
     {
-        string typeName = typeof(T).Name;
-        RegisterClient(typeName, configureClient, handlerLifetime, resiliencePolicy, customHandlers);
+        HandlerLifetime = TimeSpan.FromMinutes(5),
+        ConfigureClient = async client =>
+        {
+            client.Timeout = TimeSpan.FromSeconds(100);
+
+            var authParams = AuthenticationParameters.Parse(environment.ConnectionString);
+            var authResult = await authenticationService.AuthenticateAsync(authParams, msg => logger.LogInformation(msg), CancellationToken.None);
+            client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", authResult.AccessToken);
+        }
+    };
+
+    #region IDisposable Implementation
+    private void Dispose(bool disposing)
+    {
+        if (!disposedValue && disposing)
+        {
+            timer?.Dispose();
+
+            foreach (var client in _clients.Values)
+            {
+                if (client.Client.IsValueCreated && client.Client is IDisposable disposable)
+                {
+                    disposable.Dispose();
+                }
+            }
+            disposedValue = true;
+        }
     }
 
-    public void Dispose()
+    protected virtual async ValueTask DisposeAsyncCore()
     {
-        timer.Dispose();
         foreach (var client in _clients.Values)
         {
             if (client.Client.IsValueCreated)
             {
-                client.Client.Value.Dispose();
+                await client.Client.DisposeValueAsync().ConfigureAwait(false);
             }
         }
+
+        if (timer is System.IAsyncDisposable disposable)
+        {
+            await disposable.DisposeAsync().ConfigureAwait(false);
+        }
+        else
+        {
+            timer?.Dispose();
+        }
     }
+
+    public void Dispose()
+    {
+        // Do not change this code. Put cleanup code in 'Dispose(bool disposing)' method
+        Dispose(disposing: true);
+        GC.SuppressFinalize(this);
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        await DisposeAsyncCore().ConfigureAwait(false);
+
+        Dispose(disposing: false);
+        GC.SuppressFinalize(this);
+    }
+    #endregion
 }
 #nullable restore
