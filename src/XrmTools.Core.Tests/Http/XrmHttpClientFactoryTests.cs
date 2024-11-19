@@ -31,15 +31,18 @@ public class XrmHttpClientFactoryTests
         };
         environmentProviderMock.Setup(m => m.GetActiveEnvironmentAsync())
                                .ReturnsAsync(environment);
-        authenticationServiceMock.Setup(m => m.AuthenticateAsync(It.IsAny<AuthenticationParameters>(),
-                                                                  It.IsAny<Action<string>>(),
-                                                                  It.IsAny<CancellationToken>()))
-                                 .ReturnsAsync(CreateFakeAuthenticationResult());
+        authenticationServiceMock.Setup(
+            m => m.AuthenticateAsync(
+                It.IsAny<AuthenticationParameters>(),
+                It.IsAny<Action<string>>(),
+                It.IsAny<CancellationToken>()))
+                .ReturnsAsync(CreateFakeAuthenticationResult());
 
-        var factory = new XrmTools.Http.XrmHttpClientFactory(fakeTimeProvider,
-                                               environmentProviderMock.Object,
-                                               authenticationServiceMock.Object,
-                                               loggerMock.Object);
+        var factory = new XrmHttpClientFactory(
+            fakeTimeProvider,
+            environmentProviderMock.Object,
+            authenticationServiceMock.Object,
+            loggerMock.Object);
 
         // Act
         var client = await factory.CreateHttpClientAsync();
@@ -58,11 +61,7 @@ public class XrmHttpClientFactoryTests
         var authenticationServiceMock = new Mock<IAuthenticationService>();
         var loggerMock = new Mock<ILogger<XrmHttpClientFactory>>();
 
-        var environment = new DataverseEnvironment
-        {
-            Name = "TestEnvironment",
-            ConnectionString = "TestConnectionString"
-        };
+        var environment = CreateFakeEnvironment();
         environmentProviderMock.Setup(m => m.GetActiveEnvironmentAsync())
                                .ReturnsAsync(environment);
         authenticationServiceMock.Setup(m => m.AuthenticateAsync(It.IsAny<AuthenticationParameters>(),
@@ -86,7 +85,7 @@ public class XrmHttpClientFactoryTests
         });
 
         // Act
-        fakeTimeProvider.Advance(TimeSpan.FromMinutes(2)); // Advance time to trigger recycling
+        fakeTimeProvider.Advance(TimeSpan.FromMinutes(6)); // Advance time to trigger recycling
         //TODO: await factory.RecycleHandlersAsync();
 
         // Assert - Ensure the ongoing request completes successfully
@@ -109,15 +108,17 @@ public class XrmHttpClientFactoryTests
         };
         environmentProviderMock.Setup(m => m.GetActiveEnvironmentAsync())
                                .ReturnsAsync(environment);
-        authenticationServiceMock.Setup(m => m.AuthenticateAsync(It.IsAny<AuthenticationParameters>(),
-                                                                  It.IsAny<Action<string>>(),
-                                                                  It.IsAny<CancellationToken>()))
-                                 .ReturnsAsync(CreateFakeAuthenticationResult());
+        authenticationServiceMock.Setup(
+            m => m.AuthenticateAsync(It.IsAny<AuthenticationParameters>(),
+            It.IsAny<Action<string>>(),
+            It.IsAny<CancellationToken>()))
+            .ReturnsAsync(CreateFakeAuthenticationResult());
 
-        var factory = new XrmHttpClientFactory(fakeTimeProvider,
-                                               environmentProviderMock.Object,
-                                               authenticationServiceMock.Object,
-                                               loggerMock.Object);
+        var factory = new XrmHttpClientFactory(
+            fakeTimeProvider,
+            environmentProviderMock.Object,
+            authenticationServiceMock.Object,
+            loggerMock.Object);
 
         await factory.CreateHttpClientAsync(); // Create at least one client
 
@@ -133,5 +134,11 @@ public class XrmHttpClientFactoryTests
 
     private AuthenticationResult CreateFakeAuthenticationResult()
         => new("FakeToken", true, "FakeToken", DateTimeOffset.UtcNow, DateTimeOffset.UtcNow.AddMinutes(1), null, null, null, [], Guid.Empty);
+    private DataverseEnvironment CreateFakeEnvironment()
+        => new ()
+        {
+            Name = "Test Environment",
+            ConnectionString = "TenantId=1234567890;Url=https://test.crm4.dynamics.com"
+        };
 }
 

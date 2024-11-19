@@ -139,7 +139,6 @@ internal class XrmHttpClientFactory : IXrmHttpClientFactory, System.IAsyncDispos
     => _clientConfigs[environment] = new HttpClientConfig
     {
         HandlerLifetime = TimeSpan.FromMinutes(5),
-        //ResiliencePolicy = 
         ConfigureClient = async client =>
         {
             client.Timeout = TimeSpan.FromSeconds(100);
@@ -147,7 +146,7 @@ internal class XrmHttpClientFactory : IXrmHttpClientFactory, System.IAsyncDispos
             var authResult = await authenticationService.AuthenticateAsync(authParams, msg => logger.LogInformation(msg), CancellationToken.None);
             client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", authResult.AccessToken);
         },
-        ResiliencePolicy = Policy.WrapAsync(CreateDefaultPolicy())
+        ResiliencePolicy = CreateDefaultPolicy()
     };
 
     private IAsyncPolicy<HttpResponseMessage> CreateDefaultPolicy()
