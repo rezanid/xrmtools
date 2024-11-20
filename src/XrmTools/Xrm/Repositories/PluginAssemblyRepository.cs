@@ -1,9 +1,9 @@
 ﻿namespace XrmTools.Xrm.Repositories;
 using System.Collections.Generic;
-using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
 using XrmTools.Helpers;
+using XrmTools.Http;
 using XrmTools.Xrm.Model;
 
 internal interface IPluginAssemblyRepository
@@ -11,9 +11,9 @@ internal interface IPluginAssemblyRepository
     Task<IEnumerable<PluginAssemblyConfig>> GetAsync(CancellationToken cancellationToken);
 }
 
-internal class PluginAssemblyRepository(HttpClient client) : IPluginAssemblyRepository
+internal class PluginAssemblyRepository(XrmHttpClient client) : IPluginAssemblyRepository
 {
-    private readonly HttpClient client = client;
+    private readonly XrmHttpClient client = client;
 
     public async Task<IEnumerable<PluginAssemblyConfig>> GetAsync(CancellationToken cancellationToken)
     {
@@ -25,5 +25,4 @@ internal class PluginAssemblyRepository(HttpClient client) : IPluginAssemblyRepo
         }
         return [];
     }
-
 }

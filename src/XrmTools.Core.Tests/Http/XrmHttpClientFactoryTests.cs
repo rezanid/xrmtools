@@ -44,7 +44,7 @@ public class XrmHttpClientFactoryTests
         _environmentProviderMock.Setup(x => x.GetActiveEnvironmentAsync()).ReturnsAsync((DataverseEnvironment)null);
 
         // Act
-        Func<Task> act = async () => await _factory.CreateHttpClientAsync();
+        Func<Task> act = async () => await _factory.CreateClientAsync();
 
         // Assert
         await act.Should().ThrowAsync<InvalidOperationException>().WithMessage("No environment selected.");
@@ -127,24 +127,24 @@ public class XrmHttpClientFactoryTests
     }
     
     [Fact]
-    public async Task DisposeAsync_Should_Dispose_Handlers_When_Unused()
+    public void DisposeAsync_Should_Dispose_Handlers_When_Unused()
     {
         // Arrange
         var environment = CreateFakeEnvironment();
         var handler = new FakeHttpMessageHandler();
         var handlerEntry = new HttpMessageHandlerEntry(handler, _timeProvider.GetUtcNow());
-        var handlerPool = new ConcurrentDictionary<DataverseEnvironment, Lazy<HttpMessageHandlerEntry>>([new(environment, new(() => handlerEntry))]);
+        var handlerPool = new ConcurrentDictionary<DataverseEnvironment, Lazy<HttpMessageHandlerEntry>>(
+            [new(
+                environment, new(() => handlerEntry))]);
         typeof(XrmHttpClientFactory).GetField("_handlerPool", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance)
             .SetValue(_factory, handlerPool);
         _ = handlerPool.TryGetValue(environment, out var lazyHandler) ? lazyHandler.Value : null;
 
         // Act
         _timeProvider.Advance(handlerEntry.Lifetime);
-         await _factory.DisposeAsync();
 
         // Assert
         handlerEntry.CanDispose().Should().BeTrue();
-
         handler.DisposeCount.Should().Be(1);
     }
 

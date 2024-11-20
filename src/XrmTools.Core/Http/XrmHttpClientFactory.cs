@@ -16,26 +16,33 @@ using Microsoft.Extensions.Http.Resilience;
 using Microsoft.Identity.Client;
 using Microsoft.VisualStudio.Threading;
 
-[method: ImportingConstructor]
-internal class XrmHttpClientFactory(
-    TimeProvider timeProvider,
-    IEnvironmentProvider environmentProvider,
-    IAuthenticationService authenticationService,
-    ILogger<XrmHttpClientFactory> logger) : IXrmHttpClientFactory, IAsyncDisposable, IDisposable
+internal class XrmHttpClientFactory : IXrmHttpClientFactory, System.IAsyncDisposable, IDisposable
 {
-    private readonly ConcurrentDictionary<DataverseEnvironment, HttpClientConfig> _clientConfigs = new();
-    private readonly ConcurrentDictionary<DataverseEnvironment, HttpClientEntry> _clients = new();
     private readonly SemaphoreSlim _semaphore = new(1, 1);
-    private readonly Timer timer = new AsyncTimer(async _ => await RecycleHandlersAsync(), TimeSpan.FromMinutes(1), TimeSpan.FromMinutes(1), timeProvider);
+    private readonly AsyncTimer timer;
     private readonly ConcurrentDictionary<DataverseEnvironment, Lazy<HttpMessageHandlerEntry>> _handlerPool = new();
     private readonly ConcurrentDictionary<string, AuthenticationResult> _tokenCache = new();
-    private readonly TimeProvider timeProvider = timeProvider;
-    private readonly IEnvironmentProvider environmentProvider = environmentProvider;
-    private readonly IAuthenticationService authenticationService = authenticationService;
-    private readonly ILogger<XrmHttpClientFactory> logger = logger;
+    private readonly TimeProvider timeProvider;
+    private readonly IEnvironmentProvider environmentProvider;
+    private readonly IAuthenticationService authenticationService;
+    private readonly ILogger<XrmHttpClientFactory> logger;
     private bool disposedValue;
 
-    public async Task<XrmHttpClient> CreateHttpClientAsync()
+    [ImportingConstructor]
+    public XrmHttpClientFactory(
+        TimeProvider timeProvider,
+        IEnvironmentProvider environmentProvider,
+        IAuthenticationService authenticationService,
+        ILogger<XrmHttpClientFactory> logger)
+    {
+        timer = new AsyncTimer(async _ => await RecycleHandlersAsync(), TimeSpan.FromMinutes(1), TimeSpan.FromMinutes(1), timeProvider);
+        this.timeProvider = timeProvider;
+        this.environmentProvider = environmentProvider;
+        this.authenticationService = authenticationService;
+        this.logger = logger;
+    }
+
+    public async Task<XrmHttpClient> CreateClientAsync()
     {
         var environment = await environmentProvider.GetActiveEnvironmentAsync();
         return environment == null ? throw new InvalidOperationException("No environment selected.") : await CreateHttpClientAsync(environment);
@@ -52,8 +59,6 @@ internal class XrmHttpClientFactory(
         handlerEntry.IncrementUsage();
         var client = new XrmHttpClient(handlerEntry.Handler, handlerEntry.DecrementUsage);
         await ConfigureClientAsync(client, environment);
-
-        _ = RemoveHandlerIfUnusedAsync(environment, handlerEntry);
 
         return client;
     }
@@ -85,23 +90,19 @@ internal class XrmHttpClientFactory(
             {
                 var name = kvp.Key;
                 var entry = kvp.Value;
-                if (_clientConfigs.TryGetValue(name, out var config) && config != null && entry.IsValueCreated)
+                if (entry.IsValueCreated && entry.Value.CanDispose())
                 {
-                    if (entry.Value.CanDispose())
+                    await _semaphore.WaitAsync();
+                    try
                     {
-                        await _semaphore.WaitAsync();
-                        try
+                        if (_handlerPool.TryUpdate(name, new Lazy<HttpMessageHandlerEntry>(CreateHandlerEntry), entry))
                         {
-                            _handlerPool[name] = new Lazy<HttpMessageHandlerEntry>(CreateHandlerEntry);
-                            //if (_clients.TryUpdate(name, new HttpClientEntry(new AsyncLazy<HttpClient>(async () => await CreateHttpClientAsync(config), null), timeProvider.GetUtcNow()), entry))
-                            //{
-                            //    await entry.Client.DisposeValueAsync();
-                            //}
+                            entry.Value.Handler.Dispose();
                         }
-                        finally
-                        {
-                            _semaphore.Release();
-                        }
+                    }
+                    finally
+                    {
+                        _semaphore.Release();
                     }
                 }
             }
@@ -109,22 +110,6 @@ internal class XrmHttpClientFactory(
         catch (Exception ex)
         {
             logger.LogError(ex, $"Exception during handler recycling: {ex.Message}");
-        }
-    }
-
-    private async Task RemoveHandlerIfUnusedAsync(DataverseEnvironment environment, HttpMessageHandlerEntry handlerEntry)
-    {
-        await Task.Delay(handlerEntry.Lifetime);
-        if (handlerEntry.CanDispose() && _handlerPool.TryRemove(environment, out var lazyHandler) && lazyHandler.IsValueCreated)
-        {
-            if (lazyHandler.Value.Handler is IAsyncDisposable asyncDisposable)
-            {
-                await asyncDisposable.DisposeAsync().ConfigureAwait(false);
-            }
-            else if (lazyHandler.Value.Handler is IDisposable disposable)
-            {
-                disposable.Dispose();
-            }
         }
     }
 
@@ -145,41 +130,38 @@ internal class XrmHttpClientFactory(
     {
         if (!disposedValue && disposing)
         {
+            timer.Dispose();
             foreach (var handlerEntry in _handlerPool.Values)
             {
                 if (handlerEntry.IsValueCreated && handlerEntry.Value is IDisposable disposable)
                 {
                     //handlerEntry.Value.DecrementUsage();
-                    if (handlerEntry.Value.CanDispose())
-                    {
-                        disposable.Dispose();
-                    }
+                    disposable.Dispose();
                 }
             }
+            _handlerPool.Clear();
             disposedValue = true;
         }
     }
 
     protected virtual async ValueTask DisposeAsyncCore()
     {
+        timer.Dispose();
         foreach (var handlerEntry in _handlerPool.Values)
         {
             if (handlerEntry.IsValueCreated)
             {
-                //handlerEntry.Value.DecrementUsage();
-                if (handlerEntry.Value.CanDispose())
+                if (handlerEntry.Value.Handler is System.IAsyncDisposable asyncDisposable)
                 {
-                    if (handlerEntry.Value.Handler is IAsyncDisposable asyncDisposable)
-                    {
-                        await asyncDisposable.DisposeAsync().ConfigureAwait(false);
-                    }
-                    else if (handlerEntry.Value.Handler is IDisposable disposable)
-                    {
-                        disposable.Dispose();
-                    }
+                    await asyncDisposable.DisposeAsync().ConfigureAwait(false);
+                }
+                else if (handlerEntry.Value.Handler is IDisposable disposable)
+                {
+                    disposable.Dispose();
                 }
             }
         }
+        _handlerPool.Clear();
     }
 
     public void Dispose()

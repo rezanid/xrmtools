@@ -29,6 +29,7 @@ using XrmTools.Xrm.Auth;
 using XrmTools.Authentication;
 using System.Diagnostics;
 using XrmTools.Environments;
+using XrmTools.Http;
 
 internal record ProjectDataverseSettings(
     string EnvironmentUrl, 
@@ -116,7 +117,7 @@ public sealed partial class XrmToolsPackage : ToolkitPackage
     private readonly static IEnvironmentProvider _environmentProvider;
     private readonly static ISettingsProvider _settingsProvider;
     private readonly static IAuthenticationService _authentionService;
-
+    private readonly static IXrmHttpClientFactory _xrmHttpClientFactory;
 
     public const string SolutionPersistanceKey = "XrmToolsProperies";
     private static readonly ExplicitInterfaceInvoker<Package> implicitInvoker = new();
@@ -134,6 +135,7 @@ public sealed partial class XrmToolsPackage : ToolkitPackage
     [Export(typeof(IEnvironmentProvider))] internal IEnvironmentProvider EnvironmentProvider { get => _environmentProvider; }
     [Export(typeof(ISettingsProvider))] internal ISettingsProvider SettingsProvider { get => _settingsProvider; }
     [Export(typeof(IAuthenticationService))] internal IAuthenticationService AuthenticationService { get => _authentionService; }
+    [Export(typeof(IXrmHttpClientFactory))] internal IXrmHttpClientFactory XrmHttpClientFactory { get => _xrmHttpClientFactory; }
 
     static XrmToolsPackage()
     {

@@ -17,10 +17,10 @@ internal class RepositoryFactory(IXrmHttpClientFactory httpClientFactory) : IRep
 
     public async Task<T> CreateRepositoryAsync<T>() where T : class
     {
-        var httpClient = await httpClientFactory.CreateHttpClientAsync();
+        var client = await httpClientFactory.CreateClientAsync();
         return typeof(T) switch
         {
-            IPluginAssemblyRepository => new PluginAssemblyRepository(httpClient) as T,
+            IPluginAssemblyRepository => new PluginAssemblyRepository(client) as T,
             _ => throw new NotImplementedException()
         };
     }
