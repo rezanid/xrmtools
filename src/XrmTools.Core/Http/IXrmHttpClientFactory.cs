@@ -5,6 +5,6 @@ using System.Threading.Tasks;
 
 public interface IXrmHttpClientFactory
 {
-    Task<HttpClient> CreateHttpClientAsync();
+    Task<XrmHttpClient> CreateHttpClientAsync();
 }
 #nullable restore

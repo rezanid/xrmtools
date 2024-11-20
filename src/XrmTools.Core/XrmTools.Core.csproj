@@ -63,6 +63,7 @@
     <Compile Include="Environments\IEnvironmentProvider.cs" />
     <Compile Include="Http\HttpClientConfig.cs" />
     <Compile Include="Http\HttpClientEntry.cs" />
+    <Compile Include="Http\HttpMessageHandlerEntry.cs" />
     <Compile Include="Http\IXrmHttpClientFactory.cs" />
     <Compile Include="Http\XrmHttpClientFactory.cs" />
     <Compile Include="Logging\Compatibility\EventId.cs" />

@@ -12,128 +12,154 @@ using XrmTools.Authentication;
 using XrmTools.Environments;
 using XrmTools.Logging.Compatibility;
 using XrmTools.Http;
+using System.Collections.Concurrent;
 
 public class XrmHttpClientFactoryTests
 {
+    private readonly Mock<IEnvironmentProvider> _environmentProviderMock;
+    private readonly Mock<IAuthenticationService> _authenticationServiceMock;
+    private readonly Mock<ILogger<XrmHttpClientFactory>> _loggerMock;
+    private readonly FakeTimeProvider _timeProvider;
+    private readonly XrmHttpClientFactory _factory;
+
+    public XrmHttpClientFactoryTests()
+    {
+        _timeProvider = new FakeTimeProvider();
+        _environmentProviderMock = new Mock<IEnvironmentProvider>();
+        _authenticationServiceMock = new Mock<IAuthenticationService>();
+        _loggerMock = new Mock<ILogger<XrmHttpClientFactory>>();
+
+        _factory = new XrmHttpClientFactory(
+            _timeProvider,
+            _environmentProviderMock.Object,
+            _authenticationServiceMock.Object,
+            _loggerMock.Object
+        );
+    }
+    
     [Fact]
-    public async Task CreateHttpClientAsync_Should_Create_New_HttpClient()
+    public async Task CreateHttpClientAsync_Should_Throw_When_No_Environment_Selected()
     {
         // Arrange
-        var fakeTimeProvider = new FakeTimeProvider();
-        var environmentProviderMock = new Mock<IEnvironmentProvider>();
-        var authenticationServiceMock = new Mock<IAuthenticationService>();
-        var loggerMock = new Mock<ILogger<XrmHttpClientFactory>>();
-
-        var environment = new DataverseEnvironment
-        {
-            Name = "TestEnvironment",
-            ConnectionString = "TestConnectionString"
-        };
-        environmentProviderMock.Setup(m => m.GetActiveEnvironmentAsync())
-                               .ReturnsAsync(environment);
-        authenticationServiceMock.Setup(
-            m => m.AuthenticateAsync(
-                It.IsAny<AuthenticationParameters>(),
-                It.IsAny<Action<string>>(),
-                It.IsAny<CancellationToken>()))
-                .ReturnsAsync(CreateFakeAuthenticationResult());
-
-        var factory = new XrmHttpClientFactory(
-            fakeTimeProvider,
-            environmentProviderMock.Object,
-            authenticationServiceMock.Object,
-            loggerMock.Object);
+        _environmentProviderMock.Setup(x => x.GetActiveEnvironmentAsync()).ReturnsAsync((DataverseEnvironment)null);
 
         // Act
-        var client = await factory.CreateHttpClientAsync();
+        Func<Task> act = async () => await _factory.CreateHttpClientAsync();
+
+        // Assert
+        await act.Should().ThrowAsync<InvalidOperationException>().WithMessage("No environment selected.");
+    }
+    
+    [Fact]
+    public async Task CreateHttpClientAsync_Should_Throw_When_ConnectionString_Is_Empty()
+    {
+        // Arrange
+        var environment = new DataverseEnvironment { Name = "Test", ConnectionString = string.Empty };
+        _environmentProviderMock.Setup(x => x.GetActiveEnvironmentAsync()).ReturnsAsync(environment);
+
+        // Act
+        Func<Task> act = async () => await _factory.CreateHttpClientAsync(environment);
+
+        // Assert
+        await act.Should().ThrowAsync<InvalidOperationException>().WithMessage("Environment 'Test' connection string is empty.");
+    }
+
+    [Fact]
+    public async Task CreateHttpClientAsync_Should_Return_HttpClient_When_Environment_Is_Valid()
+    {
+        // Arrange
+        var environment = CreateFakeEnvironment();
+        _environmentProviderMock.Setup(x => x.GetActiveEnvironmentAsync()).ReturnsAsync(environment);
+
+        var authResult = CreateFakeAuthenticationResult();
+        _authenticationServiceMock.Setup(x => x.AuthenticateAsync(It.IsAny<AuthenticationParameters>(), It.IsAny<Action<string>>(), It.IsAny<CancellationToken>())).ReturnsAsync(authResult);
+
+        // Act
+        var client = await _factory.CreateHttpClientAsync(environment);
 
         // Assert
         client.Should().NotBeNull();
-        client.DefaultRequestHeaders.Authorization.Parameter.Should().Be("FakeToken");
+        client.DefaultRequestHeaders.Authorization.Should().NotBeNull();
+        client.DefaultRequestHeaders.Authorization.Parameter.Should().Be(authResult.AccessToken);
     }
 
     [Fact]
-    public async Task RecycleHandlersAsync_Should_Not_Disrupt_Ongoing_Requests()
+    public async Task CreateHttpClientAsync_Should_Reuse_Authentication_Token_If_Valid()
     {
         // Arrange
-        var fakeTimeProvider = new FakeTimeProvider();
-        var environmentProviderMock = new Mock<IEnvironmentProvider>();
-        var authenticationServiceMock = new Mock<IAuthenticationService>();
-        var loggerMock = new Mock<ILogger<XrmHttpClientFactory>>();
-
         var environment = CreateFakeEnvironment();
-        environmentProviderMock.Setup(m => m.GetActiveEnvironmentAsync())
-                               .ReturnsAsync(environment);
-        authenticationServiceMock.Setup(m => m.AuthenticateAsync(It.IsAny<AuthenticationParameters>(),
-            It.IsAny<Action<string>>(),
-            It.IsAny<CancellationToken>()))
-            .ReturnsAsync(CreateFakeAuthenticationResult());
+        _environmentProviderMock.Setup(x => x.GetActiveEnvironmentAsync()).ReturnsAsync(environment);
 
-        var factory = new XrmHttpClientFactory(
-            fakeTimeProvider,
-            environmentProviderMock.Object,
-            authenticationServiceMock.Object,
-            loggerMock.Object);
-
-        var client = await factory.CreateHttpClientAsync();
-
-        // Simulate an ongoing request
-        var requestTask = Task.Run(async () =>
-        {
-            using var request = new HttpRequestMessage(HttpMethod.Get, "https://fakeurl.com");
-            using var response = await client.SendAsync(request, CancellationToken.None);
-        });
+        var validToken = CreateFakeAuthenticationResult();
+ 
+        typeof(XrmHttpClientFactory).GetField("_tokenCache", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance)
+            .SetValue(_factory, new ConcurrentDictionary<string, AuthenticationResult> { [environment.ConnectionString] = validToken });
 
         // Act
-        fakeTimeProvider.Advance(TimeSpan.FromMinutes(6)); // Advance time to trigger recycling
-        //TODO: await factory.RecycleHandlersAsync();
-
-        // Assert - Ensure the ongoing request completes successfully
-        await requestTask;
-    }
-
-    [Fact]
-    public async Task DisposeAsync_Should_Clean_Up_All_Resources()
-    {
-        // Arrange
-        var fakeTimeProvider = new FakeTimeProvider();
-        var environmentProviderMock = new Mock<IEnvironmentProvider>();
-        var authenticationServiceMock = new Mock<IAuthenticationService>();
-        var loggerMock = new Mock<ILogger<XrmHttpClientFactory>>();
-
-        var environment = new DataverseEnvironment
-        {
-            Name = "TestEnvironment",
-            ConnectionString = "TestConnectionString"
-        };
-        environmentProviderMock.Setup(m => m.GetActiveEnvironmentAsync())
-                               .ReturnsAsync(environment);
-        authenticationServiceMock.Setup(
-            m => m.AuthenticateAsync(It.IsAny<AuthenticationParameters>(),
-            It.IsAny<Action<string>>(),
-            It.IsAny<CancellationToken>()))
-            .ReturnsAsync(CreateFakeAuthenticationResult());
-
-        var factory = new XrmHttpClientFactory(
-            fakeTimeProvider,
-            environmentProviderMock.Object,
-            authenticationServiceMock.Object,
-            loggerMock.Object);
-
-        await factory.CreateHttpClientAsync(); // Create at least one client
-
-        // Act
-        await factory.DisposeAsync();
+        var client = await _factory.CreateHttpClientAsync(environment);
 
         // Assert
-        // Check if timer was disposed
-        // Note: You would need to expose a property or method in XrmHttpClientFactory to validate this, or use internal access.
-        await factory.Invoking(async f => await f.CreateHttpClientAsync())
-               .Should().ThrowAsync<ObjectDisposedException>("because the factory was disposed");
+        client.Should().NotBeNull();
+        client.DefaultRequestHeaders.Authorization.Parameter.Should().Be(validToken.AccessToken);
+        _authenticationServiceMock.Verify(x => x.AuthenticateAsync(It.IsAny<AuthenticationParameters>(), It.IsAny<Action<string>>(), It.IsAny<CancellationToken>()), Times.Never);
     }
 
-    private AuthenticationResult CreateFakeAuthenticationResult()
-        => new("FakeToken", true, "FakeToken", DateTimeOffset.UtcNow, DateTimeOffset.UtcNow.AddMinutes(1), null, null, null, [], Guid.Empty);
+    [Fact]
+    public async Task CreateHttpClientAsync_Should_Request_New_Token_If_Expired()
+    {
+        // Arrange
+        var environment = CreateFakeEnvironment();
+        _environmentProviderMock.Setup(x => x.GetActiveEnvironmentAsync()).ReturnsAsync(environment);
+
+        var expiredToken = CreateFakeAuthenticationResult(isValid: false);
+        typeof(XrmHttpClientFactory).GetField("_tokenCache", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance)
+            .SetValue(_factory, new ConcurrentDictionary<string, AuthenticationResult> { [environment.ConnectionString] = expiredToken });
+
+        var newToken = CreateFakeAuthenticationResult();
+        _authenticationServiceMock.Setup(x => x.AuthenticateAsync(It.IsAny<AuthenticationParameters>(), It.IsAny<Action<string>>(), It.IsAny<CancellationToken>())).ReturnsAsync(newToken);
+
+        // Act
+        var client = await _factory.CreateHttpClientAsync(environment);
+
+        // Assert
+        client.Should().NotBeNull();
+        client.DefaultRequestHeaders.Authorization.Parameter.Should().Be(newToken.AccessToken);
+    }
+    
+    [Fact]
+    public async Task DisposeAsync_Should_Dispose_Handlers_When_Unused()
+    {
+        // Arrange
+        var environment = CreateFakeEnvironment();
+        var handler = new FakeHttpMessageHandler();
+        var handlerEntry = new HttpMessageHandlerEntry(handler, _timeProvider.GetUtcNow());
+        var handlerPool = new ConcurrentDictionary<DataverseEnvironment, Lazy<HttpMessageHandlerEntry>>([new(environment, new(() => handlerEntry))]);
+        typeof(XrmHttpClientFactory).GetField("_handlerPool", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance)
+            .SetValue(_factory, handlerPool);
+        _ = handlerPool.TryGetValue(environment, out var lazyHandler) ? lazyHandler.Value : null;
+
+        // Act
+        _timeProvider.Advance(handlerEntry.Lifetime);
+         await _factory.DisposeAsync();
+
+        // Assert
+        handlerEntry.CanDispose().Should().BeTrue();
+
+        handler.DisposeCount.Should().Be(1);
+    }
+
+    private AuthenticationResult CreateFakeAuthenticationResult(bool isValid = true, string name = "FakeToken")
+        => new (
+            name, 
+            true, 
+            name, 
+            expiresOn: isValid ? _timeProvider.GetUtcNow().AddMinutes(5) : _timeProvider.GetUtcNow().AddMinutes(-5), 
+            extendedExpiresOn: isValid ? _timeProvider.GetUtcNow().AddMinutes(6) : _timeProvider.GetUtcNow().AddMinutes(-4),
+            tenantId: null, 
+            account: null, 
+            idToken: null,
+            scopes: [], 
+            correlationId: Guid.Empty);
     private DataverseEnvironment CreateFakeEnvironment()
         => new ()
         {
@@ -142,3 +168,18 @@ public class XrmHttpClientFactoryTests
         };
 }
 
+public class FakeHttpMessageHandler : HttpMessageHandler
+{
+    public int DisposeCount { get; private set; }
+
+    protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
+    {
+        return Task.FromResult(new HttpResponseMessage(System.Net.HttpStatusCode.OK));
+    }
+
+    protected override void Dispose(bool disposing)
+    {
+        DisposeCount++;
+        base.Dispose(disposing);
+    }
+}
