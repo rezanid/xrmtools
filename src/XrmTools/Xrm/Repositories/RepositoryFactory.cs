@@ -21,6 +21,7 @@ internal class RepositoryFactory(IXrmHttpClientFactory httpClientFactory) : IRep
         return typeof(T) switch
         {
             IPluginAssemblyRepository => new PluginAssemblyRepository(client) as T,
+            IPluginTypeRepository => new PluginTypeRepository(client) as T,
             _ => throw new NotImplementedException()
         };
     }
