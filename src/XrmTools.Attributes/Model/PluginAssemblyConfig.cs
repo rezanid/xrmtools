@@ -27,7 +27,7 @@ public interface IPluginAssemblyEntity
     string? Name { get; set; }
     ICollection<PluginTypeConfig> PluginTypes { get; set; }
     string? PublicKeyToken { get; set; }
-    EntityReference? SolutionId { get; set; }
+    Guid? SolutionId { get; set; }
     SourceTypes? SourceType { get; set; }
     string? Version { get; set; }
 }
@@ -120,11 +120,12 @@ public class PluginAssemblyConfig : TypedEntity<PluginAssemblyConfig>, IPluginAs
     }
 
     [AttributeLogicalName("solutionid")]
-    public EntityReference? SolutionId
-    {
-        get => TryGetAttributeValue("solutionid", out EntityReference? value) ? value : null;
-        set => this["solutionid"] = value;
-    }
+    public Guid? SolutionId { get; set; }
+    //public EntityReference? SolutionId
+    //{
+    //    get => TryGetAttributeValue("solutionid", out EntityReference? value) ? value : null;
+    //    set => this["solutionid"] = value;
+    //}
 
     [AttributeLogicalName("version")]
     public string? Version

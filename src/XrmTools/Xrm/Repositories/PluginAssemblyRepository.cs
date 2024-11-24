@@ -1,9 +1,11 @@
 ﻿namespace XrmTools.Xrm.Repositories;
+
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 using XrmTools.Helpers;
 using XrmTools.Http;
+using XrmTools.Meta.Model;
 using XrmTools.Xrm.Model;
 
 internal interface IPluginAssemblyRepository
@@ -17,11 +19,11 @@ internal class PluginAssemblyRepository(XrmHttpClient client) : IPluginAssemblyR
 
     public async Task<IEnumerable<PluginAssemblyConfig>> GetAsync(CancellationToken cancellationToken)
     {
-        var response = await client.GetAsync("pluginassemblies", cancellationToken);
+        var response = await client.GetAsync("pluginassemblies?$select=pluginassemblyid,name,publickeytoken,solutionid,version,isolationmode,sourcetype", cancellationToken);
         if (response.IsSuccessStatusCode)
         {
             using var content = await response.Content.ReadAsStreamAsync().ConfigureAwait(false);
-            return content.Deserialize<IEnumerable<PluginAssemblyConfig>>();
+            return content.Deserialize<ODataQueryResponse<PluginAssemblyConfig>>().Entities;
         }
         return [];
     }

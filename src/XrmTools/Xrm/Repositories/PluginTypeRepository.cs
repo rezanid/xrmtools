@@ -1,12 +1,13 @@
 ﻿namespace XrmTools.Xrm.Repositories;
 
-using Microsoft.Xrm.Sdk.Metadata;
+using Humanizer;
 using System;
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 using XrmTools.Helpers;
 using XrmTools.Http;
+using XrmTools.Meta.Model;
 using XrmTools.Xrm.Model;
 
 internal interface IPluginTypeRepository
@@ -27,45 +28,12 @@ internal class PluginTypeRepository(XrmHttpClient client) : IPluginTypeRepositor
 
     public async Task<IEnumerable<PluginTypeConfig>> GetAsync(Guid pluginassemblyid, CancellationToken cancellationToken)
     {
-        var response = await client.GetAsync(plugintypeQuery, cancellationToken);
+        var response = await client.GetAsync(plugintypeQuery.FormatWith(pluginassemblyid), cancellationToken);
         if (response.IsSuccessStatusCode)
         {
             using var content = await response.Content.ReadAsStreamAsync().ConfigureAwait(false);
-            return content.Deserialize<IEnumerable<PluginTypeConfig>>();
+            return content.Deserialize<ODataQueryResponse<PluginTypeConfig>>().Entities;
         }
         return [];
-    }
-}
-
-internal interface IEntityMetadataRepository
-{
-    Task<IEnumerable<EntityMetadata>> GetAsync(CancellationToken cancellationToken);
-    Task<EntityMetadata> GetAsync(string entityLogicalName, CancellationToken cancellationToken);
-}
-
-internal class EntityMetadataRepository(XrmHttpClient client) : IEntityMetadataRepository
-{
-    private readonly XrmHttpClient client = client;
-
-    public async Task<IEnumerable<EntityMetadata>> GetAsync(CancellationToken cancellationToken)
-    {
-        var response = await client.GetAsync("pluginassemblies", cancellationToken);
-        if (response.IsSuccessStatusCode)
-        {
-            using var content = await response.Content.ReadAsStreamAsync().ConfigureAwait(false);
-            return content.Deserialize<IEnumerable<EntityMetadata>>();
-        }
-        return [];
-    }
-
-    public async Task<EntityMetadata> GetAsync(string entityLogicalName, CancellationToken cancellationToken)
-    {
-        var response = await client.GetAsync("pluginassemblies", cancellationToken);
-        if (response.IsSuccessStatusCode)
-        {
-            using var content = await response.Content.ReadAsStreamAsync().ConfigureAwait(false);
-            return content.Deserialize<EntityMetadata>();
-        }
-        return null;
     }
 }

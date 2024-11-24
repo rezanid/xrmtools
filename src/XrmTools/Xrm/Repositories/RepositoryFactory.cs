@@ -18,11 +18,9 @@ internal class RepositoryFactory(IXrmHttpClientFactory httpClientFactory) : IRep
     public async Task<T> CreateRepositoryAsync<T>() where T : class
     {
         var client = await httpClientFactory.CreateClientAsync();
-        return typeof(T) switch
-        {
-            IPluginAssemblyRepository => new PluginAssemblyRepository(client) as T,
-            IPluginTypeRepository => new PluginTypeRepository(client) as T,
-            _ => throw new NotImplementedException()
-        };
+        var type = typeof(T);
+        if (type.IsAssignableFrom(typeof(IPluginAssemblyRepository))) return new PluginAssemblyRepository(client) as T;
+        if (type.IsAssignableFrom(typeof(IPluginTypeRepository))) return new PluginTypeRepository(client) as T;
+        throw new NotSupportedException($"{type.Name} is not a supported repository.");
     }
 }

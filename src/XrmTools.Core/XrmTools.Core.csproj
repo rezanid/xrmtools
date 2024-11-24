@@ -66,7 +66,6 @@
     <Compile Include="Http\HttpMessageHandlerEntry.cs" />
     <Compile Include="Http\IXrmHttpClientFactory.cs" />
     <Compile Include="Http\XrmHttpClient.cs" />
-    <Compile Include="Http\XrmHttpClientFactory.cs" />
     <Compile Include="Logging\Compatibility\EventId.cs" />
     <Compile Include="Logging\Compatibility\FormattedValues.cs" />
     <Compile Include="Logging\Compatibility\ILogger.cs" />
@@ -90,20 +89,17 @@
     <PackageReference Include="CredentialManagement">
       <Version>1.0.2</Version>
     </PackageReference>
-    <PackageReference Include="Microsoft.Extensions.Hosting">
-      <Version>9.0.0</Version>
+    <PackageReference Include="Microsoft.Bcl.TimeProvider">
+      <Version>8.0.0</Version>
     </PackageReference>
     <PackageReference Include="Microsoft.Extensions.Http">
-      <Version>3.1.8</Version>
-    </PackageReference>
-    <PackageReference Include="Microsoft.Extensions.Http.Polly">
-      <Version>9.0.0</Version>
+      <Version>8.0.0</Version>
     </PackageReference>
     <PackageReference Include="Microsoft.Extensions.Http.Resilience">
-      <Version>9.0.0</Version>
+      <Version>8.10.0</Version>
     </PackageReference>
     <PackageReference Include="Microsoft.Identity.Client">
-      <Version>4.61.3</Version>
+      <Version>4.66.2</Version>
     </PackageReference>
     <PackageReference Include="Microsoft.VisualStudio.Threading">
       <Version>17.12.19</Version>
@@ -117,7 +113,7 @@
       <Version>8.5.0</Version>
     </PackageReference>
     <PackageReference Include="PolySharp">
-      <Version>1.14.1</Version>
+      <Version>1.15.0</Version>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
       <PrivateAssets>all</PrivateAssets>
     </PackageReference>

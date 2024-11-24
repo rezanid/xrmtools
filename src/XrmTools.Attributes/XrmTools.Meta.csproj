@@ -64,6 +64,7 @@
     <Compile Include="Attributes\PluginAssemblyAttribute.cs" />
     <Compile Include="Attributes\PluginAttribute.cs" />
     <Compile Include="Model\Enums.cs" />
+    <Compile Include="Model\ODataQueryResponse.cs" />
     <Compile Include="Model\PluginAssemblyConfig.cs" />
     <Compile Include="Model\PluginStepConfig.cs" />
     <Compile Include="Model\PluginStepImageConfig.cs" />
@@ -74,14 +75,17 @@
     <Compile Include="Attributes\StepAttribute.cs" />
   </ItemGroup>
   <ItemGroup>
-    <PackageReference Include="Microsoft.PowerPlatform.Dataverse.Client">
-      <Version>1.2.2</Version>
-    </PackageReference>
-  </ItemGroup>
-  <ItemGroup>
     <None Include="..\key.snk">
       <Link>key.snk</Link>
     </None>
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="Microsoft.CrmSdk.CoreAssemblies">
+      <Version>9.0.2.56</Version>
+    </PackageReference>
+    <PackageReference Include="Newtonsoft.Json">
+      <Version>13.0.3</Version>
+    </PackageReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>

@@ -10,6 +10,8 @@ public class PolicyHandler(HttpMessageHandler innerHandler, IAsyncPolicy<HttpRes
 
     protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, System.Threading.CancellationToken cancellationToken)
     {
-        return _policy != null ? _policy.ExecuteAsync(ct => base.SendAsync(request, ct), cancellationToken) : base.SendAsync(request, cancellationToken);
+        //HACK: only until repositories are working reliably.
+        return base.SendAsync(request, cancellationToken);
+        //return _policy != null ? _policy.ExecuteAsync(ct => base.SendAsync(request, ct), cancellationToken) : base.SendAsync(request, cancellationToken);
     }
 }

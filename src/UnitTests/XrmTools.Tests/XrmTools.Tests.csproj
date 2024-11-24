@@ -4,11 +4,11 @@
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
-    <ProjectGuid>{95D42612-80ED-4C53-AC96-4D1FF8F97359}</ProjectGuid>
+    <ProjectGuid>{9C0C3BC9-ED0D-4EFC-909E-CA6CBB524CF7}</ProjectGuid>
     <OutputType>Library</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
-    <RootNamespace>XrmTools.Core.Tests</RootNamespace>
-    <AssemblyName>XrmTools.Core.Tests</AssemblyName>
+    <RootNamespace>XrmTools.Tests</RootNamespace>
+    <AssemblyName>XrmTools.Tests</AssemblyName>
     <TargetFrameworkVersion>v4.8</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
     <ProjectTypeGuids>{3AC096D0-A1C2-E12C-1390-A8335801FDAB};{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}</ProjectTypeGuids>
@@ -17,9 +17,10 @@
     <ReferencePath>$(ProgramFiles)\Common Files\microsoft shared\VSTT\$(VisualStudioVersion)\UITestExtensionPackages</ReferencePath>
     <IsCodedUITest>False</IsCodedUITest>
     <TestProjectType>UnitTest</TestProjectType>
-    <LangVersion>12.0</LangVersion>
     <NuGetPackageImportStamp>
     </NuGetPackageImportStamp>
+    <LangVersion>12.0</LangVersion>
+    <TargetFrameworkProfile />
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
     <DebugSymbols>true</DebugSymbols>
@@ -42,27 +43,15 @@
     <SignAssembly>true</SignAssembly>
   </PropertyGroup>
   <PropertyGroup>
-    <AssemblyOriginatorKeyFile>..\key.snk</AssemblyOriginatorKeyFile>
+    <AssemblyOriginatorKeyFile>..\..\key.snk</AssemblyOriginatorKeyFile>
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="System" />
     <Reference Include="System.Core" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="..\xrmtools.core\system\runtime\compilerservices\Index.cs">
-      <Link>System\Runtime\CompilerServices\Index.cs</Link>
-    </Compile>
-    <Compile Include="..\xrmtools.core\system\runtime\compilerservices\Range.cs">
-      <Link>System\Runtime\CompilerServices\Range.cs</Link>
-    </Compile>
-    <Compile Include="..\xrmtools.core\system\runtime\compilerservices\RuntimeHelpers.cs">
-      <Link>System\Runtime\CompilerServices\RuntimeHelpers.cs</Link>
-    </Compile>
-    <Compile Include="AsyncDictionaryTests.cs" />
-    <Compile Include="AsyncTimerTests.cs" />
-    <Compile Include="Tokens\CredentialTokenExpanderTest.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="Tokens\EnvironmentTokenExpanderTests.cs" />
+    <Compile Include="XrmHttpClientFactoryTests.cs" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="FluentAssertions">
@@ -71,8 +60,19 @@
     <PackageReference Include="Microsoft.Extensions.TimeProvider.Testing">
       <Version>8.10.0</Version>
     </PackageReference>
+    <PackageReference Include="Microsoft.Identity.Client">
+      <Version>4.66.2</Version>
+    </PackageReference>
     <PackageReference Include="Moq">
       <Version>4.20.72</Version>
+    </PackageReference>
+    <PackageReference Include="PolySharp">
+      <Version>1.15.0</Version>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+      <PrivateAssets>all</PrivateAssets>
+    </PackageReference>
+    <PackageReference Include="System.Reflection.MetadataLoadContext">
+      <Version>8.0.0</Version>
     </PackageReference>
     <PackageReference Include="xunit">
       <Version>2.9.2</Version>
@@ -84,15 +84,19 @@
     </PackageReference>
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\XrmTools.Core\XrmTools.Core.csproj">
+    <None Include="..\..\key.snk">
+      <Link>key.snk</Link>
+    </None>
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\XrmTools.Core\XrmTools.Core.csproj">
       <Project>{4e3f79aa-5694-4dd6-933d-aee2132486a5}</Project>
       <Name>XrmTools.Core</Name>
     </ProjectReference>
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="..\key.snk">
-      <Link>key.snk</Link>
-    </None>
+    <ProjectReference Include="..\..\XrmTools\XrmGen.csproj">
+      <Project>{592264a3-7b0d-40c5-a879-b2222676c532}</Project>
+      <Name>XrmGen</Name>
+    </ProjectReference>
   </ItemGroup>
   <Import Project="$(VSToolsPath)\TeamTest\Microsoft.TestTools.targets" Condition="Exists('$(VSToolsPath)\TeamTest\Microsoft.TestTools.targets')" />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />

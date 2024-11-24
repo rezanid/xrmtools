@@ -1,7 +1,6 @@
 ﻿namespace XrmTools.Xrm;
 
 using System.Runtime.Caching;
-using Microsoft.PowerPlatform.Dataverse.Client;
 using Microsoft.Xrm.Sdk.Messages;
 using Microsoft.Xrm.Sdk.Metadata;
 using Microsoft.Xrm.Sdk.Query;
@@ -12,6 +11,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using XrmTools.Xrm.Extensions;
 using XrmTools.Xrm.Model;
+using Microsoft.Xrm.Sdk;
 
 internal class DataverseCacheKeys(string EnvironmentUrl)
 {
@@ -19,6 +19,50 @@ internal class DataverseCacheKeys(string EnvironmentUrl)
     public string EntityDefinitionsExtensive(string entityLogicalName) => $"{EnvironmentUrl}_EntityDefinition_{entityLogicalName}";
     public string PluginAssemblies => $"{EnvironmentUrl}_PluginAssemblies";
     public string PluginTypes(Guid assemblyid) => $"{EnvironmentUrl}_PluginTypes_{assemblyid}";
+}
+
+internal class ServiceClient(string connectionstring) : IDisposable
+{
+    private bool disposedValue;
+
+    public bool IsReady { get; }
+    public Exception LastException { get; }
+    public string LastError { get; }
+
+    internal Task<RetrieveMultipleResponse> RetrieveMultipleAsync(QueryExpression queryExpression, CancellationToken cancellationToken)
+        => throw new NotImplementedException();
+    internal OrganizationResponse Execute(OrganizationRequest request) => throw new NotImplementedException();
+    internal Task<OrganizationResponse> ExecuteAsync(OrganizationRequest request, CancellationToken cancellationToken) 
+        => throw new NotImplementedException();
+
+    protected virtual void Dispose(bool disposing)
+    {
+        if (!disposedValue)
+        {
+            if (disposing)
+            {
+                // TODO: dispose managed state (managed objects)
+            }
+
+            // TODO: free unmanaged resources (unmanaged objects) and override finalizer
+            // TODO: set large fields to null
+            disposedValue = true;
+        }
+    }
+
+    // // TODO: override finalizer only if 'Dispose(bool disposing)' has code to free unmanaged resources
+    // ~ServiceClient()
+    // {
+    //     // Do not change this code. Put cleanup code in 'Dispose(bool disposing)' method
+    //     Dispose(disposing: false);
+    // }
+
+    public void Dispose()
+    {
+        // Do not change this code. Put cleanup code in 'Dispose(bool disposing)' method
+        Dispose(disposing: true);
+        GC.SuppressFinalize(this);
+    }
 }
 
 public class XrmSchemaProvider(DataverseEnvironment environment, string connectionString) : IXrmSchemaProvider
@@ -190,12 +234,12 @@ public class XrmSchemaProvider(DataverseEnvironment environment, string connecti
                 a => new {a.PluginAssemblyId, a.Name, a.PublicKeyToken, a.SolutionId, a.Version, a.IsolationMode, a.SourceType }), 
             cancellationToken);
 
-        if (response == null || response.Entities == null)
+        if (response == null || response.EntityCollection.Entities == null)
         {
             return [];
         }
         
-        return response.Entities.Select(entity => entity.ToEntity<PluginAssemblyConfig>());
+        return response.EntityCollection.Entities.Select(entity => entity.ToEntity<PluginAssemblyConfig>());
     }
 
     private static async Task<IEnumerable<PluginTypeConfig>> FetchPluginTypesAsync(
@@ -215,7 +259,7 @@ public class XrmSchemaProvider(DataverseEnvironment environment, string connecti
 
         var pluginTypes = new List<PluginTypeConfig>();
         var response = await client.RetrieveMultipleAsync(query, cancellationToken);
-        foreach (var entity in response.Entities)
+        foreach (var entity in response.EntityCollection.Entities)
         {
             var pluginType = pluginTypes.Find(pt => pt.Id == entity.Id);
             if (pluginType is null) 

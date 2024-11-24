@@ -30,6 +30,7 @@ using XrmTools.Authentication;
 using System.Diagnostics;
 using XrmTools.Environments;
 using XrmTools.Http;
+using XrmTools.Xrm.Repositories;
 
 internal record ProjectDataverseSettings(
     string EnvironmentUrl, 
@@ -117,7 +118,6 @@ public sealed partial class XrmToolsPackage : ToolkitPackage
     private readonly static IEnvironmentProvider _environmentProvider;
     private readonly static ISettingsProvider _settingsProvider;
     private readonly static IAuthenticationService _authentionService;
-    private readonly static IXrmHttpClientFactory _xrmHttpClientFactory;
 
     public const string SolutionPersistanceKey = "XrmToolsProperies";
     private static readonly ExplicitInterfaceInvoker<Package> implicitInvoker = new();
@@ -135,7 +135,8 @@ public sealed partial class XrmToolsPackage : ToolkitPackage
     [Export(typeof(IEnvironmentProvider))] internal IEnvironmentProvider EnvironmentProvider { get => _environmentProvider; }
     [Export(typeof(ISettingsProvider))] internal ISettingsProvider SettingsProvider { get => _settingsProvider; }
     [Export(typeof(IAuthenticationService))] internal IAuthenticationService AuthenticationService { get => _authentionService; }
-    [Export(typeof(IXrmHttpClientFactory))] internal IXrmHttpClientFactory XrmHttpClientFactory { get => _xrmHttpClientFactory; }
+    //[Import(typeof(IXrmHttpClientFactory))] internal IXrmHttpClientFactory? HttpClientFactory { get; set; }
+    //[Import(typeof(IRepositoryFactory))] internal IRepositoryFactory? RepositoryFactory { get; set; }
 
     static XrmToolsPackage()
     {
@@ -208,6 +209,13 @@ public sealed partial class XrmToolsPackage : ToolkitPackage
         {
             Debug.WriteLine(ex);
         }
+
+        //var httpFactory = HttpClientFactory;
+        //var repoFactory = RepositoryFactory;
+        //var assemblyRepo = await repoFactory?.CreateRepositoryAsync<IPluginAssemblyRepository>();
+        //var pluginRepo = await repoFactory?.CreateRepositoryAsync<IPluginTypeRepository>();
+        //var assemblies = await assemblyRepo?.GetAsync(cancellationToken);
+        //var plugins = await pluginRepo.GetAsync(new Guid("c87fb71c-7109-40e2-8055-eb517b5d25e1"), cancellationToken);
         /////////////////////////////
 
         // When initialized asynchronously, the current thread may be a background thread at this point.

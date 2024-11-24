@@ -7,9 +7,9 @@ using System.Windows.Forms.Design;
 using System.ComponentModel;
 using Community.VisualStudio.Toolkit;
 using Microsoft.VisualStudio.Shell.Interop;
-using Microsoft.PowerPlatform.Dataverse.Client;
 using Microsoft.Crm.Sdk.Messages;
 using XrmTools.Resources;
+using XrmTools.Xrm;
 
 public class CurrentEnvironmentEditor : UITypeEditor
 {
