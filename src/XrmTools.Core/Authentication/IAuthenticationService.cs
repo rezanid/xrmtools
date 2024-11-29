@@ -8,7 +8,7 @@ using System.Threading.Tasks;
 internal interface IAuthenticationService
 {
     Task<AuthenticationResult> AuthenticateAsync(
-        AuthenticationParameters parameters,
+        DataverseEnvironment environment,
         Action<string> onMessageForUser,
         CancellationToken cancellationToken);
 }

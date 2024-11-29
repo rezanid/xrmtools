@@ -79,7 +79,6 @@
     <Compile Include="Helpers\PackageHelper.cs" />
     <Compile Include="Helpers\ProjectExtensions.cs" />
     <Compile Include="Helpers\ProvideSolutionProperties.cs" />
-    <Compile Include="Helpers\StreamHelper.cs" />
     <Compile Include="Logging\LoggerFactory.cs" />
     <Compile Include="Logging\OutputLoggerService.cs" />
     <Compile Include="Options\CurrentEnvironmentConverter.cs" />
@@ -109,7 +108,6 @@
     <Compile Include="Helpers\DteExtensions.cs" />
     <Compile Include="Helpers\DteProjectHelpers.cs" />
     <Compile Include="Logging\OutputLoggerProvider.cs" />
-    <Compile Include="NewItemTarget.cs" />
     <Compile Include="Options\GeneralOptions.cs" />
     <Compile Include="UI\AssemblySelectionDialog.xaml.cs">
       <DependentUpon>AssemblySelectionDialog.xaml</DependentUpon>
@@ -123,7 +121,6 @@
     <Compile Include="Helpers\EntityMetadataExtensions.cs" />
     <Compile Include="Helpers\StringBuilderExtensions.cs" />
     <Compile Include="Commands\NewPluginDefinitionFileCommand.cs" />
-    <Compile Include="Helpers\TypeExtensions.cs" />
     <Compile Include="UI\Converters\ObjectToJsonConverter.cs" />
     <Compile Include="UI\ViewModelBase.cs" />
     <Compile Include="Xrm\Extensions\EntityExtensions.cs" />
@@ -140,7 +137,6 @@
     <Compile Include="Xrm\CodeCompletion\XrmPluginDefCompletionProvider.cs" />
     <Compile Include="Xrm\CodeCompletion\XrmPluginDefCompletionSource.cs" />
     <Compile Include="Xrm\Constants.cs" />
-    <Compile Include="Helpers\StringHelpers.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="source.extension.cs">
       <AutoGen>True</AutoGen>
@@ -154,24 +150,14 @@
     </Compile>
     <Compile Include="XrmToolsPackage.cs" />
     <Compile Include="Xrm\Extensions\LabelExtensions.cs" />
-    <Compile Include="Xrm\MetadataCache.cs" />
     <Compile Include="Resources\Strings.Designer.cs">
       <AutoGen>True</AutoGen>
       <DesignTime>True</DesignTime>
       <DependentUpon>Strings.resx</DependentUpon>
     </Compile>
-    <Compile Include="Xrm\Repositories\EntityMetadataRepository.cs" />
-    <Compile Include="Xrm\Repositories\PluginAssemblyRepository.cs" />
-    <Compile Include="Xrm\Repositories\PluginTypeRepository.cs" />
     <Compile Include="Xrm\Repositories\RepositoryFactory.cs" />
-    <Compile Include="Xrm\Serialization\IgnoreDataContractResolver.cs" />
-    <Compile Include="Xrm\Serialization\IgnoreEntityPropertiesConverter.cs" />
-    <Compile Include="Xrm\Serialization\TypedEntityConverter.cs" />
-    <Compile Include="Xrm\Serialization\TypedEntityConverter_T.cs" />
     <Compile Include="Xrm\WebApiSchemaProvider.cs" />
     <Compile Include="Xrm\XrmMetadataSource.cs" />
-    <Compile Include="Xrm\XrmSchemaProvider.cs" />
-    <Compile Include="Xrm\XrmSchemaProviderFactory.cs" />
     <Compile Include="Logging\OutputLogger.cs" />
     <Compile Include="_Core\Validation.cs" />
   </ItemGroup>

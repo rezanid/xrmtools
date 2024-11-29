@@ -153,7 +153,7 @@ internal abstract class DelegatingAuthenticator : IAuthenticator
             // PartnerSession.Instance.DebugMessages.Enqueue($"[MSAL] {level} {message}");
         }).Build();
 
-        var storageProperties = new StorageCreationPropertiesBuilder("msal_cache",
+        var storageProperties = new StorageCreationPropertiesBuilder("msal_cache.dat",
                 MsalCacheHelper.UserRootDirectory)
             // No need to support non-Windows platforms yet.
             //.WithLinuxKeyring(
@@ -164,7 +164,8 @@ internal abstract class DelegatingAuthenticator : IAuthenticator
 
         // Create and register the cache helper to enable persistent caching
         var cacheHelper = await MsalCacheHelper.CreateAsync(storageProperties).ConfigureAwait(false);
-        cacheHelper.VerifyPersistence();
+        //TODO: persisting token cache didn't work well in Win RT.
+        //cacheHelper.VerifyPersistence();
         cacheHelper.RegisterCache(publicClientApp.UserTokenCache);
 
         return publicClientApp;

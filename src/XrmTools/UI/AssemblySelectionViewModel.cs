@@ -1,21 +1,21 @@
+namespace XrmTools.UI;
 using CommunityToolkit.Mvvm.Input;
 using System;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
-using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
-using System.Windows;
 using System.Windows.Data;
 using System.Windows.Input;
-using XrmTools.Helpers;
+using XrmTools.Core.Helpers;
+using XrmTools.Core.Repositories;
 using XrmTools.Xrm;
 using XrmTools.Xrm.Model;
 
-namespace XrmTools.UI;
-
 public class AssemblySelectionViewModel : ViewModelBase
 {
+    private readonly IPluginAssemblyRepository _assemblyRepository;
+    private readonly IPluginTypeRepository _typeRepository;
     private readonly IXrmSchemaProvider _schemaProvider;
     private PluginAssemblyConfig _selectedAssembly;
     private object _generatedCode;
@@ -78,6 +78,21 @@ public class AssemblySelectionViewModel : ViewModelBase
         GenerateCodeCommand = new RelayCommand<object>(Serialize);
     }
 
+    internal AssemblySelectionViewModel(IPluginAssemblyRepository assemblyRepository, IPluginTypeRepository typeRepository)
+    {
+        _assemblyRepository = assemblyRepository;
+        _typeRepository = typeRepository;
+        Assemblies = [];
+        FilteredAssemblies = CollectionViewSource.GetDefaultView(Assemblies);
+        FilteredAssemblies.Filter = FilterAssemblies;
+        //SelectedPluginTypes = [];
+
+        LoadAssembliesCommand = new AsyncRelayCommand(LoadAssembliesAsync);
+        LoadAssemblyDetailsCommand = new AsyncRelayCommand(LoadAssemblyDetailsAsync, CanSelectAssembly);
+        ChooseAssemblyCommand = new RelayCommand(SelectAssembly, CanSelectAssembly);
+        GenerateCodeCommand = new RelayCommand<object>(Serialize);
+    }
+
     private bool FilterAssemblies(object item)
     {
         if (item is PluginAssemblyConfig assembly)
@@ -90,8 +105,11 @@ public class AssemblySelectionViewModel : ViewModelBase
     private async Task LoadAssembliesAsync()
     {
         IsLoading = true;
-        using CancellationTokenSource cancellationTokenSource = new(10000);
-        var assemblies = await _schemaProvider.GetPluginAssembliesAsync(cancellationTokenSource.Token);
+        using CancellationTokenSource cancellationTokenSource = new(60000);
+        var assemblies = 
+            _assemblyRepository != null ?
+            await _assemblyRepository.GetAsync(cancellationTokenSource.Token) :
+            await _schemaProvider.GetPluginAssembliesAsync(cancellationTokenSource.Token);
         Assemblies.Clear();
         foreach (var assembly in assemblies)
         {
@@ -107,7 +125,10 @@ public class AssemblySelectionViewModel : ViewModelBase
         {
             IsLoading = true;
             using CancellationTokenSource cancellationTokenSource = new(10000);
-            var pluginTypes = await _schemaProvider.GetPluginTypesAsync(SelectedAssembly.Id, cancellationTokenSource.Token);
+            var pluginTypes = 
+                _typeRepository != null ?
+                await _typeRepository.GetAsync(SelectedAssembly.Id, cancellationTokenSource.Token) :
+                await _schemaProvider.GetPluginTypesAsync(SelectedAssembly.Id, cancellationTokenSource.Token);
             SelectedAssembly.PluginTypes = new ObservableCollection<PluginTypeConfig>(pluginTypes);
             Serialize(SelectedAssembly);
             IsLoading = false;

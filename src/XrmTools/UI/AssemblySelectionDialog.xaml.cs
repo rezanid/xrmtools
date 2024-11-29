@@ -1,20 +1,20 @@
 ﻿#nullable enable
 namespace XrmTools.UI;
-
 using Microsoft.VisualStudio.PlatformUI;
 using System.Windows;
 using XrmTools.Xrm;
 using System.Reflection;
 using System.Linq;
 using System;
+using XrmTools.Core.Repositories;
 
 public partial class AssemblySelectionDialog : DialogWindow
 {
-    public AssemblySelectionDialog(IXrmSchemaProvider schemaProvider)
+    internal AssemblySelectionDialog(IPluginAssemblyRepository assemblyRepository, IPluginTypeRepository typeRepository)
     {
         EnsureReferencedAssembliesInMarkupAreLoaded();
         InitializeComponent();
-        DataContext = new AssemblySelectionViewModel(schemaProvider);
+        DataContext = new AssemblySelectionViewModel(assemblyRepository, typeRepository);
         Loaded += OnLoaded;
     }
 

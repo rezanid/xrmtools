@@ -62,7 +62,7 @@ public class PluginStepConfig : TypedEntity<PluginStepConfig>, IMessageProcessin
     /// that are used in the message processing step.
     /// </summary>
     public EntityMetadata? PrimaryEntityDefinition { get; set; }
-    [JsonProperty(Order = 1)]
+    [JsonProperty("sdkmessageprocessingstepid_sdkmessageprocessingstepimage", Order = 1)]
     [JsonPropertyOrder(1)]
     public ICollection<PluginStepImageConfig> Images { get; set; } = [];
     public object? ActionDefinition { get; set; }

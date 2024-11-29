@@ -1,5 +1,5 @@
 ﻿#nullable enable
-namespace XrmTools.Helpers;
+namespace XrmTools.Core.Helpers;
 
 using Microsoft.Xrm.Sdk;
 using Microsoft.Xrm.Sdk.Client;

@@ -5,7 +5,6 @@ using Microsoft.VisualStudio.Shell;
 using Microsoft.VisualStudio.Shell.Interop;
 using Microsoft.VisualStudio.TextTemplating.VSHost;
 using Microsoft.Xrm.Sdk.Metadata;
-using Nito.AsyncEx.Synchronous;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel.Composition;
@@ -14,7 +13,6 @@ using System.Linq;
 using System.Text;
 using System.Threading;
 using XrmTools.Helpers;
-using XrmTools.Xrm;
 using XrmTools.Xrm.Generators;
 using XrmTools.Xrm.Model;
 using XrmTools.Options;
@@ -27,7 +25,9 @@ using XrmTools.Settings;
 using XrmTools.Resources;
 using System.Diagnostics.CodeAnalysis;
 using XrmTools.Logging.Compatibility;
-using XrmTools.Environments;
+using XrmTools.Xrm.Repositories;
+using XrmTools.Core.Repositories;
+using XrmTools.Core.Helpers;
 
 public class PluginCodeGenerator : BaseCodeGeneratorWithSite
 {
@@ -35,21 +35,15 @@ public class PluginCodeGenerator : BaseCodeGeneratorWithSite
     public const string Description = "Generates plugin code from .dej.json file.";
 
     private bool disposed = false;
-    private IXrmPluginCodeGenerator? _generator;
-    private IXrmSchemaProviderFactory? _schemaProviderFactory;
-    private IEnvironmentProvider? _environmentProvider;
 
     [Import]
     IXrmPluginCodeGenerator Generator { get; set; }
 
     [Import]
-    internal IXrmSchemaProviderFactory SchemaProviderFactory { get; set; }
+    internal IRepositoryFactory RepositoryFactory { get; set; }
 
     [Import]
     internal ISettingsProvider SettingsProvider { get; set; }
-
-    [Import]
-    internal IEnvironmentProvider EnvironmentProvider { get; set; }
 
     [Import]
     internal ILogger<PluginCodeGenerator> Logger { get; set; }
@@ -58,15 +52,14 @@ public class PluginCodeGenerator : BaseCodeGeneratorWithSite
 
     public PluginCodeGenerator() => SatisfyImports();
 
-    [MemberNotNull(nameof(Generator), nameof(SchemaProviderFactory), nameof(SettingsProvider), nameof(EnvironmentProvider), nameof(Logger))]
+    [MemberNotNull(nameof(Generator), nameof(RepositoryFactory), nameof(SettingsProvider), nameof(Logger))]
     private void SatisfyImports()
     {
         var componentModel = (IComponentModel)Package.GetGlobalService(typeof(SComponentModel));
         componentModel?.DefaultCompositionService.SatisfyImportsOnce(this);
         if (Generator == null) throw new InvalidOperationException($"Missing {nameof(PluginCodeGenerator)} service depndency. {nameof(Generator)} is not available.");
-        if (SchemaProviderFactory == null) throw new InvalidOperationException($"Missing {nameof(PluginCodeGenerator)} service depndency. {nameof(SchemaProviderFactory)} is not available.");
+        if (RepositoryFactory == null) throw new InvalidOperationException($"Missing {nameof(PluginCodeGenerator)} service depndency. {nameof(RepositoryFactory)} is not available.");
         if (SettingsProvider == null) throw new InvalidOperationException($"Missing {nameof(PluginCodeGenerator)} service depndency. {nameof(SettingsProvider)} is not available.");
-        if (EnvironmentProvider == null) throw new InvalidOperationException($"Missing {nameof(PluginCodeGenerator)} service depndency. {nameof(EnvironmentProvider)} is not available.");
         if (Logger == null) throw new InvalidOperationException($"Missing {nameof(PluginCodeGenerator)} service depndency. {nameof(Logger)} is not available.");
     }
 
@@ -179,13 +172,10 @@ public class PluginCodeGenerator : BaseCodeGeneratorWithSite
 
     private EntityMetadata? GetEntityMetadata(string logicalName, string[] attributes, IEnumerable<string> prefixesToRemove)
     {
-        var environment = EnvironmentProvider?.GetActiveEnvironmentAsync().WaitAndUnwrapException();
-        if (environment is null || !environment.IsValid) return null;
-        var schemaProvider = SchemaProviderFactory?.Get(environment);
-        if (schemaProvider is null) return null;
-        // Make a new cancellation token for 2 minutes.
+        var entityMetadataRepo = ThreadHelper.JoinableTaskFactory.Run(async () => await RepositoryFactory.CreateRepositoryAsync<IEntityMetadataRepository>());
+        if (entityMetadataRepo is null) return null;
         using var cts = new CancellationTokenSource(120000);
-        var entityDefinition = ThreadHelper.JoinableTaskFactory.Run(async () => await schemaProvider.GetEntityAsync(logicalName, cts.Token));
+        var entityDefinition = ThreadHelper.JoinableTaskFactory.Run(async () => await entityMetadataRepo.GetAsync(logicalName, cts.Token));
         if (entityDefinition == null) { return null; }
 
         //NOTE!
@@ -337,7 +327,7 @@ public class PluginCodeGenerator : BaseCodeGeneratorWithSite
             if (disposing)
             {
                 // Dispose managed resources
-                if (SchemaProviderFactory is IDisposable disposableFactory)
+                if (RepositoryFactory is IDisposable disposableFactory)
                 {
                     disposableFactory.Dispose();
                 }

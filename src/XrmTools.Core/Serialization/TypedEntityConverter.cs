@@ -1,17 +1,17 @@
 ﻿#nullable enable
-namespace XrmTools.Xrm.Serialization;
+namespace XrmTools.Core.Serialization;
 
 using System;
 using System.Linq;
 using System.Reflection;
 using System.Text.Json;
 using System.Text.Json.Serialization;
-using XrmTools.Helpers;
+using XrmTools.Core.Helpers;
 using XrmTools.Xrm.Model;
 
 /// <summary>
 /// This converter is applied to types deriving from <see cref="TypedEntity{T}"/>. All properties inherited from Entity
-/// are ignored, apart from <c>Id</c>.
+/// are ignored.
 /// </summary>
 public class IgnoreEntityPropertiesConverter : JsonConverter<object>
 {

@@ -6,7 +6,6 @@ using System.Collections.Concurrent;
 using System.Net.Http;
 using System.Threading;
 using Polly;
-using Microsoft.Extensions.Http;
 using XrmTools.Environments;
 using XrmTools.Logging.Compatibility;
 using System.ComponentModel.Composition;
@@ -46,10 +45,10 @@ internal class XrmHttpClientFactory : IXrmHttpClientFactory, System.IAsyncDispos
     public async Task<XrmHttpClient> CreateClientAsync()
     {
         var environment = await environmentProvider.GetActiveEnvironmentAsync();
-        return environment == null ? throw new InvalidOperationException("No environment selected.") : await CreateHttpClientAsync(environment);
+        return environment == null ? throw new InvalidOperationException("No environment selected.") : await CreateClientAsync(environment);
     }
 
-    public async Task<XrmHttpClient> CreateHttpClientAsync(DataverseEnvironment environment)
+    public async Task<XrmHttpClient> CreateClientAsync(DataverseEnvironment environment)
     {
         if (string.IsNullOrEmpty(environment.ConnectionString))
         {
@@ -68,11 +67,9 @@ internal class XrmHttpClientFactory : IXrmHttpClientFactory, System.IAsyncDispos
     {
         client.Timeout = TimeSpan.FromMinutes(10);
         client.BaseAddress = new Uri(new Uri(environment.Url), "/api/data/v9.2/");
-        var authParams = AuthenticationParameters.Parse(environment.ConnectionString);
-
         if (!_tokenCache.TryGetValue(environment.ConnectionString!, out var authResult) || authResult.ExpiresOn <= timeProvider.GetUtcNow())
         {
-            authResult = await authenticationService.AuthenticateAsync(authParams, msg => logger.LogInformation(msg), CancellationToken.None);
+            authResult = await authenticationService.AuthenticateAsync(environment, msg => logger.LogInformation(msg), CancellationToken.None);
             _tokenCache[environment.ConnectionString!] = authResult;
         }
         client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", authResult.AccessToken);

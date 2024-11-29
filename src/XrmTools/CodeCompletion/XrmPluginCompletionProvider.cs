@@ -12,11 +12,9 @@ using XrmTools.Helpers;
 using System;
 using XrmTools.Logging;
 using XrmTools.Xrm.CodeCompletion;
-using XrmTools.Xrm;
 using Microsoft.VisualStudio.ComponentModelHost;
 using Microsoft.VisualStudio.LanguageServices;
 using XrmTools.Xrm.Repositories;
-using System.Threading;
 
 [Export(typeof(IAsyncCompletionSourceProvider))]
 [ContentType("CSharp")]
@@ -26,7 +24,6 @@ using System.Threading;
 internal class XrmPluginCompletionProvider(
     [Import(typeof(SVsServiceProvider))] IServiceProvider serviceProvider,
     [Import] IOutputLoggerService logger,
-    [Import] IXrmSchemaProviderFactory xrmSchemaProviderFactory,
     [Import] IRepositoryFactory repositoryFactory,
     [Import] ITextStructureNavigatorSelectorService structureNavigatorSelector) : IAsyncCompletionSourceProvider
 {
@@ -34,17 +31,10 @@ internal class XrmPluginCompletionProvider(
 
     public IAsyncCompletionSource? GetOrCreate(ITextView textView)
     {
-        //REPO TEST
-        var asmRepo = ThreadHelper.JoinableTaskFactory.Run(repositoryFactory.CreateRepositoryAsync<IPluginAssemblyRepository>);
-        var pluginRepo = ThreadHelper.JoinableTaskFactory.Run(repositoryFactory.CreateRepositoryAsync<IPluginTypeRepository>);
-        var assemblies = ThreadHelper.JoinableTaskFactory.Run(() => asmRepo.GetAsync(CancellationToken.None));
-        var plugins = ThreadHelper.JoinableTaskFactory.Run(() => pluginRepo.GetAsync(new Guid("c87fb71c-7109-40e2-8055-eb517b5d25e1"), CancellationToken.None));
-        ///////////
-
         if (textView is null) { return null; }
-        if (xrmSchemaProviderFactory is null)
+        if (repositoryFactory is null)
         {
-            throw new InvalidOperationException($"XrmSchemaProviderFactory is missing the in {nameof(XrmPluginDefCompletionProvider)}.");
+            throw new InvalidOperationException($"{nameof(RepositoryFactory)} is missing the in {nameof(XrmPluginDefCompletionProvider)}.");
         }
         return textView.Properties.GetOrCreateSingletonProperty(() =>
         {
@@ -57,7 +47,7 @@ internal class XrmPluginCompletionProvider(
 
             var componentModel = (IComponentModel)Package.GetGlobalService(typeof(SComponentModel));
             var workspace = componentModel.GetService<VisualStudioWorkspace>();
-            return new XrmPluginDefinitionCompletionSource(logger, xrmSchemaProviderFactory, workspace);
+            return new XrmPluginDefinitionCompletionSource(logger, repositoryFactory, workspace);
         });
     }
 

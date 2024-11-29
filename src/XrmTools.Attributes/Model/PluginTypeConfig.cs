@@ -76,7 +76,7 @@ public class PluginTypeConfig : TypedEntity<PluginTypeConfig>, IPluginTypeConfig
         set => this["workflowactivitygroupname"] = value;
     }
 
-    [JsonProperty(Order = 1)]
+    [JsonProperty("plugintype_sdkmessageprocessingstep", Order = 1)]
     [JsonPropertyOrder(1)]
     public ICollection<PluginStepConfig> Steps { get; set; } = [];
 

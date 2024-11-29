@@ -2,12 +2,16 @@
 namespace XrmTools.UI;
 
 using Community.VisualStudio.Toolkit;
+using Microsoft.VisualStudio.Shell.Interop;
+using System;
 using System.ComponentModel.Composition;
 using System.Threading.Tasks;
 using XrmTools.Helpers;
 using XrmTools.Logging.Compatibility;
 using XrmTools.Options;
 using XrmTools.Settings;
+using XrmTools.Xrm;
+using XrmTools.Xrm.Repositories;
 
 internal interface IEnvironmentSelector
 {
@@ -23,8 +27,12 @@ internal class EnvironmentSelector : IEnvironmentSelector
     [Import]
     ILogger<EnvironmentSelector>? Logger { get; set; }
 
+    [Import]
+    IRepositoryFactory? RepositoryFactory { get; set; }
+
     public async Task<DataverseEnvironment?> ChooseEnvironmentAsync(SettingsStorageTypes settingLevel)
     {
+        if (SettingsProvider == null) throw new InvalidOperationException(nameof(SettingsProvider));
         var solutionItem = await FileHelper.FindActiveItemAsync();
 
         if (solutionItem?.Type != SolutionItemType.Project && solutionItem?.Type != SolutionItemType.Solution)
@@ -33,14 +41,15 @@ internal class EnvironmentSelector : IEnvironmentSelector
             return null;
         }
 
-        var dialog = new EnvironmentSelectorDialog(settingLevel, SettingsProvider, solutionItem);
+        var dialog = new EnvironmentSelectorDialog(
+            settingLevel, SettingsProvider, solutionItem, RepositoryFactory);
         if (dialog == null)
         {
             Logger.LogWarning("Environment level is not set to Solution or Project.");
             await VS.MessageBox.ShowAsync(
                 "Environment level not selected", 
-                "Please select an environment level other than Visual Studio in Tools > Options > Xrm Tools.", 
-                Microsoft.VisualStudio.Shell.Interop.OLEMSGICON.OLEMSGICON_WARNING);
+                "Please select an environment level other than Visual Studio in Tools > Options > Xrm Tools.",
+                OLEMSGICON.OLEMSGICON_WARNING);
             return null;
         }
         if (dialog.ShowDialog() == true)
