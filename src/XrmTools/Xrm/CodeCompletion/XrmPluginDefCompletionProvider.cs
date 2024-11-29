@@ -12,16 +12,17 @@ using XrmTools.Helpers;
 using Microsoft.VisualStudio.Text;
 using System;
 using XrmTools.Logging;
+using XrmTools.Xrm.Repositories;
 
 [Export(typeof(IAsyncCompletionSourceProvider))]
 [ContentType("JSON")]
 [Name(nameof(XrmPluginDefCompletionProvider))]
 //[TextViewRole(PredefinedTextViewRoles.Editable)]
 [method: ImportingConstructor]
-public class XrmPluginDefCompletionProvider(
+internal class XrmPluginDefCompletionProvider(
     [Import(typeof(SVsServiceProvider))] IServiceProvider serviceProvider,
     [Import] IOutputLoggerService logger,
-    [Import] IXrmSchemaProviderFactory xrmSchemaProviderFactory,
+    [Import] IRepositoryFactory repositoryFactory,
     [Import] ITextStructureNavigatorSelectorService structureNavigatorSelector) : IAsyncCompletionSourceProvider
 {
     private IVsRunningDocumentTable? _RunningDocumenTable;
@@ -29,7 +30,7 @@ public class XrmPluginDefCompletionProvider(
     public IAsyncCompletionSource? GetOrCreate(ITextView textView)
     {
         if (textView is null) { return null; }
-        if (xrmSchemaProviderFactory is null)
+        if (repositoryFactory is null)
         {
             throw new InvalidOperationException($"XrmSchemaProviderFactory is missing the in {nameof(XrmPluginDefCompletionProvider)}.");
         }
@@ -38,7 +39,7 @@ public class XrmPluginDefCompletionProvider(
             ThreadHelper.ThrowIfNotOnUIThread();
             if (textView.TextBuffer.Properties.GetProperty(typeof(ITextDocument)) is ITextDocument document)
             {
-                return new XrmPluginDefCompletionSource(logger, xrmSchemaProviderFactory, structureNavigatorSelector, textView.TextBuffer);
+                return new XrmPluginDefCompletionSource(logger, repositoryFactory, structureNavigatorSelector, textView.TextBuffer);
             }
             return null;
         });

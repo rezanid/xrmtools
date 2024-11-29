@@ -92,7 +92,7 @@ public class PluginAssemblyMetadataService : IPluginAssemblyMetadataService
 
         if (attributeData.GetValue<string>(nameof(PluginAssemblyAttribute.SolutionId)) is string solutionId)
         {
-            pluginAssemblyConfig.SolutionId = new EntityReference("solutions", Guid.Parse(solutionId));
+            pluginAssemblyConfig.SolutionId = Guid.Parse(solutionId);// new EntityReference("solutions", Guid.Parse(solutionId));
         }
 
         return pluginAssemblyConfig;

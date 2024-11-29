@@ -1,5 +1,5 @@
 ﻿#nullable enable
-namespace XrmTools.Xrm.Serialization;
+namespace XrmTools.Core.Serialization;
 
 using System.Linq;
 using System;

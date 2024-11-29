@@ -20,11 +20,15 @@ using XrmTools.Helpers;
 using XrmTools.Logging;
 using XrmTools.Options;
 using XrmTools.Settings;
-using XrmTools.Xrm;
 using XrmTools.Xrm.Generators;
 using XrmTools.Tokens;
 using Task = System.Threading.Tasks.Task;
 using XrmTools.Commands;
+using XrmTools.Xrm.Auth;
+using XrmTools.Authentication;
+using XrmTools.Environments;
+using System.Reflection;
+using System.IO;
 
 internal record ProjectDataverseSettings(
     string EnvironmentUrl, 
@@ -95,7 +99,6 @@ internal record ProjectDataverseSettings(
         "ActiveProjectCapability:CSharp",
         VSConstants.UICONTEXT.SolutionHasSingleProject_string,
         VSConstants.UICONTEXT.SolutionHasMultipleProjects_string])]
-[ProvideService(typeof(IXrmSchemaProviderFactory), IsAsyncQueryable = true, IsCacheable = true, IsFreeThreaded = true)]
 [ProvideService(typeof(IXrmPluginCodeGenerator), IsAsyncQueryable = true, IsCacheable = true, IsFreeThreaded = true)]
 [ProvideService(typeof(IXrmEntityCodeGenerator), IsAsyncQueryable = true, IsCacheable = true, IsFreeThreaded = true)]
 [ProvideService(typeof(IEnvironmentProvider), IsAsyncQueryable = true, IsCacheable = true, IsFreeThreaded = true)]
@@ -108,10 +111,10 @@ public sealed partial class XrmToolsPackage : ToolkitPackage
     // It has been observed that VS can call the constructor of the package twice! causing multiple instances of the singleton
     // services to be created. To avoid side effects, we store them in static fields.
     private readonly static IOutputLoggerService _loggerService;
-    private readonly static IXrmSchemaProviderFactory _xrmSchemaProviderFactory;
     private readonly static IEnvironmentProvider _environmentProvider;
     private readonly static ISettingsProvider _settingsProvider;
-
+    private readonly static IAuthenticationService _authentionService;
+    private readonly static ITokenExpanderService _tokenExpanderService;
 
     public const string SolutionPersistanceKey = "XrmToolsProperies";
     private static readonly ExplicitInterfaceInvoker<Package> implicitInvoker = new();
@@ -123,21 +126,42 @@ public sealed partial class XrmToolsPackage : ToolkitPackage
     /// </summary>
     private GeneralOptions? Options;
 
+    [Export(typeof(TimeProvider))] internal TimeProvider TimeProvider { get => TimeProvider.System; }
     [Export(typeof(IOutputLoggerService))] internal IOutputLoggerService OutputLoggerService { get => _loggerService; }
-    [Export(typeof(IXrmSchemaProviderFactory))] internal IXrmSchemaProviderFactory XrmSchemaProviderFactory { get => _xrmSchemaProviderFactory; }
     [Export(typeof(IEnvironmentProvider))] internal IEnvironmentProvider EnvironmentProvider { get => _environmentProvider; }
-    [Export(typeof(ISettingsProvider))] public ISettingsProvider SettingsProvider { get => _settingsProvider; }
+    [Export(typeof(ISettingsProvider))] internal ISettingsProvider SettingsProvider { get => _settingsProvider; }
+    [Export(typeof(IAuthenticationService))] internal IAuthenticationService AuthenticationService { get => _authentionService; }
+    //[Import(typeof(IXrmHttpClientFactory))] internal IXrmHttpClientFactory? HttpClientFactory { get; set; }
+    //[Import(typeof(IRepositoryFactory))] internal IRepositoryFactory? RepositoryFactory { get; set; }
 
     static XrmToolsPackage()
     {
         _loggerService = new OutputLoggerService();
         _settingsProvider = new SettingsProvider();
         _environmentProvider = new DataverseEnvironmentProvider(_settingsProvider);
-        _xrmSchemaProviderFactory = new XrmSchemaProviderFactory(
-            _environmentProvider, 
-            new TokenExpanderService([
-                new CredentialTokenExpander(new CredentialManager()), 
-                new EnvironmentTokenExpander()]));
+        _tokenExpanderService = new TokenExpanderService([
+            new CredentialTokenExpander(new CredentialManager()),
+            new EnvironmentTokenExpander()]);
+        _authentionService = new AuthenticationService(
+            _tokenExpanderService,
+            new ClientAppAuthenticator
+        {
+            NextAuthenticator = new DeviceCodeAuthenticator
+            {
+                NextAuthenticator = new IntegratedAuthenticator()
+            }
+        });
+        AppDomain.CurrentDomain.AssemblyResolve += CurrentDomain_AssemblyResolve;
+    }
+
+    private static Assembly? CurrentDomain_AssemblyResolve(object sender, ResolveEventArgs args)
+    {
+        //System.Security.Cryptography.ProtectedData, Version=4.0.3.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a
+        if (args.Name.StartsWith("System.Security.Cryptography.ProtectedData"))
+        {
+            return Assembly.LoadFile(Path.Combine(Assembly.GetExecutingAssembly().Location, "System.Security.Cryptography.ProtectedData.dll"));
+        }
+        return null;
     }
 
     private async Task RegisterCommandsAsync()
@@ -206,11 +230,6 @@ public sealed partial class XrmToolsPackage : ToolkitPackage
     private async Task InitializeMefServicesAsync()
     {
         AddService(
-            typeof(IXrmSchemaProviderFactory),
-            async (container, cancellationToken, type) =>
-                await Task.FromResult(XrmSchemaProviderFactory)
-            , promote: true);
-        AddService(
             typeof(IXrmPluginCodeGenerator),
             async (container, cancellationToken, type) =>
                 await Task.FromResult(new TemplatedPluginCodeGenerator())
@@ -268,7 +287,8 @@ public sealed partial class XrmToolsPackage : ToolkitPackage
             data.ProgressText = $"Refreshing metadata for {env.Url}";
             data.PercentComplete = 100 * currentIndex / environments.Count;
             handler.Progress.Report(data);
-            await XrmSchemaProviderFactory.EnsureInitializedAsync(env).ConfigureAwait(false);
+            //TODO: Write code to prefetch data if possible.
+            //await XrmSchemaProviderFactory.EnsureInitializedAsync(env).ConfigureAwait(false);
         }
         data.ProgressText = "Metadata refresh complete";
         data.PercentComplete = 100;

@@ -155,8 +155,6 @@
     <GuidSymbol name="SetPluginGeneratorTemplateCmdUIRule" value="{be4c5f8f-c72b-4442-9b9c-d2b5f7f2b9a0}" />
                       
     <!-- MEF Services-->
-    <GuidSymbol name="guidOutputLoggerService" value="{974d18b3-8c5f-464f-a589-40b1fd920d4c}" />
-    <GuidSymbol name="guidEnvironmentProvider" value="{b3322248-0f39-4073-b715-b25bc69dcf23}" />
     <GuidSymbol name="guidEnvironmentSelector" value="{1c9aad2b-53da-44b8-89ad-0e1d49945198}"/>
     <GuidSymbol name="guidSettingsProvider" value="{7d969eb6-a17f-431c-8a6e-fe3ea0a9dee3}" />
     <GuidSymbol name="guidXrmSchemaProviderFactory" value="{b27d7354-9380-4c2e-ba0a-f423e727976e}" />

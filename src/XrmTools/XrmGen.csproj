@@ -68,7 +68,6 @@
     <Compile Include="Classifiers\XrmStringClassifierProvider.cs" />
     <Compile Include="CodeCompletion\XrmPluginCompletionProvider.cs" />
     <Compile Include="CodeCompletion\XrmPluginDefinitionCompletionSource.cs" />
-    <Compile Include="CodeCompletion\XrmPluginTextBasedCompletionSource.cs" />
     <Compile Include="Commands\SelectEnvironmentCommand.cs" />
     <Compile Include="Commands\SetPluginGeneratorTemplateInProjectCommand.cs" />
     <Compile Include="Commands\SetPluginGeneratorTemplateInSolutionCommand.cs" />
@@ -80,12 +79,6 @@
     <Compile Include="Helpers\PackageHelper.cs" />
     <Compile Include="Helpers\ProjectExtensions.cs" />
     <Compile Include="Helpers\ProvideSolutionProperties.cs" />
-    <Compile Include="Logging\Compatibility\EventId.cs" />
-    <Compile Include="Logging\Compatibility\FormattedValues.cs" />
-    <Compile Include="Logging\Compatibility\ILogger.cs" />
-    <Compile Include="Logging\Compatibility\ILoggerProvider.cs" />
-    <Compile Include="Logging\Compatibility\LoggerExtensions.cs" />
-    <Compile Include="Logging\Compatibility\LogValuesFormatter.cs" />
     <Compile Include="Logging\LoggerFactory.cs" />
     <Compile Include="Logging\OutputLoggerService.cs" />
     <Compile Include="Options\CurrentEnvironmentConverter.cs" />
@@ -104,12 +97,17 @@
       <DependentUpon>EnvironmentSelectorDialog.xaml</DependentUpon>
     </Compile>
     <Compile Include="UI\EnvironmentSelectorViewModel.cs" />
+    <Compile Include="XrmHttpClientFactory.cs" />
     <Compile Include="XrmToolsPackage.SolutionProperties.cs" />
+    <Compile Include="Xrm\Auth\ClientAppAuthenticator.cs" />
+    <Compile Include="Xrm\Auth\DelegatingAuthenticator.cs" />
+    <Compile Include="Xrm\Auth\DeviceCodeAuthenticator.cs" />
+    <Compile Include="Xrm\Auth\IntegratedAuthenticator.cs" />
+    <Compile Include="Xrm\IXrmSchemaProvider.cs" />
     <Compile Include="Xrm\OptionSetMetadataNameComparer.cs" />
     <Compile Include="Helpers\DteExtensions.cs" />
     <Compile Include="Helpers\DteProjectHelpers.cs" />
     <Compile Include="Logging\OutputLoggerProvider.cs" />
-    <Compile Include="NewItemTarget.cs" />
     <Compile Include="Options\GeneralOptions.cs" />
     <Compile Include="UI\AssemblySelectionDialog.xaml.cs">
       <DependentUpon>AssemblySelectionDialog.xaml</DependentUpon>
@@ -123,7 +121,6 @@
     <Compile Include="Helpers\EntityMetadataExtensions.cs" />
     <Compile Include="Helpers\StringBuilderExtensions.cs" />
     <Compile Include="Commands\NewPluginDefinitionFileCommand.cs" />
-    <Compile Include="Helpers\TypeExtensions.cs" />
     <Compile Include="UI\Converters\ObjectToJsonConverter.cs" />
     <Compile Include="UI\ViewModelBase.cs" />
     <Compile Include="Xrm\Extensions\EntityExtensions.cs" />
@@ -140,7 +137,6 @@
     <Compile Include="Xrm\CodeCompletion\XrmPluginDefCompletionProvider.cs" />
     <Compile Include="Xrm\CodeCompletion\XrmPluginDefCompletionSource.cs" />
     <Compile Include="Xrm\Constants.cs" />
-    <Compile Include="Helpers\StringHelpers.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="source.extension.cs">
       <AutoGen>True</AutoGen>
@@ -154,22 +150,22 @@
     </Compile>
     <Compile Include="XrmToolsPackage.cs" />
     <Compile Include="Xrm\Extensions\LabelExtensions.cs" />
-    <Compile Include="Xrm\MetadataCache.cs" />
     <Compile Include="Resources\Strings.Designer.cs">
       <AutoGen>True</AutoGen>
       <DesignTime>True</DesignTime>
       <DependentUpon>Strings.resx</DependentUpon>
     </Compile>
-    <Compile Include="Xrm\Serialization\IgnoreDataContractResolver.cs" />
-    <Compile Include="Xrm\Serialization\IgnoreEntityPropertiesConverter.cs" />
-    <Compile Include="Xrm\Serialization\TypedEntityConverter.cs" />
-    <Compile Include="Xrm\Serialization\TypedEntityConverter_T.cs" />
-    <Compile Include="Xrm\XrmSchemaProvider.cs" />
-    <Compile Include="Xrm\XrmSchemaProviderFactory.cs" />
+    <Compile Include="Xrm\Repositories\RepositoryFactory.cs" />
+    <Compile Include="Xrm\WebApiSchemaProvider.cs" />
+    <Compile Include="Xrm\XrmMetadataSource.cs" />
     <Compile Include="Logging\OutputLogger.cs" />
     <Compile Include="_Core\Validation.cs" />
   </ItemGroup>
   <ItemGroup>
+    <Content Include="Microsoft.Bcl.TimeProvider\Microsoft.Bcl.TimeProvider.dll">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+      <IncludeInVSIX>true</IncludeInVSIX>
+    </Content>
     <Content Include="Microsoft.Extensions.Caching.Abstractions\Microsoft.Extensions.Caching.Abstractions.dll">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
       <IncludeInVSIX>true</IncludeInVSIX>
@@ -223,22 +219,31 @@
     <PackageReference Include="Humanizer.Core">
       <Version>2.14.1</Version>
     </PackageReference>
+    <PackageReference Include="Microsoft.Bcl.TimeProvider">
+      <Version>8.0.0</Version>
+    </PackageReference>
     <PackageReference Include="Microsoft.CodeAnalysis.CSharp">
       <Version>4.11.0</Version>
     </PackageReference>
-    <PackageReference Include="Microsoft.PowerPlatform.Dataverse.Client">
-      <Version>1.1.32</Version>
+    <PackageReference Include="Microsoft.Extensions.Http">
+      <Version>8.0.0</Version>
+    </PackageReference>
+    <PackageReference Include="Microsoft.Extensions.Http.Resilience">
+      <Version>8.10.0</Version>
+    </PackageReference>
+    <PackageReference Include="Microsoft.Identity.Client.Extensions.Msal">
+      <Version>4.66.2</Version>
     </PackageReference>
     <PackageReference Include="Microsoft.VisualStudio.CoreUtility">
-      <Version>17.11.260</Version>
+      <Version>17.12.215</Version>
     </PackageReference>
     <PackageReference Include="Microsoft.VisualStudio.Language.Intellisense">
-      <Version>17.11.260</Version>
+      <Version>17.12.215</Version>
     </PackageReference>
     <PackageReference Include="Microsoft.VisualStudio.LanguageServices">
       <Version>4.11.0</Version>
     </PackageReference>
-    <PackageReference Include="Microsoft.VisualStudio.SDK" Version="17.11.40262" ExcludeAssets="runtime">
+    <PackageReference Include="Microsoft.VisualStudio.SDK" Version="17.12.40392" ExcludeAssets="runtime">
       <IncludeAssets>compile; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageReference>
     <PackageReference Include="Microsoft.VSSDK.BuildTools" Version="17.12.2069">
@@ -252,23 +257,23 @@
       <Version>5.1.2</Version>
     </PackageReference>
     <PackageReference Include="PolySharp">
-      <Version>1.14.1</Version>
+      <Version>1.15.0</Version>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
       <PrivateAssets>all</PrivateAssets>
     </PackageReference>
     <PackageReference Include="Scriban">
-      <Version>5.11.0</Version>
+      <Version>5.12.0</Version>
     </PackageReference>
     <PackageReference Include="StrongNamer">
       <Version>0.2.5</Version>
     </PackageReference>
     <PackageReference Include="System.Reflection.MetadataLoadContext">
-      <Version>8.0.1</Version>
+      <Version>8.0.0</Version>
     </PackageReference>
     <PackageReference Include="System.Runtime.Caching">
-      <Version>8.0.1</Version>
+      <Version>8.0.0</Version>
     </PackageReference>
-    <PackageReference Include="YamlDotNet" Version="16.1.3" />
+    <PackageReference Include="YamlDotNet" Version="16.2.0" />
   </ItemGroup>
   <ItemGroup>
     <VSCTCompile Include="VSCommandTable.vsct">

@@ -5,23 +5,18 @@ using Microsoft.CodeAnalysis;
 using Microsoft.VisualStudio.Language.Intellisense.AsyncCompletion;
 using Microsoft.VisualStudio.Language.Intellisense.AsyncCompletion.Data;
 using Microsoft.VisualStudio.Text;
-using System;
-using System.Collections.Generic;
 using System.Linq;
-using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using XrmTools.Logging;
-using XrmTools.Xrm;
-using System.Collections.Immutable;
+using XrmTools.Core.Repositories;
 using Microsoft.CodeAnalysis.Text;
-using Microsoft.VisualStudio.ComponentModelHost;
 using Microsoft.VisualStudio.LanguageServices;
-using Microsoft.VisualStudio.Shell;
 using XrmTools.Meta.Attributes;
+using XrmTools.Xrm.Repositories;
 
 internal class XrmPluginDefinitionCompletionSource(
-    IOutputLoggerService logger, IXrmSchemaProviderFactory xrmSchemaProviderFactory, VisualStudioWorkspace workspace) : IAsyncCompletionSource
+    IOutputLoggerService logger, IRepositoryFactory repositoryFactory, VisualStudioWorkspace workspace) : IAsyncCompletionSource
 {
     public async Task<CompletionContext> GetCompletionContextAsync(
         IAsyncCompletionSession session,
@@ -31,8 +26,8 @@ internal class XrmPluginDefinitionCompletionSource(
         CancellationToken cancellationToken)
     {
         // Get the VisualStudioWorkspace service
-        var componentModel = (IComponentModel)Package.GetGlobalService(typeof(SComponentModel));
-        var workspace = componentModel.GetService<VisualStudioWorkspace>();
+        //var componentModel = (IComponentModel)Package.GetGlobalService(typeof(SComponentModel));
+        //var workspace = componentModel.GetService<VisualStudioWorkspace>();
 
         // Retrieve the document associated with the trigger location
         //var documentId = workspace.CurrentSolution.GetDocumentId(triggerLocation.Snapshot.TextBuffer.AsTextContainer());
@@ -64,23 +59,20 @@ internal class XrmPluginDefinitionCompletionSource(
         var argumentIndex = GetArgumentIndexAtPosition(argumentList.Value, triggerLocation.Position);
         if (argumentIndex == -1) return CompletionContext.Empty;
 
-        switch (argumentIndex)
+        return argumentIndex switch
         {
-            case 0:
-                return await GetEntityCompletionsAsync(cancellationToken);
-            case 1:
-                return await GetMessageCompletionsAsync(argumentList.Value[0], semanticModel, cancellationToken);
-            case 2:
-                return await GetAttributeCompletionsAsync(argumentList.Value[0], semanticModel, triggerLocation, cancellationToken);
-        }
-        return CompletionContext.Empty;
+            0 => await GetEntityCompletionsAsync(cancellationToken),
+            1 => await GetMessageCompletionsAsync(argumentList.Value[0], semanticModel, cancellationToken),
+            2 => await GetAttributeCompletionsAsync(argumentList.Value[0], semanticModel, triggerLocation, cancellationToken),
+            _ => CompletionContext.Empty,
+        };
     }
 
     private async Task<CompletionContext> GetEntityCompletionsAsync(CancellationToken cancellationToken)
     {
-        var environmentProvider = await xrmSchemaProviderFactory.GetOrAddActiveEnvironmentProviderAsync();
-        if (environmentProvider is null) return CompletionContext.Empty;
-        var entities = await environmentProvider.GetEntitiesAsync(cancellationToken);
+        var entityMetadataRepository = await repositoryFactory.CreateRepositoryAsync<IEntityMetadataRepository>();
+        if (entityMetadataRepository == null) return CompletionContext.Empty;
+        var entities = await entityMetadataRepository.GetAsync(cancellationToken).ConfigureAwait(false);
         return new CompletionContext([..entities.Select(entity => new CompletionItem(entity.LogicalName, this))]);
     }
 
@@ -92,11 +84,10 @@ internal class XrmPluginDefinitionCompletionSource(
         var entityName = semanticModel.GetConstantValue(entityArgument.Expression).Value as string;
         if (string.IsNullOrEmpty(entityName))
             return CompletionContext.Empty;
-        var environmentProvider = await xrmSchemaProviderFactory.GetOrAddActiveEnvironmentProviderAsync();
-        if (environmentProvider is null) return CompletionContext.Empty;
-        //var messages = await environmentProvider.GetMessagesAsync(entityName, cancellationToken);
-        string[]  messages = ["a", "b", "c"];
-        return new CompletionContext([..messages.Select(message => new CompletionItem(message, this))]);
+        var entityMetadataRepository = await repositoryFactory.CreateRepositoryAsync<IEntityMetadataRepository>();
+        if (entityMetadataRepository == null) return CompletionContext.Empty;
+        var messages = await entityMetadataRepository.GetAvailableMessageAsync(entityName, cancellationToken).ConfigureAwait(false);
+        return new CompletionContext([..messages.Select(message => new CompletionItem(message.Name, this))]);
     }
 
     public async Task<CompletionContext> GetAttributeCompletionsAsync(
@@ -108,10 +99,11 @@ internal class XrmPluginDefinitionCompletionSource(
         var entityName = semanticModel.GetConstantValue(entityArgument.Expression).Value as string;
         if (string.IsNullOrEmpty(entityName)) return CompletionContext.Empty;
 
-        var environmentProvider = await xrmSchemaProviderFactory.GetOrAddActiveEnvironmentProviderAsync();
-        if (environmentProvider is null) return CompletionContext.Empty;
-        var availableAttributes = (await environmentProvider.GetEntityAsync(entityName, cancellationToken)).Attributes.Select(a =>a.LogicalName).ToArray();
-        if (availableAttributes == null || !availableAttributes.Any()) return CompletionContext.Empty;
+        var entityMetadataRepository = await repositoryFactory.CreateRepositoryAsync<IEntityMetadataRepository>();
+        if (entityMetadataRepository == null) return CompletionContext.Empty;
+        var entity = await entityMetadataRepository.GetAsync(entityName, cancellationToken).ConfigureAwait(false);
+        var availableAttributes = entity.Attributes?.Select(a =>a.LogicalName).ToArray();
+        if (availableAttributes == null || availableAttributes.Length == 0) return CompletionContext.Empty;
 
         // Extract current attribute list
         var root = await entityArgument.SyntaxTree.GetRootAsync(cancellationToken).ConfigureAwait(false);

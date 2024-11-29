@@ -1,14 +1,13 @@
 ﻿namespace XrmTools.Core.Tests.Tokens;
 
 using FluentAssertions;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
 using XrmTools.Tokens;
+using Xunit;
 
-[TestClass]
 public class EnvironmentTokenExpanderTests
 {
-    [TestMethod]
+    [Fact]
     public void CanExpand_WhenTokenIsEnvironment_ReturnsTrue()
     {
         // Arrange
@@ -21,7 +20,7 @@ public class EnvironmentTokenExpanderTests
         result.Should().BeTrue();
     }
 
-    [TestMethod]
+    [Fact]
     public void CanExpand_WhenTokenIsNotEnvironment_ReturnsFalse()
     {
         // Arrange
@@ -34,7 +33,7 @@ public class EnvironmentTokenExpanderTests
         result.Should().BeFalse();
     }
 
-    [TestMethod]
+    [Fact]
     public void Expand_WhenTokenIsEnvironment_ReturnsEnvironmentVariableValue()
     {
         // Arrange
@@ -53,7 +52,7 @@ public class EnvironmentTokenExpanderTests
         Environment.SetEnvironmentVariable(environmentVariableName, null);
     }
 
-    [TestMethod]
+    [Fact]
     public void Expand_WhenTokenIsNotEnvironment_ReturnsSameToken()
     {
         // Arrange

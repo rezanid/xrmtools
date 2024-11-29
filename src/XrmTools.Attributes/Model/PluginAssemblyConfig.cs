@@ -10,6 +10,7 @@ using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Runtime.Serialization;
 using System.Text.Json.Serialization;
+using XrmTools.Meta.Attributes.Serialization;
 using XrmTools.Meta.Model;
 
 public interface IPluginAssemblyConfig : IPluginAssemblyEntity
@@ -27,7 +28,7 @@ public interface IPluginAssemblyEntity
     string? Name { get; set; }
     ICollection<PluginTypeConfig> PluginTypes { get; set; }
     string? PublicKeyToken { get; set; }
-    EntityReference? SolutionId { get; set; }
+    Guid? SolutionId { get; set; }
     SourceTypes? SourceType { get; set; }
     string? Version { get; set; }
 }
@@ -84,12 +85,17 @@ public class PluginAssemblyConfig : TypedEntity<PluginAssemblyConfig>, IPluginAs
 
     #region IPluginAssemblyEntity Properties
     [AttributeLogicalName("pluginassemblyid")]
-    [JsonPropertyName("Id")]
-    [JsonProperty("Id")]
+    [JsonPrimaryKey]
+    //[JsonPropertyName("Id")]
+    //[JsonProperty("Id")]
     public Guid? PluginAssemblyId
     {
         get => TryGetAttributeValue("pluginassemblyid", out Guid value) ? value : null;
-        set => this["pluginassemblyid"] = value;
+        set
+        {
+            this["pluginassemblyid"] = value;
+            Id = value == null ? Guid.Empty : value.Value;
+        }
     }
     [AttributeLogicalName("name")]
     public string? Name
@@ -120,11 +126,12 @@ public class PluginAssemblyConfig : TypedEntity<PluginAssemblyConfig>, IPluginAs
     }
 
     [AttributeLogicalName("solutionid")]
-    public EntityReference? SolutionId
-    {
-        get => TryGetAttributeValue("solutionid", out EntityReference? value) ? value : null;
-        set => this["solutionid"] = value;
-    }
+    public Guid? SolutionId { get; set; }
+    //public EntityReference? SolutionId
+    //{
+    //    get => TryGetAttributeValue("solutionid", out EntityReference? value) ? value : null;
+    //    set => this["solutionid"] = value;
+    //}
 
     [AttributeLogicalName("version")]
     public string? Version

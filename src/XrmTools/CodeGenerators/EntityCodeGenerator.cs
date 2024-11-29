@@ -7,7 +7,6 @@ using Microsoft.VisualStudio.Shell;
 using Microsoft.VisualStudio.Shell.Interop;
 using Microsoft.VisualStudio.TextTemplating.VSHost;
 using Microsoft.Xrm.Sdk.Metadata;
-using Nito.AsyncEx.Synchronous;
 using System;
 using System.ComponentModel.Composition;
 using System.IO;
@@ -15,13 +14,15 @@ using System.Linq;
 using System.Text;
 using System.Threading;
 using XrmTools.Helpers;
-using XrmTools.Xrm;
 using XrmTools.Xrm.Generators;
 using YamlDotNet.Serialization;
 using YamlDotNet.Serialization.NamingConventions;
 using System.Diagnostics.CodeAnalysis;
 using XrmTools.Resources;
 using XrmTools.Logging.Compatibility;
+using XrmTools.Environments;
+using XrmTools.Xrm.Repositories;
+using XrmTools.Core.Repositories;
 
 public class EntityCodeGenerator : BaseCodeGeneratorWithSite
 {
@@ -34,7 +35,7 @@ public class EntityCodeGenerator : BaseCodeGeneratorWithSite
     public IXrmEntityCodeGenerator? Generator { get; set; }
 
     [Import]
-    public IXrmSchemaProviderFactory? SchemaProviderFactory { get; set; }
+    internal IRepositoryFactory? RepositoryFactory { get; set; }
 
     [Import]
     public IEnvironmentProvider? EnvironmentProvider { get; set; }
@@ -42,19 +43,23 @@ public class EntityCodeGenerator : BaseCodeGeneratorWithSite
     [Import]
     internal ILogger<EntityCodeGenerator> Logger {  get; set; }
 
+    private IEntityMetadataRepository EntityMetadataRepository;
+
     public override string GetDefaultExtension() => ".cs";
 
     public EntityCodeGenerator() => SatisfyImports();
 
-    [MemberNotNull(nameof(Generator), nameof(SchemaProviderFactory), nameof(EnvironmentProvider), nameof(Logger))]
+    [MemberNotNull(nameof(Generator), nameof(RepositoryFactory), nameof(EnvironmentProvider), nameof(Logger))]
     private void SatisfyImports()
     {
         var componentModel = (IComponentModel)Package.GetGlobalService(typeof(SComponentModel));
         componentModel?.DefaultCompositionService.SatisfyImportsOnce(this);
         if (Generator == null) throw new InvalidOperationException(string.Format(Strings.MissingServiceDependency, nameof(EntityCodeGenerator), nameof(Generator)));
-        if (SchemaProviderFactory == null) throw new InvalidOperationException(string.Format(Strings.MissingServiceDependency, nameof(EntityCodeGenerator), nameof(SchemaProviderFactory)));
+        if (RepositoryFactory == null) throw new InvalidOperationException(string.Format(Strings.MissingServiceDependency, nameof(EntityCodeGenerator), nameof(RepositoryFactory)));
         if (EnvironmentProvider == null) throw new InvalidOperationException(string.Format(Strings.MissingServiceDependency, nameof(EntityCodeGenerator), nameof(EnvironmentProvider)));
         if (Logger == null) throw new InvalidOperationException(string.Format(Strings.MissingServiceDependency, nameof(EntityCodeGenerator), nameof(Logger)));
+        EntityMetadataRepository = ThreadHelper.JoinableTaskFactory.Run(RepositoryFactory.CreateRepositoryAsync<IEntityMetadataRepository>);
+        if (EntityMetadataRepository == null) throw new InvalidOperationException(string.Format(Strings.MissingServiceDependency, nameof(EntityCodeGenerator), nameof(EntityMetadataRepository)));
     }
 
     protected override byte[]? GenerateCode(string inputFileName, string inputFileContent)
@@ -148,13 +153,9 @@ public class EntityCodeGenerator : BaseCodeGeneratorWithSite
 
     private EntityMetadata? GetEntityMetadata(string logicalName, string[] attributes)
     {
-        var environment = EnvironmentProvider?.GetActiveEnvironmentAsync().WaitAndUnwrapException();
-        if (environment is null || !environment.IsValid) return null;
-        var schemaProvider = SchemaProviderFactory?.Get(environment);
-        if (schemaProvider is null) return null;
         // Make a new cancellation token for 2 minutes.
         using var cts = new CancellationTokenSource(120000);
-        var metadata = schemaProvider?.GetEntityAsync(logicalName, cts.Token).WaitAndUnwrapException();
+        var metadata = ThreadHelper.JoinableTaskFactory.Run(async () => await EntityMetadataRepository?.GetAsync(logicalName, cts.Token));
         if (metadata == null) { return null; }
         var filteredAttributes = metadata.Attributes.Where(a => attributes.Contains(a.LogicalName)).ToArray();
         var propertyInfo = typeof(EntityMetadata).GetProperty("Attributes", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
@@ -170,7 +171,7 @@ public class EntityCodeGenerator : BaseCodeGeneratorWithSite
             if (disposing)
             {
                 // Dispose managed resources
-                if (SchemaProviderFactory is IDisposable disposableFactory)
+                if (EntityMetadataRepository is IDisposable disposableFactory)
                 {
                     disposableFactory.Dispose();
                 }

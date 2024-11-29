@@ -13,6 +13,7 @@ using Microsoft.VisualStudio.ComponentModelHost;
 using System.Diagnostics.CodeAnalysis;
 using XrmTools.Resources;
 using XrmTools.Logging.Compatibility;
+using XrmTools.Core.Helpers;
 
 [Command(PackageGuids.XrmToolsCmdSetIdString, PackageIds.NewPluginDefinitionCmdId)]
 internal sealed class NewPluginDefinitionFileCommand : BaseCommand<NewPluginDefinitionFileCommand>

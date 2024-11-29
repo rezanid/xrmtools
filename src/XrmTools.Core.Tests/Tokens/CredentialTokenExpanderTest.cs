@@ -1,14 +1,13 @@
 ﻿namespace XrmTools.Core.Tests.Tokens;
 
 using FluentAssertions;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Moq;
 using XrmTools.Tokens;
+using Xunit;
 
-[TestClass]
 public class CredentialTokenExpanderTest
 {
-    [TestMethod]
+    [Fact]
     public void Expand_WhenTokenIsCredentialToken_ShouldReturnExpandedValue()
     {
         // Arrange
@@ -27,7 +26,7 @@ public class CredentialTokenExpanderTest
         expandedValue.Should().Be(username);
     }
 
-    [TestMethod]
+    [Fact]
     public void Expand_WhenTokenIsNotCredentialToken_ShouldReturnSameToken()
     {
         // Arrange
@@ -42,7 +41,7 @@ public class CredentialTokenExpanderTest
         expandedValue.Should().Be(token);
     }
 
-    [TestMethod]
+    [Fact]
     public void CanExpand_WhenTokenIsCredentialToken_ShouldReturnTrue()
     {
         // Arrange
@@ -57,7 +56,7 @@ public class CredentialTokenExpanderTest
         canExpand.Should().BeTrue();
     }
 
-    [TestMethod]
+    [Fact]
     public void CanExpand_WhenTokenIsNotCredentialToken_ShouldReturnFalse()
     {
         // Arrange

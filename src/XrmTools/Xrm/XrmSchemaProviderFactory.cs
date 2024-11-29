@@ -4,9 +4,9 @@ namespace XrmTools.Xrm;
 using System;
 using System.Collections.Concurrent;
 using System.ComponentModel.Composition;
-using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Threading.Tasks;
+using XrmTools.Environments;
 using XrmTools.Tokens;
 
 [Guid(PackageGuids.guidXrmSchemaProviderFactoryString)]

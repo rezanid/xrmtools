@@ -1,5 +1,5 @@
 ﻿#nullable enable
-namespace XrmTools.Xrm.Serialization;
+namespace XrmTools.Core.Serialization;
 
 using Newtonsoft.Json;
 using Newtonsoft.Json.Serialization;
@@ -19,7 +19,7 @@ public class IgnoreEntityPropertiesResolver : DefaultContractResolver
         else
         {
             // Allow properties in derived classes to be serialized
-            property.Ignored = false; 
+            property.Ignored = false;
         }
         return property;
     }

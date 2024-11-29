@@ -7,12 +7,21 @@ using System.Windows.Forms.Design;
 using System.ComponentModel;
 using Community.VisualStudio.Toolkit;
 using Microsoft.VisualStudio.Shell.Interop;
-using Microsoft.PowerPlatform.Dataverse.Client;
 using Microsoft.Crm.Sdk.Messages;
 using XrmTools.Resources;
+using XrmTools.Xrm;
+using XrmTools.Core;
+using XrmTools.Xrm.Repositories;
+using System.ComponentModel.Composition;
+using Microsoft.VisualStudio.ComponentModelHost;
+using Microsoft.VisualStudio.Shell;
+using System.Threading;
 
 public class CurrentEnvironmentEditor : UITypeEditor
 {
+    [Import]
+    internal IRepositoryFactory? RepositoryFactory { get; set; }
+
     public override UITypeEditorEditStyle GetEditStyle(ITypeDescriptorContext context)
     {
         // Indicate that this editor will display a drop-down list.
@@ -85,6 +94,17 @@ public class CurrentEnvironmentEditor : UITypeEditor
 
     private void TestEnvironment(DataverseEnvironment environment)
     {
+        if (RepositoryFactory is null)
+        {
+            var componentModel = (IComponentModel)Package.GetGlobalService(typeof(SComponentModel));
+            if (componentModel == null)
+            {
+                _ = VS.MessageBox.Show("Testing connection not available", "Testing connection is not available currently, please try again later.", OLEMSGICON.OLEMSGICON_WARNING, OLEMSGBUTTON.OLEMSGBUTTON_OK);
+                return;
+            }
+            componentModel.DefaultCompositionService.SatisfyImportsOnce(this);
+        }
+
         var (success, message) = TestConnection(environment);
 
         if (success)
@@ -99,12 +119,13 @@ public class CurrentEnvironmentEditor : UITypeEditor
 
     private (bool, string) TestConnection(DataverseEnvironment environment)
     {
+        if (RepositoryFactory == null) return (false, "Testing connection is not available currently, please try again later.");
         if (environment is null) return (false, "Environment is not selected. Please select an environment first.");
         if (!environment.IsValid) return (false, string.Format(Strings.EnvironmentConnectionStringError, environment.Name));
         try
         {
-            using var client = new ServiceClient(environment.ConnectionString);
-            var response = client.Execute(new WhoAmIRequest());
+            using var repo = ThreadHelper.JoinableTaskFactory.Run(async () => await RepositoryFactory.CreateRepositoryAsync<ISystemRepository>(environment));
+            var response = ThreadHelper.JoinableTaskFactory.Run(async () => await repo.WhoAmIAsync(CancellationToken.None));
         }
         catch (Exception ex)
         {

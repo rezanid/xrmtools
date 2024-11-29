@@ -9,16 +9,18 @@ using System.Linq;
 using System.Reflection;
 using XrmTools.Options;
 using XrmTools.Settings;
+using XrmTools.Xrm.Repositories;
 
 /// <summary>
 /// Interaction logic for EnvironmentSelectorDialog.xaml
 /// </summary>
 internal partial class EnvironmentSelectorDialog : DialogWindow
 {
-    internal EnvironmentSelectorDialog(SettingsStorageTypes storageType, ISettingsProvider settingsProvider, SolutionItem solutionItem)
+    internal EnvironmentSelectorDialog(
+        SettingsStorageTypes storageType, ISettingsProvider settingsProvider, SolutionItem solutionItem, IRepositoryFactory? repositoryFactory)
     {
         EnsureReferencedAssembliesInMarkupAreLoaded();
-        DataContext = new EnvironmentSelectorViewModel(storageType, solutionItem, settingsProvider, OnSelect, OnCancel, OnTest);
+        DataContext = new EnvironmentSelectorViewModel(storageType, solutionItem, settingsProvider, OnSelect, OnCancel, repositoryFactory);
         InitializeComponent();
     }
 
