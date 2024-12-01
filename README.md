@@ -22,7 +22,7 @@ First you need to connect to an environment so that XrmTools can see where you a
 7. Set "Current Environment" to the environment that you just created.
 8. Click "Ok" button to save the settings.
 
-# Making a new Power Platform Plugin.
+# Adding a new Power Platform Plugin.
 1. Right-click on the project that will contain the plugin and select "Manage NuGet Packages..."
 2. Install the latest "XrmTools.Plugins" package.
 3. Right-click on the project or anywhere under it and select Add > New > Class (or simple Shift + Alt + C).
@@ -33,11 +33,30 @@ First you need to connect to an environment so that XrmTools can see where you a
    {
    }
    ```
-5. Now we will add the `[Step]` attribute and that is where the magic starts happening! Using this attribute you will define plugin registration steps. Its required parameters are the following.
-   * `string entityName` - is the logical name of the entity (table) that your plugin will act on.
-   * `string message` - is the message sent to that entity (table).
-   * `string filteringAttributes` - is the list of attributes (columns) of the table that your plugin will be informed of.
-   * `Stages stage` - is the stage of the execution pipeline that you plugin will get called in.
-   * `ExecutionMode mode` - is the execution mode of your plugin (think async or sync).
+5. Now we will add the `[Step]` attribute and that is where the magic starts happening! Try to add a Step attribute similar to the one below.
+   ```csharp
+   [Plugin]
+   [Step("account", "Create", "accountnumber,accountratingcode,accountcategorycode", Stages.PostOperation, ExecutionMode.Asynchronous)]
+   public partial class MyPlugin
+   {
+   }
+   [Step(
+   ```
+   Noticed how the Intellisense helps you pick the right entity or when you set the message, only the messages that apply to `account` entity are displayed?
+6. Now, let's add an [Image] attribute.
+   ```csharp
+   [Plugin("MyPlugin")]
+   [Step("account", "Update", "accountnumber,accountratingcode,accountcategorycode", Stages.PostOperation, ExecutionMode.Asynchronous)]
+   [Image(ImageTypes.PreImage, "Target")]
+   public partial class MyPlugin
+   {
+   }
+   ```
 
-   These should look familiar if you have been registering your plugins using PRT (Plugin Registration Tool), Xrm Toolbox or some other tool. But now you can define them right in your code and you get full Intellisense support to help you with that.
+# Adding code generation to a plugin
+After adding attributes to a plugin class, Xrm Tools knows more about your intentions and can help you even more. For example it can generate the typical code you would write in your plugins or generate typed entities that will be useful for your plugin. To enable code generation for your plugin do the following.
+1. Make sure the name of your plugin file has the word "Plugin" in it. The casing doesn't matter.
+2. Make sure that your plugin class is a `partial` class. Just like the one we created in [Adding a new Power Platform Plugin](#Adding-a-new-Power-Platform-Plugin).
+3. Right-click on your plugin class in the Solution Explorer and select "Set as plugin definition".
+
+Now, every time you save your plugin file, another file with be generated that contains all the code you need. You can fully customize the generated code in future if you want. Let's explore what's been generated and how we can use it.
