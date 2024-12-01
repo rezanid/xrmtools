@@ -8,7 +8,10 @@ You will soon be able to get it from Visual Studio's native Extensions gallery. 
 First you need to connect to an environment so that XrmTools can see where you are developing so that it can help you along the way. You can add as many environments as you want and you can use your own account to connect to all your environments or you can safely use application accounts if you would prefer that. Let's connect to an environment.
 1. Open the "Tool" menu and select "Options"
 2. All the way to the bottom you will find "Xrm Tools".
-3. Click on the three dots in front of "Environments"
+3. Click on the three dots in front of "Environments".
+4. Here you can add a new Power Platform environment to Visual Studio
+5. ...
+6. Set "Current Environment" to the environment that you just created.
 
 # Making a new Power Platform Plugin.
 1. Right-click on the project that will contain the plugin and select "Manage NuGet Packages..."
@@ -27,4 +30,5 @@ First you need to connect to an environment so that XrmTools can see where you a
    * `string filteringAttributes` - is the list of attributes (columns) of the table that your plugin will be informed of.
    * `Stages stage` - is the stage of the execution pipeline that you plugin will get called in.
    * `ExecutionMode mode` - is the execution mode of your plugin (think async or sync).
-   These should look familiar if you have been registering your plugins using PRT (Plugin Registration Tool), Xrm Toolbox or some other tool. But now you can define them write in your code and you get full Intellisense support to help not make any human errors.
+
+   These should look familiar if you have been registering your plugins using PRT (Plugin Registration Tool), Xrm Toolbox or some other tool. But now you can define them right in your code and you get full Intellisense support to help you with that.
