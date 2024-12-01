@@ -9,9 +9,18 @@ First you need to connect to an environment so that XrmTools can see where you a
 1. Open the "Tool" menu and select "Options"
 2. All the way to the bottom you will find "Xrm Tools".
 3. Click on the three dots in front of "Environments".
-4. Here you can add a new Power Platform environment to Visual Studio
-5. ...
-6. Set "Current Environment" to the environment that you just created.
+4. Here you can add a new Power Platform environment to Visual Studio. You can give your environment a name and a connection string. The connection string is very similar to the Xrm Tooling of Microsoft, only simpler and with security built-in. For example you can use the following to use your current account to connect to an environment.
+   ```shell
+   AuthType=OAuth;Url=<instance or environment URL>;Integrated Security=True;TenantId=<your tenant id>
+   ```
+   > ℹ️ How to find tenant ID
+   > 
+   > 1. Navigate to https://make.powerapps.com
+   > 2. Then click on the ⚙️ icon at the top-right of the page.
+   > 3. Click on the "Session details" link in the side-pane that opens. You will find Tenat ID and instance URL among the parameter that will be displayed.
+6. ...
+7. Set "Current Environment" to the environment that you just created.
+8. Click "Ok" button to save the settings.
 
 # Making a new Power Platform Plugin.
 1. Right-click on the project that will contain the plugin and select "Manage NuGet Packages..."
