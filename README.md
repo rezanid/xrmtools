@@ -2,7 +2,7 @@
 Xrm Tools is a Visual Studio extension that aims to make Power Platform development feel native within Visual Studio. You will get Intellisense support for your Plugins, generate boiler plate code, typed entities and more right from within Visual Studio. If you don't agree with the opinionated code or anything like that you get to customize your craft easily and safely. Let me show you!
 
 # How to install
-You will soon be able to get it from Visual Studio's native Extensions gallery. Once installed, just create a new solution and a library project under it or just open an existing solution that you already have. Don't worry It will not change anything in your project. You are the one behind the driving wheel at all times.
+You will soon be able to get it from Visual Studio's native Extensions gallery. Once installed, just create a new solution and a library project under it or just open an existing solution that you already have. Don't worry It will not change your project structure. You are the one behind the driving wheel at all times.
 
 # Connecting to a development environment
 First you need to connect to an environment so that XrmTools can see where you are developing so that it can help you along the way. You can add as many environments as you want and you can use your own account to connect to all your environments or you can safely use application accounts if you would prefer that. Let's connect to an environment.
@@ -24,7 +24,7 @@ First you need to connect to an environment so that XrmTools can see where you a
 
 # Adding a new Power Platform Plugin.
 1. Right-click on the project that will contain the plugin and select "Manage NuGet Packages..."
-2. Install the latest "XrmTools.Plugins" package.
+2. Install the latest "XrmTools.Meta" package.
 3. Right-click on the project or anywhere under it and select Add > New > Class (or simple Shift + Alt + C).
 4. Make your class `partial` and add `Plugin` attribute to your class. You can name the class anything your like. This attribute makes XrmTools aware that this is a plugin.
    ```csharp
