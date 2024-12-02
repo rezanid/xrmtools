@@ -68,6 +68,8 @@
     <Compile Include="Classifiers\XrmStringClassifierProvider.cs" />
     <Compile Include="CodeCompletion\XrmPluginCompletionProvider.cs" />
     <Compile Include="CodeCompletion\XrmPluginDefinitionCompletionSource.cs" />
+    <Compile Include="CodeGen\EntityCodeGenerator.cs" />
+    <Compile Include="CodeGen\PluginCodeGenerator.cs" />
     <Compile Include="Commands\SelectEnvironmentCommand.cs" />
     <Compile Include="Commands\SetPluginGeneratorTemplateInProjectCommand.cs" />
     <Compile Include="Commands\SetPluginGeneratorTemplateInSolutionCommand.cs" />
@@ -113,8 +115,6 @@
       <DependentUpon>AssemblySelectionDialog.xaml</DependentUpon>
     </Compile>
     <Compile Include="UI\AssemblySelectionViewModel.cs" />
-    <Compile Include="CodeGenerators\PluginCodeGenerator.cs" />
-    <Compile Include="CodeGenerators\EntityCodeGenerator.cs" />
     <Compile Include="Commands\SetCustomToolEntityGeneratorCommand.cs" />
     <Compile Include="Commands\SetCustomToolPluginGeneratorCommand.cs" />
     <Compile Include="Helpers\IVsHierarchyExtensions.cs" />
