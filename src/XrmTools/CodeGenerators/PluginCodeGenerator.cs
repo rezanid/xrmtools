@@ -100,7 +100,7 @@ public class PluginCodeGenerator : BaseCodeGeneratorWithSite
         if (GeneralOptions.Instance.LogLevel == LogLevel.Trace)
         {
             var serializedConfig = inputModel.SerializeJson();
-            File.WriteAllText(Path.ChangeExtension(inputFileName, ".config.json"), serializedConfig);
+            File.WriteAllText(Path.ChangeExtension(inputFileName, ".model.json"), serializedConfig);
         }
 
         var (isValid, validationMessage) = Generator.IsValid(inputModel);
@@ -177,7 +177,7 @@ public class PluginCodeGenerator : BaseCodeGeneratorWithSite
         using var cts = new CancellationTokenSource(120000);
         var entityDefinition = ThreadHelper.JoinableTaskFactory.Run(async () => await entityMetadataRepo.GetAsync(logicalName, cts.Token));
         if (entityDefinition == null) { return null; }
-
+        
         //NOTE!
         // Logical attributes to avoid unnecessary processing.
         var filteredAttributes =

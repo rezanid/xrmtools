@@ -80,6 +80,8 @@
     <Compile Include="Serialization\EntityResolverForFile.cs" />
     <Compile Include="Serialization\IgnoreDataContractResolver.cs" />
     <Compile Include="Serialization\IgnoreEntityPropertiesConverter.cs" />
+    <Compile Include="Serialization\KnownTypeConverter.cs" />
+    <Compile Include="Serialization\PolymorphicContractResolver.cs" />
     <Compile Include="Serialization\TypedEntityConverter.cs" />
     <Compile Include="Serialization\TypedEntityConverter_T.cs" />
     <Compile Include="SettingsStorageTypes.cs" />
