@@ -13,6 +13,7 @@ First you need to connect to an environment so that XrmTools can see where you a
    ```shell
    AuthType=OAuth;Url=<instance or environment URL>;Integrated Security=True;TenantId=<your tenant id>
    ```
+   You can read more about connection strings [here](https://github.com/rezanid/xrmtools/wiki/Providing-Connection-Strings)
    > ℹ️ How to find tenant ID
    > 
    > 1. Navigate to https://make.powerapps.com
