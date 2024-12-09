@@ -1,69 +1,43 @@
 ﻿#nullable enable
-namespace XrmGen.Xrm;
+namespace XrmTools.Xrm;
 
-using Microsoft.Extensions.Caching.Memory;
-using Microsoft.PowerPlatform.Dataverse.Client;
 using System;
-using System.Collections.Generic;
+using System.Collections.Concurrent;
 using System.ComponentModel.Composition;
 using System.Runtime.InteropServices;
 using System.Threading.Tasks;
+using XrmTools.Environments;
+using XrmTools.Tokens;
 
 [Guid(PackageGuids.guidXrmSchemaProviderFactoryString)]
 [ComVisible(true)]
 public interface IXrmSchemaProviderFactory: IDisposable
 {
-    IXrmSchemaProvider GetOrNew(string environmentUrl);
-    IXrmSchemaProvider Get(string environmentUrl);
-    Task EnsureInitializedAsync(string environmentUrl);
+    IXrmSchemaProvider? GetOrAddActiveEnvironmentProvider();
+    Task<IXrmSchemaProvider?> GetOrAddActiveEnvironmentProviderAsync();
+    IXrmSchemaProvider Get(DataverseEnvironment environment);
+    IXrmSchemaProvider GetOrNew(DataverseEnvironment environment);
+    Task EnsureInitializedAsync(DataverseEnvironment environment);
 }
 
-[Export(typeof(IXrmSchemaProviderFactory))]
-public class XrmSchemaProviderFactory : IXrmSchemaProviderFactory
+[method: ImportingConstructor]
+public class XrmSchemaProviderFactory(
+    [Import]IEnvironmentProvider environmentProvider,
+    [Import]ITokenExpanderService tokenExpander) : IXrmSchemaProviderFactory
 {
-    private static readonly Dictionary<string, IXrmSchemaProvider> Providers = [];
+    private static readonly ConcurrentDictionary<string, IXrmSchemaProvider> Providers = [];
     private static readonly object _lock = new();
     private bool disposed = false;
 
-    /// <summary>
-    /// Returns an existing provider or creates a new one and caches it.
-    /// </summary>
-    /// <param name="environmentUrl"></param>
-    /// <param name="applicationId"></param>
-    /// <returns></returns>
-    public IXrmSchemaProvider GetOrNew(string environmentUrl)
-    {
-        if (Providers.TryGetValue(environmentUrl, out var provider))
-        {
-            return provider;
-        }
-        return Initialize(environmentUrl);
-    }
+    public IXrmSchemaProvider? GetOrAddActiveEnvironmentProvider()
+        => environmentProvider.GetActiveEnvironment() is DataverseEnvironment env and { IsValid: true }
+            ? GetOrNew(env)
+            : null;
 
-    private IXrmSchemaProvider Initialize(string environmentUrl)
-        => Initialize(environmentUrl, $"AuthType=OAuth;Integrated Security=true;Url={environmentUrl};LoginPrompt=Never");
-
-    /// <summary>
-    /// Use this method to initialize a new provider.
-    /// </summary>
-    /// <param name="environmentUrl"></param>
-    /// <param name="connectionString">Examples: https://learn.microsoft.com/en-us/power-apps/developer/data-platform/xrm-tooling/use-connection-strings-xrm-tooling-connect#connection-string-parameters</param>
-    /// <returns></returns>
-    private IXrmSchemaProvider Initialize(string environmentUrl, string connectionString)
-    {
-        lock (_lock)
-        {
-            // To avoid race conditions:
-            if (Providers.TryGetValue(environmentUrl, out var provider))
-            {
-                return provider;
-            }
-            var cache = new MemoryCache(new MemoryCacheOptions());
-            provider = new XrmSchemaProvider(new ServiceClient(connectionString), environmentUrl, cache);
-            Providers[environmentUrl] = provider;
-            return provider;
-        }
-    }
+    public async Task<IXrmSchemaProvider?> GetOrAddActiveEnvironmentProviderAsync()
+        => await environmentProvider.GetActiveEnvironmentAsync() is DataverseEnvironment env and { IsValid: true }
+            ? GetOrNew(env)
+            : null;
 
     /// <summary>
     /// Returns an existing provider.
@@ -71,15 +45,19 @@ public class XrmSchemaProviderFactory : IXrmSchemaProviderFactory
     /// <param name="environmentUrl"></param>
     /// <returns></returns>
     /// <exception cref="InvalidOperationException">When environment has not been initialized.</exception>
-    public IXrmSchemaProvider Get(string environmentUrl)
+    public IXrmSchemaProvider Get(DataverseEnvironment environment)
     {
-        if (Providers.TryGetValue(environmentUrl, out var provider))
+        if (!environment.IsValid) return default!;
+        if (Providers.TryGetValue(environment.Url, out var provider))
         {
             return provider;
         }
-        throw new InvalidOperationException($"Environment with the URL: {environmentUrl} has not been initialized.");
+        throw new InvalidOperationException($"Environment with the URL: {environment} has not been initialized.");
     }
 
+    public IXrmSchemaProvider GetOrNew(DataverseEnvironment environment)
+        => !environment.IsValid ? default! : Providers.GetOrAdd(environment.Url, (key) => Initialize(environment));
+    
     /// <summary>
     /// Refreshes cached metadata
     /// </summary>
@@ -99,13 +77,32 @@ public class XrmSchemaProviderFactory : IXrmSchemaProviderFactory
     /// Ensure a provider is initialized for the given environment. It is a best practice to initialize 
     /// the providers before they are needed. You will gain some performance boost this way.
     /// </summary>
-    /// <param name="environmentUrl"></param>
-    /// <param name="applicationId"></param>
-    public async Task EnsureInitializedAsync(string environmentUrl)
+    public async Task EnsureInitializedAsync(DataverseEnvironment environment)
     {
-        if (Providers.ContainsKey(environmentUrl)) { return; }
-        var provider = Initialize(environmentUrl);
+        if (!environment.IsValid) return;
+        var provider = Providers.AddOrUpdate(
+            environment.Url,
+            (key) => Initialize(environment),
+            (key, existingProvider) => 
+                existingProvider.Environment == environment ? existingProvider : Initialize(environment)
+        );
         await provider.RefreshCacheAsync();
+    }
+
+    /// <summary>
+    /// Use this method to initialize a new provider.
+    /// </summary>
+    private IXrmSchemaProvider Initialize(DataverseEnvironment environment)
+    {
+        if (!environment.IsValid) return default!;
+        if (Providers.TryGetValue(environment.Url, out var provider))
+        {
+            return provider;
+        }
+        var cnnStr = tokenExpander.ExpandTokens(environment.ConnectionString);
+        provider = new XrmSchemaProvider(environment, cnnStr);
+        Providers[environment.Url] = provider;
+        return provider;
     }
 
     #region IDisposable Support

@@ -4,7 +4,7 @@ using System.Collections.Generic;
 using System.Linq;
 using YamlDotNet.Serialization;
 
-namespace XrmGen.Xrm.Generators;
+namespace XrmTools.Xrm.Generators;
 
 public class XrmCodeGenConfig : IEquatable<XrmCodeGenConfig>
 {

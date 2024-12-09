@@ -2,7 +2,7 @@
 using System.Resources;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
-using XrmGen;
+using XrmTools;
 
 // General Information about an assembly is controlled through the following 
 // set of attributes. Change these attribute values to modify the information
@@ -34,3 +34,4 @@ using XrmGen;
 // [assembly: AssemblyVersion("1.0.*")]
 [assembly: AssemblyVersion(Vsix.Version)]
 [assembly: AssemblyFileVersion(Vsix.Version)]
+[assembly: InternalsVisibleTo("XrmTools.Tests, PublicKey=0024000004800000940000000602000000240000525341310004000001000100fd44efb8aea3b4e708cc946d2fe54a405251a85b7f2bc21540c67ec59f62246a3b72834e1d633db6938ea37403501a16eb1b41fd19ef4f7cb909fcc763bb486defb132db7851e231837e70e6623c0daf66169e36df920ca59cbedc6085d1bbdd5b1572f07046e1a25be4ef6dfc80c6f2992200f9a83fb77da288719b63342bbb")]

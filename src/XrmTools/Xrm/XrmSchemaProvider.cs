@@ -1,8 +1,6 @@
-﻿namespace XrmGen.Xrm;
+﻿namespace XrmTools.Xrm;
 
-using Microsoft.Extensions.Caching.Memory;
-using Microsoft.Extensions.Primitives;
-using Microsoft.PowerPlatform.Dataverse.Client;
+using System.Runtime.Caching;
 using Microsoft.Xrm.Sdk.Messages;
 using Microsoft.Xrm.Sdk.Metadata;
 using Microsoft.Xrm.Sdk.Query;
@@ -11,21 +9,9 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
-using XrmGen.Xrm.Extensions;
-using XrmGen.Xrm.Model;
-
-public interface IXrmSchemaProvider : IDisposable
-{
-    string EnvironmentUrl { get; }
-    bool IsReady { get; }
-    Exception LastException { get; }
-    string LastError { get; }
-    Task<IEnumerable<EntityMetadata>> GetEntitiesAsync(CancellationToken cancellationToken);
-    Task<EntityMetadata> GetEntityAsync(string entityLogicalName, CancellationToken cancellationToken);
-    Task<IEnumerable<PluginAssemblyConfig>> GetPluginAssembliesAsync(CancellationToken cancellationToken);
-    Task<IEnumerable<PluginTypeConfig>> GetPluginTypesAsync(Guid assemblyid, CancellationToken cancellationToken);
-    Task RefreshCacheAsync();
-}
+using XrmTools.Xrm.Extensions;
+using XrmTools.Xrm.Model;
+using Microsoft.Xrm.Sdk;
 
 internal class DataverseCacheKeys(string EnvironmentUrl)
 {
@@ -35,57 +21,94 @@ internal class DataverseCacheKeys(string EnvironmentUrl)
     public string PluginTypes(Guid assemblyid) => $"{EnvironmentUrl}_PluginTypes_{assemblyid}";
 }
 
-public class XrmSchemaProvider(ServiceClient serviceClient, string environmentUrl, IMemoryCache cache) : IXrmSchemaProvider
+internal class ServiceClient(string connectionstring) : IDisposable
+{
+    private bool disposedValue;
+
+    public bool IsReady { get; }
+    public Exception LastException { get; }
+    public string LastError { get; }
+
+    internal Task<RetrieveMultipleResponse> RetrieveMultipleAsync(QueryExpression queryExpression, CancellationToken cancellationToken)
+        => throw new NotImplementedException();
+    internal OrganizationResponse Execute(OrganizationRequest request) => throw new NotImplementedException();
+    internal Task<OrganizationResponse> ExecuteAsync(OrganizationRequest request, CancellationToken cancellationToken) 
+        => throw new NotImplementedException();
+
+    protected virtual void Dispose(bool disposing)
+    {
+        if (!disposedValue)
+        {
+            if (disposing)
+            {
+                // TODO: dispose managed state (managed objects)
+            }
+
+            // TODO: free unmanaged resources (unmanaged objects) and override finalizer
+            // TODO: set large fields to null
+            disposedValue = true;
+        }
+    }
+
+    // // TODO: override finalizer only if 'Dispose(bool disposing)' has code to free unmanaged resources
+    // ~ServiceClient()
+    // {
+    //     // Do not change this code. Put cleanup code in 'Dispose(bool disposing)' method
+    //     Dispose(disposing: false);
+    // }
+
+    public void Dispose()
+    {
+        // Do not change this code. Put cleanup code in 'Dispose(bool disposing)' method
+        Dispose(disposing: true);
+        GC.SuppressFinalize(this);
+    }
+}
+
+public class XrmSchemaProvider(DataverseEnvironment environment, string connectionString) : IXrmSchemaProvider
 {
     private bool disposed = false;
-    private readonly DataverseCacheKeys cacheKeys = new (environmentUrl);
+    private readonly DataverseEnvironment environment = environment;
+    private readonly MemoryCache cache = MemoryCache.Default;
+    private readonly DataverseCacheKeys cacheKeys = new(environment.Url);
     private readonly TimeSpan cacheExpiration = TimeSpan.FromMinutes(30);
     private CancellationTokenSource cacheEvictionTokenSource = new ();
+    private ServiceClient ServiceClient { get; init; } = new(connectionString);
 
-    public string EnvironmentUrl { get => environmentUrl; }
-    public bool IsReady { get => serviceClient.IsReady; }
-    public Exception LastException { get => serviceClient.LastException; }
-    public string LastError { get => serviceClient.LastError; }
+    public DataverseEnvironment Environment { get => environment; }
+    public bool IsReady { get => ServiceClient.IsReady; }
+    public Exception LastException { get => ServiceClient.LastException; }
+    public string LastError { get => ServiceClient.LastError; }
 
     public async Task<IEnumerable<EntityMetadata>> GetEntitiesAsync(CancellationToken cancellationToken)
-        => !IsReady ? [] : await cache.GetOrCreateAsync(cacheKeys.EntityDefinitions, async entry =>
+        => !IsReady ? [] : await GetOrCreateCacheItemAsync(cacheKeys.EntityDefinitions, async () =>
         {
-            entry.AbsoluteExpirationRelativeToNow = cacheExpiration;
-            entry.AddExpirationToken(new CancellationChangeToken(cancellationToken));
-            return await FetchEntitiesAsync(serviceClient, cancellationToken);
-        });
+            return await FetchEntitiesAsync(ServiceClient, cancellationToken);
+        }, cancellationToken);
 
     public async Task<EntityMetadata> GetEntityAsync(string entityLogicalName, CancellationToken cancellationToken)
-        => !IsReady ? null : await cache.GetOrCreateAsync(cacheKeys.EntityDefinitionsExtensive(entityLogicalName), async entry =>
+        => !IsReady ? null : await GetOrCreateCacheItemAsync(cacheKeys.EntityDefinitionsExtensive(entityLogicalName), async () =>
         {
-            entry.AbsoluteExpirationRelativeToNow = cacheExpiration;
-            entry.AddExpirationToken(new CancellationChangeToken(cancellationToken));
-            return await FetchEntityAsync(entityLogicalName, serviceClient, cancellationToken);
-        });
+            return await FetchEntityAsync(entityLogicalName, ServiceClient, cancellationToken);
+        }, cancellationToken);
 
-    public EntityMetadata GetEntity(string entityLogicalName, CancellationToken cancellationToken)
-        => !IsReady ? null : cache.GetOrCreate(cacheKeys.EntityDefinitionsExtensive(entityLogicalName), entry =>
+    public EntityMetadata GetEntity(string entityLogicalName)
+        => !IsReady ? null : GetOrCreateCacheItem(cacheKeys.EntityDefinitionsExtensive(entityLogicalName), () =>
         {
-            entry.AbsoluteExpirationRelativeToNow = cacheExpiration;
-            entry.AddExpirationToken(new CancellationChangeToken(cancellationToken));
-            return FetchEntity(entityLogicalName, serviceClient);
+            return FetchEntity(entityLogicalName, ServiceClient);
         });
 
     public async Task<IEnumerable<PluginAssemblyConfig>> GetPluginAssembliesAsync(CancellationToken cancellationToken)
-        => !IsReady ? [] : await cache.GetOrCreateAsync(cacheKeys.PluginAssemblies, async entry =>
+        => !IsReady ? [] : await GetOrCreateCacheItemAsync(cacheKeys.PluginAssemblies, async () =>
         {
-            entry.AbsoluteExpirationRelativeToNow = cacheExpiration;
-            entry.AddExpirationToken(new CancellationChangeToken(cancellationToken));
-            return await FetchPluginAssembliesAsync(serviceClient, cancellationToken);
-        });
+            return await FetchPluginAssembliesAsync(ServiceClient, cancellationToken);
+        }, cancellationToken);
 
     public async Task<IEnumerable<PluginTypeConfig>> GetPluginTypesAsync(Guid assemblyid, CancellationToken cancellationToken)
-        => !IsReady ?[] : await cache.GetOrCreateAsync(cacheKeys.PluginTypes(assemblyid), async entry =>
+        => !IsReady ?[] : await GetOrCreateCacheItemAsync(cacheKeys.PluginTypes(assemblyid), async () =>
         {
-            entry.AbsoluteExpirationRelativeToNow = cacheExpiration;
-            entry.AddExpirationToken(new CancellationChangeToken(cancellationToken));
-            return await FetchPluginTypesAsync(serviceClient, assemblyid, cancellationToken);
-        });
+            return await FetchPluginTypesAsync(ServiceClient, assemblyid, cancellationToken);
+        }, cancellationToken);
     
     public Task RefreshCacheAsync()
     {
@@ -93,6 +116,38 @@ public class XrmSchemaProvider(ServiceClient serviceClient, string environmentUr
         cacheEvictionTokenSource = new();
         //TODO: Add code here to fetch all the critical data and cache it.
         return Task.CompletedTask;
+    }
+
+    private async Task<T> GetOrCreateCacheItemAsync<T>(string cacheKey, Func<Task<T>> fetchFunction, CancellationToken cancellationToken)
+    {
+        if (cache.Contains(cacheKey))
+        {
+            return (T)cache.Get(cacheKey);
+        }
+
+        var data = await fetchFunction();
+        CacheItemPolicy policy = new CacheItemPolicy
+        {
+            AbsoluteExpiration = DateTimeOffset.Now.Add(cacheExpiration)
+        };
+        cache.Add(cacheKey, data, policy);
+        return data;
+    }
+
+    private T GetOrCreateCacheItem<T>(string cacheKey, Func<T> fetchFunction)
+    {
+        if (cache.Contains(cacheKey))
+        {
+            return (T)cache.Get(cacheKey);
+        }
+
+        var data = fetchFunction();
+        CacheItemPolicy policy = new CacheItemPolicy
+        {
+            AbsoluteExpiration = DateTimeOffset.Now.Add(cacheExpiration)
+        };
+        cache.Add(cacheKey, data, policy);
+        return data;
     }
 
     private static async Task<EntityMetadata> FetchEntityAsync(
@@ -176,33 +231,35 @@ public class XrmSchemaProvider(ServiceClient serviceClient, string environmentUr
         //The following line will also fail if developer doesn't have access to an EnvironmentUrl
         var response = await client.RetrieveMultipleAsync(
             PluginAssemblyConfig.CreateQuery(
-                a => new { a.Name, a.Major, a.Minor, a.PublicKeyToken, a.SolutionId, a.Version }), 
+                a => new {a.PluginAssemblyId, a.Name, a.PublicKeyToken, a.SolutionId, a.Version, a.IsolationMode, a.SourceType }), 
             cancellationToken);
 
-        if (response == null || response.Entities == null)
+        if (response == null || response.EntityCollection.Entities == null)
         {
             return [];
         }
         
-        return response.Entities.Select(entity => entity.ToEntity<PluginAssemblyConfig>());
+        return response.EntityCollection.Entities.Select(entity => entity.ToEntity<PluginAssemblyConfig>());
     }
 
     private static async Task<IEnumerable<PluginTypeConfig>> FetchPluginTypesAsync(
         ServiceClient client, Guid assemblyid, CancellationToken cancellationToken)
     {
-        var query = PluginTypeConfig.CreateQuery(s => new { s.Name, s.TypeName })
+        var query = PluginTypeConfig.CreateQuery(s => new { s.PluginTypeId, s.Name, s.TypeName, s.FriendlyName, s.Description, s.WorkflowActivityGroupName })
             .WithCondition(
             new ConditionExpression(
                 PluginTypeConfig.Select.ColumnName((e) => e.PluginAssemblyId), 
                 ConditionOperator.Equal, 
                 assemblyid));
         query.LinkWith(
-            PluginTypeConfig.LinkWithSteps(s => new { s.Name, s.Stage })
-            .LinkWith(PluginStepConfig.LinkWithImages(s => new { s.Name })));
+            //s.CustomConfiguration
+            PluginTypeConfig.LinkWithSteps(s => new {s.PluginStepId, s.Name, s.Stage, s.AsyncAutoDelete, s.Description, s.FilteringAttributes, s.InvocationSource, s.Mode, s.Rank, s.SdkMessageId, s.State, s.SupportedDeployment})
+            .LinkWith(
+                PluginStepConfig.LinkWithImages(s => new {s.PluginStepImageId, s.Name })));//, s.ImageAttributes, s.EntityAlias, s.ImageType, s.MessagePropertyName })));
 
         var pluginTypes = new List<PluginTypeConfig>();
         var response = await client.RetrieveMultipleAsync(query, cancellationToken);
-        foreach (var entity in response.Entities)
+        foreach (var entity in response.EntityCollection.Entities)
         {
             var pluginType = pluginTypes.Find(pt => pt.Id == entity.Id);
             if (pluginType is null) 
@@ -235,7 +292,7 @@ public class XrmSchemaProvider(ServiceClient serviceClient, string environmentUr
             if (disposing)
             {
                 // Dispose managed resources
-                serviceClient?.Dispose();
+                ServiceClient?.Dispose();
             }
 
             // Free unmanaged resources (if any)

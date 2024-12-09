@@ -1,6 +1,7 @@
 ﻿using Microsoft.VisualStudio.Core.Imaging;
 using Microsoft.VisualStudio.Language.Intellisense.AsyncCompletion;
 using Microsoft.VisualStudio.Language.Intellisense.AsyncCompletion.Data;
+using Microsoft.VisualStudio.Shell;
 using Microsoft.VisualStudio.Text;
 using Microsoft.VisualStudio.Text.Adornments;
 using Microsoft.VisualStudio.Text.Operations;
@@ -13,15 +14,19 @@ using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
-using XrmGen.Extensions;
-using XrmGen.Xrm.Extensions;
+using XrmTools.Core.Repositories;
+using XrmTools.Helpers;
+using XrmTools.Logging;
+using XrmTools.Xrm.Extensions;
+using XrmTools.Xrm.Repositories;
 
-namespace XrmGen.Xrm.CodeCompletion;
+namespace XrmTools.Xrm.CodeCompletion;
 
 internal class XrmPluginDefCompletionSource(
-    IXrmSchemaProvider catalog, ITextStructureNavigatorSelectorService structureNavigatorSelector, ITextBuffer textBuffer)
-    : IAsyncCompletionSource
-
+    IOutputLoggerService logger,
+    IRepositoryFactory repositoryFactory, 
+    ITextStructureNavigatorSelectorService structureNavigatorSelector, 
+    ITextBuffer textBuffer) : IAsyncCompletionSource
 {
     private static readonly ImageElement StandardEntityIcon = new(new ImageId(new Guid("ae27a6b0-e345-4288-96df-5eaf394ee369"), 2708), "Standard");
     private static readonly ImageElement CustomEntityIcon = new(new ImageId(new Guid("ae27a6b0-e345-4288-96df-5eaf394ee369"), 2709), "Custom");
@@ -32,9 +37,11 @@ internal class XrmPluginDefCompletionSource(
 
     public CompletionStartData InitializeCompletion(CompletionTrigger trigger, SnapshotPoint triggerLocation, CancellationToken token)
     {
+        using var catalog = ThreadHelper.JoinableTaskFactory.Run(repositoryFactory.CreateRepositoryAsync<IEntityMetadataRepository>);
         if (catalog == null)
-        {
+        { 
             // Catalog is not initialized yet. We can't provide completion.
+            logger.LogWarning("Xrm code completion not available. Check if your environment setup is done under Tools > Options > Xrm Tools.");
             return CompletionStartData.DoesNotParticipateInCompletion;
         }
         var navigator = structureNavigatorSelector.GetTextStructureNavigator(triggerLocation.Snapshot.TextBuffer);
@@ -59,7 +66,7 @@ internal class XrmPluginDefCompletionSource(
         // - a punctuation character between quotes
         if (char.IsPunctuation(trigger.Character)
             && spanText.Length > 3 && spanText[0] == '\"'
-            && spanText[spanText.Length - 1] == '\"')
+            && spanText[^1] == '\"')
         {
             return new (CompletionParticipation.ProvidesItems, new SnapshotSpan(triggerLocation, 0));
         }
@@ -171,12 +178,14 @@ internal class XrmPluginDefCompletionSource(
 
     private async Task<CompletionContext> GetContextForEntityNameAsync(CancellationToken cancellationToken)
     {
-        return new CompletionContext((await catalog.GetEntitiesAsync(cancellationToken)).Where(e => !e.IsLogicalEntity ?? false).Select(MakeItemFromMetadata).ToImmutableArray());
+        using var catalog = ThreadHelper.JoinableTaskFactory.Run(repositoryFactory.CreateRepositoryAsync<IEntityMetadataRepository>);
+        return new CompletionContext((await catalog.GetAsync(cancellationToken)).Where(e => !e.IsLogicalEntity ?? false).Select(MakeItemFromMetadata).ToImmutableArray());
     }
 
     private async Task<CompletionContext> GetContextForAttributeNameAsync(string entityName, CancellationToken cancellationToken)
     {
-        return new CompletionContext((await catalog.GetEntityAsync(entityName, cancellationToken)).Attributes.Where(a => !a.IsLogical ?? false).Select(MakeItemFromMetadata).ToImmutableArray());
+        using var catalog = ThreadHelper.JoinableTaskFactory.Run(repositoryFactory.CreateRepositoryAsync<IEntityMetadataRepository>);
+        return new CompletionContext((await catalog.GetAsync(entityName, cancellationToken)).Attributes.Where(a => !a.IsLogical ?? false).Select(MakeItemFromMetadata).ToImmutableArray());
     }
 
     private CompletionItem MakeItemFromMetadata(EntityMetadata entity)

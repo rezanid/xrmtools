@@ -1,5 +1,5 @@
 ﻿#nullable enable
-namespace XrmGen.UI;
+namespace XrmTools.UI;
 
 using System.ComponentModel;
 using System.Runtime.CompilerServices;

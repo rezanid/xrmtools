@@ -4,6 +4,12 @@
     <MinimumVisualStudioVersion>17.0</MinimumVisualStudioVersion>
     <VSToolsPath Condition="'$(VSToolsPath)' == ''">$(MSBuildExtensionsPath32)\Microsoft\VisualStudio\v$(VisualStudioVersion)</VSToolsPath>
   </PropertyGroup>
+  <PropertyGroup>
+    <SignAssembly>true</SignAssembly>
+  </PropertyGroup>
+  <PropertyGroup>
+    <AssemblyOriginatorKeyFile>..\key.snk</AssemblyOriginatorKeyFile>
+  </PropertyGroup>
   <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
@@ -13,8 +19,8 @@
     <ProjectGuid>{592264A3-7B0D-40C5-A879-B2222676C532}</ProjectGuid>
     <OutputType>Library</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
-    <RootNamespace>XrmGen</RootNamespace>
-    <AssemblyName>XrmGen</AssemblyName>
+    <RootNamespace>XrmTools</RootNamespace>
+    <AssemblyName>XrmTools</AssemblyName>
     <TargetFrameworkVersion>v4.8</TargetFrameworkVersion>
     <GeneratePkgDefFile>true</GeneratePkgDefFile>
     <UseCodebase>true</UseCodebase>
@@ -27,7 +33,7 @@
     <StartProgram Condition="'$(DevEnvDir)' != ''">$(DevEnvDir)devenv.exe</StartProgram>
     <StartArguments>/rootsuffix Exp</StartArguments>
     <LangVersion>12.0</LangVersion>
-    <PolySharpUsePublicAccessibilityForGeneratedTypes>True</PolySharpUsePublicAccessibilityForGeneratedTypes>
+    <PolySharpUsePublicAccessibilityForGeneratedTypes>False</PolySharpUsePublicAccessibilityForGeneratedTypes>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
     <DebugSymbols>true</DebugSymbols>
@@ -47,22 +53,74 @@
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="Extensions\DteExtensions.cs" />
-    <Compile Include="Extensions\ProjectHelpers.cs" />
-    <Compile Include="NewItemTarget.cs" />
+    <Compile Include="..\XrmTools.Core\System\Runtime\CompilerServices\Index.cs">
+      <Link>System\Runtime\CompilerServices\Index.cs</Link>
+    </Compile>
+    <Compile Include="..\XrmTools.Core\System\Runtime\CompilerServices\Range.cs">
+      <Link>System\Runtime\CompilerServices\Range.cs</Link>
+    </Compile>
+    <Compile Include="..\XrmTools.Core\System\Runtime\CompilerServices\RuntimeHelpers.cs">
+      <Link>System\Runtime\CompilerServices\RuntimeHelpers.cs</Link>
+    </Compile>
+    <Compile Include="Analyzers\PluginAssemblyInfo.cs" />
+    <Compile Include="Analyzers\PluginAssemblyMetadataService.cs" />
+    <Compile Include="Analyzers\PluginAttributeExtractor.cs" />
+    <Compile Include="Classifiers\XrmStringClassifierProvider.cs" />
+    <Compile Include="CodeCompletion\XrmPluginCompletionProvider.cs" />
+    <Compile Include="CodeCompletion\XrmPluginDefinitionCompletionSource.cs" />
+    <Compile Include="Commands\SelectEnvironmentCommand.cs" />
+    <Compile Include="Commands\SetPluginGeneratorTemplateInProjectCommand.cs" />
+    <Compile Include="Commands\SetPluginGeneratorTemplateInSolutionCommand.cs" />
+    <Compile Include="Environments\DataverseEnvironmentProvider.cs" />
+    <Compile Include="Helpers\AttributeDataHelper.cs" />
+    <Compile Include="Helpers\ByteExtensions.cs" />
+    <Compile Include="Helpers\ExplicitInterfaceInvoker.cs" />
+    <Compile Include="Helpers\FileHelper.cs" />
+    <Compile Include="Helpers\PackageHelper.cs" />
+    <Compile Include="Helpers\ProjectExtensions.cs" />
+    <Compile Include="Helpers\ProvideSolutionProperties.cs" />
+    <Compile Include="Logging\LoggerFactory.cs" />
+    <Compile Include="Logging\OutputLoggerService.cs" />
+    <Compile Include="Options\CurrentEnvironmentConverter.cs" />
+    <Compile Include="Options\CurrentEnvironmentEditor.cs" />
+    <Compile Include="Options\DataverseEnvironmentConverter.cs" />
+    <Compile Include="Options\EnumDescriptionConverter.cs" />
+    <Compile Include="Settings\IAsyncXrmToolsSettings.cs" />
+    <Compile Include="Settings\IXrmToolsSettings.cs" />
+    <Compile Include="Settings\ProjectSettings.cs" />
+    <Compile Include="Settings\SettingsProvider.cs" />
+    <Compile Include="Settings\SolutionSettings.cs" />
+    <Compile Include="Settings\XrmSettingKeys.cs" />
+    <Compile Include="UI\EnvironmentSelector.cs" />
+    <Compile Include="UI\AssemblySelector.cs" />
+    <Compile Include="UI\EnvironmentSelectorDialog.xaml.cs">
+      <DependentUpon>EnvironmentSelectorDialog.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="UI\EnvironmentSelectorViewModel.cs" />
+    <Compile Include="XrmHttpClientFactory.cs" />
+    <Compile Include="XrmToolsPackage.SolutionProperties.cs" />
+    <Compile Include="Xrm\Auth\ClientAppAuthenticator.cs" />
+    <Compile Include="Xrm\Auth\DelegatingAuthenticator.cs" />
+    <Compile Include="Xrm\Auth\DeviceCodeAuthenticator.cs" />
+    <Compile Include="Xrm\Auth\IntegratedAuthenticator.cs" />
+    <Compile Include="Xrm\IXrmSchemaProvider.cs" />
+    <Compile Include="Xrm\OptionSetMetadataNameComparer.cs" />
+    <Compile Include="Helpers\DteExtensions.cs" />
+    <Compile Include="Helpers\DteProjectHelpers.cs" />
+    <Compile Include="Logging\OutputLoggerProvider.cs" />
+    <Compile Include="Options\GeneralOptions.cs" />
     <Compile Include="UI\AssemblySelectionDialog.xaml.cs">
       <DependentUpon>AssemblySelectionDialog.xaml</DependentUpon>
     </Compile>
     <Compile Include="UI\AssemblySelectionViewModel.cs" />
     <Compile Include="CodeGenerators\PluginCodeGenerator.cs" />
     <Compile Include="CodeGenerators\EntityCodeGenerator.cs" />
-    <Compile Include="Commands\ApplyEntityGeneratorCommand.cs" />
-    <Compile Include="Commands\SetXrmPluginGeneratorCommand.cs" />
-    <Compile Include="Extensions\IVsHierarchyExtensions.cs" />
-    <Compile Include="Extensions\EntityMetadataExtensions.cs" />
-    <Compile Include="Extensions\StringBuilderExtensions.cs" />
-    <Compile Include="Commands\GenerateRegistrationFileCommand.cs" />
-    <Compile Include="Extensions\TypeExtensions.cs" />
+    <Compile Include="Commands\SetCustomToolEntityGeneratorCommand.cs" />
+    <Compile Include="Commands\SetCustomToolPluginGeneratorCommand.cs" />
+    <Compile Include="Helpers\IVsHierarchyExtensions.cs" />
+    <Compile Include="Helpers\EntityMetadataExtensions.cs" />
+    <Compile Include="Helpers\StringBuilderExtensions.cs" />
+    <Compile Include="Commands\NewPluginDefinitionFileCommand.cs" />
     <Compile Include="UI\Converters\ObjectToJsonConverter.cs" />
     <Compile Include="UI\ViewModelBase.cs" />
     <Compile Include="Xrm\Extensions\EntityExtensions.cs" />
@@ -74,16 +132,11 @@
     <Compile Include="Xrm\Generators\IXrmPluginCodeGenerator.cs" />
     <Compile Include="Xrm\Generators\ScribanExtensionCache.cs" />
     <Compile Include="Xrm\Generators\ScribanExtensions.cs" />
-    <Compile Include="Xrm\Model\PluginAssemblyConfig.cs" />
-    <Compile Include="Xrm\Model\PluginStepConfig.cs" />
-    <Compile Include="Xrm\Model\PluginStepImageConfig.cs" />
-    <Compile Include="Xrm\Model\PluginTypeConfig.cs" />
     <Compile Include="Xrm\Generators\TemplatedEntityCodeGenerator.cs" />
     <Compile Include="Xrm\Generators\TemplatedPluginCodeGenerator.cs" />
     <Compile Include="Xrm\CodeCompletion\XrmPluginDefCompletionProvider.cs" />
     <Compile Include="Xrm\CodeCompletion\XrmPluginDefCompletionSource.cs" />
     <Compile Include="Xrm\Constants.cs" />
-    <Compile Include="Extensions\StringHelpers.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="source.extension.cs">
       <AutoGen>True</AutoGen>
@@ -95,34 +148,33 @@
       <DesignTime>True</DesignTime>
       <DependentUpon>VSCommandTable.vsct</DependentUpon>
     </Compile>
-    <Compile Include="XrmGenPackage.cs" />
+    <Compile Include="XrmToolsPackage.cs" />
     <Compile Include="Xrm\Extensions\LabelExtensions.cs" />
-    <Compile Include="Xrm\MetadataCache.cs" />
     <Compile Include="Resources\Strings.Designer.cs">
       <AutoGen>True</AutoGen>
       <DesignTime>True</DesignTime>
       <DependentUpon>Strings.resx</DependentUpon>
     </Compile>
-    <Compile Include="Xrm\Model\TypedEntity.cs" />
-    <Compile Include="Xrm\Serialization\IgnoreDataContractResolver.cs" />
-    <Compile Include="Xrm\Serialization\IgnoreEntityPropertiesConverter.cs" />
-    <Compile Include="Xrm\Serialization\TypedEntityConverter.cs" />
-    <Compile Include="Xrm\Serialization\TypedEntityConverter_T.cs" />
-    <Compile Include="Xrm\XrmSchemaProvider.cs" />
-    <Compile Include="Xrm\XrmSchemaProviderFactory.cs" />
-    <Compile Include="_Core\CacheSignal.cs" />
-    <Compile Include="_Core\Logger.cs" />
+    <Compile Include="Xrm\Repositories\RepositoryFactory.cs" />
+    <Compile Include="Xrm\WebApiSchemaProvider.cs" />
+    <Compile Include="Xrm\XrmMetadataSource.cs" />
+    <Compile Include="Logging\OutputLogger.cs" />
     <Compile Include="_Core\Validation.cs" />
   </ItemGroup>
   <ItemGroup>
+    <Content Include="Microsoft.Bcl.TimeProvider\Microsoft.Bcl.TimeProvider.dll">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+      <IncludeInVSIX>true</IncludeInVSIX>
+    </Content>
+    <Content Include="Microsoft.Extensions.Caching.Abstractions\Microsoft.Extensions.Caching.Abstractions.dll">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <IncludeInVSIX>true</IncludeInVSIX>
+    </Content>
     <Content Include="UI\WebResources\preview.html" />
     <Content Include="UI\WebResources\themes\prism.css" />
     <Content Include="UI\WebResources\prism.js" />
     <None Include="Samples\AHRMBeOne_Plugin_Request.def.json" />
     <None Include="Samples\EntityConfigExample1.yaml" />
-    <Content Include="assemblies\Microsoft.JSON.Core.dll" />
-    <Content Include="assemblies\Microsoft.JSON.Editor.dll" />
-    <Content Include="assemblies\Microsoft.Web.Editor.dll" />
     <Content Include="Resources\npm.png" />
     <Content Include="Schemas\pluginregistration-schema.json">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
@@ -153,13 +205,10 @@
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="Community.VisualStudio.Toolkit.17">
-      <Version>17.0.522</Version>
-    </PackageReference>
-    <PackageReference Include="Community.VisualStudio.Toolkit.DependencyInjection.Microsoft.17">
-      <Version>17.0.20</Version>
+      <Version>17.0.527</Version>
     </PackageReference>
     <PackageReference Include="CommunityToolkit.Mvvm">
-      <Version>8.3.0</Version>
+      <Version>8.3.2</Version>
     </PackageReference>
     <PackageReference Include="HandyControl">
       <Version>3.5.1</Version>
@@ -167,43 +216,61 @@
     <PackageReference Include="Humanizer.Core">
       <Version>2.14.1</Version>
     </PackageReference>
-    <PackageReference Include="Microsoft.Extensions.Hosting">
-      <Version>3.1.8</Version>
+    <PackageReference Include="Microsoft.Bcl.TimeProvider">
+      <Version>8.0.0</Version>
     </PackageReference>
-    <PackageReference Include="Microsoft.PowerPlatform.Dataverse.Client">
-      <Version>1.1.32</Version>
+    <PackageReference Include="Microsoft.CodeAnalysis.CSharp">
+      <Version>4.11.0</Version>
+    </PackageReference>
+    <PackageReference Include="Microsoft.Extensions.Http">
+      <Version>8.0.0</Version>
+    </PackageReference>
+    <PackageReference Include="Microsoft.Extensions.Http.Resilience">
+      <Version>8.10.0</Version>
+    </PackageReference>
+    <PackageReference Include="Microsoft.Identity.Client.Extensions.Msal">
+      <Version>4.66.2</Version>
     </PackageReference>
     <PackageReference Include="Microsoft.VisualStudio.CoreUtility">
-      <Version>17.11.260</Version>
+      <Version>17.12.215</Version>
     </PackageReference>
     <PackageReference Include="Microsoft.VisualStudio.Language.Intellisense">
-      <Version>17.11.260</Version>
+      <Version>17.12.215</Version>
     </PackageReference>
-    <PackageReference Include="Microsoft.VisualStudio.SDK" Version="17.11.40262" ExcludeAssets="runtime">
+    <PackageReference Include="Microsoft.VisualStudio.LanguageServices">
+      <Version>4.11.0</Version>
+    </PackageReference>
+    <PackageReference Include="Microsoft.VisualStudio.SDK" Version="17.12.40392" ExcludeAssets="runtime">
       <IncludeAssets>compile; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageReference>
-    <PackageReference Include="Microsoft.VSSDK.BuildTools" Version="17.11.435">
+    <PackageReference Include="Microsoft.VSSDK.BuildTools" Version="17.12.2069">
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
       <PrivateAssets>all</PrivateAssets>
     </PackageReference>
-    <PackageReference Include="Microsoft.Web.WebView2">
-      <Version>1.0.2739.15</Version>
-    </PackageReference>
     <PackageReference Include="Microsoft.Xaml.Behaviors.Wpf">
-      <Version>1.1.122</Version>
+      <Version>1.1.135</Version>
     </PackageReference>
     <PackageReference Include="Nito.AsyncEx">
       <Version>5.1.2</Version>
     </PackageReference>
     <PackageReference Include="PolySharp">
-      <Version>1.14.1</Version>
+      <Version>1.15.0</Version>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
       <PrivateAssets>all</PrivateAssets>
     </PackageReference>
     <PackageReference Include="Scriban">
-      <Version>5.10.0</Version>
+      <Version>5.12.0</Version>
     </PackageReference>
-    <PackageReference Include="YamlDotNet" Version="16.1.0" />
+    <PackageReference Include="StrongNamer">
+      <Version>0.2.5</Version>
+    </PackageReference>
+    <PackageReference Include="System.Reflection.MetadataLoadContext">
+      <Version>8.0.0</Version>
+    </PackageReference>
+    <PackageReference Include="System.Runtime.Caching">
+      <Version>8.0.0</Version>
+    </PackageReference>
+    <PackageReference Include="YamlDotNet" Version="16.2.0" />
   </ItemGroup>
   <ItemGroup>
     <VSCTCompile Include="VSCommandTable.vsct">
@@ -224,14 +291,27 @@
   </ItemGroup>
   <ItemGroup>
     <Folder Include="Xrm\CompletionSample\" />
+    <Folder Include="Xrm\Model\" />
   </ItemGroup>
   <ItemGroup>
     <Page Include="UI\AssemblySelectionDialog.xaml">
       <SubType>Designer</SubType>
       <Generator>XamlIntelliSenseFileGenerator</Generator>
     </Page>
+    <Page Include="UI\EnvironmentSelectorDialog.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="..\XrmTools.Attributes\XrmTools.Meta.csproj">
+      <Project>{1F790C13-3B66-41E8-AED5-FA152465B6A0}</Project>
+      <Name>XrmTools.Meta</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\XrmTools.Core\XrmTools.Core.csproj">
+      <Project>{4e3f79aa-5694-4dd6-933d-aee2132486a5}</Project>
+      <Name>XrmTools.Core</Name>
+    </ProjectReference>
     <ProjectReference Include="..\XrmTools.UI.Controls\XrmTools.UI.Controls.csproj">
       <Project>{179df0ac-6f44-4656-8332-034d3c594ed1}</Project>
       <Name>XrmTools.UI.Controls</Name>

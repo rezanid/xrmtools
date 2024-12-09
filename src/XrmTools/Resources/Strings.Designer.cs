@@ -8,7 +8,7 @@
 // </auto-generated>
 //------------------------------------------------------------------------------
 
-namespace XrmGen.Resources {
+namespace XrmTools.Resources {
     using System;
     
     
@@ -39,7 +39,7 @@ namespace XrmGen.Resources {
         internal static global::System.Resources.ResourceManager ResourceManager {
             get {
                 if (object.ReferenceEquals(resourceMan, null)) {
-                    global::System.Resources.ResourceManager temp = new global::System.Resources.ResourceManager("XrmGen.Resources.Strings", typeof(Strings).Assembly);
+                    global::System.Resources.ResourceManager temp = new global::System.Resources.ResourceManager("XrmTools.Resources.Strings", typeof(Strings).Assembly);
                     resourceMan = temp;
                 }
                 return resourceMan;
@@ -88,11 +88,119 @@ namespace XrmGen.Resources {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to Failed to connect to {0}. Error: {1}.
+        /// </summary>
+        internal static string EnvironmentConnectionError {
+            get {
+                return ResourceManager.GetString("EnvironmentConnectionError", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Failed to connect to {0}. Please check the Output window for more information..
+        /// </summary>
+        internal static string EnvironmentConnectionErrorUIDesc {
+            get {
+                return ResourceManager.GetString("EnvironmentConnectionErrorUIDesc", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Failed to connect to Dataverse..
+        /// </summary>
+        internal static string EnvironmentConnectionErrorUITitle {
+            get {
+                return ResourceManager.GetString("EnvironmentConnectionErrorUITitle", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Failed to connect to {0}..
+        /// </summary>
+        internal static string EnvironmentConnectionFailed {
+            get {
+                return ResourceManager.GetString("EnvironmentConnectionFailed", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Connection string of the &apos;{0}&apos; is not valid. Please check the syntax in https://learn.microsoft.com/en-us/power-apps/developer/data-platform/xrm-tooling/use-connection-strings-xrm-tooling-connect..
+        /// </summary>
+        internal static string EnvironmentConnectionStringError {
+            get {
+                return ResourceManager.GetString("EnvironmentConnectionStringError", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Connection to {0} was successful..
+        /// </summary>
+        internal static string EnvironmentConnectionSuccess {
+            get {
+                return ResourceManager.GetString("EnvironmentConnectionSuccess", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to No environment selected.
+        /// </summary>
+        internal static string EnvironmentErrorNoneSelected {
+            get {
+                return ResourceManager.GetString("EnvironmentErrorNoneSelected", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to No environment selected. Please select an environment from Tools &gt; Options &gt; Xrm Tools &gt; Current Environment..
+        /// </summary>
+        internal static string EnvironmentErrorNoneSelectedOptions {
+            get {
+                return ResourceManager.GetString("EnvironmentErrorNoneSelectedOptions", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to No environment selected. Please select an environment from Solution context menu &gt; Set Environment..
+        /// </summary>
+        internal static string EnvironmentErrorNoneSelectedProject {
+            get {
+                return ResourceManager.GetString("EnvironmentErrorNoneSelectedProject", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to No environment selected. Please select an environment from Project context menu &gt; Set Environment..
+        /// </summary>
+        internal static string EnvironmentErrorNoneSelectedSolution {
+            get {
+                return ResourceManager.GetString("EnvironmentErrorNoneSelectedSolution", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to {0} is not a valid environment..
+        /// </summary>
+        internal static string EnvironmentInvalid {
+            get {
+                return ResourceManager.GetString("EnvironmentInvalid", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to Environment not initialized. You will have to first initialize the environment by calling {0}..
         /// </summary>
         internal static string EnvironmentNotInitialized {
             get {
                 return ResourceManager.GetString("EnvironmentNotInitialized", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Missing {0} service depndency. {0} is not available..
+        /// </summary>
+        internal static string MissingServiceDependency {
+            get {
+                return ResourceManager.GetString("MissingServiceDependency", resourceCulture);
             }
         }
         
@@ -106,7 +214,7 @@ namespace XrmGen.Resources {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to Failed to deserialize plugin definition from {0}..
+        ///   Looks up a localized string similar to Failed to deserialize plugin definition from {inputFileName}..
         /// </summary>
         internal static string PluginGenerator_DeserializationError {
             get {
@@ -152,11 +260,29 @@ namespace XrmGen.Resources {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to The template file not found. It might have moved to another location. Please make sure that you have set the right template and try again. Missing file: {0}.
+        /// </summary>
+        internal static string PluginGenerator_TemplateFileNotFound {
+            get {
+                return ResourceManager.GetString("PluginGenerator.TemplateFileNotFound", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to The path provided for plugin code generator is invalid. Path: {0}.
         /// </summary>
         internal static string PluginGenerator_TemplateInvalidPath {
             get {
                 return ResourceManager.GetString("PluginGenerator.TemplateInvalidPath", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to No plugin code generation template has been specified. You need to create a Scriban template for the code generator to work. For more information please visit https://rezanid.github.io/xrmtools/docs/howto/write-a-plugin-template.
+        /// </summary>
+        internal static string PluginGenerator_TemplateNotSet {
+            get {
+                return ResourceManager.GetString("PluginGenerator.TemplateNotSet", resourceCulture);
             }
         }
         

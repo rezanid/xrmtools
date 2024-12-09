@@ -1,27 +1,27 @@
 ﻿#nullable enable
-namespace XrmGen.UI;
-
+namespace XrmTools.UI;
 using Microsoft.VisualStudio.PlatformUI;
 using System.Windows;
-using XrmGen.Xrm;
+using XrmTools.Xrm;
 using System.Reflection;
 using System.Linq;
 using System;
+using XrmTools.Core.Repositories;
 
 public partial class AssemblySelectionDialog : DialogWindow
 {
-    public AssemblySelectionDialog(IXrmSchemaProvider schemaProvider)
+    internal AssemblySelectionDialog(IPluginAssemblyRepository assemblyRepository, IPluginTypeRepository typeRepository)
     {
         EnsureReferencedAssembliesInMarkupAreLoaded();
         InitializeComponent();
-        DataContext = new AssemblySelectionViewModel(schemaProvider);
+        DataContext = new AssemblySelectionViewModel(assemblyRepository, typeRepository);
         Loaded += OnLoaded;
     }
 
     private async void OnLoaded(object sender, RoutedEventArgs e)
     {
         Loaded -= OnLoaded;
-        ((AssemblySelectionViewModel)DataContext).LoadAssembliesCommand.ExecuteAsync(null);
+        await ((AssemblySelectionViewModel)DataContext).LoadAssembliesCommand.ExecuteAsync(null);
     }
 
     private void OnSelectClick(object sender, RoutedEventArgs e)
@@ -37,7 +37,7 @@ public partial class AssemblySelectionDialog : DialogWindow
     */
     private void EnsureReferencedAssembliesInMarkupAreLoaded()
     {
-        var requiredAssemblyNames = new[] { "Microsoft.Xaml.Behaviors" };
+        var requiredAssemblyNames = new[] { "Microsoft.Xaml.Behaviors", "XrmTools.UI.Controls" };
         var loadedAssemblyNames = AppDomain.CurrentDomain.GetAssemblies().Select(a => a.GetName().Name);
         var notLoadedAssemblyNames = requiredAssemblyNames.Except(loadedAssemblyNames).ToList();
         notLoadedAssemblyNames.ForEach(a => Assembly.Load(a));

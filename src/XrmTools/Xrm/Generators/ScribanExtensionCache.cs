@@ -3,9 +3,10 @@ using System.Collections.Generic;
 using System.Linq;
 using Humanizer;
 using Scriban.Runtime;
-using XrmGen.Extensions;
+using XrmTools.Core.Helpers;
+using XrmTools.Helpers;
 
-namespace XrmGen.Xrm.Generators;
+namespace XrmTools.Xrm.Generators;
 
 /// <summary>
 /// Contains a cache of extension methods that can be used in Scriban templates. You can easily expose 

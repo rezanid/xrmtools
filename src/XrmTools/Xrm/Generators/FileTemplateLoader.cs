@@ -1,5 +1,5 @@
 ﻿#nullable enable
-namespace XrmGen.Xrm.Generators;
+namespace XrmTools.Xrm.Generators;
 
 using System;
 using System.IO;
