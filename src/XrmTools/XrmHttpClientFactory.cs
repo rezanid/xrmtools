@@ -67,6 +67,7 @@ internal class XrmHttpClientFactory : IXrmHttpClientFactory, System.IAsyncDispos
     {
         client.Timeout = TimeSpan.FromMinutes(10);
         client.BaseAddress = new Uri(new Uri(environment.Url), "/api/data/v9.2/");
+        client.DefaultRequestHeaders.Add("Prefer", "odata.include-annotations=*");
         if (!_tokenCache.TryGetValue(environment.ConnectionString!, out var authResult) || authResult.ExpiresOn <= timeProvider.GetUtcNow())
         {
             authResult = await authenticationService.AuthenticateAsync(environment, msg => logger.LogInformation(msg), CancellationToken.None);
