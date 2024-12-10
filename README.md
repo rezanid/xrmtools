@@ -13,12 +13,7 @@ First you need to connect to an environment so that XrmTools can see where you a
    ```shell
    Url=<instance or environment URL>;Integrated Security=True;TenantId=<your tenant id>
    ```
-   > ℹ️ How to find tenant ID
-   > 
-   > 1. Navigate to https://make.powerapps.com
-   > 2. Then click on the ⚙️ icon at the top-right of the page.
-   > 3. Click on the "Session details" link in the side-pane that opens. You will find Tenat ID and instance URL among the parameter that will be displayed.
-6. ...
+   You can read more about connection strings [here](https://github.com/rezanid/xrmtools/wiki/Providing-Connection-Strings).
 7. Set "Current Environment" to the environment that you just created.
 8. Click "Ok" button to save the settings.
 
