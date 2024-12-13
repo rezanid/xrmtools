@@ -71,6 +71,7 @@ internal class XrmHttpClientFactory : IXrmHttpClientFactory, System.IAsyncDispos
         if (environment != DataverseEnvironment.Empty)
         {
             client.BaseAddress = new Uri(new Uri(environment.Url), "/api/data/v9.2/");
+            client.DefaultRequestHeaders.Add("Prefer", "odata.include-annotations=*");
 
             if (!_tokenCache.TryGetValue(environment.ConnectionString!, out var authResult) || authResult.ExpiresOn <= timeProvider.GetUtcNow())
             {

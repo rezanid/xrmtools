@@ -9,16 +9,11 @@ First you need to connect to an environment so that XrmTools can see where you a
 1. Open the "Tool" menu and select "Options"
 2. All the way to the bottom you will find "Xrm Tools".
 3. Click on the three dots in front of "Environments".
-4. Here you can add a new Power Platform environment to Visual Studio. You can give your environment a name and a connection string. The connection string is very similar to the Xrm Tooling of Microsoft, only simpler and with security built-in. For example you can use the following to use your current account to connect to an environment.
+4. Here you can add a new Power Platform environment to Visual Studio. You can give your environment a name and a connection string. The connection string is very similar to the Xrm Tooling of Microsoft, only simpler and with extra security features built-in. For example you can use the following to use your current account to connect to an environment.
    ```shell
-   AuthType=OAuth;Url=<instance or environment URL>;Integrated Security=True;TenantId=<your tenant id>
+   Url=<instance or environment URL>;Integrated Security=True;TenantId=<your tenant id>
    ```
-   > ℹ️ How to find tenant ID
-   > 
-   > 1. Navigate to https://make.powerapps.com
-   > 2. Then click on the ⚙️ icon at the top-right of the page.
-   > 3. Click on the "Session details" link in the side-pane that opens. You will find Tenat ID and instance URL among the parameter that will be displayed.
-6. ...
+   You can read more about connection strings [here](https://github.com/rezanid/xrmtools/wiki/Providing-Connection-Strings).
 7. Set "Current Environment" to the environment that you just created.
 8. Click "Ok" button to save the settings.
 
@@ -59,4 +54,6 @@ After adding attributes to a plugin class, Xrm Tools knows more about your inten
 2. Make sure that your plugin class is a `partial` class. Just like the one we created in [Adding a new Power Platform Plugin](#Adding-a-new-Power-Platform-Plugin).
 3. Right-click on your plugin class in the Solution Explorer and select "Set as plugin definition".
 
+# Learn more
+To learn more about Xrm Tools extension for Visual Studio check the [wiki](https://github.com/rezanid/xrmtools/wiki)
 Now, every time you save your plugin file, another file with be generated that contains all the code you need. You can fully customize the generated code in future if you want. Let's explore what's been generated and how we can use it.

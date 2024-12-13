@@ -49,6 +49,7 @@ internal static class TypeExtensions
     }
 
     public static object? GetDefaultValue(this Type type) => type.IsValueType ? Activator.CreateInstance(type) : null;
-
+    public static bool CanCreateInstanceUsingDefaultConstructor(this Type t) =>
+            t.IsValueType || !t.IsAbstract && t.GetConstructor(Type.EmptyTypes) != null;
 }
 #nullable restore

@@ -174,9 +174,6 @@
     <Content Include="UI\WebResources\preview.html" />
     <Content Include="UI\WebResources\themes\prism.css" />
     <Content Include="UI\WebResources\prism.js" />
-    <None Include="..\key.snk">
-      <Link>key.snk</Link>
-    </None>
     <None Include="Samples\AHRMBeOne_Plugin_Request.def.json" />
     <None Include="Samples\EntityConfigExample1.yaml" />
     <Content Include="Resources\npm.png" />
