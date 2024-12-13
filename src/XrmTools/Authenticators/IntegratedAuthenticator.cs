@@ -1,4 +1,4 @@
-﻿namespace XrmTools.Xrm.Auth;
+﻿namespace XrmTools.Authentication;
 using Microsoft.Identity.Client;
 using Microsoft.VisualStudio.Shell;
 using Microsoft.VisualStudio.Shell.Interop;
@@ -6,7 +6,6 @@ using System;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
-using XrmTools.Authentication;
 
 internal class IntegratedAuthenticator : DelegatingAuthenticator
 {

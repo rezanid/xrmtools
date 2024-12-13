@@ -38,8 +38,21 @@ public record DataverseEnvironment
         {
             _connectionstring = value;
             var segments = value?.Split([';'], StringSplitOptions.RemoveEmptyEntries);
-            _url = segments.FirstOrDefault(s => s.StartsWith("Url=", StringComparison.OrdinalIgnoreCase))?.Substring(4);
-            isValidConnectionString = !string.IsNullOrWhiteSpace(value) && !string.IsNullOrWhiteSpace(Url);
+            if (segments is null)
+            {
+                isValidConnectionString = false;
+                return;
+            }
+            if (segments.Length == 1)
+            {
+                _url = segments[0];
+                if (!_url.StartsWith("https://")) { _url = "https://" + _url; }
+            }
+            else
+            {
+                _url = segments.FirstOrDefault(s => s.StartsWith("Url=", StringComparison.OrdinalIgnoreCase))?.Substring(4);
+            }
+            isValidConnectionString = !string.IsNullOrWhiteSpace(value) && !string.IsNullOrWhiteSpace(_url);
         }
     }
 

@@ -24,8 +24,6 @@ using XrmTools.Xrm.Generators;
 using XrmTools.Tokens;
 using Task = System.Threading.Tasks.Task;
 using XrmTools.Commands;
-using XrmTools.Xrm.Auth;
-using XrmTools.Authentication;
 using XrmTools.Environments;
 using System.Reflection;
 using System.IO;
@@ -113,7 +111,6 @@ public sealed partial class XrmToolsPackage : ToolkitPackage
     private readonly static IOutputLoggerService _loggerService;
     private readonly static IEnvironmentProvider _environmentProvider;
     private readonly static ISettingsProvider _settingsProvider;
-    private readonly static IAuthenticationService _authentionService;
     private readonly static ITokenExpanderService _tokenExpanderService;
 
     public const string SolutionPersistanceKey = "XrmToolsProperies";
@@ -130,9 +127,7 @@ public sealed partial class XrmToolsPackage : ToolkitPackage
     [Export(typeof(IOutputLoggerService))] internal IOutputLoggerService OutputLoggerService { get => _loggerService; }
     [Export(typeof(IEnvironmentProvider))] internal IEnvironmentProvider EnvironmentProvider { get => _environmentProvider; }
     [Export(typeof(ISettingsProvider))] internal ISettingsProvider SettingsProvider { get => _settingsProvider; }
-    [Export(typeof(IAuthenticationService))] internal IAuthenticationService AuthenticationService { get => _authentionService; }
-    //[Import(typeof(IXrmHttpClientFactory))] internal IXrmHttpClientFactory? HttpClientFactory { get; set; }
-    //[Import(typeof(IRepositoryFactory))] internal IRepositoryFactory? RepositoryFactory { get; set; }
+    [Export(typeof(ITokenExpanderService))] internal ITokenExpanderService TokenExpanderService { get => _tokenExpanderService; }
 
     static XrmToolsPackage()
     {
@@ -142,15 +137,6 @@ public sealed partial class XrmToolsPackage : ToolkitPackage
         _tokenExpanderService = new TokenExpanderService([
             new CredentialTokenExpander(new CredentialManager()),
             new EnvironmentTokenExpander()]);
-        _authentionService = new AuthenticationService(
-            _tokenExpanderService,
-            new ClientAppAuthenticator
-        {
-            NextAuthenticator = new DeviceCodeAuthenticator
-            {
-                NextAuthenticator = new IntegratedAuthenticator()
-            }
-        });
         AppDomain.CurrentDomain.AssemblyResolve += CurrentDomain_AssemblyResolve;
     }
 

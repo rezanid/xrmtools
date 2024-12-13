@@ -65,6 +65,11 @@
     <Compile Include="Analyzers\PluginAssemblyInfo.cs" />
     <Compile Include="Analyzers\PluginAssemblyMetadataService.cs" />
     <Compile Include="Analyzers\PluginAttributeExtractor.cs" />
+    <Compile Include="AuthenticationService.cs" />
+    <Compile Include="Authenticators\ClientAppAuthenticator.cs" />
+    <Compile Include="Authenticators\DelegatingAuthenticator.cs" />
+    <Compile Include="Authenticators\DeviceCodeAuthenticator.cs" />
+    <Compile Include="Authenticators\IntegratedAuthenticator.cs" />
     <Compile Include="Classifiers\XrmStringClassifierProvider.cs" />
     <Compile Include="CodeCompletion\XrmPluginCompletionProvider.cs" />
     <Compile Include="CodeCompletion\XrmPluginDefinitionCompletionSource.cs" />
@@ -101,10 +106,6 @@
     <Compile Include="UI\EnvironmentSelectorViewModel.cs" />
     <Compile Include="XrmHttpClientFactory.cs" />
     <Compile Include="XrmToolsPackage.SolutionProperties.cs" />
-    <Compile Include="Xrm\Auth\ClientAppAuthenticator.cs" />
-    <Compile Include="Xrm\Auth\DelegatingAuthenticator.cs" />
-    <Compile Include="Xrm\Auth\DeviceCodeAuthenticator.cs" />
-    <Compile Include="Xrm\Auth\IntegratedAuthenticator.cs" />
     <Compile Include="Xrm\IXrmSchemaProvider.cs" />
     <Compile Include="Xrm\OptionSetMetadataNameComparer.cs" />
     <Compile Include="Helpers\DteExtensions.cs" />

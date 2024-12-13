@@ -50,11 +50,13 @@ internal class XrmHttpClientFactory : IXrmHttpClientFactory, System.IAsyncDispos
 
     public async Task<XrmHttpClient> CreateClientAsync(DataverseEnvironment environment)
     {
-        if (string.IsNullOrEmpty(environment.ConnectionString))
+        if (environment == null) throw new ArgumentNullException(nameof(environment));
+
+        if (environment != DataverseEnvironment.Empty && string.IsNullOrEmpty(environment.ConnectionString))
         {
             throw new InvalidOperationException($"Environment '{environment.Name}' connection string is empty.");
         }
-        var handlerEntry = _handlerPool.GetOrAdd(environment, _ => new Lazy<HttpMessageHandlerEntry>(() => CreateHandlerEntry())).Value;
+        var handlerEntry = _handlerPool.GetOrAdd(environment, _ => new Lazy<HttpMessageHandlerEntry>(() => CreateHandlerEntry(environment))).Value;
 
         handlerEntry.IncrementUsage();
         var client = new XrmHttpClient(handlerEntry.Handler, handlerEntry.DecrementUsage);
@@ -66,19 +68,25 @@ internal class XrmHttpClientFactory : IXrmHttpClientFactory, System.IAsyncDispos
     private async Task ConfigureClientAsync(XrmHttpClient client, DataverseEnvironment environment)
     {
         client.Timeout = TimeSpan.FromMinutes(10);
-        client.BaseAddress = new Uri(new Uri(environment.Url), "/api/data/v9.2/");
-        if (!_tokenCache.TryGetValue(environment.ConnectionString!, out var authResult) || authResult.ExpiresOn <= timeProvider.GetUtcNow())
+        if (environment != DataverseEnvironment.Empty)
         {
-            authResult = await authenticationService.AuthenticateAsync(environment, msg => logger.LogInformation(msg), CancellationToken.None);
-            _tokenCache[environment.ConnectionString!] = authResult;
+            client.BaseAddress = new Uri(new Uri(environment.Url), "/api/data/v9.2/");
+
+            if (!_tokenCache.TryGetValue(environment.ConnectionString!, out var authResult) || authResult.ExpiresOn <= timeProvider.GetUtcNow())
+            {
+                authResult = await authenticationService.AuthenticateAsync(environment, msg => logger.LogInformation(msg), CancellationToken.None);
+                _tokenCache[environment.ConnectionString!] = authResult;
+            }
+            client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", authResult.AccessToken);
         }
-        client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", authResult.AccessToken);
     }
 
-    private HttpMessageHandlerEntry CreateHandlerEntry()
+    private HttpMessageHandlerEntry CreateHandlerEntry(DataverseEnvironment environment)
     {
         //var handler = new PolicyHttpMessageHandler(CreateDefaultPolicy());
-        var handler = new PolicyHandler(new HttpClientHandler(), CreateDefaultPolicy());
+        var handler = environment == DataverseEnvironment.Empty ?
+            new PolicyHandler(new HttpClientHandler() { AllowAutoRedirect = false }, CreateDefaultPolicy()) :
+            new PolicyHandler(new HttpClientHandler(), CreateDefaultPolicy());
         return new (handler, timeProvider.GetUtcNow());
     }
 
@@ -88,14 +96,14 @@ internal class XrmHttpClientFactory : IXrmHttpClientFactory, System.IAsyncDispos
         {
             foreach (var kvp in _handlerPool)
             {
-                var name = kvp.Key;
+                var environment = kvp.Key;
                 var entry = kvp.Value;
                 if (entry.IsValueCreated && entry.Value.CanDispose())
                 {
                     await _semaphore.WaitAsync();
                     try
                     {
-                        if (_handlerPool.TryUpdate(name, new Lazy<HttpMessageHandlerEntry>(CreateHandlerEntry), entry))
+                        if (_handlerPool.TryUpdate(environment, new Lazy<HttpMessageHandlerEntry>(() => CreateHandlerEntry(environment)), entry))
                         {
                             entry.Value.Handler.Dispose();
                         }

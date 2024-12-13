@@ -1,4 +1,5 @@
-﻿using Microsoft.Identity.Client;
+﻿namespace XrmTools.Authentication;
+using Microsoft.Identity.Client;
 using Microsoft.Identity.Client.Extensions.Msal;
 using Microsoft.VisualStudio.Shell.Interop;
 using Microsoft.VisualStudio.Shell;
@@ -7,9 +8,7 @@ using System.Linq;
 using System.Security.Cryptography.X509Certificates;
 using System.Threading;
 using System.Threading.Tasks;
-using XrmTools.Authentication;
 
-namespace XrmTools.Xrm.Auth;
 internal abstract class DelegatingAuthenticator : IAuthenticator
 {
     private AuthenticationParameters lastParameters;

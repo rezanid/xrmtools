@@ -14,6 +14,9 @@ using Microsoft.CodeAnalysis.Text;
 using Microsoft.VisualStudio.LanguageServices;
 using XrmTools.Meta.Attributes;
 using XrmTools.Xrm.Repositories;
+using System.Collections.Generic;
+using System;
+using XrmTools.Core.Helpers;
 
 internal class XrmPluginDefinitionCompletionSource(
     IOutputLoggerService logger, IRepositoryFactory repositoryFactory, VisualStudioWorkspace workspace) : IAsyncCompletionSource
@@ -108,16 +111,18 @@ internal class XrmPluginDefinitionCompletionSource(
         // Extract current attribute list
         var root = await entityArgument.SyntaxTree.GetRootAsync(cancellationToken).ConfigureAwait(false);
         var node = root.FindToken(triggerLocation).Parent;
-
-        var attributeSyntax = node.AncestorsAndSelf().OfType<AttributeSyntax>().FirstOrDefault();
-        var currentAttributes = attributeSyntax?.ArgumentList?.Arguments
-            .Skip(2)
-            .Select(arg => arg.ToString().Trim('"'))
-            .ToHashSet() ?? [];
+        if (node is not LiteralExpressionSyntax literal) 
+        {
+            return CompletionContext.Empty;
+        }
+        var currentWord = CurrentWord(triggerLocation, literal);
+        var currentXrmAttributes = string.IsNullOrWhiteSpace(currentWord)
+            ? literal.Token.ValueText.SplitAndTrim( ',')
+            : literal.Token.ValueText.SplitAndTrim(',', currentWord);
 
         // Filter and provide completions
         var suggestedAttributes = availableAttributes
-            .Where(attr => !currentAttributes.Contains(attr))
+            .Where(attr => !currentXrmAttributes.Contains(attr))
             .Select(attr => new CompletionItem(attr, this))
             .ToList();
 
@@ -155,5 +160,19 @@ internal class XrmPluginDefinitionCompletionSource(
         // Indicate when completion should be triggered
         var span = triggerLocation.Snapshot.CreateTrackingSpan(triggerLocation.Position, 0, SpanTrackingMode.EdgeInclusive);
         return new CompletionStartData(CompletionParticipation.ProvidesItems, new SnapshotSpan(span.GetStartPoint(triggerLocation.Snapshot), span.GetEndPoint(triggerLocation.Snapshot)));
+    }
+
+    public static string CurrentWord(SnapshotPoint triggerLocation, LiteralExpressionSyntax literal)
+    {
+        var text = literal.Token.Text;
+        var index = triggerLocation.Position - literal.SpanStart;
+        var start = index - 1;
+        var end = index;
+        var length = text.Length;
+        var terminators = new List<char>(['\"', ' ', ',']);
+        while (!terminators.Contains(text[start]) && start != 0) --start;
+        while (!terminators.Contains(text[end]) && end != length) ++end;
+        if (terminators.Contains(text[start]) && start < length && index != start) ++start;
+        return text.Substring(start, end - start);
     }
 }

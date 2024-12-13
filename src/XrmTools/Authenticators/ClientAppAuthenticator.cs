@@ -1,9 +1,8 @@
-﻿namespace XrmTools.Xrm.Auth;
+﻿namespace XrmTools.Authentication;
 using Microsoft.Identity.Client;
 using System;
 using System.Threading;
 using System.Threading.Tasks;
-using XrmTools.Authentication;
 
 internal class ClientAppAuthenticator : DelegatingAuthenticator
 {
