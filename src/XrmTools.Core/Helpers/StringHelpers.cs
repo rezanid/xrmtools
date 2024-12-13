@@ -11,6 +11,7 @@ using System.Text.Json.Serialization;
 using System.Text.Json.Serialization.Metadata;
 using XrmTools.Xrm.Model;
 using XrmTools.Core.Serialization;
+using System.Collections.Generic;
 
 internal static class StringHelpers
 {
@@ -54,6 +55,60 @@ internal static class StringHelpers
     /// never will actually be null) so we can use this extension to keep the NRT
     /// checks quiet</remarks>
     public static string EmptyWhenNull(this string? str) => str ?? string.Empty;
+
+    public static List<string> SplitAndTrim(this string input, char separator, string ignore)
+    {
+        if (string.IsNullOrWhiteSpace(input)) return [];
+
+        var result = new List<string>();
+        int start = 0, length = input.Length;
+
+        for (int i = 0; i <= length; i++)
+        {
+            if (i == length || input[i] == separator)
+            {
+                if (i > start)
+                {
+                    string word = input[start..i].Trim();
+                    if (!string.IsNullOrEmpty(word) && !string.Equals(word, ignore, StringComparison.OrdinalIgnoreCase))
+                    {
+                        result.Add(word);
+                    }
+                }
+                // Skip the comma
+                start = i + 1;
+            }
+        }
+
+        return result;
+    }
+
+    public static List<string> SplitAndTrim(this string input, char separator)
+    {
+        if (string.IsNullOrWhiteSpace(input)) return [];
+
+        var result = new List<string>();
+        int start = 0, length = input.Length;
+
+        for (int i = 0; i <= length; i++)
+        {
+            if (i == length || input[i] == separator)
+            {
+                if (i > start)
+                {
+                    string word = input[start..i].Trim();
+                    if (!string.IsNullOrEmpty(word))
+                    {
+                        result.Add(word);
+                    }
+                }
+                // Skip the comma
+                start = i + 1;
+            }
+        }
+
+        return result;
+    }
 
     public static T DeserializeJson<T>([DisallowNull] this string json, bool useNewtonsoft = false)
         => useNewtonsoft ?

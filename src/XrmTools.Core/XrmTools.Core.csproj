@@ -54,7 +54,6 @@
     <Compile Include="AsyncTimer.cs" />
     <Compile Include="Authentication\AuthenticationHelper.cs" />
     <Compile Include="Authentication\AuthenticationParameters.cs" />
-    <Compile Include="Authentication\AuthenticationService.cs" />
     <Compile Include="Authentication\ClientApplicationExtensions.cs" />
     <Compile Include="Authentication\IAuthenticationService.cs" />
     <Compile Include="Authentication\IAuthenticator.cs" />
@@ -122,6 +121,21 @@
     </PackageReference>
     <PackageReference Include="Microsoft.Identity.Client">
       <Version>4.66.2</Version>
+    </PackageReference>
+    <PackageReference Include="Microsoft.Identity.Client.Extensions.Msal">
+      <Version>4.66.2</Version>
+    </PackageReference>
+    <PackageReference Include="Microsoft.VisualStudio.CoreUtility">
+      <Version>17.12.215</Version>
+    </PackageReference>
+    <PackageReference Include="Microsoft.VisualStudio.SDK">
+      <Version>17.12.40392</Version>
+    </PackageReference>
+    <PackageReference Include="Microsoft.VisualStudio.Shell.Framework">
+      <Version>17.12.40391</Version>
+    </PackageReference>
+    <PackageReference Include="Microsoft.VisualStudio.Shell.Interop">
+      <Version>17.12.40391</Version>
     </PackageReference>
     <PackageReference Include="Microsoft.VisualStudio.Threading">
       <Version>17.12.19</Version>
