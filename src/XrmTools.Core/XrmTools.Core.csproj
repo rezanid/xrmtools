@@ -167,6 +167,7 @@
     <None Include="..\key.snk">
       <Link>key.snk</Link>
     </None>
+    <None Include="Test.sbncs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\XrmTools.Attributes\XrmTools.Meta.csproj">

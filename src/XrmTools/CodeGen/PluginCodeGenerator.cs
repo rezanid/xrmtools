@@ -170,7 +170,7 @@ public class PluginCodeGenerator : BaseCodeGeneratorWithSite
         return ThreadHelper.JoinableTaskFactory.Run(SettingsProvider.PluginTemplateFilePathAsync);
     }
 
-    private EntityMetadata? GetEntityMetadata(string logicalName, string[] attributes, IEnumerable<string> prefixesToRemove)
+    private EntityMetadata? GetEntityMetadata(string logicalName, IEnumerable<string> attributeNames, IEnumerable<string> prefixesToRemove)
     {
         var entityMetadataRepo = ThreadHelper.JoinableTaskFactory.Run(async () => await RepositoryFactory.CreateRepositoryAsync<IEntityMetadataRepository>());
         if (entityMetadataRepo is null) return null;
@@ -181,9 +181,9 @@ public class PluginCodeGenerator : BaseCodeGeneratorWithSite
         //NOTE!
         // Logical attributes to avoid unnecessary processing.
         var filteredAttributes =
-            attributes.Length == 0 ?
+            attributeNames.Count() == 0 ?
             entityDefinition.Attributes :
-            entityDefinition.Attributes.Where(a => attributes.Contains(a.LogicalName)).ToArray();
+            entityDefinition.Attributes.Where(a => attributeNames.Contains(a.LogicalName)).ToArray();
         //    entityDefinition.Attributes.Where(a => a.AttributeType != AttributeTypeCode.EntityName && a.IsLogical != true).ToArray() :
         //    entityDefinition.Attributes.Where(a => a.AttributeType != AttributeTypeCode.EntityName && attributes.Contains(a.LogicalName)).ToArray();
 
@@ -267,25 +267,28 @@ public class PluginCodeGenerator : BaseCodeGeneratorWithSite
         {
             if (!string.IsNullOrWhiteSpace(step.PrimaryEntityName))
             {
-                var attributes = step.FilteringAttributes?.Split([','], StringSplitOptions.RemoveEmptyEntries) ?? [];
+                var filteringAttributes = step.FilteringAttributes?.Split([','], StringSplitOptions.RemoveEmptyEntries) ?? [];
                 if (!entityAttributes.ContainsKey(step.PrimaryEntityName!))
                 {
-                    entityAttributes[step.PrimaryEntityName!] = new HashSet<string>(attributes);
+                    entityAttributes[step.PrimaryEntityName!] = new HashSet<string>(filteringAttributes);
                 }
-                else if (attributes.Length == 0)
+                else if (filteringAttributes.Length == 0)
                 {
+                    // Since we don't have any filtering attributes, we assume all attributes are used.
+                    // so we don't need to keep track of them.
                     entityAttributes[step.PrimaryEntityName!] = [];
                 }
                 else if (entityAttributes[step.PrimaryEntityName!].Count > 0)
                 {
-                    entityAttributes[step.PrimaryEntityName!].UnionWith(attributes);
+                    // We have some attributes already, so we add the new ones too.
+                    entityAttributes[step.PrimaryEntityName!].UnionWith(filteringAttributes);
                 }
-                var entityDefinition = GetEntityMetadata(step.PrimaryEntityName!, attributes, config.RemovePrefixesCollection);
+                var entityDefinition = GetEntityMetadata(step.PrimaryEntityName!, filteringAttributes, config.RemovePrefixesCollection);
                 step.PrimaryEntityDefinition = entityDefinition;
-                if (entityDefinition is not null && !entityDefinitions.ContainsKey(entityDefinition.LogicalName))
-                {
-                    entityDefinitions[entityDefinition.LogicalName] = GetEntityMetadata(step.PrimaryEntityName!, [], config.RemovePrefixesCollection)!;
-                }
+                //if (entityDefinition is not null && !entityDefinitions.ContainsKey(entityDefinition.LogicalName))
+                //{
+                //    entityDefinitions[entityDefinition.LogicalName] = GetEntityMetadata(step.PrimaryEntityName!, [], config.RemovePrefixesCollection)!;
+                //}
             }
             foreach (var image in step.Images)
             {
@@ -302,19 +305,28 @@ public class PluginCodeGenerator : BaseCodeGeneratorWithSite
                     }
                     var entityDefinition = GetEntityMetadata(step.PrimaryEntityName!, attributes, config.RemovePrefixesCollection);
                     image.MessagePropertyDefinition = entityDefinition;
-                    if (entityDefinition is not null && !entityDefinitions.ContainsKey(entityDefinition.LogicalName))
-                    {
-                        entityDefinitions[entityDefinition.LogicalName] = GetEntityMetadata(step.PrimaryEntityName!, [], config.RemovePrefixesCollection)!;
-                    }
+                    //if (entityDefinition is not null && !entityDefinitions.ContainsKey(entityDefinition.LogicalName))
+                    //{
+                    //    entityDefinitions[entityDefinition.LogicalName] = GetEntityMetadata(step.PrimaryEntityName!, [], config.RemovePrefixesCollection)!;
+                    //}
                 }
             }
         }
         // Now we update entity definitions with the attributes used in the plugin definitions.
-        foreach(var entity in entityAttributes.Where(e => e.Value.Count > 0))
+        foreach(var entityEntry in entityAttributes)//.Where(e => e.Value.Count > 0))
         {
-            var entityDefinition = entityDefinitions[entity.Key];
-            var attributesUsedInPluginDefinitions = entityDefinition.Attributes.Where(a => entity.Value.Contains(a.LogicalName)).ToArray();
-            typeof(EntityMetadata).GetProperty("Attributes").SetValue(entityDefinition, attributesUsedInPluginDefinitions);
+            //var entityDefinition = entityDefinitions[entity.Key];
+            //var entityDefinition = GetEntityMetadata(entity.Key, entity.Value, config.RemovePrefixesCollection);
+            //var attributesUsedInPluginDefinitions = entityDefinition.Attributes.Where(a => entity.Value.Contains(a.LogicalName)).ToArray();
+            //typeof(EntityMetadata).GetProperty("Attributes").SetValue(entityDefinition, attributesUsedInPluginDefinitions);
+            entityDefinitions[entityEntry.Key] = GetEntityMetadata(entityEntry.Key, entityEntry.Value, config.RemovePrefixesCollection)!;
+        }
+        foreach (var entityConfig in config.Entities)
+        {
+            if (!string.IsNullOrEmpty(entityConfig.LogicalName))
+            {
+                entityDefinitions[entityConfig.LogicalName!] = GetEntityMetadata(entityConfig.LogicalName!, entityConfig.Attributes?.SplitAndTrim(',') ?? [], config.RemovePrefixesCollection)!;
+            }
         }
         config.EntityDefinitions = entityDefinitions.Values;
     }

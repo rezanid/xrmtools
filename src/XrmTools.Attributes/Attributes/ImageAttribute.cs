@@ -4,6 +4,11 @@ using System;
 using XrmTools.Meta.Model;
 
 // Any change in the constructors of this class requires a change in PluginAttributeExtractor.
+/// <summary>
+/// Adds image to a plugin step of a plugin type. This attribute should only be applied after a <see cref="StepAttribute" /> to the class.
+/// </summary>
+/// <param name="type">Defines if this is a pre-image, post-image or both.</param>
+/// <param name="messagePropertyName">Defines which property of the message is captured by this image.</param>
 [AttributeUsage(AttributeTargets.Class, AllowMultiple = true, Inherited = true)]
 public class ImageAttribute(ImageTypes type, string messagePropertyName) : Attribute
 {
@@ -31,5 +36,4 @@ public class ImageAttribute(ImageTypes type, string messagePropertyName) : Attri
     {
         Attributes = attributes;
     }
-
 }

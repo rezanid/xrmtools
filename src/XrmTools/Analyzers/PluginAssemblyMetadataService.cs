@@ -3,8 +3,8 @@ namespace XrmTools.Analyzers;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.VisualStudio.LanguageServices;
-using Microsoft.Xrm.Sdk;
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -39,10 +39,12 @@ public class PluginAssemblyMetadataService : IPluginAssemblyMetadataService
             if (compilation == null) return null;
 
             var assemblySymbol = compilation.Assembly;
-            var assemblyAttributeData = GetPluginAssemblyAttribute(assemblySymbol);
-            if (assemblyAttributeData == null) return null;
+            var assemblyAttribute = GetPluginAssemblyAttribute(assemblySymbol);
+            if (assemblyAttribute == null) return null;
 
-            var pluginAssemblyConfig = CreatePluginAssemblyConfig(assemblySymbol, assemblyAttributeData);
+            var assemblyEntityAttributes = GetAssemblyEntityAttributes(assemblySymbol);
+
+            var pluginAssemblyConfig = CreatePluginAssemblyConfig(assemblySymbol, assemblyAttribute, assemblyEntityAttributes);
             if (pluginAssemblyConfig == null) return null;
 
             var syntaxTree = await document.GetSyntaxTreeAsync(cancellationToken).ConfigureAwait(false);
@@ -72,25 +74,27 @@ public class PluginAssemblyMetadataService : IPluginAssemblyMetadataService
         }
     }
 
-    private PluginAssemblyConfig CreatePluginAssemblyConfig(IAssemblySymbol assemblySymbol, AttributeData attributeData)
+    private PluginAssemblyConfig CreatePluginAssemblyConfig(
+        IAssemblySymbol assemblySymbol, AttributeData assemblyAttribute, IEnumerable<AttributeData> entityAttributes)
     {
         var pluginAssemblyConfig = new PluginAssemblyConfig
         {
             Name = assemblySymbol.Name,
             Version = assemblySymbol.Identity.Version.ToString(),
             PublicKeyToken = assemblySymbol.Identity.PublicKeyToken.ToHexString(),
-            SourceType = attributeData.GetValue<int?>(nameof(PluginAssemblyAttribute.SourceType)) is int sourceType
+            SourceType = assemblyAttribute.GetValue<int?>(nameof(PluginAssemblyAttribute.SourceType)) is int sourceType
                 ? (SourceTypes)sourceType : PluginAssemblyAttribute.DefaultSourceType,
-            IsolationMode = attributeData.GetValue<int?>(nameof(PluginAssemblyAttribute.IsolationMode)) is int isolationMode
-                ? (IsolationModes)isolationMode : PluginAssemblyAttribute.DefaultIsolationMode
+            IsolationMode = assemblyAttribute.GetValue<int?>(nameof(PluginAssemblyAttribute.IsolationMode)) is int isolationMode
+                ? (IsolationModes)isolationMode : PluginAssemblyAttribute.DefaultIsolationMode,
+            Entities = _attributeExtractor.ExtractEntityAttributes(entityAttributes).ToList(),
         };
 
-        if (attributeData.GetValue<string>(nameof(PluginAssemblyAttribute.Id)) is string pluginAssemblyId)
+        if (assemblyAttribute.GetValue<string>(nameof(PluginAssemblyAttribute.Id)) is string pluginAssemblyId)
         {
             pluginAssemblyConfig.PluginAssemblyId = Guid.Parse(pluginAssemblyId);
         }
 
-        if (attributeData.GetValue<string>(nameof(PluginAssemblyAttribute.SolutionId)) is string solutionId)
+        if (assemblyAttribute.GetValue<string>(nameof(PluginAssemblyAttribute.SolutionId)) is string solutionId)
         {
             pluginAssemblyConfig.SolutionId = Guid.Parse(solutionId);// new EntityReference("solutions", Guid.Parse(solutionId));
         }
@@ -101,4 +105,9 @@ public class PluginAssemblyMetadataService : IPluginAssemblyMetadataService
     private AttributeData? GetPluginAssemblyAttribute(IAssemblySymbol assemblySymbol)
         => assemblySymbol.GetAttributes()
             .SingleOrDefault(attr => attr.AttributeClass?.ToDisplayString() == typeof(PluginAssemblyAttribute).FullName);
+
+    private IEnumerable<AttributeData> GetAssemblyEntityAttributes(IAssemblySymbol assemblySymbol)
+        => assemblySymbol.GetAttributes()
+            .Where(attr => attr.AttributeClass?.ToDisplayString() == typeof(EntityAttribute).FullName)
+            .ToList();
 }
