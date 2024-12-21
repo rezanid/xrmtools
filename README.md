@@ -35,7 +35,6 @@ First you need to connect to an environment so that XrmTools can see where you a
    public partial class MyPlugin
    {
    }
-   [Step(
    ```
    Noticed how the Intellisense helps you pick the right entity or when you set the message, only the messages that apply to `account` entity are displayed?
 6. Now, let's add an [Image] attribute.
