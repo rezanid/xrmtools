@@ -19,12 +19,13 @@ public class AttributeExtractor : IAttributeExtractor
 {
     public IEnumerable<EntityConfig> ExtractEntityAttributes(IEnumerable<AttributeData> entityAttributes)
     {
+        const int entityNameIndex = 0;
         foreach (var attribute in entityAttributes)
         {
             yield return new EntityConfig
             {
                 Attributes = attribute.GetValue<string>(nameof(EntityAttribute.AttributeNames)),
-                LogicalName = attribute.GetValue<string>(nameof(EntityAttribute.LogicalName)),
+                LogicalName = attribute.ConstructorArguments[entityNameIndex].Value!.ToString(),
             };
         }
     }

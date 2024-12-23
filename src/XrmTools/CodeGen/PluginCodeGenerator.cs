@@ -67,14 +67,6 @@ public class PluginCodeGenerator : BaseCodeGeneratorWithSite
     {
         if (string.IsNullOrWhiteSpace(inputFileContent)) { return null; }
         if (Generator is null) { return Encoding.UTF8.GetBytes("// No generator found."); }
-        if (GetTemplateFilePath() is not string templateFilePath) 
-        { 
-            return Encoding.UTF8.GetBytes("// " + Strings.PluginGenerator_TemplateNotSet); 
-        }
-        if (!File.Exists(templateFilePath))
-        { 
-            return Encoding.UTF8.GetBytes("// " + string.Format(Strings.PluginGenerator_TemplateFileNotFound, templateFilePath));
-        }
         PluginAssemblyConfig? inputModel;
         if (".cs".Equals(Path.GetExtension(inputFileName), StringComparison.OrdinalIgnoreCase))
         {
@@ -86,7 +78,29 @@ public class PluginCodeGenerator : BaseCodeGeneratorWithSite
             inputModel = ParseJsonInputFile(inputFileName, inputFileContent);
         }
 
-        if (inputModel?.PluginTypes?.Any() != true) { return null; }
+        string? templateFilePath = null;
+        if (inputModel?.PluginTypes?.Any() ?? false)
+        {
+            templateFilePath = GetTemplateFilePath(true);
+        }
+        else if (inputModel?.Entities?.Any() ?? false)
+        {
+            templateFilePath = GetTemplateFilePath(false);
+        }
+        else
+        {
+            return null;
+        }
+
+        // Check if template file exists.
+        if (string.IsNullOrEmpty(templateFilePath))
+        {
+            return Encoding.UTF8.GetBytes("// " + Strings.PluginGenerator_TemplateNotSet);
+        }
+        if (!File.Exists(templateFilePath))
+        {
+            return Encoding.UTF8.GetBytes("// " + string.Format(Strings.PluginGenerator_TemplateFileNotFound, templateFilePath));
+        }
 
         Generator.Config = new XrmCodeGenConfig
         {
@@ -155,7 +169,7 @@ public class PluginCodeGenerator : BaseCodeGeneratorWithSite
         return pluginAssemblyInfo;
     }
 
-    private string? GetTemplateFilePath()
+    private string? GetTemplateFilePath(bool isPlugin = true)
     {
         var templateFilePath = InputFilePath + ".sbn";
         if (File.Exists(templateFilePath))
@@ -167,8 +181,11 @@ public class PluginCodeGenerator : BaseCodeGeneratorWithSite
         {
             return templateFilePath;
         }
-        return ThreadHelper.JoinableTaskFactory.Run(SettingsProvider.PluginTemplateFilePathAsync);
+        return isPlugin ? 
+            ThreadHelper.JoinableTaskFactory.Run(SettingsProvider.PluginTemplateFilePathAsync):
+            ThreadHelper.JoinableTaskFactory.Run(SettingsProvider.EntityTemplateFilePathAsync);
     }
+
 
     private EntityMetadata? GetEntityMetadata(string logicalName, IEnumerable<string> attributeNames, IEnumerable<string> prefixesToRemove)
     {

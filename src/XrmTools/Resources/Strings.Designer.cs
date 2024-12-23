@@ -234,9 +234,9 @@ namespace XrmTools.Resources {
         /// <summary>
         ///   Looks up a localized string similar to Assembly configuration does not contain any plugin types..
         /// </summary>
-        internal static string PluginGenerator_NoPluginTypes {
+        internal static string PluginGenerator_NoPluginTypesOrEntities {
             get {
-                return ResourceManager.GetString("PluginGenerator.NoPluginTypes", resourceCulture);
+                return ResourceManager.GetString("PluginGenerator.NoPluginTypesOrEntities", resourceCulture);
             }
         }
         
@@ -250,7 +250,7 @@ namespace XrmTools.Resources {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to The template provided for plugin code generation has erros. FilePath: {0}
+        ///   Looks up a localized string similar to The template provided for plugin code generation has errors. FilePath: {0}
         ///Error details: {1}.
         /// </summary>
         internal static string PluginGenerator_TemplateError {

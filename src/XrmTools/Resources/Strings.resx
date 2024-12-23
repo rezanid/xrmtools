@@ -138,14 +138,14 @@
   <data name="PluginGenerator.InvalidConfig" xml:space="preserve">
     <value>// Code generation failed due to invalid input file.</value>
   </data>
-  <data name="PluginGenerator.NoPluginTypes" xml:space="preserve">
+  <data name="PluginGenerator.NoPluginTypesOrEntities" xml:space="preserve">
     <value>Assembly configuration does not contain any plugin types.</value>
   </data>
   <data name="PluginGenerator.NullTemplate" xml:space="preserve">
     <value>The template provided for plugin code generation is empty. Please check the file in the following path: {0}</value>
   </data>
   <data name="PluginGenerator.TemplateError" xml:space="preserve">
-    <value>The template provided for plugin code generation has erros. FilePath: {0}
+    <value>The template provided for plugin code generation has errors. FilePath: {0}
 Error details: {1}</value>
   </data>
   <data name="PluginGenerator.TemplateInvalidPath" xml:space="preserve">

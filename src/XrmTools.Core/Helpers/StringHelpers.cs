@@ -38,14 +38,14 @@ internal static class StringHelpers
 
     public static string LastSegment(this string str, char separator = '.')
     {
-        var lastSeparator = str.LastIndexOf(separator);
-        return lastSeparator == -1 ? str : str[(lastSeparator + 1)..];
+        var lastIndex = str.LastIndexOf(separator);
+        return lastIndex == -1 ? str : str[(lastIndex + 1)..];
     }
 
     public static string FirstSegment(this string str, char separator = '.')
     {
-        var firstSeparator = str.IndexOf(separator);
-        return firstSeparator == -1 ? str : str[..firstSeparator];
+        var index = str.IndexOf(separator);
+        return index == -1 ? str : str[..index];
     }
 
     /// <summary>
