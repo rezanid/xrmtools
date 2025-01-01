@@ -9,10 +9,10 @@ using XrmTools.Settings;
 using Task = System.Threading.Tasks.Task;
 
 /// <summary>
-/// Command handler to set the selected file as template for plugin code generation.
+/// Command handler to set the selected file as template for entity code generation.
 /// </summary>
-[Command(PackageGuids.XrmToolsCmdSetIdString, PackageIds.SetPluginGeneratorTemplateInProjectCmdId)]
-internal sealed class SetPluginGeneratorTemplateInProjectCommand : BaseCommand<SetPluginGeneratorTemplateInProjectCommand>
+[Command(PackageGuids.XrmToolsCmdSetIdString, PackageIds.SetEntityGeneratorTemplateInProjectCmdId)]
+internal sealed class SetEntityGeneratorTemplateInProjectCommand : BaseCommand<SetEntityGeneratorTemplateInProjectCommand>
 {
     [Import]
     public ISettingsProvider SettingsProvider { get; set; }
@@ -34,6 +34,6 @@ internal sealed class SetPluginGeneratorTemplateInProjectCommand : BaseCommand<S
 
         var solutionDir = Path.GetDirectoryName(solution.FullPath);
         var path = item.FullPath.StartsWith(solutionDir) ? item.FullPath[solutionDir.Length..] : item.FullPath;
-        await SettingsProvider.ProjectSettings.PluginTemplateFilePathAsync(path);
+        await SettingsProvider.ProjectSettings.EntityTemplateFilePathAsync(path);
     }
 }

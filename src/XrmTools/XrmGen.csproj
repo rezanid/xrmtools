@@ -76,7 +76,9 @@
     <Compile Include="CodeGen\EntityCodeGenerator.cs" />
     <Compile Include="CodeGen\PluginCodeGenerator.cs" />
     <Compile Include="Commands\SelectEnvironmentCommand.cs" />
+    <Compile Include="Commands\SetEntityGeneratorTemplateInProjectCommand.cs" />
     <Compile Include="Commands\SetPluginGeneratorTemplateInProjectCommand.cs" />
+    <Compile Include="Commands\SetEntityGeneratorTemplateInSolutionCommand.cs" />
     <Compile Include="Commands\SetPluginGeneratorTemplateInSolutionCommand.cs" />
     <Compile Include="Environments\DataverseEnvironmentProvider.cs" />
     <Compile Include="Helpers\AttributeDataHelper.cs" />
@@ -171,12 +173,14 @@
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
       <IncludeInVSIX>true</IncludeInVSIX>
     </Content>
+    <Content Include="Resources\XrmTools.png">
+      <IncludeInVSIX>true</IncludeInVSIX>
+    </Content>
     <Content Include="UI\WebResources\preview.html" />
     <Content Include="UI\WebResources\themes\prism.css" />
     <Content Include="UI\WebResources\prism.js" />
     <None Include="Samples\AHRMBeOne_Plugin_Request.def.json" />
     <None Include="Samples\EntityConfigExample1.yaml" />
-    <Content Include="Resources\npm.png" />
     <Content Include="Schemas\pluginregistration-schema.json">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
       <IncludeInVSIX>true</IncludeInVSIX>
@@ -279,9 +283,6 @@
       <Generator>VsctGenerator</Generator>
       <LastGenOutput>VSCommandTable.cs</LastGenOutput>
     </VSCTCompile>
-  </ItemGroup>
-  <ItemGroup>
-    <Content Include="Resources\EntityGeneratorCommand.png" />
   </ItemGroup>
   <ItemGroup>
     <EmbeddedResource Include="Resources\Strings.resx">
