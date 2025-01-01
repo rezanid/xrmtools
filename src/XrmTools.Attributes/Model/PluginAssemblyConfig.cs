@@ -15,7 +15,7 @@ using XrmTools.Meta.Model;
 
 public interface IPluginAssemblyConfig : IPluginAssemblyEntity
 {
-    ICollection<EntityConfig>? Entities { get; set; }
+    ICollection<EntityConfig> Entities { get; set; }
     ICollection<EntityMetadata>? EntityDefinitions { get; set; }
     string? RemovePrefixes { get; set; }
     IReadOnlyCollection<string> RemovePrefixesCollection { get; }
@@ -46,7 +46,7 @@ public class PluginAssemblyConfig : TypedEntity<PluginAssemblyConfig>, IPluginAs
     /// <summary>
     /// List of all extra entities (and their comma-delimited attributes) that will be generated.
     /// </summary>
-    public ICollection<EntityConfig>? Entities { get; set; }
+    public ICollection<EntityConfig> Entities { get; set; } = [];
 
     /// <summary>
     /// Dynamically generated from the PluginTypes.

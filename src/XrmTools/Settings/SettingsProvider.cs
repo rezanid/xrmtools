@@ -81,13 +81,19 @@ public class SettingsProvider : ISettingsProvider
     private async Task<string?> ResolveFilePathAsync(string? filePath, bool atProjectLevel, bool atSolutionLevel)
     {
         if (string.IsNullOrWhiteSpace(filePath)) return null;
+
+        if (filePath![0] == Path.DirectorySeparatorChar || filePath[0] == Path.AltDirectorySeparatorChar)
+        {
+            filePath = filePath[1..];
+        }
         if (Path.IsPathRooted(filePath)) return filePath;
+
         if (atProjectLevel)
         {
             var proj = await VS.Solutions.GetActiveProjectAsync();
             if (proj != null)
             {
-                return Path.Combine(proj.FullPath, filePath);
+                return Path.Combine(Path.GetDirectoryName(proj.FullPath), filePath);
             }
         }
         if (atSolutionLevel)

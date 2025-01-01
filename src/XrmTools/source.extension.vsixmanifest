@@ -1,9 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
 <PackageManifest Version="2.0.0" xmlns="http://schemas.microsoft.com/developer/vsx-schema/2011" xmlns:d="http://schemas.microsoft.com/developer/vsx-schema-design/2011">
     <Metadata>
-        <Identity Id="XrmTools.eba3cd26-ffad-444f-b4ef-771d430bacef" Version="1.0" Language="en-US" Publisher="Reza" />
+        <Identity Id="XrmTools.eba3cd26-ffad-444f-b4ef-771d430bacef" Version="1.0.0" Language="en-US" Publisher="Reza" />
         <DisplayName>Xrm Tools</DisplayName>
         <Description xml:space="preserve">Power Platform Tools for Visual Studio</Description>
+        <Icon>Resources\XrmTools.png</Icon>
+        <Tags>Power Platform, Dataverse, Power Apps</Tags>
         <Preview>true</Preview>
     </Metadata>
     <Installation>

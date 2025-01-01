@@ -57,7 +57,9 @@ namespace XrmTools
         public const int SetCustomToolPluginGeneratorCmdId = 0x0300;
         public const int SetCustomToolEntityGeneratorCmdId = 0x0400;
         public const int SetPluginGeneratorTemplateInSolutionCmdId = 0x0800;
-        public const int SetPluginGeneratorTemplateInProjectCmdId = 0x0900;
+        public const int SetPluginGeneratorTemplateInProjectCmdId = 0x0810;
+        public const int SetEntityGeneratorTemplateInSolutionCmdId = 0x0820;
+        public const int SetEntityGeneratorTemplateInProjectCmdId = 0x0830;
         public const int SetEnvironmentCmdId = 0x0500;
     }
 }

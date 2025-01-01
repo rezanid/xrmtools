@@ -9,7 +9,6 @@ using System.Linq;
 using System.Text;
 using XrmTools.Xrm.Model;
 using Scriban.Runtime;
-using System.Collections.Generic;
 
 [Export(typeof(IXrmPluginCodeGenerator))]
 public class TemplatedPluginCodeGenerator : IXrmPluginCodeGenerator
@@ -23,7 +22,10 @@ public class TemplatedPluginCodeGenerator : IXrmPluginCodeGenerator
     {
         if (Config == null) { throw new InvalidOperationException("Config is not set."); }
         if (pluginAssembly is null) { throw new ArgumentNullException(nameof(pluginAssembly)); }
-        if (pluginAssembly.PluginTypes is null || !pluginAssembly.PluginTypes.Any()) { return (false, Resources.Strings.PluginGenerator_NoPluginTypes); }
+        if ((pluginAssembly.PluginTypes is null || !pluginAssembly.PluginTypes.Any()) && (pluginAssembly.Entities is null || !pluginAssembly.Entities.Any())) 
+        { 
+            return (false, Resources.Strings.PluginGenerator_NoPluginTypesOrEntities); 
+        }
         return (true, string.Empty);
     }
 
@@ -62,7 +64,7 @@ public class TemplatedPluginCodeGenerator : IXrmPluginCodeGenerator
             {
                 errors.AppendLine(error.ToString());
             }
-            return string.Format(Resources.Strings.PluginGenerator_TemplateError, Config, errors.ToString());
+            return string.Format(Resources.Strings.PluginGenerator_TemplateError, Config.TemplateFilePath, errors.ToString());
         }
         try
         {
@@ -70,7 +72,7 @@ public class TemplatedPluginCodeGenerator : IXrmPluginCodeGenerator
         }
         catch (Exception ex)
         {
-            return string.Format(Resources.Strings.PluginGenerator_TemplateError, Config, ex);
+            return string.Format(Resources.Strings.PluginGenerator_TemplateError, Config.TemplateFilePath, ex);
         }
     }
 }

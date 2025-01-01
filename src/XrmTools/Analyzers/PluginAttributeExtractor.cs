@@ -11,11 +11,25 @@ using XrmTools.Xrm.Model;
 
 public interface IAttributeExtractor
 {
+    IEnumerable<EntityConfig> ExtractEntityAttributes(IEnumerable<AttributeData> entityAttributes);
     PluginTypeConfig? ExtractAttributes(INamedTypeSymbol typeSymbol);
 }
 
 public class AttributeExtractor : IAttributeExtractor
 {
+    public IEnumerable<EntityConfig> ExtractEntityAttributes(IEnumerable<AttributeData> entityAttributes)
+    {
+        const int entityNameIndex = 0;
+        foreach (var attribute in entityAttributes)
+        {
+            yield return new EntityConfig
+            {
+                Attributes = attribute.GetValue<string>(nameof(EntityAttribute.AttributeNames)),
+                LogicalName = attribute.ConstructorArguments[entityNameIndex].Value!.ToString(),
+            };
+        }
+    }
+
     public PluginTypeConfig? ExtractAttributes(INamedTypeSymbol typeSymbol)
     {
         PluginTypeConfig? pluginConfig = null;
@@ -124,3 +138,4 @@ public class AttributeExtractor : IAttributeExtractor
         return imageConfig;
     }
 }
+#nullable restore

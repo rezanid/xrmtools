@@ -23,30 +23,43 @@ internal interface IEntityMetadataRepository : IXrmRepository
     Task<EntityMetadata> GetAsync(string entityLogicalName, CancellationToken cancellationToken);
     Task<IEnumerable<SdkMessage>> GetAvailableMessageAsync(string entityLogicalName, CancellationToken cancellationToken);
     Task<ExpandoObject> GetAsExpandoAsync(string entityLogicalName, CancellationToken cancellationToken);
+    Task<EntityMetadata> GetRelationshipsAsync(string entityLogicalName, CancellationToken cancellationToken);
 }
 
 internal class EntityMetadataRepository(XrmHttpClient client) : XrmRepository(client), IEntityMetadataRepository
 {
-    private const string entityMetadataQueryAll = "RetrieveAllEntities(EntityFilters=@p1,RetrieveAsIfPublished=@p2)?@p1=Microsoft.Dynamics.CRM.EntityFilters%27Entity%27&@p2=true";
-    private const string entityMetadataQuerySingle = "RetrieveEntity(LogicalName=@p1,EntityFilters=@p2,RetrieveAsIfPublished=@p3,MetadataId=@p4)?@p1=%27{0}%27&@p2=Microsoft.Dynamics.CRM.EntityFilters%27Attributes%27&@p3=true&@p4=00000000-0000-0000-0000-000000000000";
-    private const string entityMessagesQuery = "sdkmessages?$select=name,isprivate,executeprivilegename,isvalidforexecuteasync,autotransact,introducedversion&$filter=sdkmessageid_sdkmessagefilter/any(n:%20n/primaryobjecttypecode%20eq%20%27{0}%27)";
+    private const string entityMetadataQueryAll = "RetrieveAllEntities(EntityFilters=@p1,RetrieveAsIfPublished=@p2)?@p1=Microsoft.Dynamics.CRM.EntityFilters'Entity'&@p2=true";
+    private const string entityMetadataQuerySingle = "RetrieveEntity(LogicalName=@p1,EntityFilters=@p2,RetrieveAsIfPublished=@p3,MetadataId=@p4)?@p1='{0}'&@p2=Microsoft.Dynamics.CRM.EntityFilters'Attributes'&@p3=true&@p4=00000000-0000-0000-0000-000000000000";
+    private const string entityMessagesQuery = "sdkmessages?$select=name,isprivate,executeprivilegename,isvalidforexecuteasync,autotransact,introducedversion&$filter=sdkmessageid_sdkmessagefilter/any(n:%20n/primaryobjecttypecode%20eq%20'{0}')";
+    private const string entityRelationshipsQuery = "EntityDefinitions(LogicalName='{0}')?$select=MetadataId&$expand=ManyToOneRelationships,OneToManyRelationships,ManyToManyRelationships";
 
     private static readonly JsonSerializerSettings serializerSetting = new()
     {
         ContractResolver = new PolymorphicContractResolver()
     };
 
+    /// <summary>
+    /// Get all the entities metadata.
+    /// </summary>
+    /// <param name="cancellationToken">The cancellation token.</param>
+    /// <returns></returns>
     public async Task<IEnumerable<EntityMetadata>> GetAsync(CancellationToken cancellationToken)
     {
         var response = await client.GetAsync(entityMetadataQueryAll, cancellationToken);
         if (response.IsSuccessStatusCode)
         {
             using var content = await response.Content.ReadAsStreamAsync().ConfigureAwait(false);
-            return content.Deserialize<RetrieveAllEntitiesResponse>().EntityMetadata;
+            return content.Deserialize<RetrieveAllEntitiesResponse>().EntityMetadata; 
         }
         return [];
     }
 
+    /// <summary>
+    /// Get the available messages for the entity.
+    /// </summary>
+    /// <param name="entityLogicalName">The logical name of the entity to retrieve its metadata.</param>
+    /// <param name="cancellationToken">The cancellation token.</param>
+    /// <returns></returns>
     public async Task<IEnumerable<SdkMessage>> GetAvailableMessageAsync(string entityLogicalName, CancellationToken cancellationToken)
     {
         var response = await client.GetAsync(entityMessagesQuery.FormatWith(entityLogicalName), cancellationToken);
@@ -58,6 +71,12 @@ internal class EntityMetadataRepository(XrmHttpClient client) : XrmRepository(cl
         return [];
     }
 
+    /// <summary>
+    /// Get the metadata for the entity including its attributes.
+    /// </summary>
+    /// <param name="entityLogicalName">The logical name of the entity to retrieve its metadata.</param>
+    /// <param name="cancellationToken">The cancellation token.</param>
+    /// <returns></returns>
     public async Task<EntityMetadata> GetAsync(string entityLogicalName, CancellationToken cancellationToken)
     {
         var response = await client.GetAsync(entityMetadataQuerySingle.FormatWith(entityLogicalName), cancellationToken);
@@ -91,6 +110,31 @@ internal class EntityMetadataRepository(XrmHttpClient client) : XrmRepository(cl
             };
             dynamic resp = serializer.Deserialize<ExpandoObject>(jreader);
             return resp.EntityMetadata;
+        }
+        return null;
+    }
+
+    /// <summary>
+    /// Get the relationships for the entity. 
+    /// Check <c>EntityMetadata.OneToManyRelationships</c>, <c>EntityMetadata.ManyToOneRelationships</c>, and <c>EntityMetadata.ManyToManyRelationships</c> properties.
+    /// </summary>
+    /// <param name="entityLogicalName">The logical name of the entity to retrieve its relationships.</param>
+    /// <param name="cancellationToken">The cancellation token.</param>
+    /// <returns></returns>
+    public async Task<EntityMetadata> GetRelationshipsAsync(string entityLogicalName, CancellationToken cancellationToken)
+    {
+        var response = await client.GetAsync(entityMetadataQuerySingle.FormatWith(entityLogicalName), cancellationToken);
+        if (response.IsSuccessStatusCode)
+        {
+            using var content = await response.Content.ReadAsStreamAsync().ConfigureAwait(false);
+            using var reader = new StreamReader(content);
+            using var jreader = new JsonTextReader(reader);
+            var jobj = (JObject)(await JToken.ReadFromAsync(jreader, cancellationToken));
+            var serializer = new Newtonsoft.Json.JsonSerializer()
+            {
+                ContractResolver = new PolymorphicContractResolver(),
+            };
+            return JsonConvert.DeserializeObject<EntityMetadata>(jobj.GetValue("EntityMetadata").ToString(), serializerSetting);
         }
         return null;
     }
