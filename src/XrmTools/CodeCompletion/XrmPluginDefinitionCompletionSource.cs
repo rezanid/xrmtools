@@ -53,7 +53,7 @@ internal class XrmPluginDefinitionCompletionSource(
         if (node == null) return CompletionContext.Empty;
 
         var attributeSyntax = node.AncestorsAndSelf().OfType<AttributeSyntax>().FirstOrDefault();
-        if (attributeSyntax == null || !IsStepAttribute(attributeSyntax, semanticModel)) return CompletionContext.Empty;
+        if (attributeSyntax == null) return CompletionContext.Empty;
 
         // Determine which argument is being edited
         var argumentList = attributeSyntax.ArgumentList?.Arguments;
@@ -62,13 +62,28 @@ internal class XrmPluginDefinitionCompletionSource(
         var argumentIndex = GetArgumentIndexAtPosition(argumentList.Value, triggerLocation.Position);
         if (argumentIndex == -1) return CompletionContext.Empty;
 
-        return argumentIndex switch
+        if (IsStepAttribute(attributeSyntax, semanticModel))
         {
-            0 => await GetEntityCompletionsAsync(cancellationToken),
-            1 => await GetMessageCompletionsAsync(argumentList.Value[0], semanticModel, cancellationToken),
-            2 => await GetAttributeCompletionsAsync(argumentList.Value[0], semanticModel, triggerLocation, cancellationToken),
-            _ => CompletionContext.Empty,
-        };
+            return argumentIndex switch
+            {
+                0 => await GetEntityCompletionsAsync(cancellationToken),
+                1 => await GetMessageCompletionsAsync(argumentList.Value[0], semanticModel, cancellationToken),
+                2 => await GetAttributeCompletionsAsync(argumentList.Value[0], semanticModel, triggerLocation, cancellationToken),
+                _ => CompletionContext.Empty,
+            };
+        }
+
+        if (IsEntityAttribute(attributeSyntax, semanticModel))
+        {
+            return argumentIndex switch
+            {
+                0 => await GetEntityCompletionsAsync(cancellationToken),
+                1 => await GetAttributeCompletionsAsync(argumentList.Value[0], semanticModel, triggerLocation, cancellationToken),
+                _ => CompletionContext.Empty,
+            };
+        }
+
+        return CompletionContext.Empty;
     }
 
     private async Task<CompletionContext> GetEntityCompletionsAsync(CancellationToken cancellationToken)
@@ -140,6 +155,13 @@ internal class XrmPluginDefinitionCompletionSource(
         var symbolInfo = semanticModel.GetSymbolInfo(attributeSyntax);
         var symbol = (symbolInfo.Symbol ?? symbolInfo.CandidateSymbols.FirstOrDefault()) as IMethodSymbol;
         return symbol?.ContainingType.Name == nameof(StepAttribute);
+    }
+
+    private bool IsEntityAttribute(AttributeSyntax attributeSyntax, SemanticModel semanticModel)
+    {
+        var symbolInfo = semanticModel.GetSymbolInfo(attributeSyntax);
+        var symbol = (symbolInfo.Symbol ?? symbolInfo.CandidateSymbols.FirstOrDefault()) as IMethodSymbol;
+        return symbol?.ContainingType.Name == nameof(EntityAttribute);
     }
 
     private int GetArgumentIndexAtPosition(SeparatedSyntaxList<AttributeArgumentSyntax> arguments, int position)
