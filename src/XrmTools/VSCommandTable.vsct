@@ -48,7 +48,20 @@
       <Group guid="XrmToolsCmdSetId" id="XrmToolsSolutionContextMenuGroup" priority="0x0100">
         <Parent guid="guidSHLMainMenu" id="IDM_VS_CTXT_SOLNNODE"/>
       </Group>
+      <Group guid="XrmToolsCmdSetId" id="XrmToolsContextSubMenuGroup" priority="0x0100">
+        <Parent guid="XrmToolsCmdSetId" id="XrmToolsContextSubMenu"/>
+      </Group>
     </Groups>
+
+    <Menus>
+      <Menu guid="XrmToolsCmdSetId" id="XrmToolsContextSubMenu" type="Menu">
+        <Parent guid="XrmToolsCmdSetId" id="XrmToolsContextMenuGroup" />
+        <Strings>
+          <ButtonText>Set as template</ButtonText>
+          <CommandName>Set as template</CommandName>
+        </Strings>
+      </Menu>
+    </Menus>
 
     <!--Buttons section. -->
     <!--This section defines the elements the user can interact with, like a menu command or a button
@@ -83,23 +96,43 @@
         </Strings>
       </Button>
       <Button guid="XrmToolsCmdSetId" id="SetPluginGeneratorTemplateInSolutionCmdId" priority="0x100" type="Button">
-        <Parent guid="XrmToolsCmdSetId" id="XrmToolsContextMenuGroup" />
+        <Parent guid="XrmToolsCmdSetId" id="XrmToolsContextSubMenuGroup" />
         <Icon guid="ImageCatalogGuid" id="Type" />
         <CommandFlag>IconIsMoniker</CommandFlag>
         <CommandFlag>DynamicVisibility</CommandFlag>
         <Strings>
-          <ButtonText>Set as plugin generator template for solution</ButtonText>
+          <ButtonText>Plugin code generator (Solution)</ButtonText>
           <LocCanonicalName>.XrmTools.SetPluginGeneratorTemplateInSolution</LocCanonicalName>
         </Strings>
       </Button>
       <Button guid="XrmToolsCmdSetId" id="SetPluginGeneratorTemplateInProjectCmdId" priority="0x100" type="Button">
-        <Parent guid="XrmToolsCmdSetId" id="XrmToolsContextMenuGroup" />
+        <Parent guid="XrmToolsCmdSetId" id="XrmToolsContextSubMenuGroup" />
         <Icon guid="ImageCatalogGuid" id="Type" />
         <CommandFlag>IconIsMoniker</CommandFlag>
         <CommandFlag>DynamicVisibility</CommandFlag>
         <Strings>
-          <ButtonText>Set as plugin generator template for project</ButtonText>
+          <ButtonText>Plugin code generator (Project)</ButtonText>
           <LocCanonicalName>.XrmTools.SetPluginGeneratorTemplateInProject</LocCanonicalName>
+        </Strings>
+      </Button>
+      <Button guid="XrmToolsCmdSetId" id="SetEntityGeneratorTemplateInSolutionCmdId" priority="0x100" type="Button">
+        <Parent guid="XrmToolsCmdSetId" id="XrmToolsContextSubMenuGroup" />
+        <Icon guid="ImageCatalogGuid" id="Type" />
+        <CommandFlag>IconIsMoniker</CommandFlag>
+        <CommandFlag>DynamicVisibility</CommandFlag>
+        <Strings>
+          <ButtonText>Entity code generator (Solution)</ButtonText>
+          <LocCanonicalName>.XrmTools.SetEntityGeneratorTemplateInSolution</LocCanonicalName>
+        </Strings>
+      </Button>
+      <Button guid="XrmToolsCmdSetId" id="SetEntityGeneratorTemplateInProjectCmdId" priority="0x100" type="Button">
+        <Parent guid="XrmToolsCmdSetId" id="XrmToolsContextSubMenuGroup" />
+        <Icon guid="ImageCatalogGuid" id="Type" />
+        <CommandFlag>IconIsMoniker</CommandFlag>
+        <CommandFlag>DynamicVisibility</CommandFlag>
+        <Strings>
+          <ButtonText>Entity code generator (Project)</ButtonText>
+          <LocCanonicalName>.XrmTools.SetEntityGeneratorTemplateInProject</LocCanonicalName>
         </Strings>
       </Button>
       <Button guid="XrmToolsCmdSetId" id="SetEnvironmentCmdId" priority="0x0100" type="Button">
@@ -141,6 +174,8 @@
     <VisibilityItem guid="XrmToolsCmdSetId" id="SetCustomToolPluginGeneratorCmdId" context="SetCustomToolPluginDefitionCmdUIRule" />
     <VisibilityItem guid="XrmToolsCmdSetId" id="SetPluginGeneratorTemplateInSolutionCmdId" context="SetPluginGeneratorTemplateCmdUIRule" />
     <VisibilityItem guid="XrmToolsCmdSetId" id="SetPluginGeneratorTemplateInProjectCmdId" context="SetPluginGeneratorTemplateCmdUIRule" />
+    <VisibilityItem guid="XrmToolsCmdSetId" id="SetEntityGeneratorTemplateInSolutionCmdId" context="SetPluginGeneratorTemplateCmdUIRule" />
+    <VisibilityItem guid="XrmToolsCmdSetId" id="SetEntityGeneratorTemplateInProjectCmdId" context="SetPluginGeneratorTemplateCmdUIRule" />
     <VisibilityItem guid="XrmToolsCmdSetId" id="NewPluginDefinitionCmdId" context="NewPluginDefinitionCmdUIRule" />
   </VisibilityConstraints>
 
@@ -168,10 +203,14 @@
       <IDSymbol name="XrmToolsContextMenuGroup" value="0x0100" />
       <IDSymbol name="NewPluginDefinitionCmdId" value="0x0200" />
       <IDSymbol name="SetCustomToolPluginGeneratorCmdId" value="0x0300" />
-      <IDSymbol name="SetCustomToolEntityGeneratorCmdId" value="0x0400" />
+      <IDSymbol name="SetCustomToolEntityGeneratorCmdId" value="0x0310" />
       <IDSymbol name="SetPluginGeneratorTemplateInSolutionCmdId" value="0x0800"/>
-      <IDSymbol name="SetPluginGeneratorTemplateInProjectCmdId" value="0x0900"/>
+      <IDSymbol name="SetPluginGeneratorTemplateInProjectCmdId" value="0x0810"/>
+      <IDSymbol name="SetEntityGeneratorTemplateInSolutionCmdId" value="0x0820"/>
+      <IDSymbol name="SetEntityGeneratorTemplateInProjectCmdId" value="0x0830"/>
       <IDSymbol name="SetEnvironmentCmdId" value="0x0500"/>
+      <IDSymbol name="XrmToolsContextSubMenu" value="0x1000"/>
+      <IDSymbol name="XrmToolsContextSubMenuGroup" value="0x1010"/>
     </GuidSymbol>
   </Symbols>
 </CommandTable>

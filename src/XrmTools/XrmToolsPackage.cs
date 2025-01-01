@@ -155,6 +155,8 @@ public sealed partial class XrmToolsPackage : ToolkitPackage
         await NewPluginDefinitionFileCommand.InitializeAsync(this);
         await SetPluginGeneratorTemplateInProjectCommand.InitializeAsync(this);
         await SetPluginGeneratorTemplateInSolutionCommand.InitializeAsync(this);
+        await SetEntityGeneratorTemplateInProjectCommand.InitializeAsync(this);
+        await SetEntityGeneratorTemplateInSolutionCommand.InitializeAsync(this);
         await SetCustomToolEntityGeneratorCommand.InitializeAsync(this);
         await SetCustomToolPluginGeneratorCommand.InitializeAsync(this);
         await SelectEnvironmentCommand.InitializeAsync(this);

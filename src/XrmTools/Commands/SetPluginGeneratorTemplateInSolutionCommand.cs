@@ -4,6 +4,7 @@ using EnvDTE;
 using Microsoft.VisualStudio.ComponentModelHost;
 using Microsoft.VisualStudio.Shell;
 using System.ComponentModel.Composition;
+using System.IO;
 using XrmTools.Settings;
 using Task = System.Threading.Tasks.Task;
 
@@ -25,11 +26,14 @@ internal sealed class SetPluginGeneratorTemplateInSolutionCommand : BaseCommand<
 
     protected override async Task ExecuteAsync(OleMenuCmdEventArgs e)
     {
-        var i = await VS.Solutions.GetActiveItemAsync();
-        if (i is null || i.Type != SolutionItemType.PhysicalFile) return;
+        var item = await VS.Solutions.GetActiveItemAsync();
+        if (item is null || item.Type != SolutionItemType.PhysicalFile) return;
 
         var solution = await VS.Solutions.GetCurrentSolutionAsync();
-        var path = solution is not null && i.FullPath.StartsWith(solution.FullPath) ? i.FullPath[solution.FullPath.Length..] : i.FullPath;
+        if (solution is null) return;
+
+        var solutionDir = Path.GetDirectoryName(solution.FullPath);
+        var path = item.FullPath.StartsWith(solutionDir) ? item.FullPath[solutionDir.Length..] : item.FullPath;
         SettingsProvider.SolutionSettings.PluginTemplateFilePath(path);
     }
 }

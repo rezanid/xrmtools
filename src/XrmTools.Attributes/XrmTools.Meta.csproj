@@ -60,6 +60,7 @@
     <Compile Include="..\xrmtools.core\system\runtime\compilerservices\RuntimeHelpers.cs">
       <Link>System\Runtime\CompilerServices\RuntimeHelpers.cs</Link>
     </Compile>
+    <Compile Include="Attributes\EntityAttribute.cs" />
     <Compile Include="Attributes\ImageAttribute.cs" />
     <Compile Include="Attributes\PluginAssemblyAttribute.cs" />
     <Compile Include="Attributes\PluginAttribute.cs" />
