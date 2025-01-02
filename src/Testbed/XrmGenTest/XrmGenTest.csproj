@@ -14,6 +14,8 @@
     <Deterministic>true</Deterministic>
     <LangVersion>12</LangVersion>
     <TargetFrameworkProfile />
+    <DataverseEntityTemplateFilePath>\CodeGenTemplates\Entity.sbn</DataverseEntityTemplateFilePath>
+    <DataversePluginTemplateFilePath>\CodeGenTemplates\Plugin.sbn</DataversePluginTemplateFilePath>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
     <PlatformTarget>AnyCPU</PlatformTarget>
@@ -61,7 +63,15 @@
       <DesignTime>True</DesignTime>
       <DependentUpon>AccountPlugin.cs</DependentUpon>
     </Compile>
-    <Compile Include="Entities.cs" />
+    <Compile Include="Entities.cs">
+      <Generator>Xrm Tools Plugin Code Generator</Generator>
+      <LastGenOutput>Entities1.cs</LastGenOutput>
+    </Compile>
+    <Compile Include="Entities1.cs">
+      <AutoGen>True</AutoGen>
+      <DesignTime>True</DesignTime>
+      <DependentUpon>Entities.cs</DependentUpon>
+    </Compile>
     <Compile Include="Properties\AssemblyInfo.cs" />
     <None Include="CodeGenTemplates\DisplayNameBased\Boolean.sbn" />
     <None Include="CodeGenTemplates\DisplayNameBased\Customer.sbn" />
@@ -115,6 +125,9 @@
       <Version>1.15.0</Version>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
       <PrivateAssets>all</PrivateAssets>
+    </PackageReference>
+    <PackageReference Include="XrmTools.Meta">
+      <Version>1.0.0</Version>
     </PackageReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />

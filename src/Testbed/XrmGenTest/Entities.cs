@@ -1,4 +1,3 @@
-﻿
-namespace XrmGenTest;
+﻿using XrmTools.Meta.Attributes;
 
-[Entity]
+[assembly: Entity("account",AttributeNames = "accountcategorycode")]
