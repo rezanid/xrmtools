@@ -1,0 +1,3 @@
+//EntityName
+//OptionSet? {{attribute.option_set}}
+{{~attribute.logical_name~}}
