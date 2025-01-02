@@ -1,3 +1,0 @@
-entities:
-- entity: account
-  atributes: "phone, name, email1"

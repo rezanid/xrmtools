@@ -6,11 +6,11 @@ using System.Runtime.InteropServices;
 // set of attributes. Change these attribute values to modify the information
 // associated with an assembly.
 [assembly: AssemblyTitle("XrmTools.Attributes")]
-[assembly: AssemblyDescription("")]
+[assembly: AssemblyDescription("Provides attributes and other metadata required to use XrmTools extension.")]
 [assembly: AssemblyConfiguration("")]
-[assembly: AssemblyCompany("AG Insurance")]
+[assembly: AssemblyCompany("Novovio")]
 [assembly: AssemblyProduct("XrmTools.Attributes")]
-[assembly: AssemblyCopyright("Copyright © AG Insurance 2024")]
+[assembly: AssemblyCopyright("Copyright © Novovio 2025")]
 [assembly: AssemblyTrademark("")]
 [assembly: AssemblyCulture("")]
 

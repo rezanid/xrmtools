@@ -173,15 +173,17 @@
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
       <IncludeInVSIX>true</IncludeInVSIX>
     </Content>
-    <Content Include="Resources\XrmTools.ico">
+    <Content Include="Resources\XrmTools_256.png">
       <IncludeInVSIX>true</IncludeInVSIX>
-    </Content>
-    <Content Include="Resources\XrmTools.png">
-      <IncludeInVSIX>true</IncludeInVSIX>
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
     <Content Include="UI\WebResources\preview.html" />
     <Content Include="UI\WebResources\themes\prism.css" />
     <Content Include="UI\WebResources\prism.js" />
+    <Content Include="..\..\LICENSE.md">
+      <Link>Resources\LICENSE.md</Link>
+      <IncludeInVSIX>true</IncludeInVSIX>
+    </Content>
     <None Include="Samples\AHRMBeOne_Plugin_Request.def.json" />
     <None Include="Samples\EntityConfigExample1.yaml" />
     <Content Include="Schemas\pluginregistration-schema.json">
@@ -295,6 +297,7 @@
     </EmbeddedResource>
   </ItemGroup>
   <ItemGroup>
+    <Folder Include="NewFolder1\" />
     <Folder Include="Xrm\CompletionSample\" />
     <Folder Include="Xrm\Model\" />
   </ItemGroup>
