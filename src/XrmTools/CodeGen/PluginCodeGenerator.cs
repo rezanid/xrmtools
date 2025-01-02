@@ -113,7 +113,7 @@ public class PluginCodeGenerator : BaseCodeGeneratorWithSite
 
         if (GeneralOptions.Instance.LogLevel == LogLevel.Trace)
         {
-            var serializedConfig = inputModel.SerializeJson();
+            var serializedConfig = inputModel.SerializeJson(useNewtonsoft: true);
             File.WriteAllText(Path.ChangeExtension(inputFileName, ".model.json"), serializedConfig);
         }
 
@@ -146,12 +146,12 @@ public class PluginCodeGenerator : BaseCodeGeneratorWithSite
             Logger.LogWarning("No active project found.");
             return null;
         }
-        var assemblyPath = proj.GetOutputAssemblyPath();
-        if (assemblyPath == null || !File.Exists(assemblyPath))
-        {
-            Logger.LogWarning("Assembly not found: {0}", assemblyPath);
-            return null;
-        }
+        //var assemblyPath = proj.GetOutputAssemblyPath();
+        //if (assemblyPath == null || !File.Exists(assemblyPath))
+        //{
+        //    Logger.LogWarning("Assembly not found: {0}", assemblyPath);
+        //    return null;
+        //}
 
         await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync();
         var componentModel = (IComponentModel)Package.GetGlobalService(typeof(SComponentModel));
