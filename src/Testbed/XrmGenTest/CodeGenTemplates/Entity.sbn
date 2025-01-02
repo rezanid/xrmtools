@@ -2,7 +2,6 @@
 {{~func logical; ret ($0?.is_logical == true); end~}}
 {{~func supported_attribute; ret ($0?.attribute_type != 'EntityName'); end~}}
 {{~quote(text) = '"' + text + '"'~}}
-using AG.RM.Xrm.Utility;
 using Microsoft.Xrm.Sdk;
 using Microsoft.Xrm.Sdk.Client;
 using System;
@@ -43,9 +42,9 @@ public class {{base_class_name}} : Entity
 	{
 	{{~for attribute_meta in entity_definition.attributes | filter_enum_attributes~}}
 	{{~if attribute_meta.option_set != null~}}
-	{{~if attribute_meta.option_set.description.localized_labels[0].label != ''~}}
+	{{~if (attribute_meta.option_set.description.localized_labels | array.first)?.label~}}
 		/// <summary>
-		/// {{attribute_meta.option_set.description.localized_labels[0].label}}
+        /// {{attribute_meta.option_set.description.localized_labels[0].label}}
 		/// </summary>
 	{{~end~}}
 		{{codegen_attribute}}
