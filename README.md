@@ -27,7 +27,7 @@ First you need to connect to an environment so that XrmTools can see where you a
 # Making a new Power Platform Plugin.
 1. Right-click on the project that will contain the plugin and select "Manage NuGet Packages..."
 2. Install the latest "XrmTools.Meta" package.
-3. Right-click on the project or anywhere under it and select Add > New > Class (or simple Shift + Alt + C).
+3. Right-click on the project or anywhere under it and select Add > New > Class (or simply Shift + Alt + C).
 4. Make your class `partial` and add `Plugin` attribute to your class. You can name the class anything your like. This attribute makes XrmTools aware that this is a plugin.
    ```csharp
    [Plugin]
