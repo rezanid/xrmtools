@@ -24,7 +24,7 @@ First you need to connect to an environment so that XrmTools can see where you a
 7. Set "Current Environment" to the environment that you just created.
 8. Click "Ok" button to save the settings.
 
-# Adding a new Power Platform Plugin.
+# Making a new Power Platform Plugin.
 1. Right-click on the project that will contain the plugin and select "Manage NuGet Packages..."
 2. Install the latest "XrmTools.Meta" package.
 3. Right-click on the project or anywhere under it and select Add > New > Class (or simple Shift + Alt + C).
