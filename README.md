@@ -44,7 +44,10 @@ First you need to connect to an environment so that XrmTools can see where you a
    }
    ```
    Noticed how the Intellisense helps you pick the right entity or when you set the message, only the messages that apply to `account` entity are displayed?
-6. Now, let's add an [Image] attribute.
+   
+   ![image](https://github.com/user-attachments/assets/cef86da3-6f8f-4936-b516-ca6935b2ad6a)
+
+7. Now, let's add an [Image] attribute.
    ```csharp
    [Plugin("MyPlugin")]
    [Step("account", "Update", "accountnumber,accountratingcode,accountcategorycode", Stages.PostOperation, ExecutionMode.Asynchronous)]
