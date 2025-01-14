@@ -9,10 +9,17 @@ First you need to connect to an environment so that XrmTools can see where you a
 1. Open the "Tool" menu and select "Options"
 2. All the way to the bottom you will find "Xrm Tools".
 3. Click on the three dots in front of "Environments".
-4. Here you can add a new Power Platform environment to Visual Studio. You can give your environment a name and a connection string. The connection string is very similar to the Xrm Tooling of Microsoft, only simpler and with extra security features built-in. For example you can use the following to use your current account to connect to an environment.
+   ![image](https://github.com/user-attachments/assets/6df080b6-832c-4845-a927-24a9be1ea538)
+
+5. Here you can add a new Power Platform environment to Visual Studio. You can give your environment a name and a connection string. The connection string is very similar to the Xrm Tooling of Microsoft, only simpler and with extra security features built-in. For example you can use the following to use your current account to connect to an environment.
    ```shell
    Url=<environment URL>;Integrated Security=True;TenantId=<your tenant id>
    ```
+   Your connection string can be even as simple as just the URL of your environment.
+   ```shell
+   <environment URL>
+   ```
+   Xrm Tools will try to find your tenant ID by making a request and will try to use your currently authenticated user that is running Visual Studio if you have SSO with your tenant. Otherwise it will display a popup and asks your to login.
    You can read more about connection strings [here](https://github.com/rezanid/xrmtools/wiki/Providing-Connection-Strings).
 7. Set "Current Environment" to the environment that you just created.
 8. Click "Ok" button to save the settings.
