@@ -60,7 +60,7 @@ First you need to connect to an environment so that XrmTools can see where you a
 # Adding code generation to a plugin
 After adding attributes to a plugin class, Xrm Tools knows more about your intentions and can help you even more. For example it can generate the typical code you would write in your plugins or generate typed entities that will be useful for your plugin. To enable code generation for your plugin do the following.
 1. Make sure the name of your plugin file has the word "Plugin" in it. The casing doesn't matter.
-2. Make sure that your plugin class is a `partial` class. Just like the one we created in [Adding a new Power Platform Plugin](#Adding-a-new-Power-Platform-Plugin).
+2. Make sure that your plugin class is a `partial` class. Just like the one we created in [Making a new Power Platform Plugin](#making-a-new-Power-Platform-Plugin).
 3. Right-click on your plugin class in the Solution Explorer and select "Set as plugin definition".
 
 # Learn more
