@@ -18,7 +18,7 @@ First you need to connect to an environment so that XrmTools can see where you a
 
 > [!NOTE]
 >
-> Noticed those buttons under the auto-completion context menu? You can use them to filter table types. **S**tandard, **A**ctivity, **V**irtual, and **E**lastic tables are supported. You can also use shortcuts to apply them. <kbd>Alt</kbd> + <kbd>S</kbd>, <kbd>A</kbd>, <kbd>V</kbd>, or <kbd>E</kbd>.
+> Noticed those buttons under the auto-completion context menu? You can use them to filter table types. ***S**tandard*, ***A**ctivity*, ***V**irtual*, and ***E**lastic* tables are supported. You can also use shortcuts to apply them. <kbd>Alt</kbd> + <kbd>S</kbd>, <kbd>A</kbd>, <kbd>V</kbd>, or <kbd>E</kbd>.
 
 5. Here you can add a new Power Platform environment to Visual Studio. You can give your environment a name and a connection string. The connection string is very similar to the Xrm Tooling of Microsoft, only simpler and with extra security features built-in. For example you can use the following to use your current account to connect to an environment.
    ```shell
@@ -53,8 +53,6 @@ First you need to connect to an environment so that XrmTools can see where you a
    }
    ```
    Noticed how the Intellisense helps you pick the right entity or when you set the message, only the messages that apply to `account` entity are displayed?
-   
-   ![image](https://github.com/user-attachments/assets/cef86da3-6f8f-4936-b516-ca6935b2ad6a)
 
 7. Now, let's add an [Image] attribute.
    ```csharp
