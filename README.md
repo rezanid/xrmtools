@@ -13,8 +13,11 @@ First you need to connect to an environment so that XrmTools can see where you a
 1. Open the "Tool" menu and select "Options"
 2. All the way to the bottom you will find "Xrm Tools".
 3. Click on the three dots in front of "Environments".
-   ![attribute auto-completion screenshot](https://github.com/user-attachments/assets/3afd3687-3ca2-4c96-8e6f-51a047da7b02)
+   <img src="https://github.com/user-attachments/assets/3afd3687-3ca2-4c96-8e6f-51a047da7b02" alt="attribute auto-completion screenshot" width=500 />
 
+> [!NOTE]
+>
+> Noticed those buttons under the auto-completion context menu? You can use them to filter table types. [S*tandard, [A]ctivity, [V]irtual, and [E]lastic tables are supported. You can also use shortcuts to apply them. <kbd>Alt</kbd> + <kbd>S</kbd>, <kbd>A</kbd>, <kbd>V</kbd>, or <kbd>E</kbd>.
 
 5. Here you can add a new Power Platform environment to Visual Studio. You can give your environment a name and a connection string. The connection string is very similar to the Xrm Tooling of Microsoft, only simpler and with extra security features built-in. For example you can use the following to use your current account to connect to an environment.
    ```shell
