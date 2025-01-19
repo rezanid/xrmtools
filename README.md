@@ -65,6 +65,9 @@ First you need to connect to an environment so that XrmTools can see where you a
    {
    }
    ```
+   You will get a similar experience when writing filtering attributes. You'll notice that attribute names are colored differently so you can distinguish them easily.
+
+<img src="https://github.com/user-attachments/assets/1f841973-9b07-4c78-b2b5-9331188b4231" alt="Screenshot of Intellisense in Visual Studio for filtering attributes" width=700 />
 
 # Adding code generation to a plugin
 After adding attributes to a plugin class, Xrm Tools knows more about your intentions and can help you even more. For example it can generate the typical code you would write in your plugins or generate typed entities that will be useful for your plugin. To enable code generation for your plugin do the following.
