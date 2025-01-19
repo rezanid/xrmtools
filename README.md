@@ -1,9 +1,9 @@
 # What is Xrm Tools
 Xrm Tools is a Visual Studio extension that aims to make Power Platform development feel native within Visual Studio. You will get Intellisense support for your Plugins, generate boiler plate code, typed entities and more right from within Visual Studio. You have full control over code generation using [Scriban](https://github.com/scriban/scriban) templates.. Let me show you!
 
->🎺 NOTE!
+> [!NOTE]
 >
->Xrm Tools is not yet published to Visual Studio Gallery, but it will be very soon. Stay tuned!
+> Xrm Tools is not yet published to Visual Studio Gallery, but it will be very soon. Stay tuned!
 
 # How to install
 You will soon be able to get it from Visual Studio's native Extensions gallery. Once installed, just create a new solution and a library project under it or just open an existing solution that you already have. Don't worry It will not change your project structure. You are the one behind the driving wheel at all times.
@@ -13,7 +13,8 @@ First you need to connect to an environment so that XrmTools can see where you a
 1. Open the "Tool" menu and select "Options"
 2. All the way to the bottom you will find "Xrm Tools".
 3. Click on the three dots in front of "Environments".
-   ![image](https://github.com/user-attachments/assets/6df080b6-832c-4845-a927-24a9be1ea538)
+   ![attribute auto-completion screenshot](https://github.com/user-attachments/assets/3afd3687-3ca2-4c96-8e6f-51a047da7b02)
+
 
 5. Here you can add a new Power Platform environment to Visual Studio. You can give your environment a name and a connection string. The connection string is very similar to the Xrm Tooling of Microsoft, only simpler and with extra security features built-in. For example you can use the following to use your current account to connect to an environment.
    ```shell
