@@ -186,7 +186,6 @@ public class PluginCodeGenerator : BaseCodeGeneratorWithSite
             ThreadHelper.JoinableTaskFactory.Run(SettingsProvider.EntityTemplateFilePathAsync);
     }
 
-
     private EntityMetadata? GetEntityMetadata(string logicalName, IEnumerable<string> attributeNames, IEnumerable<string> prefixesToRemove)
     {
         var entityMetadataRepo = ThreadHelper.JoinableTaskFactory.Run(async () => await RepositoryFactory.CreateRepositoryAsync<IEntityMetadataRepository>());
