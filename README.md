@@ -78,7 +78,7 @@ After adding attributes to a plugin class, Xrm Tools knows more about your inten
 
 > [!NOTE]
 >
-> Every time you save the file, the code generator generates the new code for you. To generate code, XRM Tools reads the attributes and the name of your class, retrieve all the required metadata from the environment, finds the best matching template and finally sends everything to the code generator.
+> Every time you save the file, XRM Tools reads the attributes and the name of your class, retrieves all the necessary metadata from the environment, finds the best matching template and finally sends everything to the code generator.
 
 # Learn more
 To learn more about Xrm Tools extension for Visual Studio check the [wiki](https://github.com/rezanid/xrmtools/wiki)
