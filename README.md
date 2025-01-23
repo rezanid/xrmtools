@@ -74,6 +74,10 @@ After adding attributes to a plugin class, Xrm Tools knows more about your inten
 1. Make sure the name of your plugin file has the word "Plugin" in it. The casing doesn't matter.
 2. Make sure that your plugin class is a `partial` class. Just like the one we created in [Making a new Power Platform Plugin](#making-a-new-Power-Platform-Plugin).
 3. Right-click on your plugin class in the Solution Explorer and select "Set as plugin definition".
+4. Now you just need to save your code. just press <kbd>Ctrl</kbd> + <kbd>S</kbd> to save the file that has your plugin class.
+
+[!NOTE]
+Every time you save the file the code generator generates the new code for you. To generate code, XRM Tools reads the attributes and the name of your class, retrieve all the required metadata from the environment, finds the best matching template and finally sends everything to the code generator.
 
 # Learn more
 To learn more about Xrm Tools extension for Visual Studio check the [wiki](https://github.com/rezanid/xrmtools/wiki)
