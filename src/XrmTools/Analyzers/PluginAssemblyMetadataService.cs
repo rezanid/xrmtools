@@ -18,16 +18,10 @@ public interface IPluginAssemblyMetadataService
     Task<PluginAssemblyConfig?> GetAssemblyConfigAsync(Document document, CancellationToken cancellationToken = default);
 }
 
-public class PluginAssemblyMetadataService : IPluginAssemblyMetadataService
+public class PluginAssemblyMetadataService(VisualStudioWorkspace workspace, IAttributeConverter attributeConverter) : IPluginAssemblyMetadataService
 {
-    private readonly VisualStudioWorkspace _workspace;
-    private readonly IAttributeExtractor _attributeExtractor;
-
-    public PluginAssemblyMetadataService(VisualStudioWorkspace workspace, IAttributeExtractor attributeExtractor)
-    {
-        _workspace = workspace ?? throw new ArgumentNullException(nameof(workspace));
-        _attributeExtractor = attributeExtractor ?? throw new ArgumentNullException(nameof(attributeExtractor));
-    }
+    private readonly VisualStudioWorkspace workspace = workspace ?? throw new ArgumentNullException(nameof(workspace));
+    private readonly IAttributeConverter attributeConverter = attributeConverter ?? throw new ArgumentNullException(nameof(attributeConverter));
 
     public async Task<PluginAssemblyConfig?> GetAssemblyConfigAsync(Document document, CancellationToken cancellationToken = default)
     {
@@ -59,7 +53,7 @@ public class PluginAssemblyMetadataService : IPluginAssemblyMetadataService
             {
                 // Get the symbol for the class declaration
                 if (semanticModel.GetDeclaredSymbol(classDeclaration) is not INamedTypeSymbol typeSymbol) continue;
-                var pluginType = _attributeExtractor.ExtractAttributes(typeSymbol);
+                var pluginType = attributeConverter.ConvertPluginAttributes(typeSymbol);
                 if (pluginType != null)
                 {
                     pluginAssemblyConfig.PluginTypes.Add(pluginType);
@@ -86,7 +80,7 @@ public class PluginAssemblyMetadataService : IPluginAssemblyMetadataService
                 ? (SourceTypes)sourceType : PluginAssemblyAttribute.DefaultSourceType,
             IsolationMode = assemblyAttribute.GetValue<int?>(nameof(PluginAssemblyAttribute.IsolationMode)) is int isolationMode
                 ? (IsolationModes)isolationMode : PluginAssemblyAttribute.DefaultIsolationMode,
-            Entities = _attributeExtractor.ExtractEntityAttributes(entityAttributes).ToList(),
+            Entities = attributeConverter.ConvertEntityAttributes(entityAttributes).ToList(),
         };
 
         if (assemblyAttribute.GetValue<string>(nameof(PluginAssemblyAttribute.Id)) is string pluginAssemblyId)

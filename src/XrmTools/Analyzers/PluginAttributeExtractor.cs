@@ -9,15 +9,15 @@ using XrmTools.Meta.Attributes;
 using XrmTools.Meta.Model;
 using XrmTools.Xrm.Model;
 
-public interface IAttributeExtractor
+public interface IAttributeConverter
 {
-    IEnumerable<EntityConfig> ExtractEntityAttributes(IEnumerable<AttributeData> entityAttributes);
-    PluginTypeConfig? ExtractAttributes(INamedTypeSymbol typeSymbol);
+    IEnumerable<EntityConfig> ConvertEntityAttributes(IEnumerable<AttributeData> entityAttributes);
+    PluginTypeConfig? ConvertPluginAttributes(INamedTypeSymbol typeSymbol);
 }
 
-public class AttributeExtractor : IAttributeExtractor
+public class AttributeConvertor : IAttributeConverter
 {
-    public IEnumerable<EntityConfig> ExtractEntityAttributes(IEnumerable<AttributeData> entityAttributes)
+    public IEnumerable<EntityConfig> ConvertEntityAttributes(IEnumerable<AttributeData> entityAttributes)
     {
         const int entityNameIndex = 0;
         foreach (var attribute in entityAttributes)
@@ -30,7 +30,7 @@ public class AttributeExtractor : IAttributeExtractor
         }
     }
 
-    public PluginTypeConfig? ExtractAttributes(INamedTypeSymbol typeSymbol)
+    public PluginTypeConfig? ConvertPluginAttributes(INamedTypeSymbol typeSymbol)
     {
         PluginTypeConfig? pluginConfig = null;
         PluginStepConfig? lastStepConfig = null;
