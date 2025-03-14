@@ -2,7 +2,7 @@
 ret
 end~}}
 {{~prop_name = attribute.schema_name ~}}
-{{~enum_name = base_class_name + '.Choices.' + (attribute.option_set.display_name.localized_labels[0].label | tokenize)~}}
+{{~enum_name = base_class_name + '.Meta.Choices.' + (attribute.option_set.display_name.localized_labels[0].label | tokenize)~}}
 [AttributeLogicalName("{{attribute.logical_name}}")]
 public {{enum_name}}? {{prop_name}}
 {

@@ -14,8 +14,8 @@
     <Deterministic>true</Deterministic>
     <LangVersion>12</LangVersion>
     <TargetFrameworkProfile />
-    <DataverseEntityTemplateFilePath>\CodeGenTemplates\Entity.sbn</DataverseEntityTemplateFilePath>
-    <DataversePluginTemplateFilePath>\CodeGenTemplates\Plugin.sbn</DataversePluginTemplateFilePath>
+    <DataverseEntityTemplateFilePath>C:\Users\reza\source\repos\rezanid\xrmtools\src\Testbed\XrmGenTest\CodeGenTemplates\Entity.sbn</DataverseEntityTemplateFilePath>
+    <DataversePluginTemplateFilePath>C:\Users\reza\source\repos\rezanid\xrmtools\src\Testbed\XrmGenTest\CodeGenTemplates\Plugin.sbn</DataversePluginTemplateFilePath>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
     <PlatformTarget>AnyCPU</PlatformTarget>
@@ -54,23 +54,23 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="AccountPlugin.cs">
+    <Compile Include="AccountCreatePlugin.cs">
       <Generator>Xrm Tools Plugin Code Generator</Generator>
-      <LastGenOutput>AccountPlugin1.cs</LastGenOutput>
+      <LastGenOutput>AccountCreatePlugin1.cs</LastGenOutput>
     </Compile>
-    <Compile Include="AccountPlugin1.cs">
+    <Compile Include="AccountCreatePlugin1.cs">
       <AutoGen>True</AutoGen>
       <DesignTime>True</DesignTime>
-      <DependentUpon>AccountPlugin.cs</DependentUpon>
+      <DependentUpon>AccountCreatePlugin.cs</DependentUpon>
     </Compile>
-    <Compile Include="Entities.cs">
+    <Compile Include="Model\Entities.cs">
       <Generator>Xrm Tools Plugin Code Generator</Generator>
       <LastGenOutput>Entities1.cs</LastGenOutput>
     </Compile>
-    <Compile Include="Entities1.cs">
-      <AutoGen>True</AutoGen>
-      <DesignTime>True</DesignTime>
+    <Compile Include="Model\Entities1.cs">
       <DependentUpon>Entities.cs</DependentUpon>
+      <DesignTime>True</DesignTime>
+      <AutoGen>True</AutoGen>
     </Compile>
     <Compile Include="Properties\AssemblyInfo.cs" />
     <None Include="CodeGenTemplates\DisplayNameBased\Boolean.sbn" />

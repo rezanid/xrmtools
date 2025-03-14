@@ -4,6 +4,7 @@ namespace XrmTools.Analyzers;
 using Microsoft.CodeAnalysis;
 using System;
 using System.Collections.Generic;
+using XrmTools.Core.Helpers;
 using XrmTools.Helpers;
 using XrmTools.Meta.Attributes;
 using XrmTools.Meta.Model;
@@ -71,6 +72,7 @@ public class AttributeConvertor : IAttributeConverter
         var pluginTypeConfig = new PluginTypeConfig
         {
             Namespace = typeSymbol.ContainingNamespace.ToDisplayString(),
+            BaseTypeName = typeSymbol.BaseType?.Name,
             TypeName = typeSymbol.Name,
             Name = attributeData.GetValue<string>(nameof(PluginAttribute.Name)) ?? typeSymbol.Name,
             FriendlyName = attributeData.GetValue<string>(nameof(PluginAttribute.FriendlyName)) ?? typeSymbol.Name,

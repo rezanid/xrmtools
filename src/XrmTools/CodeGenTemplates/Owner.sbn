@@ -9,13 +9,6 @@ public EntityReference {{prop_name}}
 	get => TryGetAttributeValue("{{attribute.logical_name}}", out EntityReference value) ? value : null;
 	{{~end~}}
 	{{~if !force_readonly && (attribute.is_valid_for_create || attribute.is_valid_for_update)~}}
-	set
-	{
-		if (!{{base_class_name + '.Meta.Fields.' + prop_name}}Targets.Contains(value.LogicalName))
-		{
-			throw new InvalidPluginExecutionException($"{value.LogicalName}:{value.Id} is not a valid {{prop_name}}. The only valid references are {{attribute.targets | array.join ', '}}");			
-		}
-		this["{{attribute.logical_name}}"] = value;
-	}
+	set => this["{{attribute.logical_name}}"] = value;
 	{{~end~}}
 }
