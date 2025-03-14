@@ -12,13 +12,15 @@ using System.Runtime.Serialization;
 using System.Text.Json.Serialization;
 using XrmTools.Meta.Attributes.Serialization;
 using XrmTools.Meta.Model;
+using XrmTools.Meta.Serialization;
 
 public interface IPluginAssemblyConfig : IPluginAssemblyEntity
 {
     ICollection<EntityConfig> Entities { get; set; }
     ICollection<EntityMetadata>? EntityDefinitions { get; set; }
-    string? RemovePrefixes { get; set; }
-    IReadOnlyCollection<string> RemovePrefixesCollection { get; }
+    //string? RemovePrefixes { get; set; }
+    List<string> RemovePrefixes { get; set; }
+    //IReadOnlyCollection<string> RemovePrefixesCollection { get; }
 }
 
 public interface IPluginAssemblyEntity
@@ -41,7 +43,7 @@ public class PluginAssemblyConfig : TypedEntity<PluginAssemblyConfig>, IPluginAs
     private ICollection<PluginTypeConfig> pluginTypes = [];
 
     #region IPluginAssemblyConfig-only Properties
-    private string? removePrefixes;
+    //private string? removePrefixes;
 
     /// <summary>
     /// List of all extra entities (and their comma-delimited attributes) that will be generated.
@@ -56,19 +58,21 @@ public class PluginAssemblyConfig : TypedEntity<PluginAssemblyConfig>, IPluginAs
 
     [JsonPropertyOrder(2)]
     [JsonProperty(Order = 1)]
-    public string? RemovePrefixes
-    {
-        get => removePrefixes;
-        set
-        {
-            removePrefixes = value;
-            if (value == null && RemovePrefixesCollection.Count == 0) { return; }
-            RemovePrefixesCollection = new ReadOnlyCollection<string>(value?.Split(',') ?? []);
-        }
-    }
+    [Newtonsoft.Json.JsonConverter(typeof(CommaDelimitedStringConverter))]
+    public List<string> RemovePrefixes { get; set; } = [];
+    //{
+    //    get => removePrefixes;
+    //    set
+    //    {
+    //        removePrefixes = value;
+    //        if (value == null && RemovePrefixesCollection.Count == 0) { return; }
+    //        RemovePrefixesCollection = new ReadOnlyCollection<string>(value?.Split(',') ?? []);
+    //    }
+    //}
 
-    [IgnoreDataMember]
-    public IReadOnlyCollection<string> RemovePrefixesCollection { private set; get; } = [];
+    //[IgnoreDataMember]
+    //[Newtonsoft.Json.JsonIgnore]
+    //public IReadOnlyCollection<string> RemovePrefixesCollection { private set; get; } = [];
 
     [JsonPropertyOrder(1)]
     [JsonProperty("PluginTypes", Order = 1)]

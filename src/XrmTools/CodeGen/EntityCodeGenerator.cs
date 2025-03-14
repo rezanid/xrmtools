@@ -9,11 +9,9 @@ using Microsoft.VisualStudio.TextTemplating.VSHost;
 using Microsoft.Xrm.Sdk.Metadata;
 using System;
 using System.ComponentModel.Composition;
-using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading;
-using XrmTools.Helpers;
 using XrmTools.Xrm.Generators;
 using YamlDotNet.Serialization;
 using YamlDotNet.Serialization.NamingConventions;
@@ -23,6 +21,7 @@ using XrmTools.Logging.Compatibility;
 using XrmTools.Environments;
 using XrmTools.Xrm.Repositories;
 using XrmTools.Core.Repositories;
+using XrmTools.Settings;
 
 public class EntityCodeGenerator : BaseCodeGeneratorWithSite
 {
@@ -43,13 +42,25 @@ public class EntityCodeGenerator : BaseCodeGeneratorWithSite
     [Import]
     internal ILogger<EntityCodeGenerator> Logger {  get; set; }
 
+    [Import]
+    internal ITemplateFinder TemplateFinder { get; set; }
+
+    [Import]
+    internal ITemplateFileGenerator TemplateFileGenerator { get; set; }
+
+    [Import]
+    internal ISettingsProvider SettingsProvider { get; set; }
+
     private IEntityMetadataRepository EntityMetadataRepository;
 
     public override string GetDefaultExtension() => ".cs";
 
     public EntityCodeGenerator() => SatisfyImports();
 
-    [MemberNotNull(nameof(Generator), nameof(RepositoryFactory), nameof(EnvironmentProvider), nameof(Logger))]
+    [MemberNotNull(
+        nameof(Generator), nameof(RepositoryFactory), nameof(EnvironmentProvider), 
+        nameof(Logger), nameof(EntityMetadataRepository), nameof(TemplateFinder), nameof(TemplateFileGenerator),
+        nameof(SettingsProvider))]
     private void SatisfyImports()
     {
         var componentModel = (IComponentModel)Package.GetGlobalService(typeof(SComponentModel));
@@ -58,6 +69,9 @@ public class EntityCodeGenerator : BaseCodeGeneratorWithSite
         if (RepositoryFactory == null) throw new InvalidOperationException(string.Format(Strings.MissingServiceDependency, nameof(EntityCodeGenerator), nameof(RepositoryFactory)));
         if (EnvironmentProvider == null) throw new InvalidOperationException(string.Format(Strings.MissingServiceDependency, nameof(EntityCodeGenerator), nameof(EnvironmentProvider)));
         if (Logger == null) throw new InvalidOperationException(string.Format(Strings.MissingServiceDependency, nameof(EntityCodeGenerator), nameof(Logger)));
+        if (TemplateFinder == null) throw new InvalidOperationException(string.Format(Strings.MissingServiceDependency, nameof(EntityCodeGenerator), nameof(TemplateFinder)));
+        if (TemplateFileGenerator == null) throw new InvalidOperationException(string.Format(Strings.MissingServiceDependency, nameof(EntityCodeGenerator), nameof(TemplateFileGenerator)));
+        if (SettingsProvider == null) throw new InvalidOperationException(string.Format(Strings.MissingServiceDependency, nameof(EntityCodeGenerator), nameof(SettingsProvider)));
         EntityMetadataRepository = ThreadHelper.JoinableTaskFactory.Run(RepositoryFactory.CreateRepositoryAsync<IEntityMetadataRepository>);
         if (EntityMetadataRepository == null) throw new InvalidOperationException(string.Format(Strings.MissingServiceDependency, nameof(EntityCodeGenerator), nameof(EntityMetadataRepository)));
     }
@@ -66,7 +80,16 @@ public class EntityCodeGenerator : BaseCodeGeneratorWithSite
     {
         if (string.IsNullOrWhiteSpace(inputFileContent)) { return null; }
         if (Generator is null) { return Encoding.UTF8.GetBytes("// No generator found."); }
-        if (GetTemplateFilePath() is not string templateFilePath) { return Encoding.UTF8.GetBytes("// Template not found."); ; }
+        if (TemplateFinder.FindEntityTemplatePath(InputFilePath) is not string templateFilePath) 
+        {
+            ThreadHelper.JoinableTaskFactory.Run(async () =>
+            {
+                await TemplateFileGenerator.GenerateTemplatesAsync();
+                await SettingsProvider.ProjectSettings.EntityTemplateFilePathAsync();
+            });
+            templateFilePath = TemplateFinder.FindEntityTemplatePath(InputFilePath) ?? string.Empty;
+            if (templateFilePath == string.Empty) return Encoding.UTF8.GetBytes("// Template not found.");
+        }
 
         var entityDefinitions = ParseInputFile(inputFileName, inputFileContent);
         if (entityDefinitions?.Entities?.Any() != true) { return null; }
@@ -105,21 +128,11 @@ public class EntityCodeGenerator : BaseCodeGeneratorWithSite
         }
         catch (Exception ex)
         {
-            Logger.LogError(ex, Resources.Strings.PluginGenerator_DeserializationError, inputFileName);
+            Logger.LogError(ex, Strings.PluginGenerator_DeserializationError, inputFileName);
         }
         return null;
     }
 
-    private string? GetTemplateFilePath()
-    {
-        var templateFilePath = InputFilePath + ".sbn";
-        if (File.Exists(templateFilePath))
-        {
-            return templateFilePath;
-        }
-        templateFilePath = GetProjectProperty("EntityCodeGenTemplatePath");
-        return !string.IsNullOrWhiteSpace(templateFilePath) && File.Exists(templateFilePath) ? templateFilePath : null;
-    }
 
     private bool IsValidEntityConfig(EntityConfig entityConfig) => !string.IsNullOrWhiteSpace(entityConfig.LogicalName) && !string.IsNullOrWhiteSpace(entityConfig.AttributeNames);
 
@@ -133,16 +146,10 @@ public class EntityCodeGenerator : BaseCodeGeneratorWithSite
 
             if (hierarchy.GetProperty(itemId, (int)__VSHPROPID.VSHPROPID_DefaultNamespace, out var defaultNamespace) == VSConstants.S_OK)
             {
-                return defaultNamespace as string;
+                return defaultNamespace as string ?? string.Empty;
             }
         }
         return string.Empty;
-    }
-
-    private string? GetProjectProperty(string propertyName)
-    {
-        ThreadHelper.ThrowIfNotOnUIThread();
-        return GetService(typeof(IVsHierarchy)) is IVsHierarchy hierarchy ? hierarchy.GetProjectProperty(propertyName) : null;
     }
 
     private void AddEntityMetadataToEntityConfig(XrmCodeGenConfig entityCodeGenConfig) 
@@ -190,4 +197,5 @@ public class EntityCodeGenerator : BaseCodeGeneratorWithSite
     ~EntityCodeGenerator() => Dispose(false);
     #endregion
 }
+
 #nullable restore

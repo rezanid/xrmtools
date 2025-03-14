@@ -31,7 +31,7 @@ internal static class StringHelpers
     // Newtonsoft Configuration:
     private static readonly JsonSerializerSettings jsonSerializerSettings = new()
     {
-        TypeNameHandling = TypeNameHandling.Auto,
+        TypeNameHandling = TypeNameHandling.None,
         NullValueHandling = NullValueHandling.Ignore,
         ContractResolver = new IgnoreEntityPropertiesResolver()
     };

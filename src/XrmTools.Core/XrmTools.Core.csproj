@@ -76,13 +76,14 @@
     <Compile Include="Logging\Compatibility\LogValuesFormatter.cs" />
     <Compile Include="Logging\IOutputLoggerService.cs" />
     <Compile Include="PolicyHandler.cs" />
-    <Compile Include="Serialization\EntityResolverForFile.cs" />
-    <Compile Include="Serialization\IgnoreDataContractResolver.cs" />
-    <Compile Include="Serialization\IgnoreEntityPropertiesConverter.cs" />
-    <Compile Include="Serialization\KnownTypeConverter.cs" />
-    <Compile Include="Serialization\PolymorphicContractResolver.cs" />
-    <Compile Include="Serialization\TypedEntityConverter.cs" />
-    <Compile Include="Serialization\TypedEntityConverter_T.cs" />
+    <Compile Include="Serialization\Newtonsoft\EntityResolverForFile.cs" />
+    <Compile Include="Serialization\Newtonsoft\IgnoreDataContractResolver.cs" />
+    <Compile Include="Serialization\Newtonsoft\IgnoreEntityPropertiesConverter.cs" />
+    <Compile Include="Serialization\Newtonsoft\KnownTypeConverter.cs" />
+    <Compile Include="Serialization\Newtonsoft\PolymorphicContractResolver.cs" />
+    <Compile Include="Serialization\SystemText\JsonCommaDelimitedStringConverter.cs" />
+    <Compile Include="Serialization\SystemText\TypedEntityConverter.cs" />
+    <Compile Include="Serialization\SystemText\TypedEntityConverter_T.cs" />
     <Compile Include="SettingsStorageTypes.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="System\Runtime\CompilerServices\Index.cs" />
@@ -167,7 +168,6 @@
     <None Include="..\key.snk">
       <Link>key.snk</Link>
     </None>
-    <None Include="Test.sbncs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\XrmTools.Attributes\XrmTools.Meta.csproj">

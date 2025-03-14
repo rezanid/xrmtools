@@ -48,25 +48,36 @@ public class PluginCodeGenerator : BaseCodeGeneratorWithSite
     [Import]
     internal ILogger<PluginCodeGenerator> Logger { get; set; }
 
+    [Import]
+    internal ITemplateFinder TemplateFinder { get; set; }
+
+    [Import]
+    internal ITemplateFileGenerator TemplateFileGenerator { get; set; }
+
     public override string GetDefaultExtension() => ".cs";
 
     public PluginCodeGenerator() => SatisfyImports();
 
-    [MemberNotNull(nameof(Generator), nameof(RepositoryFactory), nameof(SettingsProvider), nameof(Logger))]
+    [MemberNotNull(nameof(Generator), nameof(RepositoryFactory), 
+        nameof(Logger), nameof(TemplateFinder), nameof(TemplateFileGenerator),
+        nameof(SettingsProvider))]
     private void SatisfyImports()
     {
         var componentModel = (IComponentModel)Package.GetGlobalService(typeof(SComponentModel));
         componentModel?.DefaultCompositionService.SatisfyImportsOnce(this);
-        if (Generator == null) throw new InvalidOperationException($"Missing {nameof(PluginCodeGenerator)} service depndency. {nameof(Generator)} is not available.");
-        if (RepositoryFactory == null) throw new InvalidOperationException($"Missing {nameof(PluginCodeGenerator)} service depndency. {nameof(RepositoryFactory)} is not available.");
-        if (SettingsProvider == null) throw new InvalidOperationException($"Missing {nameof(PluginCodeGenerator)} service depndency. {nameof(SettingsProvider)} is not available.");
-        if (Logger == null) throw new InvalidOperationException($"Missing {nameof(PluginCodeGenerator)} service depndency. {nameof(Logger)} is not available.");
+        if (Generator == null) throw new InvalidOperationException(string.Format(Strings.MissingServiceDependency, nameof(PluginCodeGenerator), nameof(Generator)));
+        if (RepositoryFactory == null) throw new InvalidOperationException(string.Format(Strings.MissingServiceDependency, nameof(PluginCodeGenerator), nameof(RepositoryFactory)));
+        if (SettingsProvider == null) throw new InvalidOperationException(string.Format(Strings.MissingServiceDependency, nameof(PluginCodeGenerator), nameof(SettingsProvider)));
+        if (Logger == null) throw new InvalidOperationException(string.Format(Strings.MissingServiceDependency, nameof(PluginCodeGenerator), nameof(Logger)));
+        if (TemplateFinder == null) throw new InvalidOperationException(string.Format(Strings.MissingServiceDependency, nameof(PluginCodeGenerator), nameof(TemplateFinder)));
+        if (TemplateFileGenerator == null) throw new InvalidOperationException(string.Format(Strings.MissingServiceDependency, nameof(PluginCodeGenerator), nameof(TemplateFileGenerator)));
     }
 
     protected override byte[]? GenerateCode(string inputFileName, string inputFileContent)
     {
         if (string.IsNullOrWhiteSpace(inputFileContent)) { return null; }
         if (Generator is null) { return Encoding.UTF8.GetBytes("// No generator found."); }
+
         PluginAssemblyConfig? inputModel;
         if (".cs".Equals(Path.GetExtension(inputFileName), StringComparison.OrdinalIgnoreCase))
         {
@@ -77,21 +88,13 @@ public class PluginCodeGenerator : BaseCodeGeneratorWithSite
         {
             inputModel = ParseJsonInputFile(inputFileName, inputFileContent);
         }
-
-        string? templateFilePath = null;
-        if (inputModel?.PluginTypes?.Any() ?? false)
+        if (inputModel == null) 
         {
-            templateFilePath = GetTemplateFilePath(true);
-        }
-        else if (inputModel?.Entities?.Any() ?? false)
-        {
-            templateFilePath = GetTemplateFilePath(false);
-        }
-        else
-        {
-            return null;
+            Logger.LogWarning("Failed to parse input file for code generation. Please review the input file and try again.");
+            return null; 
         }
 
+        var templateFilePath = GetTemplateFilePath(inputModel);
         // Check if template file exists.
         if (string.IsNullOrEmpty(templateFilePath))
         {
@@ -113,6 +116,8 @@ public class PluginCodeGenerator : BaseCodeGeneratorWithSite
 
         if (GeneralOptions.Instance.LogLevel == LogLevel.Trace)
         {
+            // We use Newtonsoft for serialization because it supports polymorphic types
+            // Probably through old serialization attributes set on Xrm.Sdk types.
             var serializedConfig = inputModel.SerializeJson(useNewtonsoft: true);
             File.WriteAllText(Path.ChangeExtension(inputFileName, ".model.json"), serializedConfig);
         }
@@ -133,7 +138,7 @@ public class PluginCodeGenerator : BaseCodeGeneratorWithSite
         }
         catch (Exception ex)
         {
-            Logger.LogError(ex, Resources.Strings.PluginGenerator_DeserializationError, inputFileName);
+            Logger.LogError(ex, Strings.PluginGenerator_DeserializationError, inputFileName);
         }
         return null;
     }
@@ -146,12 +151,6 @@ public class PluginCodeGenerator : BaseCodeGeneratorWithSite
             Logger.LogWarning("No active project found.");
             return null;
         }
-        //var assemblyPath = proj.GetOutputAssemblyPath();
-        //if (assemblyPath == null || !File.Exists(assemblyPath))
-        //{
-        //    Logger.LogWarning("Assembly not found: {0}", assemblyPath);
-        //    return null;
-        //}
 
         await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync();
         var componentModel = (IComponentModel)Package.GetGlobalService(typeof(SComponentModel));
@@ -163,27 +162,39 @@ public class PluginCodeGenerator : BaseCodeGeneratorWithSite
         {
             return null;
         }
-        var attributeExtractor = new AttributeExtractor();
-        var pluginAssemblyMetaService = new PluginAssemblyMetadataService(workspace, attributeExtractor);
+        var attributeConverter = new AttributeConvertor();
+        var pluginAssemblyMetaService = new PluginAssemblyMetadataService(workspace, attributeConverter);
         var pluginAssemblyInfo = await pluginAssemblyMetaService.GetAssemblyConfigAsync(document);
         return pluginAssemblyInfo;
     }
 
-    private string? GetTemplateFilePath(bool isPlugin = true)
+    private string? GetTemplateFilePath(PluginAssemblyConfig config)
     {
-        var templateFilePath = InputFilePath + ".sbn";
-        if (File.Exists(templateFilePath))
+        if (config == null) return null;
+        bool isTemplatePlugin = config.PluginTypes?.Any() ?? false;
+        bool isTemplateEntity = config.Entities?.Any() ?? false;
+        if (!isTemplatePlugin && !isTemplateEntity) 
         {
-            return templateFilePath;
+            Logger.LogWarning("Input model for code generation neither contains any plugin nor entity definition.");
+            return null;
         }
-        templateFilePath = Path.ChangeExtension(InputFilePath, "sbn");
-        if (File.Exists(templateFilePath))
+
+        var templateFilePath = isTemplatePlugin ? TemplateFinder.FindPluginTemplatePath(InputFilePath) : TemplateFinder.FindEntityTemplatePath(InputFilePath);
+        if (templateFilePath != null) return templateFilePath;
+
+        Logger.LogWarning("No template found for " + (isTemplatePlugin ? "plugin code generation." : "entity code generation."));
+        Logger.LogInformation("Atempting to create plugin default templates.");
+        ThreadHelper.JoinableTaskFactory.Run(async () =>
         {
-            return templateFilePath;
-        }
-        return isPlugin ? 
-            ThreadHelper.JoinableTaskFactory.Run(SettingsProvider.PluginTemplateFilePathAsync):
-            ThreadHelper.JoinableTaskFactory.Run(SettingsProvider.EntityTemplateFilePathAsync);
+            await TemplateFileGenerator.GenerateTemplatesAsync();
+            await SettingsProvider.ProjectSettings.EntityTemplateFilePathAsync();
+        });
+        Logger.LogInformation("Default template generation completed.");
+
+        templateFilePath = isTemplatePlugin ? TemplateFinder.FindPluginTemplatePath(InputFilePath) : TemplateFinder.FindEntityTemplatePath(InputFilePath);
+        if (templateFilePath != null) return templateFilePath;
+        Logger.LogCritical("Still, no template found for " + (isTemplatePlugin ? "plugin generation." : "entity generation."));
+        return null;
     }
 
     private EntityMetadata? GetEntityMetadata(string logicalName, IEnumerable<string> attributeNames, IEnumerable<string> prefixesToRemove)
@@ -199,7 +210,7 @@ public class PluginCodeGenerator : BaseCodeGeneratorWithSite
         var filteredAttributes =
             attributeNames.Count() == 0 ?
             entityDefinition.Attributes :
-            entityDefinition.Attributes.Where(a => attributeNames.Contains(a.LogicalName)).ToArray();
+            [.. entityDefinition.Attributes.Where(a => attributeNames.Contains(a.LogicalName))];
         //    entityDefinition.Attributes.Where(a => a.AttributeType != AttributeTypeCode.EntityName && a.IsLogical != true).ToArray() :
         //    entityDefinition.Attributes.Where(a => a.AttributeType != AttributeTypeCode.EntityName && attributes.Contains(a.LogicalName)).ToArray();
 
@@ -286,7 +297,7 @@ public class PluginCodeGenerator : BaseCodeGeneratorWithSite
                 var filteringAttributes = step.FilteringAttributes?.Split([','], StringSplitOptions.RemoveEmptyEntries) ?? [];
                 if (!entityAttributes.ContainsKey(step.PrimaryEntityName!))
                 {
-                    entityAttributes[step.PrimaryEntityName!] = new HashSet<string>(filteringAttributes);
+                    entityAttributes[step.PrimaryEntityName!] = [.. filteringAttributes];
                 }
                 else if (filteringAttributes.Length == 0)
                 {
@@ -299,7 +310,7 @@ public class PluginCodeGenerator : BaseCodeGeneratorWithSite
                     // We have some attributes already, so we add the new ones too.
                     entityAttributes[step.PrimaryEntityName!].UnionWith(filteringAttributes);
                 }
-                var entityDefinition = GetEntityMetadata(step.PrimaryEntityName!, filteringAttributes, config.RemovePrefixesCollection);
+                var entityDefinition = GetEntityMetadata(step.PrimaryEntityName!, filteringAttributes, config.RemovePrefixes);
                 step.PrimaryEntityDefinition = entityDefinition;
                 //if (entityDefinition is not null && !entityDefinitions.ContainsKey(entityDefinition.LogicalName))
                 //{
@@ -313,13 +324,19 @@ public class PluginCodeGenerator : BaseCodeGeneratorWithSite
                     var attributes = image.ImageAttributes?.Split(',') ?? [];
                     if (!entityAttributes.ContainsKey(step.PrimaryEntityName!))
                     {
-                        entityAttributes[step.PrimaryEntityName!] = new HashSet<string>(attributes);
+                        entityAttributes[step.PrimaryEntityName!] = [.. attributes];
+                    }
+                    else if (attributes.Length == 0)
+                    {
+                        // Since we don't have any filtering attributes, we assume all attributes are used.
+                        // so we don't need to keep track of them.
+                        entityAttributes[step.PrimaryEntityName!] = [];
                     }
                     else if (entityAttributes[step.PrimaryEntityName!].Count > 0)
                     {
                         entityAttributes[step.PrimaryEntityName!].UnionWith(attributes);
                     }
-                    var entityDefinition = GetEntityMetadata(step.PrimaryEntityName!, attributes, config.RemovePrefixesCollection);
+                    var entityDefinition = GetEntityMetadata(step.PrimaryEntityName!, attributes, config.RemovePrefixes);
                     image.MessagePropertyDefinition = entityDefinition;
                     //if (entityDefinition is not null && !entityDefinitions.ContainsKey(entityDefinition.LogicalName))
                     //{
@@ -335,13 +352,13 @@ public class PluginCodeGenerator : BaseCodeGeneratorWithSite
             //var entityDefinition = GetEntityMetadata(entity.Key, entity.Value, config.RemovePrefixesCollection);
             //var attributesUsedInPluginDefinitions = entityDefinition.Attributes.Where(a => entity.Value.Contains(a.LogicalName)).ToArray();
             //typeof(EntityMetadata).GetProperty("Attributes").SetValue(entityDefinition, attributesUsedInPluginDefinitions);
-            entityDefinitions[entityEntry.Key] = GetEntityMetadata(entityEntry.Key, entityEntry.Value, config.RemovePrefixesCollection)!;
+            entityDefinitions[entityEntry.Key] = GetEntityMetadata(entityEntry.Key, entityEntry.Value, config.RemovePrefixes)!;
         }
         foreach (var entityConfig in config.Entities)
         {
             if (!string.IsNullOrEmpty(entityConfig.LogicalName))
             {
-                entityDefinitions[entityConfig.LogicalName!] = GetEntityMetadata(entityConfig.LogicalName!, entityConfig.Attributes?.SplitAndTrim(',') ?? [], config.RemovePrefixesCollection)!;
+                entityDefinitions[entityConfig.LogicalName!] = GetEntityMetadata(entityConfig.LogicalName!, entityConfig.Attributes?.SplitAndTrim(',') ?? [], config.RemovePrefixes)!;
             }
         }
         config.EntityDefinitions = entityDefinitions.Values;

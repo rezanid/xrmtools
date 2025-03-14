@@ -11,7 +11,8 @@ public class IgnoreEntityPropertiesResolver : DefaultContractResolver
     protected override JsonProperty CreateProperty(MemberInfo member, MemberSerialization memberSerialization)
     {
         var property = base.CreateProperty(member, memberSerialization);
-        // Check if the property is declared in the base Entity class
+
+        // Check if the property is declared in the base Entity class, if so, ignore it.
         if (typeof(Entity).IsAssignableFrom(member.DeclaringType) && member.DeclaringType == typeof(Entity))
         {
             property.Ignored = true;

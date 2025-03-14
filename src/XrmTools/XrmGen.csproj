@@ -64,7 +64,7 @@
     </Compile>
     <Compile Include="Analyzers\PluginAssemblyInfo.cs" />
     <Compile Include="Analyzers\PluginAssemblyMetadataService.cs" />
-    <Compile Include="Analyzers\PluginAttributeExtractor.cs" />
+    <Compile Include="Analyzers\PluginAttributeConverter.cs" />
     <Compile Include="AuthenticationService.cs" />
     <Compile Include="Authenticators\ClientAppAuthenticator.cs" />
     <Compile Include="Authenticators\DelegatingAuthenticator.cs" />
@@ -75,6 +75,8 @@
     <Compile Include="CodeCompletion\XrmPluginDefinitionCompletionSource.cs" />
     <Compile Include="CodeGen\EntityCodeGenerator.cs" />
     <Compile Include="CodeGen\PluginCodeGenerator.cs" />
+    <Compile Include="CodeGen\TemplateFileGenerator.cs" />
+    <Compile Include="CodeGen\TemplatePathFinder.cs" />
     <Compile Include="Commands\SelectEnvironmentCommand.cs" />
     <Compile Include="Commands\SetEntityGeneratorTemplateInProjectCommand.cs" />
     <Compile Include="Commands\SetPluginGeneratorTemplateInProjectCommand.cs" />
@@ -182,6 +184,75 @@
     <Content Include="UI\WebResources\prism.js" />
     <Content Include="..\..\LICENSE.md">
       <Link>Resources\LICENSE.md</Link>
+      <IncludeInVSIX>true</IncludeInVSIX>
+    </Content>
+    <None Include="CodeGenTemplates\BigInt.sbn">
+      <IncludeInVSIX>true</IncludeInVSIX>
+    </None>
+    <Content Include="CodeGenTemplates\Boolean.sbn">
+      <IncludeInVSIX>true</IncludeInVSIX>
+    </Content>
+    <Content Include="CodeGenTemplates\Customer.sbn">
+      <IncludeInVSIX>true</IncludeInVSIX>
+    </Content>
+    <Content Include="CodeGenTemplates\DateTime.sbn">
+      <IncludeInVSIX>true</IncludeInVSIX>
+    </Content>
+    <Content Include="CodeGenTemplates\Decimal.sbn">
+      <IncludeInVSIX>true</IncludeInVSIX>
+    </Content>
+    <Content Include="CodeGenTemplates\Double.sbn">
+      <IncludeInVSIX>true</IncludeInVSIX>
+    </Content>
+    <Content Include="CodeGenTemplates\Entity.sbn">
+      <IncludeInVSIX>true</IncludeInVSIX>
+    </Content>
+    <Content Include="CodeGenTemplates\EntityName.sbn">
+      <IncludeInVSIX>true</IncludeInVSIX>
+    </Content>
+    <Content Include="CodeGenTemplates\Images.sbn">
+      <IncludeInVSIX>true</IncludeInVSIX>
+    </Content>
+    <Content Include="CodeGenTemplates\Integer.sbn">
+      <IncludeInVSIX>true</IncludeInVSIX>
+    </Content>
+    <Content Include="CodeGenTemplates\Lookup.sbn">
+      <IncludeInVSIX>true</IncludeInVSIX>
+    </Content>
+    <Content Include="CodeGenTemplates\Memo.sbn">
+      <IncludeInVSIX>true</IncludeInVSIX>
+    </Content>
+    <Content Include="CodeGenTemplates\Money.sbn">
+      <IncludeInVSIX>true</IncludeInVSIX>
+    </Content>
+    <Content Include="CodeGenTemplates\Owner.sbn">
+      <IncludeInVSIX>true</IncludeInVSIX>
+    </Content>
+    <Content Include="CodeGenTemplates\Picklist.sbn">
+      <IncludeInVSIX>true</IncludeInVSIX>
+    </Content>
+    <Content Include="CodeGenTemplates\Plugin.sbn">
+      <IncludeInVSIX>true</IncludeInVSIX>
+    </Content>
+    <Content Include="CodeGenTemplates\Readme.md">
+      <IncludeInVSIX>true</IncludeInVSIX>
+    </Content>
+    <Content Include="CodeGenTemplates\State.sbn">
+      <IncludeInVSIX>true</IncludeInVSIX>
+    </Content>
+    <Content Include="CodeGenTemplates\Status.sbn">
+      <IncludeInVSIX>true</IncludeInVSIX>
+    </Content>
+    <Content Include="CodeGenTemplates\String.sbn">
+      <IncludeInVSIX>true</IncludeInVSIX>
+    </Content>
+    <Content Include="CodeGenTemplates\Target.sbn">
+      <IncludeInVSIX>true</IncludeInVSIX>
+    </Content>
+    <Content Include="CodeGenTemplates\UniqueIdentifier.sbn">
+      <IncludeInVSIX>true</IncludeInVSIX>
+    </Content>
+    <Content Include="CodeGenTemplates\Virtual.sbn">
       <IncludeInVSIX>true</IncludeInVSIX>
     </Content>
     <None Include="Samples\AHRMBeOne_Plugin_Request.def.json" />
@@ -297,7 +368,6 @@
     </EmbeddedResource>
   </ItemGroup>
   <ItemGroup>
-    <Folder Include="NewFolder1\" />
     <Folder Include="Xrm\CompletionSample\" />
     <Folder Include="Xrm\Model\" />
   </ItemGroup>

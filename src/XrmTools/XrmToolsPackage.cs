@@ -28,13 +28,6 @@ using XrmTools.Environments;
 using System.Reflection;
 using System.IO;
 
-internal record ProjectDataverseSettings(
-    string EnvironmentUrl, 
-    string? ConnectionString, 
-    string? PluginCodeGenTemplatePath, 
-    string? EntityCodeGenTemplatePath);
-
-
 /// <summary>
 /// This is the class that implements the package exposed by this assembly.
 /// </summary>
