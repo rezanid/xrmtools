@@ -186,75 +186,75 @@
       <Link>Resources\LICENSE.md</Link>
       <IncludeInVSIX>true</IncludeInVSIX>
     </Content>
-    <None Include="CodeGenTemplates\BigInt.sbn">
+    <None Include="CodeGenTemplates\BigInt.sbncs">
       <IncludeInVSIX>true</IncludeInVSIX>
     </None>
-    <Content Include="CodeGenTemplates\Boolean.sbn">
+    <None Include="CodeGenTemplates\Boolean.sbncs">
       <IncludeInVSIX>true</IncludeInVSIX>
-    </Content>
-    <Content Include="CodeGenTemplates\Customer.sbn">
+    </None>
+    <None Include="CodeGenTemplates\Customer.sbncs">
       <IncludeInVSIX>true</IncludeInVSIX>
-    </Content>
-    <Content Include="CodeGenTemplates\DateTime.sbn">
+    </None>
+    <None Include="CodeGenTemplates\DateTime.sbncs">
       <IncludeInVSIX>true</IncludeInVSIX>
-    </Content>
-    <Content Include="CodeGenTemplates\Decimal.sbn">
+    </None>
+    <None Include="CodeGenTemplates\Decimal.sbncs">
       <IncludeInVSIX>true</IncludeInVSIX>
-    </Content>
-    <Content Include="CodeGenTemplates\Double.sbn">
+    </None>
+    <None Include="CodeGenTemplates\Double.sbncs">
       <IncludeInVSIX>true</IncludeInVSIX>
-    </Content>
-    <Content Include="CodeGenTemplates\Entity.sbn">
+    </None>
+    <None Include="CodeGenTemplates\Entity.sbncs">
       <IncludeInVSIX>true</IncludeInVSIX>
-    </Content>
-    <Content Include="CodeGenTemplates\EntityName.sbn">
+    </None>
+    <None Include="CodeGenTemplates\EntityName.sbncs">
       <IncludeInVSIX>true</IncludeInVSIX>
-    </Content>
-    <Content Include="CodeGenTemplates\Images.sbn">
+    </None>
+    <None Include="CodeGenTemplates\Images.sbncs">
       <IncludeInVSIX>true</IncludeInVSIX>
-    </Content>
-    <Content Include="CodeGenTemplates\Integer.sbn">
+    </None>
+    <None Include="CodeGenTemplates\Integer.sbncs">
       <IncludeInVSIX>true</IncludeInVSIX>
-    </Content>
-    <Content Include="CodeGenTemplates\Lookup.sbn">
+    </None>
+    <None Include="CodeGenTemplates\Lookup.sbncs">
       <IncludeInVSIX>true</IncludeInVSIX>
-    </Content>
-    <Content Include="CodeGenTemplates\Memo.sbn">
+    </None>
+    <None Include="CodeGenTemplates\Memo.sbncs">
       <IncludeInVSIX>true</IncludeInVSIX>
-    </Content>
-    <Content Include="CodeGenTemplates\Money.sbn">
+    </None>
+    <None Include="CodeGenTemplates\Money.sbncs">
       <IncludeInVSIX>true</IncludeInVSIX>
-    </Content>
-    <Content Include="CodeGenTemplates\Owner.sbn">
+    </None>
+    <None Include="CodeGenTemplates\Owner.sbncs">
       <IncludeInVSIX>true</IncludeInVSIX>
-    </Content>
-    <Content Include="CodeGenTemplates\Picklist.sbn">
+    </None>
+    <None Include="CodeGenTemplates\Picklist.sbncs">
       <IncludeInVSIX>true</IncludeInVSIX>
-    </Content>
-    <Content Include="CodeGenTemplates\Plugin.sbn">
+    </None>
+    <None Include="CodeGenTemplates\Plugin.sbncs">
       <IncludeInVSIX>true</IncludeInVSIX>
-    </Content>
+    </None>
     <Content Include="CodeGenTemplates\Readme.md">
       <IncludeInVSIX>true</IncludeInVSIX>
     </Content>
-    <Content Include="CodeGenTemplates\State.sbn">
+    <None Include="CodeGenTemplates\State.sbncs">
       <IncludeInVSIX>true</IncludeInVSIX>
-    </Content>
-    <Content Include="CodeGenTemplates\Status.sbn">
+    </None>
+    <None Include="CodeGenTemplates\Status.sbncs">
       <IncludeInVSIX>true</IncludeInVSIX>
-    </Content>
-    <Content Include="CodeGenTemplates\String.sbn">
+    </None>
+    <None Include="CodeGenTemplates\String.sbncs">
       <IncludeInVSIX>true</IncludeInVSIX>
-    </Content>
-    <Content Include="CodeGenTemplates\Target.sbn">
+    </None>
+    <None Include="CodeGenTemplates\Target.sbncs">
       <IncludeInVSIX>true</IncludeInVSIX>
-    </Content>
-    <Content Include="CodeGenTemplates\UniqueIdentifier.sbn">
+    </None>
+    <None Include="CodeGenTemplates\UniqueIdentifier.sbncs">
       <IncludeInVSIX>true</IncludeInVSIX>
-    </Content>
-    <Content Include="CodeGenTemplates\Virtual.sbn">
+    </None>
+    <None Include="CodeGenTemplates\Virtual.sbncs">
       <IncludeInVSIX>true</IncludeInVSIX>
-    </Content>
+    </None>
     <None Include="Samples\AHRMBeOne_Plugin_Request.def.json" />
     <None Include="Samples\EntityConfigExample1.yaml" />
     <Content Include="Schemas\pluginregistration-schema.json">
