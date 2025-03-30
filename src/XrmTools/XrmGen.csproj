@@ -10,6 +10,10 @@
   <PropertyGroup>
     <AssemblyOriginatorKeyFile>..\key.snk</AssemblyOriginatorKeyFile>
   </PropertyGroup>
+  <PropertyGroup>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
   <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
@@ -63,7 +67,7 @@
       <Link>System\Runtime\CompilerServices\RuntimeHelpers.cs</Link>
     </Compile>
     <Compile Include="Analyzers\PluginAssemblyInfo.cs" />
-    <Compile Include="Analyzers\PluginAssemblyMetadataService.cs" />
+    <Compile Include="Analyzers\CSharpXrmMetaDataService.cs" />
     <Compile Include="Analyzers\PluginAttributeConverter.cs" />
     <Compile Include="AuthenticationService.cs" />
     <Compile Include="Authenticators\ClientAppAuthenticator.cs" />
@@ -73,20 +77,24 @@
     <Compile Include="Classifiers\XrmStringClassifierProvider.cs" />
     <Compile Include="CodeCompletion\XrmPluginCompletionProvider.cs" />
     <Compile Include="CodeCompletion\XrmPluginDefinitionCompletionSource.cs" />
+    <Compile Include="CodeGen\Constants.cs" />
     <Compile Include="CodeGen\EntityCodeGenerator.cs" />
-    <Compile Include="CodeGen\PluginCodeGenerator.cs" />
+    <Compile Include="CodeGen\XrmCodeGenerator.cs" />
     <Compile Include="CodeGen\TemplateFileGenerator.cs" />
     <Compile Include="CodeGen\TemplatePathFinder.cs" />
     <Compile Include="Commands\SelectEnvironmentCommand.cs" />
+    <Compile Include="Commands\RegisterPluginCommand.cs" />
     <Compile Include="Commands\SetEntityGeneratorTemplateInProjectCommand.cs" />
     <Compile Include="Commands\SetPluginGeneratorTemplateInProjectCommand.cs" />
     <Compile Include="Commands\SetEntityGeneratorTemplateInSolutionCommand.cs" />
     <Compile Include="Commands\SetPluginGeneratorTemplateInSolutionCommand.cs" />
+    <Compile Include="Helpers\UpsertRequestBuilder.cs" />
     <Compile Include="Environments\DataverseEnvironmentProvider.cs" />
     <Compile Include="Helpers\AttributeDataHelper.cs" />
     <Compile Include="Helpers\ByteExtensions.cs" />
     <Compile Include="Helpers\ExplicitInterfaceInvoker.cs" />
     <Compile Include="Helpers\FileHelper.cs" />
+    <Compile Include="Helpers\GuidFactory.cs" />
     <Compile Include="Helpers\PackageHelper.cs" />
     <Compile Include="Helpers\ProjectExtensions.cs" />
     <Compile Include="Helpers\ProvideSolutionProperties.cs" />
@@ -108,6 +116,158 @@
       <DependentUpon>EnvironmentSelectorDialog.xaml</DependentUpon>
     </Compile>
     <Compile Include="UI\EnvironmentSelectorViewModel.cs" />
+    <Compile Include="WebApi\Batch\BatchRequest.cs" />
+    <Compile Include="WebApi\Batch\BatchResponse.cs" />
+    <Compile Include="WebApi\Batch\ChangeSet.cs" />
+    <Compile Include="WebApi\Entities\Attributes\EntityMetadataAttribute.cs" />
+    <Compile Include="WebApi\Entities\Component.cs" />
+    <Compile Include="WebApi\Entities\Entity.cs" />
+    <Compile Include="WebApi\Entities\EntityMetadata.cs" />
+    <Compile Include="WebApi\Entities\ManagedBooleanProperty.cs" />
+    <Compile Include="WebApi\Entities\PluginAssembly.cs" />
+    <Compile Include="WebApi\Entities\PluginType.cs" />
+    <Compile Include="WebApi\Entities\SdkMessageProcessingStep.cs" />
+    <Compile Include="WebApi\Entities\SdkMessageProcessingStepImage.cs" />
+    <Compile Include="WebApi\EntityReference.cs" />
+    <Compile Include="WebApi\Extensions.cs" />
+    <Compile Include="WebApi\Messages\AddPrivilegesRoleRequest.cs" />
+    <Compile Include="WebApi\Messages\AssociateRequest.cs" />
+    <Compile Include="WebApi\Messages\BulkDeleteRequest.cs" />
+    <Compile Include="WebApi\Messages\BulkDeleteResponse.cs" />
+    <Compile Include="WebApi\Messages\CommitAnnotationBlocksUploadRequest.cs" />
+    <Compile Include="WebApi\Messages\CommitAnnotationBlocksUploadResponse.cs" />
+    <Compile Include="WebApi\Messages\CommitAttachmentBlocksUploadRequest.cs" />
+    <Compile Include="WebApi\Messages\CommitAttachmentBlocksUploadResponse.cs" />
+    <Compile Include="WebApi\Messages\CommitFileBlocksUploadRequest.cs" />
+    <Compile Include="WebApi\Messages\CommitFileBlocksUploadResponse.cs" />
+    <Compile Include="WebApi\Messages\CreateMultipleRequest.cs" />
+    <Compile Include="WebApi\Messages\CreateMultipleResponse.cs" />
+    <Compile Include="WebApi\Messages\CreateRequest.cs" />
+    <Compile Include="WebApi\Messages\CreateResponse.cs" />
+    <Compile Include="WebApi\Messages\CreateRetrieveRequest.cs" />
+    <Compile Include="WebApi\Messages\CreateRetrieveResponse.cs" />
+    <Compile Include="WebApi\Messages\DeleteColumnValueRequest.cs" />
+    <Compile Include="WebApi\Messages\DeleteFileRequest.cs" />
+    <Compile Include="WebApi\Messages\DeleteMultipleRequest.cs" />
+    <Compile Include="WebApi\Messages\DeleteRequest.cs" />
+    <Compile Include="WebApi\Messages\DisassociateRequest.cs" />
+    <Compile Include="WebApi\Messages\DownloadAnnotationFileRequest.cs" />
+    <Compile Include="WebApi\Messages\DownloadAnnotationFileResponse.cs" />
+    <Compile Include="WebApi\Messages\DownloadAttachmentFileRequest.cs" />
+    <Compile Include="WebApi\Messages\DownloadAttachmentFileResponse.cs" />
+    <Compile Include="WebApi\Messages\DownloadBlockRequest.cs" />
+    <Compile Include="WebApi\Messages\DownloadBlockResponse.cs" />
+    <Compile Include="WebApi\Messages\DownloadFileChunkRequest.cs" />
+    <Compile Include="WebApi\Messages\DownloadFileChunkResponse.cs" />
+    <Compile Include="WebApi\Messages\DownloadFileRequest.cs" />
+    <Compile Include="WebApi\Messages\DownloadFileResponse.cs" />
+    <Compile Include="WebApi\Messages\ExecuteCosmosSqlQueryRequest.cs" />
+    <Compile Include="WebApi\Messages\ExecuteCosmosSqlQueryResponse.cs" />
+    <Compile Include="WebApi\Messages\ExportSolutionRequest.cs" />
+    <Compile Include="WebApi\Messages\ExportSolutionResponse.cs" />
+    <Compile Include="WebApi\Messages\FetchXMLRequest.cs" />
+    <Compile Include="WebApi\Messages\FetchXMLResponse.cs" />
+    <Compile Include="WebApi\Messages\FormatAddressRequest.cs" />
+    <Compile Include="WebApi\Messages\FormatAddressResponse.cs" />
+    <Compile Include="WebApi\Messages\GetCollectionCountRequest.cs" />
+    <Compile Include="WebApi\Messages\GetCollectionCountResponse.cs" />
+    <Compile Include="WebApi\Messages\GetColumnValueRequest.cs" />
+    <Compile Include="WebApi\Messages\GetColumnValueResponse.cs" />
+    <Compile Include="WebApi\Messages\GrantAccessRequest.cs" />
+    <Compile Include="WebApi\Messages\ImportSolutionRequest.cs" />
+    <Compile Include="WebApi\Messages\InitializeAnnotationBlocksDownloadRequest.cs" />
+    <Compile Include="WebApi\Messages\InitializeAnnotationBlocksDownloadResponse.cs" />
+    <Compile Include="WebApi\Messages\InitializeAnnotationBlocksUploadRequest.cs" />
+    <Compile Include="WebApi\Messages\InitializeAnnotationBlocksUploadResponse.cs" />
+    <Compile Include="WebApi\Messages\InitializeAttachmentBlocksDownloadRequest.cs" />
+    <Compile Include="WebApi\Messages\InitializeAttachmentBlocksDownloadResponse.cs" />
+    <Compile Include="WebApi\Messages\InitializeAttachmentBlocksUploadRequest.cs" />
+    <Compile Include="WebApi\Messages\InitializeAttachmentBlocksUploadResponse.cs" />
+    <Compile Include="WebApi\Messages\InitializeChunkedFileUploadRequest.cs" />
+    <Compile Include="WebApi\Messages\InitializeChunkedFileUploadResponse.cs" />
+    <Compile Include="WebApi\Messages\InitializeFileBlocksDownloadRequest.cs" />
+    <Compile Include="WebApi\Messages\InitializeFileBlocksDownloadResponse.cs" />
+    <Compile Include="WebApi\Messages\InitializeFileBlocksUploadRequest.cs" />
+    <Compile Include="WebApi\Messages\InitializeFileBlocksUploadResponse.cs" />
+    <Compile Include="WebApi\Messages\InitializeFromRequest.cs" />
+    <Compile Include="WebApi\Messages\InitializeFromResponse.cs" />
+    <Compile Include="WebApi\Messages\ModifyAccessRequest.cs" />
+    <Compile Include="WebApi\Messages\RetrieveCurrentOrganizationRequest.cs" />
+    <Compile Include="WebApi\Messages\RetrieveCurrentOrganizationResponse.cs" />
+    <Compile Include="WebApi\Messages\RetrieveMultipleRequest.cs" />
+    <Compile Include="WebApi\Messages\RetrieveMultipleResponse.cs" />
+    <Compile Include="WebApi\Messages\RetrievePrincipalAccessRequest.cs" />
+    <Compile Include="WebApi\Messages\RetrievePrincipalAccessResponse.cs" />
+    <Compile Include="WebApi\Messages\RetrieveRequest.cs" />
+    <Compile Include="WebApi\Messages\RetrieveResponse.cs" />
+    <Compile Include="WebApi\Messages\RetrieveSharedPrincipalsAndAccess.cs" />
+    <Compile Include="WebApi\Messages\RetrieveSharedPrincipalsAndAccessResponse.cs" />
+    <Compile Include="WebApi\Messages\RetrieveTotalRecordCountRequest.cs" />
+    <Compile Include="WebApi\Messages\RetrieveTotalRecordCountResponse.cs" />
+    <Compile Include="WebApi\Messages\RevokeAccessRequest .cs" />
+    <Compile Include="WebApi\Messages\SetColumnValueRequest.cs" />
+    <Compile Include="WebApi\Messages\UpdateMultipleRequest.cs" />
+    <Compile Include="WebApi\Messages\UpdateRequest.cs" />
+    <Compile Include="WebApi\Messages\UploadBlockRequest.cs" />
+    <Compile Include="WebApi\Messages\UploadFileChunkRequest.cs" />
+    <Compile Include="WebApi\Messages\UploadFileRequest.cs" />
+    <Compile Include="WebApi\Messages\UpsertMultipleRequest.cs" />
+    <Compile Include="WebApi\Messages\UpsertRequest.cs" />
+    <Compile Include="WebApi\Messages\UpsertResponse.cs" />
+    <Compile Include="WebApi\Messages\WhoAmIRequest.cs" />
+    <Compile Include="WebApi\Messages\WhoAmIResponse.cs" />
+    <Compile Include="WebApi\Methods\Create.cs" />
+    <Compile Include="WebApi\Methods\CreateRetrieve.cs" />
+    <Compile Include="WebApi\Methods\Delete.cs" />
+    <Compile Include="WebApi\Methods\DeleteColumnValue.cs" />
+    <Compile Include="WebApi\Methods\Extensions.cs" />
+    <Compile Include="WebApi\Methods\FetchXml.cs" />
+    <Compile Include="WebApi\Methods\GetColumnValue.cs" />
+    <Compile Include="WebApi\Methods\Retrieve.cs" />
+    <Compile Include="WebApi\Methods\RetrieveMultiple.cs" />
+    <Compile Include="WebApi\Methods\SetColumnValue.cs" />
+    <Compile Include="WebApi\Methods\Update.cs" />
+    <Compile Include="WebApi\Methods\Upsert.cs" />
+    <Compile Include="WebApi\ODataError.cs" />
+    <Compile Include="WebApi\ODataException.cs" />
+    <Compile Include="WebApi\TypedEntityHelper.cs" />
+    <Compile Include="WebApi\WebApiService.cs" />
+    <Compile Include="WebApi\ServiceException.cs" />
+    <Compile Include="WebApi\Types\AccessRights.cs" />
+    <Compile Include="WebApi\Types\ColumnSet.cs" />
+    <Compile Include="WebApi\Types\ConditionExpression.cs" />
+    <Compile Include="WebApi\Types\ConditionOperator.cs" />
+    <Compile Include="WebApi\Types\EndpointAccessType.cs" />
+    <Compile Include="WebApi\Types\EndpointCollection.cs" />
+    <Compile Include="WebApi\Types\EndpointType.cs" />
+    <Compile Include="WebApi\Types\EntityRecordCountCollection.cs" />
+    <Compile Include="WebApi\Types\ExportComponentDetails.cs" />
+    <Compile Include="WebApi\Types\ExportComponentsParams.cs" />
+    <Compile Include="WebApi\Types\ExportSolutionParameters.cs" />
+    <Compile Include="WebApi\Types\FilterExpression.cs" />
+    <Compile Include="WebApi\Types\ImportDecision.cs" />
+    <Compile Include="WebApi\Types\ImportSolutionParameters.cs" />
+    <Compile Include="WebApi\Types\JoinOperator.cs" />
+    <Compile Include="WebApi\Types\LayerDesiredOrder.cs" />
+    <Compile Include="WebApi\Types\LayerDesiredOrderType.cs" />
+    <Compile Include="WebApi\Types\LinkEntity.cs" />
+    <Compile Include="WebApi\Types\LogicalOperator.cs" />
+    <Compile Include="WebApi\Types\Object.cs" />
+    <Compile Include="WebApi\Types\ObjectType.cs" />
+    <Compile Include="WebApi\Types\OrderExpression.cs" />
+    <Compile Include="WebApi\Types\OrderType.cs" />
+    <Compile Include="WebApi\Types\OrganizationDetail.cs" />
+    <Compile Include="WebApi\Types\OrganizationState.cs" />
+    <Compile Include="WebApi\Types\PagingInfo.cs" />
+    <Compile Include="WebApi\Types\ParameterCollection.cs" />
+    <Compile Include="WebApi\Types\PrincipalAccess.cs" />
+    <Compile Include="WebApi\Types\PrivilegeDepth.cs" />
+    <Compile Include="WebApi\Types\QueryExpression.cs" />
+    <Compile Include="WebApi\Types\RolePrivilege.cs" />
+    <Compile Include="WebApi\Types\SolutionComponentOption.cs" />
+    <Compile Include="WebApi\Types\SolutionInfo.cs" />
+    <Compile Include="WebApi\Types\SolutionParameters.cs" />
+    <Compile Include="WebApi\Types\TargetFieldType.cs" />
     <Compile Include="XrmHttpClientFactory.cs" />
     <Compile Include="XrmToolsPackage.SolutionProperties.cs" />
     <Compile Include="Xrm\IXrmSchemaProvider.cs" />
@@ -297,6 +457,9 @@
     <PackageReference Include="Humanizer.Core">
       <Version>2.14.1</Version>
     </PackageReference>
+    <PackageReference Include="Microsoft.AspNet.WebApi.Client">
+      <Version>6.0.0</Version>
+    </PackageReference>
     <PackageReference Include="Microsoft.Bcl.TimeProvider">
       <Version>8.0.0</Version>
     </PackageReference>
@@ -333,6 +496,9 @@
     </PackageReference>
     <PackageReference Include="Nito.AsyncEx">
       <Version>5.1.2</Version>
+    </PackageReference>
+    <PackageReference Include="Polly.Extensions.Http">
+      <Version>3.0.0</Version>
     </PackageReference>
     <PackageReference Include="PolySharp">
       <Version>1.15.0</Version>
