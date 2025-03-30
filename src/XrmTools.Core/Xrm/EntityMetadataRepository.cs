@@ -30,7 +30,10 @@ internal class EntityMetadataRepository(XrmHttpClient client) : XrmRepository(cl
 {
     private const string entityMetadataQueryAll = "RetrieveAllEntities(EntityFilters=@p1,RetrieveAsIfPublished=@p2)?@p1=Microsoft.Dynamics.CRM.EntityFilters'Entity'&@p2=true";
     private const string entityMetadataQuerySingle = "RetrieveEntity(LogicalName=@p1,EntityFilters=@p2,RetrieveAsIfPublished=@p3,MetadataId=@p4)?@p1='{0}'&@p2=Microsoft.Dynamics.CRM.EntityFilters'Attributes'&@p3=true&@p4=00000000-0000-0000-0000-000000000000";
-    private const string entityMessagesQuery = "sdkmessages?$select=name,isprivate,executeprivilegename,isvalidforexecuteasync,autotransact,introducedversion&$filter=sdkmessageid_sdkmessagefilter/any(n:%20n/primaryobjecttypecode%20eq%20'{0}')";
+    private const string entityMessagesQuery =
+        "sdkmessages?$select=name,isprivate,executeprivilegename,isvalidforexecuteasync,autotransact,introducedversion" +
+        "&$filter=sdkmessageid_sdkmessagefilter/any(n:n/primaryobjecttypecode eq '{0}' and n/iscustomprocessingstepallowed eq true))" +
+        "&$expand=sdkmessageid_sdkmessagefilter($filter=primaryobjecttypecode eq '{0}' and iscustomprocessingstepallowed eq true)";
     private const string entityRelationshipsQuery = "EntityDefinitions(LogicalName='{0}')?$select=MetadataId&$expand=ManyToOneRelationships,OneToManyRelationships,ManyToManyRelationships";
 
     private static readonly JsonSerializerSettings serializerSetting = new()

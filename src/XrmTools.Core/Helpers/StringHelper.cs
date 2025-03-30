@@ -11,10 +11,9 @@ using System.Text.Json.Serialization;
 using System.Text.Json.Serialization.Metadata;
 using XrmTools.Xrm.Model;
 using XrmTools.Core.Serialization;
-using System.Linq;
 using System.Collections.Generic;
 
-internal static class StringHelpers
+internal static class StringHelper
 {
     // System.Text.Json Configuration:
     private static readonly JsonSerializerOptions jsonSerializerOptions = new()
