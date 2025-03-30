@@ -8,6 +8,7 @@ using XrmTools.Settings;
 using Community.VisualStudio.Toolkit;
 using System.Threading.Tasks;
 using System.Reflection;
+using XrmTools.CodeGen;
 
 public interface ITemplateFileGenerator
 {
@@ -33,7 +34,7 @@ public class TemplateFileGenerator(ISettingsProvider settings, ILogger<TemplateF
             "CodeGenTemplates");
 
         Directory.CreateDirectory(templatesDirectory);
-        foreach (var sourceFile in Directory.EnumerateFiles(templateSourceDirectory, "*.sbn"))
+        foreach (var sourceFile in Directory.EnumerateFiles(templateSourceDirectory, $"*.{Constants.ScribanTemplateExtension}"))
         {
             var targetFile = Path.Combine(templatesDirectory, Path.GetFileName(sourceFile));
             if (!File.Exists(targetFile))
@@ -42,8 +43,8 @@ public class TemplateFileGenerator(ISettingsProvider settings, ILogger<TemplateF
                 await proj.AddExistingFilesAsync(targetFile);
             }
         }
-        await settings.ProjectSettings.EntityTemplateFilePathAsync(Path.Combine(templatesDirectory, "Entity.sbn"));
-        await settings.ProjectSettings.PluginTemplateFilePathAsync(Path.Combine(templatesDirectory, "Plugin.sbn"));
+        await settings.ProjectSettings.EntityTemplateFilePathAsync(Path.Combine(templatesDirectory, Constants.ScribanEntityTemplateFileName));
+        await settings.ProjectSettings.PluginTemplateFilePathAsync(Path.Combine(templatesDirectory, Constants.ScribanPluginTemplateFileName));
     }
 }
 #nullable restore

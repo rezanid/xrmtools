@@ -4,6 +4,7 @@ using Microsoft.VisualStudio.Shell;
 using System;
 using System.ComponentModel.Composition;
 using System.IO;
+using XrmTools.CodeGen;
 using XrmTools.Logging.Compatibility;
 using XrmTools.Settings;
 
@@ -21,7 +22,7 @@ public class TemplatePathFinder(ISettingsProvider settings, ILogger<TemplatePath
 
     public string? FindEntityTemplatePath(string inputFile)
     {
-        var templateFilePath = inputFile + ".sbn";
+        var templateFilePath = inputFile + Constants.ScribanTemplateExtensionWithDot;
         if (File.Exists(templateFilePath))
         {
             return templateFilePath;
@@ -40,7 +41,7 @@ public class TemplatePathFinder(ISettingsProvider settings, ILogger<TemplatePath
 
     public string? FindPluginTemplatePath(string inputFile)
     {
-        var templateFilePath = inputFile + ".sbn";
+        var templateFilePath = inputFile + Constants.ScribanTemplateExtensionWithDot;
         if (File.Exists(templateFilePath))
         {
             return templateFilePath;

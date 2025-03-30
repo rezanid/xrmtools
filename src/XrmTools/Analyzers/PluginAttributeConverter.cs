@@ -4,7 +4,7 @@ namespace XrmTools.Analyzers;
 using Microsoft.CodeAnalysis;
 using System;
 using System.Collections.Generic;
-using XrmTools.Core.Helpers;
+using System.ComponentModel.Composition;
 using XrmTools.Helpers;
 using XrmTools.Meta.Attributes;
 using XrmTools.Meta.Model;
@@ -16,6 +16,7 @@ public interface IAttributeConverter
     PluginTypeConfig? ConvertPluginAttributes(INamedTypeSymbol typeSymbol);
 }
 
+[Export(typeof(IAttributeConverter))]
 public class AttributeConvertor : IAttributeConverter
 {
     public IEnumerable<EntityConfig> ConvertEntityAttributes(IEnumerable<AttributeData> entityAttributes)
@@ -43,6 +44,8 @@ public class AttributeConvertor : IAttributeConverter
                 case var name when name == typeof(PluginAttribute).FullName:
                     pluginConfig = CreatePluginTypeConfig(typeSymbol, attributeData);
                     if (pluginConfig == null) return null;
+                    if (string.IsNullOrWhiteSpace(pluginConfig.Name)) pluginConfig.Name = pluginConfig.TypeName;
+                    if (string.IsNullOrWhiteSpace(pluginConfig.FriendlyName)) pluginConfig.FriendlyName = pluginConfig.Name;
                     break;
 
                 case var name when name == typeof(StepAttribute).FullName:
@@ -50,7 +53,14 @@ public class AttributeConvertor : IAttributeConverter
                     {
                         lastStepConfig = CreatePluginStepConfig(attributeData);
                         if (lastStepConfig != null)
+                        {
+                            if (string.IsNullOrWhiteSpace(lastStepConfig.Name)) 
+                            {
+                                lastStepConfig.Name = 
+                                    $"{pluginConfig.Name} : {lastStepConfig.StageName} {lastStepConfig.MessageName} of {lastStepConfig.PrimaryEntityName}";
+                            }
                             pluginConfig.Steps.Add(lastStepConfig);
+                        }
                     }
                     break;
 
@@ -59,7 +69,14 @@ public class AttributeConvertor : IAttributeConverter
                     {
                         var imageConfig = CreatePluginImageConfig(attributeData);
                         if (imageConfig != null)
+                        {
+                            if (string.IsNullOrWhiteSpace(imageConfig.Name))
+                            {
+                                imageConfig.Name = lastStepConfig.PrimaryEntityName
+                                    + (imageConfig.ImageType.HasValue ? Enum.GetName(typeof(ImageTypes), imageConfig.ImageType) : "");
+                            }
                             lastStepConfig.Images.Add(imageConfig);
+                        }
                     }
                     break;
             }
@@ -73,9 +90,9 @@ public class AttributeConvertor : IAttributeConverter
         {
             Namespace = typeSymbol.ContainingNamespace.ToDisplayString(),
             BaseTypeName = typeSymbol.BaseType?.Name,
-            TypeName = typeSymbol.Name,
-            Name = attributeData.GetValue<string>(nameof(PluginAttribute.Name)) ?? typeSymbol.Name,
-            FriendlyName = attributeData.GetValue<string>(nameof(PluginAttribute.FriendlyName)) ?? typeSymbol.Name,
+            TypeName = typeSymbol.ToDisplayString(SymbolDisplayFormat.CSharpErrorMessageFormat),
+            Name = attributeData.GetValue<string>(nameof(PluginAttribute.Name)),
+            FriendlyName = attributeData.GetValue<string>(nameof(PluginAttribute.FriendlyName)),
             Description = attributeData.GetValue<string>(nameof(PluginAttribute.Description)),
             WorkflowActivityGroupName = attributeData.GetValue<string>(nameof(PluginAttribute.WorkflowActivityGroupName)),
             PluginTypeId = attributeData.GetValue<string>(nameof(PluginAttribute.Id)) is string pluginTypeId

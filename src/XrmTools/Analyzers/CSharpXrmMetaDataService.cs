@@ -1,8 +1,9 @@
 ﻿#nullable enable
 namespace XrmTools.Analyzers;
+
+using Community.VisualStudio.Toolkit;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
-using Microsoft.VisualStudio.LanguageServices;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -11,19 +12,50 @@ using System.Threading.Tasks;
 using XrmTools.Helpers;
 using XrmTools.Meta.Attributes;
 using XrmTools.Meta.Model;
+using XrmTools.Resources;
 using XrmTools.Xrm.Model;
+using XrmTools.Logging.Compatibility;
+using System.ComponentModel.Composition;
 
-public interface IPluginAssemblyMetadataService
+public interface IXrmMetaDataService
 {
-    Task<PluginAssemblyConfig?> GetAssemblyConfigAsync(Document document, CancellationToken cancellationToken = default);
+    /// <summary>
+    /// Parses the input file and returns the PluginAssemblyConfig plus the PluginTypeConfigs and EntityConfigs that are found in the document.
+    /// </summary>
+    /// <param name="filePath">The full file path to the document to be parsed.</param>
+    /// <returns>PluginAssemblyConfig that contains PluginTypeConfigs and EntityConfigs that are found in the document.</returns>
+    Task<PluginAssemblyConfig?> ParseAsync(string inputFileName, CancellationToken cancellationToken = default);
 }
 
-public class PluginAssemblyMetadataService(VisualStudioWorkspace workspace, IAttributeConverter attributeConverter) : IPluginAssemblyMetadataService
+[Export(typeof(IXrmMetaDataService))]
+[method: ImportingConstructor]
+public class CSharpXrmMetaDataService(
+    ILogger<CSharpXrmMetaDataService> logger, 
+    IAttributeConverter attributeConverter) : IXrmMetaDataService
 {
-    private readonly VisualStudioWorkspace workspace = workspace ?? throw new ArgumentNullException(nameof(workspace));
-    private readonly IAttributeConverter attributeConverter = attributeConverter ?? throw new ArgumentNullException(nameof(attributeConverter));
+    private readonly ILogger<CSharpXrmMetaDataService> Logger = logger ?? throw new ArgumentNullException(nameof(logger));
 
-    public async Task<PluginAssemblyConfig?> GetAssemblyConfigAsync(Document document, CancellationToken cancellationToken = default)
+    private readonly IAttributeConverter AttributeConverter = attributeConverter ?? throw new ArgumentNullException(nameof(attributeConverter));
+
+    public async Task<PluginAssemblyConfig?> ParseAsync(string filePath, CancellationToken cancellationToken = default)
+    {
+        var proj = await VS.Solutions.GetActiveProjectAsync();
+        if (proj is null)
+        {
+            Logger.LogWarning(Strings.NoActiveProject);
+            return null;
+        }
+
+        var document = await FileHelper.GetDocumentAsync(filePath);
+        if (document == null)
+        {
+            return null;
+        }
+
+        return await ParseAsync(document, cancellationToken);
+    }
+
+    public async Task<PluginAssemblyConfig?> ParseAsync(Document document, CancellationToken cancellationToken = default)
     {
         if (document == null) throw new ArgumentNullException(nameof(document));
 
@@ -40,6 +72,7 @@ public class PluginAssemblyMetadataService(VisualStudioWorkspace workspace, IAtt
 
             var pluginAssemblyConfig = CreatePluginAssemblyConfig(assemblySymbol, assemblyAttribute, assemblyEntityAttributes);
             if (pluginAssemblyConfig == null) return null;
+            pluginAssemblyConfig.FilePath = document.Project.OutputFilePath;
 
             var syntaxTree = await document.GetSyntaxTreeAsync(cancellationToken).ConfigureAwait(false);
             var semanticModel = await document.GetSemanticModelAsync(cancellationToken).ConfigureAwait(false);
@@ -53,7 +86,7 @@ public class PluginAssemblyMetadataService(VisualStudioWorkspace workspace, IAtt
             {
                 // Get the symbol for the class declaration
                 if (semanticModel.GetDeclaredSymbol(classDeclaration) is not INamedTypeSymbol typeSymbol) continue;
-                var pluginType = attributeConverter.ConvertPluginAttributes(typeSymbol);
+                var pluginType = AttributeConverter.ConvertPluginAttributes(typeSymbol);
                 if (pluginType != null)
                 {
                     pluginAssemblyConfig.PluginTypes.Add(pluginType);
@@ -80,7 +113,7 @@ public class PluginAssemblyMetadataService(VisualStudioWorkspace workspace, IAtt
                 ? (SourceTypes)sourceType : PluginAssemblyAttribute.DefaultSourceType,
             IsolationMode = assemblyAttribute.GetValue<int?>(nameof(PluginAssemblyAttribute.IsolationMode)) is int isolationMode
                 ? (IsolationModes)isolationMode : PluginAssemblyAttribute.DefaultIsolationMode,
-            Entities = attributeConverter.ConvertEntityAttributes(entityAttributes).ToList(),
+            Entities = AttributeConverter.ConvertEntityAttributes(entityAttributes).ToList(),
         };
 
         if (assemblyAttribute.GetValue<string>(nameof(PluginAssemblyAttribute.Id)) is string pluginAssemblyId)
@@ -101,7 +134,5 @@ public class PluginAssemblyMetadataService(VisualStudioWorkspace workspace, IAtt
             .SingleOrDefault(attr => attr.AttributeClass?.ToDisplayString() == typeof(PluginAssemblyAttribute).FullName);
 
     private IEnumerable<AttributeData> GetAssemblyEntityAttributes(IAssemblySymbol assemblySymbol)
-        => assemblySymbol.GetAttributes()
-            .Where(attr => attr.AttributeClass?.ToDisplayString() == typeof(EntityAttribute).FullName)
-            .ToList();
+        => [.. assemblySymbol.GetAttributes().Where(attr => attr.AttributeClass?.ToDisplayString() == typeof(EntityAttribute).FullName)];
 }

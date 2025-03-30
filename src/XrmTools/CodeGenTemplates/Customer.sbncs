@@ -1,1 +1,1 @@
-{{~include 'Lookup.sbn'~}}
+{{~include 'Lookup.sbncs'~}}

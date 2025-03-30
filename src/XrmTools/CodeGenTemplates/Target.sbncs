@@ -69,6 +69,6 @@ public class Target{{base_class_name}} : Entity
 	{{~end~}}
 	/// </summary>
 	{{~prop_name = attribute.schema_name ~}}
-	{{include attribute.attribute_type + '.sbn' attributes:step.primary_entity_definition.attributes}}
+	{{include attribute.attribute_type + '.sbncs' attributes:step.primary_entity_definition.attributes}}
 {{~end~}}
 }

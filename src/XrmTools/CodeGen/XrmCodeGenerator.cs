@@ -1,6 +1,7 @@
 ﻿#nullable enable
 namespace XrmTools;
 using Microsoft.VisualStudio;
+using Microsoft.VisualStudio.ComponentModelHost;
 using Microsoft.VisualStudio.Shell;
 using Microsoft.VisualStudio.Shell.Interop;
 using Microsoft.VisualStudio.TextTemplating.VSHost;
@@ -8,28 +9,24 @@ using Microsoft.Xrm.Sdk.Metadata;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel.Composition;
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading;
+using XrmTools.Analyzers;
+using XrmTools.Core.Helpers;
+using XrmTools.Core.Repositories;
 using XrmTools.Helpers;
+using XrmTools.Logging.Compatibility;
+using XrmTools.Options;
+using XrmTools.Resources;
+using XrmTools.Settings;
 using XrmTools.Xrm.Generators;
 using XrmTools.Xrm.Model;
-using XrmTools.Options;
-using Community.VisualStudio.Toolkit;
-using System.Threading.Tasks;
-using Microsoft.VisualStudio.LanguageServices;
-using XrmTools.Analyzers;
-using Microsoft.VisualStudio.ComponentModelHost;
-using XrmTools.Settings;
-using XrmTools.Resources;
-using System.Diagnostics.CodeAnalysis;
-using XrmTools.Logging.Compatibility;
 using XrmTools.Xrm.Repositories;
-using XrmTools.Core.Repositories;
-using XrmTools.Core.Helpers;
 
-public class PluginCodeGenerator : BaseCodeGeneratorWithSite
+public class XrmCodeGenerator : BaseCodeGeneratorWithSite
 {
     public const string Name = Vsix.Name + " Plugin Code Generator";
     public const string Description = "Generates plugin code from .dej.json file.";
@@ -46,7 +43,7 @@ public class PluginCodeGenerator : BaseCodeGeneratorWithSite
     internal ISettingsProvider SettingsProvider { get; set; }
 
     [Import]
-    internal ILogger<PluginCodeGenerator> Logger { get; set; }
+    internal ILogger<XrmCodeGenerator> Logger { get; set; }
 
     [Import]
     internal ITemplateFinder TemplateFinder { get; set; }
@@ -54,23 +51,26 @@ public class PluginCodeGenerator : BaseCodeGeneratorWithSite
     [Import]
     internal ITemplateFileGenerator TemplateFileGenerator { get; set; }
 
+    [Import]
+    internal IXrmMetaDataService XrmMetaDataService { get; set; }
+
     public override string GetDefaultExtension() => ".cs";
 
-    public PluginCodeGenerator() => SatisfyImports();
+    public XrmCodeGenerator() => SatisfyImports();
 
     [MemberNotNull(nameof(Generator), nameof(RepositoryFactory), 
         nameof(Logger), nameof(TemplateFinder), nameof(TemplateFileGenerator),
-        nameof(SettingsProvider))]
+        nameof(SettingsProvider), nameof(XrmMetaDataService))]
     private void SatisfyImports()
     {
         var componentModel = (IComponentModel)Package.GetGlobalService(typeof(SComponentModel));
         componentModel?.DefaultCompositionService.SatisfyImportsOnce(this);
-        if (Generator == null) throw new InvalidOperationException(string.Format(Strings.MissingServiceDependency, nameof(PluginCodeGenerator), nameof(Generator)));
-        if (RepositoryFactory == null) throw new InvalidOperationException(string.Format(Strings.MissingServiceDependency, nameof(PluginCodeGenerator), nameof(RepositoryFactory)));
-        if (SettingsProvider == null) throw new InvalidOperationException(string.Format(Strings.MissingServiceDependency, nameof(PluginCodeGenerator), nameof(SettingsProvider)));
-        if (Logger == null) throw new InvalidOperationException(string.Format(Strings.MissingServiceDependency, nameof(PluginCodeGenerator), nameof(Logger)));
-        if (TemplateFinder == null) throw new InvalidOperationException(string.Format(Strings.MissingServiceDependency, nameof(PluginCodeGenerator), nameof(TemplateFinder)));
-        if (TemplateFileGenerator == null) throw new InvalidOperationException(string.Format(Strings.MissingServiceDependency, nameof(PluginCodeGenerator), nameof(TemplateFileGenerator)));
+        if (Generator == null) throw new InvalidOperationException(string.Format(Strings.MissingServiceDependency, nameof(XrmCodeGenerator), nameof(Generator)));
+        if (RepositoryFactory == null) throw new InvalidOperationException(string.Format(Strings.MissingServiceDependency, nameof(XrmCodeGenerator), nameof(RepositoryFactory)));
+        if (SettingsProvider == null) throw new InvalidOperationException(string.Format(Strings.MissingServiceDependency, nameof(XrmCodeGenerator), nameof(SettingsProvider)));
+        if (Logger == null) throw new InvalidOperationException(string.Format(Strings.MissingServiceDependency, nameof(XrmCodeGenerator), nameof(Logger)));
+        if (TemplateFinder == null) throw new InvalidOperationException(string.Format(Strings.MissingServiceDependency, nameof(XrmCodeGenerator), nameof(TemplateFinder)));
+        if (TemplateFileGenerator == null) throw new InvalidOperationException(string.Format(Strings.MissingServiceDependency, nameof(XrmCodeGenerator), nameof(TemplateFileGenerator)));
     }
 
     protected override byte[]? GenerateCode(string inputFileName, string inputFileContent)
@@ -82,7 +82,7 @@ public class PluginCodeGenerator : BaseCodeGeneratorWithSite
         if (".cs".Equals(Path.GetExtension(inputFileName), StringComparison.OrdinalIgnoreCase))
         {
             inputModel = ThreadHelper.JoinableTaskFactory.Run(async () =>
-                await ParseCSharpInputFileAsync(inputFileName, inputFileContent));
+                await XrmMetaDataService.ParseAsync(inputFileName));
         }
         else
         {
@@ -141,31 +141,6 @@ public class PluginCodeGenerator : BaseCodeGeneratorWithSite
             Logger.LogError(ex, Strings.PluginGenerator_DeserializationError, inputFileName);
         }
         return null;
-    }
-
-    private async Task<PluginAssemblyConfig?> ParseCSharpInputFileAsync(string inputFileName, string inputFileContent)
-    {
-        var proj = await VS.Solutions.GetActiveProjectAsync();
-        if (proj is null)
-        {
-            Logger.LogWarning("No active project found.");
-            return null;
-        }
-
-        await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync();
-        var componentModel = (IComponentModel)Package.GetGlobalService(typeof(SComponentModel));
-        var workspace = componentModel.GetService<VisualStudioWorkspace>();
-        var documentId = workspace.CurrentSolution.GetDocumentIdsWithFilePath(inputFileName).FirstOrDefault();
-        if (documentId == null) return null;
-        var document = workspace.CurrentSolution.GetDocument(documentId);
-        if (document == null)
-        {
-            return null;
-        }
-        var attributeConverter = new AttributeConvertor();
-        var pluginAssemblyMetaService = new PluginAssemblyMetadataService(workspace, attributeConverter);
-        var pluginAssemblyInfo = await pluginAssemblyMetaService.GetAssemblyConfigAsync(document);
-        return pluginAssemblyInfo;
     }
 
     private string? GetTemplateFilePath(PluginAssemblyConfig config)
@@ -388,7 +363,7 @@ public class PluginCodeGenerator : BaseCodeGeneratorWithSite
     }
 
     // Finalizer to ensure resources are released if Dispose is not called
-    ~PluginCodeGenerator() => Dispose(false);
+    ~XrmCodeGenerator() => Dispose(false);
     #endregion
 
 }

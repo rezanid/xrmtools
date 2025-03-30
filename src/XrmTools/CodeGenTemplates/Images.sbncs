@@ -30,7 +30,7 @@ public class {{image.name}}{{base_class_name}} : Entity
 	/// </summary>
 	{{~prop_name = attribute.schema_name ~}}
 	{{~force_readonly = true~}}
-	{{include attribute.attribute_type + '.sbn'}}
+	{{include attribute.attribute_type + '.sbncs'}}
 {{~end~}}
 }
 {{~end~}}

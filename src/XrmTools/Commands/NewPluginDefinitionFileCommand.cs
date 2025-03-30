@@ -1,19 +1,19 @@
 ﻿#nullable enable
 namespace XrmTools.Commands;
 using Community.VisualStudio.Toolkit;
-using Microsoft.VisualStudio.Shell;
-using XrmTools.Helpers;
-using Task = System.Threading.Tasks.Task;
-using XrmTools.UI;
-using System.Threading.Tasks;
-using System;
-using XrmTools.Xrm.Model;
-using System.ComponentModel.Composition;
 using Microsoft.VisualStudio.ComponentModelHost;
+using Microsoft.VisualStudio.Shell;
+using System;
+using System.ComponentModel.Composition;
 using System.Diagnostics.CodeAnalysis;
-using XrmTools.Resources;
-using XrmTools.Logging.Compatibility;
+using System.Threading.Tasks;
 using XrmTools.Core.Helpers;
+using XrmTools.Helpers;
+using XrmTools.Logging.Compatibility;
+using XrmTools.Resources;
+using XrmTools.UI;
+using XrmTools.Xrm.Model;
+using Task = System.Threading.Tasks.Task;
 
 [Command(PackageGuids.XrmToolsCmdSetIdString, PackageIds.NewPluginDefinitionCmdId)]
 internal sealed class NewPluginDefinitionFileCommand : BaseCommand<NewPluginDefinitionFileCommand>
@@ -81,7 +81,7 @@ internal sealed class NewPluginDefinitionFileCommand : BaseCommand<NewPluginDefi
     {
         try
         {
-            var content = StringHelpers.SerializeJson(selectedAssembly);
+            var content = StringHelper.SerializeJson(selectedAssembly);
             if (string.IsNullOrWhiteSpace(content))
             {
                 Logger.LogCritical("Failed to serialize plugin assembly configuration.", []);

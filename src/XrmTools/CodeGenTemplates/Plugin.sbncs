@@ -15,9 +15,9 @@ namespace {{ first_plugin_type?.namespace ?? config.default_namespace }};
 {{codegen_attribute}}
 public partial class {{plugintype.type_name | last_segment }}{{ plugintype.base_type_name != 'Object' ? ' : ' + plugintype.base_type_name : ''}}
 {
-	{{include 'Target.sbn'}}
+	{{include 'Target.sbncs'}}
 	{{~if step.images~}}
-	{{include 'Images.sbn'~}}
+	{{include 'Images.sbncs'~}}
 	{{~end~}}
 
 	{{~target_type_name='Target' + (step.primary_entity_definition.display_name.localized_labels[0].label | tokenize)~}}
