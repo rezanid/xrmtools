@@ -61,11 +61,12 @@
     <Compile Include="Environments\DataverseEnvironmentList.cs" />
     <Compile Include="Environments\IEnvironmentProvider.cs" />
     <Compile Include="Helpers\StreamHelper.cs" />
-    <Compile Include="Helpers\StringHelpers.cs" />
+    <Compile Include="Helpers\StringHelper.cs" />
     <Compile Include="Helpers\TypeExtensions.cs" />
     <Compile Include="Http\HttpClientConfig.cs" />
     <Compile Include="Http\HttpClientEntry.cs" />
     <Compile Include="Http\HttpMessageHandlerEntry.cs" />
+    <Compile Include="Http\HttpMethods.cs" />
     <Compile Include="Http\IXrmHttpClientFactory.cs" />
     <Compile Include="Http\XrmHttpClient.cs" />
     <Compile Include="Logging\Compatibility\EventId.cs" />
@@ -98,6 +99,7 @@
     <Compile Include="Xrm\IXrmRepository.cs" />
     <Compile Include="Xrm\PluginAssemblyRepository.cs" />
     <Compile Include="Xrm\PluginTypeRepository.cs" />
+    <Compile Include="Xrm\SdkMessageRepository.cs" />
     <Compile Include="Xrm\SystemRepository.cs" />
     <Compile Include="Xrm\XrmRepository.cs" />
   </ItemGroup>

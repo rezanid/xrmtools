@@ -13,6 +13,8 @@ public interface ITypedEntity { }
 
 public abstract class TypedEntity<T>(string entityLogicalName) : Entity(entityLogicalName), ITypedEntity where T : Entity, ITypedEntity, new()
 {
+    public abstract string GetEntitySetName();
+
     public static class Select
     {
         public static ColumnSet AllColumns => new(true);
@@ -37,7 +39,6 @@ public abstract class TypedEntity<T>(string entityLogicalName) : Entity(entityLo
                 _ => throw new ArgumentException("Invalid expression")
             };
     }
-
 
     public static string GetEntityLogicalName()
     {
