@@ -8,8 +8,8 @@ using XrmTools.Meta.Attributes;
 
 public class Test
 {
-    public void Test()
+    public void Test1()
     {
-        var account = new Partner
+        var s = "";
     }
 }

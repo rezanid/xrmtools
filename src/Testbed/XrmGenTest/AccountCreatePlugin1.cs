@@ -24,6 +24,7 @@ public partial class AccountCreatePlugin : PluginBase
 			public partial class Fields
 			{
 				public const string AccountNumber = "accountnumber";
+				public const string CreatedOn = "createdon";
 				public const string Name = "name";
 			}
 	
@@ -44,6 +45,15 @@ public partial class AccountCreatePlugin : PluginBase
 			set => this["accountnumber"] = value;
 		}
 		/// <summary>
+		/// Required Level: None</br>
+		/// Valid for: Read</br>
+		/// </summary>
+		[AttributeLogicalName("createdon")]
+		public DateTime? CreatedOn
+		{
+			get => TryGetAttributeValue("createdon", out DateTime value) ? value : null;
+		}
+		/// <summary>
 		/// Max Length: 160</br>
 		/// Required Level: ApplicationRequired</br>
 		/// Valid for: Create Update Read</br>
@@ -57,12 +67,13 @@ public partial class AccountCreatePlugin : PluginBase
 	}
 	[GeneratedCode("TemplatedPluginCodeGenerator", "1.0.0.0")]
 	[EntityLogicalName("account")]
-	public class PreImagePartner : Entity
+	public class PostImagePartner : Entity
 	{
 		public const string EntityLogicalName = "account";
 		public partial class Fields
 		{
 			public const string AccountNumber = "accountnumber";
+			public const string CreatedOn = "createdon";
 			public const string Name = "name";
 		}
 	
@@ -77,6 +88,15 @@ public partial class AccountCreatePlugin : PluginBase
 			get => TryGetAttributeValue("accountnumber", out string value) ? value : null;
 		}
 		/// <summary>
+		/// Required Level: None
+		/// Valid for: Read
+		/// </summary>
+		[AttributeLogicalName("createdon")]
+		public DateTime? CreatedOn
+		{
+			get => TryGetAttributeValue("createdon", out DateTime value) ? value : null;
+		}
+		/// <summary>
 		/// Max Length: 160
 		/// Required Level: ApplicationRequired
 		/// Valid for: Create Update Read
@@ -89,7 +109,7 @@ public partial class AccountCreatePlugin : PluginBase
 	}
 
 	AccountCreatePlugin.TargetPartner Target { get; set; }
-	AccountCreatePlugin.PreImagePartner PreImage { get; set; }
+	AccountCreatePlugin.PostImagePartner PostImage { get; set; }
 
 	/// <summary>
 	/// This method should be called on every <see cref="PluginBase.Execute(IServiceProvider)"/> execution.
@@ -104,7 +124,7 @@ public partial class AccountCreatePlugin : PluginBase
         }
         var executionContext = serviceProvider.Get<IPluginExecutionContext7>();
         Target = EntityOrDefault<TargetPartner>(executionContext.InputParameters, "Target");
-        PreImage = EntityOrDefault<PreImagePartner>(executionContext.PreEntityImages, "PreImage");
+        PostImage = EntityOrDefault<PostImagePartner>(executionContext.PreEntityImages, "PostImage");
     }
 
 	private static T EntityOrDefault<T>(DataCollection<string, object> keyValues, string key) where T : Entity
