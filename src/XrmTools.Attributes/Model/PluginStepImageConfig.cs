@@ -30,6 +30,7 @@ public interface IMessageProcessingStepImageConfig : IMessageProcessingStepImage
 public class PluginStepImageConfig : TypedEntity<PluginStepImageConfig>, IMessageProcessingStepImageConfig
 {
     public const string EntityLogicalName = "sdkmessageprocessingstepimage";
+    public override string GetEntitySetName() => "sdkmessageprocessingstepimages";
 
     #region IMessageProcessingStepImageConfig-only Properties
     public EntityMetadata? MessagePropertyDefinition { get; set; }

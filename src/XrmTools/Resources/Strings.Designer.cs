@@ -187,20 +187,20 @@ namespace XrmTools.Resources {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to Environment not initialized. You will have to first initialize the environment by calling {0}..
-        /// </summary>
-        internal static string EnvironmentNotInitialized {
-            get {
-                return ResourceManager.GetString("EnvironmentNotInitialized", resourceCulture);
-            }
-        }
-        
-        /// <summary>
         ///   Looks up a localized string similar to Missing {0} service depndency. {0} is not available..
         /// </summary>
         internal static string MissingServiceDependency {
             get {
                 return ResourceManager.GetString("MissingServiceDependency", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to No active project found. Please select a project and try again..
+        /// </summary>
+        internal static string NoActiveProject {
+            get {
+                return ResourceManager.GetString("NoActiveProject", resourceCulture);
             }
         }
         

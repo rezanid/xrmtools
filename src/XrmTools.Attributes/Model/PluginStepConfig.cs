@@ -40,6 +40,7 @@ public interface IMessageProcessingStepConfig : IMessageProcessingStepEntity
     EntityMetadata? PrimaryEntityDefinition { get; set; }
     string? StageName { get; }
     object? ActionDefinition { get; set; }
+    SdkMessage? Message { get; set; } 
 }
 
 [EntityLogicalName(EntityLogicalName)]
@@ -49,7 +50,9 @@ public class PluginStepConfig : TypedEntity<PluginStepConfig>, IMessageProcessin
     // - PrimaryEntityName
     // - ImpersonatingUserFullname (ImpersonatingUserId is present)
     // - MessageName (SdkMessageId is present)
+
     public const string EntityLogicalName = "sdkmessageprocessingstep";
+    public override string GetEntitySetName() => "sdkmessageprocessingsteps";
 
     //TODO: Do we need to support secure config?
     // Unsupported for now:
@@ -79,6 +82,7 @@ public class PluginStepConfig : TypedEntity<PluginStepConfig>, IMessageProcessin
             _ => $"Unknown stage: {Stage}"
         };
     }
+    public SdkMessage? Message { get; set; }
     #endregion
 
     #region IMessageProcessingStepEntity Properties

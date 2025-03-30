@@ -75,6 +75,7 @@
     <Compile Include="Model\RetrieveAllEntitiesResponse.cs" />
     <Compile Include="Model\RetrieveEntityResponse.cs" />
     <Compile Include="Model\SdkMessage.cs" />
+    <Compile Include="Model\SdkMessageFilter.cs" />
     <Compile Include="Model\TypedEntity.cs" />
     <Compile Include="Model\WhoAmIResponse.cs" />
     <Compile Include="PluginAssemblyInfo.cs" />
@@ -89,10 +90,15 @@
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="Microsoft.CrmSdk.CoreAssemblies">
-      <Version>9.0.2.56</Version>
+      <Version>9.0.2.59</Version>
     </PackageReference>
     <PackageReference Include="Newtonsoft.Json">
       <Version>13.0.3</Version>
+    </PackageReference>
+    <PackageReference Include="PolySharp">
+      <Version>1.15.0</Version>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+      <PrivateAssets>all</PrivateAssets>
     </PackageReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />

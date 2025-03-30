@@ -30,6 +30,7 @@ public interface IPluginTypeConfig : IPluginTypeEntity
 public class PluginTypeConfig : TypedEntity<PluginTypeConfig>, IPluginTypeConfig
 {
     public const string EntityLogicalName = "plugintype";
+    public override string GetEntitySetName() => "plugintypes";
 
     [JsonPropertyName("Id")]
     [JsonProperty("Id")]

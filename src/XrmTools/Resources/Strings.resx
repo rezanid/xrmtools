@@ -126,9 +126,6 @@
   <data name="EntityGenerator.NoLogicalName" xml:space="preserve">
     <value>Provided entity type does not have any logical name.</value>
   </data>
-  <data name="EnvironmentNotInitialized" xml:space="preserve">
-    <value>Environment not initialized. You will have to first initialize the environment by calling {0}.</value>
-  </data>
   <data name="Package.InitializationErroMissingDte" xml:space="preserve">
     <value>Failed to acquire DTE from Visual Studio. Consequently {0} is not initialized successfully.</value>
   </data>
@@ -198,5 +195,8 @@ Error details: {1}</value>
   </data>
   <data name="MissingServiceDependency" xml:space="preserve">
     <value>Missing {0} service depndency. {0} is not available.</value>
+  </data>
+  <data name="NoActiveProject" xml:space="preserve">
+    <value>No active project found. Please select a project and try again.</value>
   </data>
 </root>
