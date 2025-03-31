@@ -157,7 +157,7 @@ public class XrmCodeGenerator : BaseCodeGeneratorWithSite
         var templateFilePath = isTemplatePlugin ? TemplateFinder.FindPluginTemplatePath(InputFilePath) : TemplateFinder.FindEntityTemplatePath(InputFilePath);
         if (templateFilePath != null) return templateFilePath;
 
-        Logger.LogWarning("No template found for " + (isTemplatePlugin ? "plugin code generation." : "entity code generation."));
+        Logger.LogTrace("No template found for " + (isTemplatePlugin ? "plugin code generation." : "entity code generation."));
         Logger.LogInformation("Atempting to create plugin default templates.");
         ThreadHelper.JoinableTaskFactory.Run(async () =>
         {

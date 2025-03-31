@@ -42,6 +42,16 @@ internal static class FileHelper
         return workspace.CurrentSolution.GetDocument(documentId);
     }
 
+    public static async Task<Microsoft.CodeAnalysis.Project?> GetProjectAsync(string projectFilePath)
+    {
+        await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync();
+        var componentModel = (IComponentModel)Package.GetGlobalService(typeof(SComponentModel));
+        var workspace = componentModel.GetService<VisualStudioWorkspace>();
+
+        // Find the project by its file path
+        return workspace.CurrentSolution.Projects.FirstOrDefault(p => p.FilePath == projectFilePath);
+    }
+
     public static async Task AddItemAsync(string name, string content, SolutionItem activeItem)
     {
         if (activeItem is null || string.IsNullOrWhiteSpace(name) || string.IsNullOrWhiteSpace(content)) return;

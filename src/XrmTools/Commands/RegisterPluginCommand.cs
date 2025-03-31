@@ -2,7 +2,6 @@
 namespace XrmTools.Commands;
 
 using Community.VisualStudio.Toolkit;
-using EnvDTE;
 using Microsoft.VisualStudio.ComponentModelHost;
 using Microsoft.VisualStudio.Shell;
 using System;
@@ -28,6 +27,7 @@ using XrmTools.Xrm;
 using System.Threading;
 using XrmTools.Meta.Model;
 using XrmTools.WebApi.Entities;
+using Community.VisualStudio.Toolkit;
 
 /// <summary>
 /// Command handler to set the custom tool of the selected item to the Xrm Plugin Code Generator.
@@ -145,13 +145,44 @@ internal sealed class RegisterPluginCommand : BaseCommand<RegisterPluginCommand>
         return (true, "Valid plugin assembly");
     }
 
+    private IEnumerable<PhysicalFile> GetProjectCsFiles(SolutionItem item)
+    {
+        if (item.Type == SolutionItemType.PhysicalFile && item.Name.EndsWith(".cs"))
+        {
+            yield return item as PhysicalFile;
+        }
+        if (item.Children == null) yield break;
+        foreach (var child in item.Children)
+        {
+            if (child is null) continue;
+            foreach (var subChild in GetProjectCsFiles(child))
+            {
+                yield return subChild;
+            }
+        }
+    }
+
     protected override async Task ExecuteAsync(OleMenuCmdEventArgs e)
     {
-        var i = await VS.Solutions.GetActiveItemAsync();
-        if (i is null || i.Type != SolutionItemType.PhysicalFile || i.FullPath is null) return;
+        var activeItem = await VS.Solutions.GetActiveItemAsync();
+        if (activeItem is null || activeItem.FullPath is null || !(activeItem.Type is SolutionItemType.Project or SolutionItemType.PhysicalFile)) return;
+        var project = activeItem.Type == SolutionItemType.Project ? (Project)activeItem : activeItem.FindParent(SolutionItemType.Project) as Project;
+        if (project is null)
+        {
+            await VS.MessageBox.ShowErrorAsync(Vsix.Name, "The selected item is not a project or part of the project.");
+            return;
+        }
+        var projectIsUpToDate = await VS.Build.ProjectIsUpToDateAsync(project);
+        if (!projectIsUpToDate)
+        {
+            var buildSucceeded = await project.BuildAsync();
+            if (!buildSucceeded) return;
+        }
 
         // Parse the file and generate the PluginAssemblyConfig model from it.
-        var inputModel = await MetaDataService.ParseAsync(i.FullPath);
+        var inputModel = activeItem.Type == SolutionItemType.Project ?
+            await MetaDataService.ParseProjectAsync(activeItem.FullPath) :
+            await MetaDataService.ParseAsync(activeItem.FullPath);
 
         var (validationPassed, validationMessage) = await ValidatePluginAssemblyConfigAsync(inputModel);
         if (!validationPassed)
@@ -277,16 +308,21 @@ internal sealed class RegisterPluginCommand : BaseCommand<RegisterPluginCommand>
         ThreadHelper.JoinableTaskFactory.Run(async () =>
         {
             var item = await VS.Solutions.GetActiveItemAsync();
-            Command.Visible = item?.Type == SolutionItemType.PhysicalFile &&
-                await ((PhysicalFile)item).GetAttributeAsync("Generator") == XrmCodeGenerator.Name;
+
+            Command.Visible = item is not null && (item.Type == SolutionItemType.Project || (item.Type == SolutionItemType.PhysicalFile &&
+                await ((PhysicalFile)item).GetAttributeAsync("Generator") == XrmCodeGenerator.Name));
         });
     }
 
-    [MemberNotNull(nameof(Logger), nameof(MetaDataService))]
+    [MemberNotNull(nameof(Logger), nameof(MetaDataService), nameof(WebApiService), 
+        nameof(EnvironmentProvider), nameof(RepositoryFactory))]
     private void EnsureDependencies()
     {
         if (Logger == null) throw new InvalidOperationException(string.Format(Strings.MissingServiceDependency, nameof(RegisterPluginCommand), nameof(Logger)));
         if (MetaDataService == null) throw new InvalidOperationException(string.Format(Strings.MissingServiceDependency, nameof(RegisterPluginCommand), nameof(MetaDataService)));
+        if (WebApiService == null) throw new InvalidOperationException(string.Format(Strings.MissingServiceDependency, nameof(RegisterPluginCommand), nameof(WebApiService)));
+        if (EnvironmentProvider == null) throw new InvalidOperationException(string.Format(Strings.MissingServiceDependency, nameof(RegisterPluginCommand), nameof(EnvironmentProvider)));
+        if (RepositoryFactory == null) throw new InvalidOperationException(string.Format(Strings.MissingServiceDependency, nameof(RegisterPluginCommand), nameof(RepositoryFactory)));
     }
 
     private ICollection<HttpRequestMessage> GenerateDeleteRequestsForCleanup(

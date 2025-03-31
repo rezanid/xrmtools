@@ -38,6 +38,6 @@ public class Target{{base_class_name}} : Entity
 	/// </summary>
 	{{~## There should be a template for each entity type.
 	     Send the attribute along with the full list of attributes in case template needs it.##~}}
-	{{include attribute.attribute_type + '.sbn' }}
+	{{include attribute.attribute_type + '.sbncs' }}
 	{{~end~}}
 }

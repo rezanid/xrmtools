@@ -17,8 +17,8 @@ namespace {{ first_plugin_type?.namespace ?? config.default_namespace }};
 {{~for entity_definition in model.entity_definitions~}}
 {{~base_class_name = entity_definition.display_name.localized_labels[0].label | tokenize~}}
 {{codegen_attribute}}
-[global::System.Diagnostics.CodeAnalysis.ExcludeFromCodeCoverage]
 [EntityLogicalName("{{entity_definition.logical_name}}")]
+[global::System.Diagnostics.CodeAnalysis.ExcludeFromCodeCoverage]
 public partial class {{base_class_name}} : Entity
 {
 	public static class Meta 

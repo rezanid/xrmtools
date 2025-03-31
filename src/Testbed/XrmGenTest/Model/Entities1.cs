@@ -9,10 +9,9 @@ using System.Linq;
 using System.Runtime.Serialization;
 
 namespace XrmGenTest.Model;
-
 [GeneratedCode("TemplatedPluginCodeGenerator", "1.0.0.0")]
-[global::System.Diagnostics.CodeAnalysis.ExcludeFromCodeCoverage]
 [EntityLogicalName("notification")]
+[global::System.Diagnostics.CodeAnalysis.ExcludeFromCodeCoverage]
 public partial class Notification : Entity
 {
 	public static class Meta 
@@ -73,10 +72,9 @@ public partial class Notification : Entity
     public Notification(string keyName, object keyValue) : base(Meta.EntityLogicalName, keyName, keyValue) { }
     public Notification(KeyAttributeCollection keyAttributes) : base(Meta.EntityLogicalName, keyAttributes) { }
 }
-
 [GeneratedCode("TemplatedPluginCodeGenerator", "1.0.0.0")]
-[global::System.Diagnostics.CodeAnalysis.ExcludeFromCodeCoverage]
 [EntityLogicalName("account")]
+[global::System.Diagnostics.CodeAnalysis.ExcludeFromCodeCoverage]
 public partial class Partner : Entity
 {
 	public static class Meta 
@@ -177,7 +175,6 @@ public partial class Partner : Entity
 			this["primarycontactid"] = value;
 		}
 	}
-
 	/// <summary>
 	/// Required Level: SystemRequired<br/>
 	/// Valid for: Update Read</br>
@@ -213,10 +210,9 @@ public partial class Partner : Entity
     public Partner(string keyName, object keyValue) : base(Meta.EntityLogicalName, keyName, keyValue) { }
     public Partner(KeyAttributeCollection keyAttributes) : base(Meta.EntityLogicalName, keyAttributes) { }
 }
-
 [GeneratedCode("TemplatedPluginCodeGenerator", "1.0.0.0")]
-[global::System.Diagnostics.CodeAnalysis.ExcludeFromCodeCoverage]
 [EntityLogicalName("contact")]
+[global::System.Diagnostics.CodeAnalysis.ExcludeFromCodeCoverage]
 public partial class Contact : Entity
 {
 	public static class Meta 
@@ -262,7 +258,6 @@ public partial class Contact : Entity
 	{
 		get => TryGetAttributeValue("accountid", out EntityReference value) ? value : null;
 	}
-
 	/// <summary>
 	/// Attribute of: accountid</br>
 	/// Max Length: 100</br>
@@ -295,7 +290,6 @@ public partial class Contact : Entity
 	{
 		get => TryGetAttributeValue("parentcontactid", out EntityReference value) ? value : null;
 	}
-
 	/// <summary>
 	/// Required Level: None<br/>
 	/// Valid for: Create Update Read</br>

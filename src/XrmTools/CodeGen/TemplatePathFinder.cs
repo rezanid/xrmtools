@@ -41,7 +41,7 @@ public class TemplatePathFinder(ISettingsProvider settings, ILogger<TemplatePath
 
     public string? FindPluginTemplatePath(string inputFile)
     {
-        var templateFilePath = inputFile + Constants.ScribanTemplateExtensionWithDot;
+        var templateFilePath = Path.Combine(Path.GetDirectoryName(inputFile), Path.GetFileNameWithoutExtension(inputFile)) + Constants.ScribanTemplateExtensionWithDot;
         if (File.Exists(templateFilePath))
         {
             return templateFilePath;

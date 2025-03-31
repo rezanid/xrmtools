@@ -1,7 +1,6 @@
 ﻿#nullable enable
 namespace XrmTools.Analyzers;
 
-using Community.VisualStudio.Toolkit;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using System;
@@ -12,7 +11,6 @@ using System.Threading.Tasks;
 using XrmTools.Helpers;
 using XrmTools.Meta.Attributes;
 using XrmTools.Meta.Model;
-using XrmTools.Resources;
 using XrmTools.Xrm.Model;
 using XrmTools.Logging.Compatibility;
 using System.ComponentModel.Composition;
@@ -24,7 +22,9 @@ public interface IXrmMetaDataService
     /// </summary>
     /// <param name="filePath">The full file path to the document to be parsed.</param>
     /// <returns>PluginAssemblyConfig that contains PluginTypeConfigs and EntityConfigs that are found in the document.</returns>
-    Task<PluginAssemblyConfig?> ParseAsync(string inputFileName, CancellationToken cancellationToken = default);
+    Task<PluginAssemblyConfig?> ParseAsync(string documentFilePath, CancellationToken cancellationToken = default);
+
+    Task<PluginAssemblyConfig?> ParseProjectAsync(string projectFilePath, CancellationToken cancellationToken = default);
 }
 
 [Export(typeof(IXrmMetaDataService))]
@@ -39,13 +39,6 @@ public class CSharpXrmMetaDataService(
 
     public async Task<PluginAssemblyConfig?> ParseAsync(string filePath, CancellationToken cancellationToken = default)
     {
-        var proj = await VS.Solutions.GetActiveProjectAsync();
-        if (proj is null)
-        {
-            Logger.LogWarning(Strings.NoActiveProject);
-            return null;
-        }
-
         var document = await FileHelper.GetDocumentAsync(filePath);
         if (document == null)
         {
@@ -61,44 +54,123 @@ public class CSharpXrmMetaDataService(
 
         try
         {
-            var compilation = await document.Project.GetCompilationAsync(cancellationToken).ConfigureAwait(false);
-            if (compilation == null) return null;
+            var config = await CreateConfigFromProjectAsync(document.Project, cancellationToken).ConfigureAwait(false);
+            if (config == null) return null;
 
-            var assemblySymbol = compilation.Assembly;
-            var assemblyAttribute = GetPluginAssemblyAttribute(assemblySymbol);
-            if (assemblyAttribute == null) return null;
+            var processedSymbols = new HashSet<string>();
+            var semanticModelCache = new Dictionary<DocumentId, SemanticModel>();
 
-            var assemblyEntityAttributes = GetAssemblyEntityAttributes(assemblySymbol);
+            var pluginTypes = await ParseClassDeclarationsFromDocumentAsync(document, processedSymbols, semanticModelCache, cancellationToken).ConfigureAwait(false);
+            pluginTypes.ForEach(config.PluginTypes.Add);
 
-            var pluginAssemblyConfig = CreatePluginAssemblyConfig(assemblySymbol, assemblyAttribute, assemblyEntityAttributes);
-            if (pluginAssemblyConfig == null) return null;
-            pluginAssemblyConfig.FilePath = document.Project.OutputFilePath;
-
-            var syntaxTree = await document.GetSyntaxTreeAsync(cancellationToken).ConfigureAwait(false);
-            var semanticModel = await document.GetSemanticModelAsync(cancellationToken).ConfigureAwait(false);
-
-            if (syntaxTree == null || semanticModel == null) return null;
-
-            var root = await syntaxTree.GetRootAsync(cancellationToken).ConfigureAwait(false);
-            var classDeclarations = root.DescendantNodes().OfType<ClassDeclarationSyntax>();
-
-            foreach (var classDeclaration in classDeclarations)
-            {
-                // Get the symbol for the class declaration
-                if (semanticModel.GetDeclaredSymbol(classDeclaration) is not INamedTypeSymbol typeSymbol) continue;
-                var pluginType = AttributeConverter.ConvertPluginAttributes(typeSymbol);
-                if (pluginType != null)
-                {
-                    pluginAssemblyConfig.PluginTypes.Add(pluginType);
-                }
-            }
-            return pluginAssemblyConfig;
+            return config;
         }
         catch (Exception ex)
         {
             // Log or handle the exception as necessary
             throw new InvalidOperationException("An error occurred while retrieving assembly metadata.", ex);
         }
+    }
+
+    public async Task<PluginAssemblyConfig?> ParseProjectAsync(string projectFilePath, CancellationToken cancellationToken = default)
+    {
+        var project = await FileHelper.GetProjectAsync(projectFilePath);
+        if (project == null)
+        {
+            return null;
+        }
+
+        return await ParseProjectAsync(project, cancellationToken);
+    }
+
+    public async Task<PluginAssemblyConfig?> ParseProjectAsync(Project project, CancellationToken cancellationToken = default)
+    {
+        if (project == null) throw new ArgumentNullException(nameof(project));
+
+        try
+        {
+            var config = await CreateConfigFromProjectAsync(project, cancellationToken).ConfigureAwait(false);
+            if (config == null) return null;
+
+            var processedSymbols = new HashSet<string>();
+            var semanticModelCache = new Dictionary<DocumentId, SemanticModel>();
+
+            var allPluginTypes = new List<PluginTypeConfig>();
+
+            foreach (var document in project.Documents.Where(d => d.SourceCodeKind == SourceCodeKind.Regular))
+            {
+                var pluginTypes = await ParseClassDeclarationsFromDocumentAsync(document, processedSymbols, semanticModelCache, cancellationToken).ConfigureAwait(false);
+                allPluginTypes.AddRange(pluginTypes);
+            }
+
+            allPluginTypes.ForEach(config.PluginTypes.Add);
+
+            return config;
+        }
+        catch (Exception ex)
+        {
+            throw new InvalidOperationException("An error occurred while parsing the project metadata.", ex);
+        }
+    }
+
+    private async Task<PluginAssemblyConfig?> CreateConfigFromProjectAsync(Project project, CancellationToken cancellationToken)
+    {
+        var compilation = await project.GetCompilationAsync(cancellationToken).ConfigureAwait(false);
+        if (compilation == null) return null;
+
+        var assemblySymbol = compilation.Assembly;
+        var assemblyAttribute = assemblySymbol.GetAttributes()
+            .SingleOrDefault(attr => attr.AttributeClass?.ToDisplayString() == typeof(PluginAssemblyAttribute).FullName);
+        if (assemblyAttribute == null) return null;
+
+        var entityAttributes = GetAssemblyEntityAttributes(assemblySymbol);
+
+        var config = CreatePluginAssemblyConfig(assemblySymbol, assemblyAttribute, entityAttributes);
+        config.FilePath = project.OutputFilePath;
+
+        return config;
+    }
+
+    private async Task<List<PluginTypeConfig>> ParseClassDeclarationsFromDocumentAsync(
+        Document document,
+        HashSet<string> processedSymbols,
+        Dictionary<DocumentId, SemanticModel> semanticModelCache,
+        CancellationToken cancellationToken)
+    {
+        var result = new List<PluginTypeConfig>();
+
+        var syntaxTree = await document.GetSyntaxTreeAsync(cancellationToken).ConfigureAwait(false);
+        if (syntaxTree == null) return result;
+
+        if (!semanticModelCache.TryGetValue(document.Id, out var semanticModel))
+        {
+            semanticModel = await document.GetSemanticModelAsync(cancellationToken).ConfigureAwait(false);
+            if (semanticModel == null) return result;
+
+            semanticModelCache[document.Id] = semanticModel;
+        }
+
+        var root = await syntaxTree.GetRootAsync(cancellationToken).ConfigureAwait(false);
+        var classDeclarations = root.DescendantNodes().OfType<ClassDeclarationSyntax>();
+
+        foreach (var classDeclaration in classDeclarations)
+        {
+            if (semanticModel.GetDeclaredSymbol(classDeclaration) is not INamedTypeSymbol typeSymbol)
+                continue;
+
+            var typeKey = typeSymbol.ToDisplayString();
+
+            if (!processedSymbols.Add(typeKey))
+                continue;
+
+            var pluginType = AttributeConverter.ConvertPluginAttributes(typeSymbol);
+            if (pluginType != null)
+            {
+                result.Add(pluginType);
+            }
+        }
+
+        return result;
     }
 
     private PluginAssemblyConfig CreatePluginAssemblyConfig(
@@ -128,10 +200,6 @@ public class CSharpXrmMetaDataService(
 
         return pluginAssemblyConfig;
     }
-
-    private AttributeData? GetPluginAssemblyAttribute(IAssemblySymbol assemblySymbol)
-        => assemblySymbol.GetAttributes()
-            .SingleOrDefault(attr => attr.AttributeClass?.ToDisplayString() == typeof(PluginAssemblyAttribute).FullName);
 
     private IEnumerable<AttributeData> GetAssemblyEntityAttributes(IAssemblySymbol assemblySymbol)
         => [.. assemblySymbol.GetAttributes().Where(attr => attr.AttributeClass?.ToDisplayString() == typeof(EntityAttribute).FullName)];

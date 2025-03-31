@@ -14,8 +14,8 @@
     <Deterministic>true</Deterministic>
     <LangVersion>12</LangVersion>
     <TargetFrameworkProfile />
-    <DataverseEntityTemplateFilePath>C:\Users\reza\source\repos\rezanid\xrmtools\src\Testbed\XrmGenTest\CodeGenTemplates\Entity.sbn</DataverseEntityTemplateFilePath>
-    <DataversePluginTemplateFilePath>C:\Users\reza\source\repos\rezanid\xrmtools\src\Testbed\XrmGenTest\CodeGenTemplates\Plugin.sbn</DataversePluginTemplateFilePath>
+    <DataverseEntityTemplateFilePath>C:\Users\reza\source\repos\rezanid\xrmtools\src\Testbed\XrmGenTest\CodeGenTemplates\Entity.sbncs</DataverseEntityTemplateFilePath>
+    <DataversePluginTemplateFilePath>C:\Users\reza\source\repos\rezanid\xrmtools\src\Testbed\XrmGenTest\CodeGenTemplates\Plugin.sbncs</DataversePluginTemplateFilePath>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
     <PlatformTarget>AnyCPU</PlatformTarget>
@@ -69,6 +69,15 @@
       <DesignTime>True</DesignTime>
       <DependentUpon>AccountCreatePlugin.cs</DependentUpon>
     </Compile>
+    <Compile Include="ContactCreatePlugin.cs">
+      <Generator>Xrm Tools Plugin Code Generator</Generator>
+      <LastGenOutput>ContactCreatePlugin1.cs</LastGenOutput>
+    </Compile>
+    <Compile Include="ContactCreatePlugin1.cs">
+      <AutoGen>True</AutoGen>
+      <DesignTime>True</DesignTime>
+      <DependentUpon>ContactCreatePlugin.cs</DependentUpon>
+    </Compile>
     <Compile Include="Model\Entities.cs">
       <Generator>Xrm Tools Plugin Code Generator</Generator>
       <LastGenOutput>Entities1.cs</LastGenOutput>
@@ -79,6 +88,11 @@
       <AutoGen>True</AutoGen>
     </Compile>
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <None Include="CodeGenTemplates\BigInt.sbncs" />
+    <None Include="CodeGenTemplates\Boolean.sbncs" />
+    <None Include="CodeGenTemplates\Customer.sbncs" />
+    <None Include="CodeGenTemplates\DateTime.sbncs" />
+    <None Include="CodeGenTemplates\Decimal.sbncs" />
     <None Include="CodeGenTemplates\DisplayNameBased\Boolean.sbn" />
     <None Include="CodeGenTemplates\DisplayNameBased\Customer.sbn" />
     <None Include="CodeGenTemplates\DisplayNameBased\DateTime.sbn" />
@@ -99,29 +113,24 @@
     <None Include="CodeGenTemplates\DisplayNameBased\Target.sbn" />
     <None Include="CodeGenTemplates\DisplayNameBased\UniqueIdentifier.sbn" />
     <None Include="CodeGenTemplates\DisplayNameBased\Virtual.sbn" />
+    <None Include="CodeGenTemplates\Double.sbncs" />
     <None Include="CodeGenTemplates\Entity.sbn" />
-    <None Include="CodeGenTemplates\Plugin.sbn" />
-    <None Include="CodeGenTemplates\BigInt.sbn" />
-    <None Include="CodeGenTemplates\Boolean.sbn" />
-    <None Include="CodeGenTemplates\Customer.sbn" />
-    <None Include="CodeGenTemplates\DateTime.sbn" />
-    <None Include="CodeGenTemplates\Decimal.sbn" />
-    <None Include="CodeGenTemplates\Double.sbn" />
-    <None Include="CodeGenTemplates\EntityName.sbn" />
-    <None Include="CodeGenTemplates\Images.sbn" />
-    <None Include="CodeGenTemplates\Integer.sbn" />
-    <None Include="CodeGenTemplates\Lookup.sbn" />
-    <None Include="CodeGenTemplates\Memo.sbn" />
-    <None Include="CodeGenTemplates\Money.sbn" />
-    <None Include="CodeGenTemplates\Owner.sbn" />
-    <None Include="CodeGenTemplates\Picklist.sbn" />
+    <None Include="CodeGenTemplates\EntityName.sbncs" />
+    <None Include="CodeGenTemplates\Images.sbncs" />
+    <None Include="CodeGenTemplates\Integer.sbncs" />
+    <None Include="CodeGenTemplates\Lookup.sbncs" />
+    <None Include="CodeGenTemplates\Memo.sbncs" />
+    <None Include="CodeGenTemplates\Money.sbncs" />
+    <None Include="CodeGenTemplates\Owner.sbncs" />
+    <None Include="CodeGenTemplates\Picklist.sbncs" />
+    <None Include="CodeGenTemplates\Plugin.sbncs" />
     <None Include="CodeGenTemplates\Readme.md" />
-    <None Include="CodeGenTemplates\State.sbn" />
-    <None Include="CodeGenTemplates\Status.sbn" />
-    <None Include="CodeGenTemplates\String.sbn" />
-    <None Include="CodeGenTemplates\Target.sbn" />
-    <None Include="CodeGenTemplates\UniqueIdentifier.sbn" />
-    <None Include="CodeGenTemplates\Virtual.sbn" />
+    <None Include="CodeGenTemplates\State.sbncs" />
+    <None Include="CodeGenTemplates\Status.sbncs" />
+    <None Include="CodeGenTemplates\String.sbncs" />
+    <None Include="CodeGenTemplates\Target.sbncs" />
+    <None Include="CodeGenTemplates\UniqueIdentifier.sbncs" />
+    <None Include="CodeGenTemplates\Virtual.sbncs" />
     <None Include="key.snk" />
   </ItemGroup>
   <ItemGroup>

@@ -15,9 +15,9 @@ namespace {{ first_plugin_type?.namespace ?? config.default_namespace }};
 {{codegen_attribute}}
 public partial class {{plugintype.type_name | last_segment }}{{ plugintype.base_type_name != 'Object' ? ' : ' + plugintype.base_type_name : ''}}
 {
-	{{include 'Target.sbn'}}
+	{{include 'Target.sbncs'}}
 	{{~if step.images~}}
-	{{include 'Images.sbn'~}}
+	{{include 'Images.sbncs'~}}
 	{{~end~}}
 
 	{{~target_type_name='Target' + (step.primary_entity_definition.display_name.localized_labels[0].label | tokenize)~}}
@@ -38,7 +38,7 @@ public partial class {{plugintype.type_name | last_segment }}{{ plugintype.base_
             throw new InvalidPluginExecutionException(nameof(serviceProvider) + " argument is null.");
         }
         var executionContext = serviceProvider.Get<IPluginExecutionContext7>();
-        Target = EntityOrDefault<TargetPartner>(executionContext.InputParameters, "Target");
+        Target = EntityOrDefault<{{target_type_name}}>(executionContext.InputParameters, "Target");
 	{{~for image in step.images~}}
         {{image.name}} = EntityOrDefault<{{image.name}}{{step.primary_entity_definition.display_name.localized_labels[0].label | tokenize}}>(executionContext.PreEntityImages, "{{image.name}}");
 	{{~end~}}

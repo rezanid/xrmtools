@@ -39,16 +39,19 @@
          must be a menu. -->
     <Groups>
       <Group guid="XrmToolsCmdSetId" id="XrmToolsContextMenuGroup" priority="0x0600">
-        <!-- Add the command to the context menu -->
+        <!--Item context menu-->
         <Parent guid="guidSHLMainMenu" id="IDM_VS_CTXT_ITEMNODE" />
       </Group>
       <Group guid="XrmToolsCmdSetId" id="XrmToolsProjectContextMenuGroup" priority="0x0100">
+        <!--Project context menu-->
         <Parent guid="guidSHLMainMenu" id="IDM_VS_CTXT_PROJNODE"/>
       </Group>
       <Group guid="XrmToolsCmdSetId" id="XrmToolsSolutionContextMenuGroup" priority="0x0100">
+        <!--Solution context menu-->
         <Parent guid="guidSHLMainMenu" id="IDM_VS_CTXT_SOLNNODE"/>
       </Group>
       <Group guid="XrmToolsCmdSetId" id="XrmToolsContextSubMenuGroup" priority="0x0100">
+        <!--Our own context menu-->
         <Parent guid="XrmToolsCmdSetId" id="XrmToolsContextSubMenu"/>
       </Group>
     </Groups>
@@ -170,6 +173,10 @@
 
   
   <CommandPlacements>
+    <!-- Add commands to more locations. We could also do all the placements here as well -->
+    <CommandPlacement guid="XrmToolsCmdSetId" id="RegisterPluginCmdId" priority="0x0200">
+      <Parent guid="XrmToolsCmdSetId" id="XrmToolsProjectContextMenuGroup"/>
+    </CommandPlacement>
     <CommandPlacement guid="XrmToolsCmdSetId" id="NewPluginDefinitionCmdId" priority="0x0200">
       <Parent guid="guidSHLMainMenu" id="IDG_VS_CTXT_SLNFLDR_ADD_ITEM"/>
     </CommandPlacement>
@@ -182,7 +189,7 @@
   <VisibilityConstraints>
     <VisibilityItem guid="XrmToolsCmdSetId" id="SetCustomToolEntityGeneratorCmdId" context="SetCustomToolEntitiesCmdUIRule" />
     <VisibilityItem guid="XrmToolsCmdSetId" id="SetCustomToolPluginGeneratorCmdId" context="SetCustomToolPluginDefitionCmdUIRule" />
-    <VisibilityItem guid="XrmToolsCmdSetId" id="RegisterPluginCmdId" context="SetCustomToolPluginDefitionCmdUIRule" />
+    <!--<VisibilityItem guid="XrmToolsCmdSetId" id="RegisterPluginCmdId" context="SetCustomToolPluginDefitionCmdUIRule" />-->
     <VisibilityItem guid="XrmToolsCmdSetId" id="SetPluginGeneratorTemplateInSolutionCmdId" context="SetPluginGeneratorTemplateCmdUIRule" />
     <VisibilityItem guid="XrmToolsCmdSetId" id="SetPluginGeneratorTemplateInProjectCmdId" context="SetPluginGeneratorTemplateCmdUIRule" />
     <VisibilityItem guid="XrmToolsCmdSetId" id="SetEntityGeneratorTemplateInSolutionCmdId" context="SetPluginGeneratorTemplateCmdUIRule" />
