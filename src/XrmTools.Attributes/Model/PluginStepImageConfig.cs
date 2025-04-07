@@ -30,6 +30,7 @@ public interface IMessageProcessingStepImageConfig : IMessageProcessingStepImage
 public class PluginStepImageConfig : TypedEntity<PluginStepImageConfig>, IMessageProcessingStepImageConfig
 {
     public const string EntityLogicalName = "sdkmessageprocessingstepimage";
+    public override string GetEntitySetName() => "sdkmessageprocessingstepimages";
 
     #region IMessageProcessingStepImageConfig-only Properties
     public EntityMetadata? MessagePropertyDefinition { get; set; }
@@ -93,11 +94,5 @@ public class PluginStepImageConfig : TypedEntity<PluginStepImageConfig>, IMessag
     #endregion
 
     public PluginStepImageConfig() : base(EntityLogicalName) { }
-}
-
-public class MessageProcessingStepImageConverter : System.Text.Json.Serialization.JsonConverter<PluginStepImageConfig>
-{
-    public override PluginStepImageConfig? Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options) => throw new NotImplementedException();
-    public override void Write(Utf8JsonWriter writer, PluginStepImageConfig value, JsonSerializerOptions options) => throw new NotImplementedException();
 }
 #nullable restore

@@ -9,11 +9,9 @@ using Microsoft.VisualStudio.TextTemplating.VSHost;
 using Microsoft.Xrm.Sdk.Metadata;
 using System;
 using System.ComponentModel.Composition;
-using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading;
-using XrmTools.Helpers;
 using XrmTools.Xrm.Generators;
 using YamlDotNet.Serialization;
 using YamlDotNet.Serialization.NamingConventions;
@@ -23,6 +21,10 @@ using XrmTools.Logging.Compatibility;
 using XrmTools.Environments;
 using XrmTools.Xrm.Repositories;
 using XrmTools.Core.Repositories;
+using XrmTools.Settings;
+using System.Collections.Generic;
+using XrmTools.Helpers;
+using System.IO;
 
 public class EntityCodeGenerator : BaseCodeGeneratorWithSite
 {
@@ -43,13 +45,23 @@ public class EntityCodeGenerator : BaseCodeGeneratorWithSite
     [Import]
     internal ILogger<EntityCodeGenerator> Logger {  get; set; }
 
-    private IEntityMetadataRepository EntityMetadataRepository;
+    [Import]
+    internal ITemplateFinder TemplateFinder { get; set; }
+
+    [Import]
+    internal ITemplateFileGenerator TemplateFileGenerator { get; set; }
+
+    [Import]
+    internal ISettingsProvider SettingsProvider { get; set; }
 
     public override string GetDefaultExtension() => ".cs";
 
     public EntityCodeGenerator() => SatisfyImports();
 
-    [MemberNotNull(nameof(Generator), nameof(RepositoryFactory), nameof(EnvironmentProvider), nameof(Logger))]
+    [MemberNotNull(
+        nameof(Generator), nameof(RepositoryFactory), nameof(EnvironmentProvider), 
+        nameof(Logger), nameof(TemplateFinder), nameof(TemplateFileGenerator),
+        nameof(SettingsProvider))]
     private void SatisfyImports()
     {
         var componentModel = (IComponentModel)Package.GetGlobalService(typeof(SComponentModel));
@@ -58,40 +70,50 @@ public class EntityCodeGenerator : BaseCodeGeneratorWithSite
         if (RepositoryFactory == null) throw new InvalidOperationException(string.Format(Strings.MissingServiceDependency, nameof(EntityCodeGenerator), nameof(RepositoryFactory)));
         if (EnvironmentProvider == null) throw new InvalidOperationException(string.Format(Strings.MissingServiceDependency, nameof(EntityCodeGenerator), nameof(EnvironmentProvider)));
         if (Logger == null) throw new InvalidOperationException(string.Format(Strings.MissingServiceDependency, nameof(EntityCodeGenerator), nameof(Logger)));
-        EntityMetadataRepository = ThreadHelper.JoinableTaskFactory.Run(RepositoryFactory.CreateRepositoryAsync<IEntityMetadataRepository>);
-        if (EntityMetadataRepository == null) throw new InvalidOperationException(string.Format(Strings.MissingServiceDependency, nameof(EntityCodeGenerator), nameof(EntityMetadataRepository)));
+        if (TemplateFinder == null) throw new InvalidOperationException(string.Format(Strings.MissingServiceDependency, nameof(EntityCodeGenerator), nameof(TemplateFinder)));
+        if (TemplateFileGenerator == null) throw new InvalidOperationException(string.Format(Strings.MissingServiceDependency, nameof(EntityCodeGenerator), nameof(TemplateFileGenerator)));
+        if (SettingsProvider == null) throw new InvalidOperationException(string.Format(Strings.MissingServiceDependency, nameof(EntityCodeGenerator), nameof(SettingsProvider)));
     }
 
     protected override byte[]? GenerateCode(string inputFileName, string inputFileContent)
     {
         if (string.IsNullOrWhiteSpace(inputFileContent)) { return null; }
         if (Generator is null) { return Encoding.UTF8.GetBytes("// No generator found."); }
-        if (GetTemplateFilePath() is not string templateFilePath) { return Encoding.UTF8.GetBytes("// Template not found."); ; }
 
-        var entityDefinitions = ParseInputFile(inputFileName, inputFileContent);
-        if (entityDefinitions?.Entities?.Any() != true) { return null; }
-
-        Generator.Config = new XrmCodeGenConfig
+        return ThreadHelper.JoinableTaskFactory.Run(async () =>
         {
-            DefaultNamespace = GetDefaultNamespace(),
-            TemplateFilePath = templateFilePath
-        };
+            if (TemplateFinder.FindEntityTemplatePath(InputFilePath) is not string templateFilePath)
+            { 
+                await TemplateFileGenerator.GenerateTemplatesAsync();
+                await SettingsProvider.ProjectSettings.EntityTemplateFilePathAsync();
+                templateFilePath = TemplateFinder.FindEntityTemplatePath(InputFilePath) ?? string.Empty;
+                if (templateFilePath == string.Empty) return Encoding.UTF8.GetBytes("// Template not found.");
+            }
 
-        AddEntityMetadataToEntityConfig(entityDefinitions);
+            var entityConfig = ".cs".Equals(Path.GetExtension(inputFileName), StringComparison.OrdinalIgnoreCase) ?
+                //TODO: Add ".cs" file parsing logic.
+                ParseInputFile(inputFileName, inputFileContent) : null;
+            if (entityConfig?.Entities?.Any() != true) { return null; }
 
-        var sb = new StringBuilder();
-        foreach (var entityMetadata in entityDefinitions.EntityMetadatas)
-        {
-            var (isValid, validationMessage) = Generator.IsValid(entityMetadata);
+            if (string.IsNullOrWhiteSpace(entityConfig.DefaultNamespace))
+            {
+                entityConfig.DefaultNamespace = GetDefaultNamespace();
+            }
+            if (string.IsNullOrWhiteSpace(entityConfig.TemplateFilePath))
+            {
+                entityConfig.TemplateFilePath = templateFilePath;
+            }
+            Generator.Config = entityConfig;
+
+            AddEntityMetadataToEntityConfig(entityConfig);
+
+            var (isValid, validationMessage) = Generator.IsValid(entityConfig);
             if (!isValid)
             {
-                sb.Append("// ");
-                sb.AppendLine(validationMessage);
-                continue;
+                return Encoding.UTF8.GetBytes("// " + validationMessage);
             }
-            Generator.GenerateCode(entityMetadata);
-        }
-        return Encoding.UTF8.GetBytes(sb.ToString());
+            return Encoding.UTF8.GetBytes(Generator.GenerateCode(entityConfig));
+        });
     }
 
     private XrmCodeGenConfig? ParseInputFile(string inputFileName, string inputFileContent)
@@ -105,20 +127,9 @@ public class EntityCodeGenerator : BaseCodeGeneratorWithSite
         }
         catch (Exception ex)
         {
-            Logger.LogError(ex, Resources.Strings.PluginGenerator_DeserializationError, inputFileName);
+            Logger.LogError(ex, Strings.PluginGenerator_DeserializationError, inputFileName);
         }
         return null;
-    }
-
-    private string? GetTemplateFilePath()
-    {
-        var templateFilePath = InputFilePath + ".sbn";
-        if (File.Exists(templateFilePath))
-        {
-            return templateFilePath;
-        }
-        templateFilePath = GetProjectProperty("EntityCodeGenTemplatePath");
-        return !string.IsNullOrWhiteSpace(templateFilePath) && File.Exists(templateFilePath) ? templateFilePath : null;
     }
 
     private bool IsValidEntityConfig(EntityConfig entityConfig) => !string.IsNullOrWhiteSpace(entityConfig.LogicalName) && !string.IsNullOrWhiteSpace(entityConfig.AttributeNames);
@@ -133,61 +144,86 @@ public class EntityCodeGenerator : BaseCodeGeneratorWithSite
 
             if (hierarchy.GetProperty(itemId, (int)__VSHPROPID.VSHPROPID_DefaultNamespace, out var defaultNamespace) == VSConstants.S_OK)
             {
-                return defaultNamespace as string;
+                return defaultNamespace as string ?? string.Empty;
             }
         }
         return string.Empty;
     }
 
-    private string? GetProjectProperty(string propertyName)
-    {
-        ThreadHelper.ThrowIfNotOnUIThread();
-        return GetService(typeof(IVsHierarchy)) is IVsHierarchy hierarchy ? hierarchy.GetProjectProperty(propertyName) : null;
-    }
-
     private void AddEntityMetadataToEntityConfig(XrmCodeGenConfig entityCodeGenConfig) 
-        => entityCodeGenConfig.EntityMetadatas = entityCodeGenConfig.Entities
+        => entityCodeGenConfig.EntityDefinitions = entityCodeGenConfig.Entities
             .Where(IsValidEntityConfig)
-            .Select(e => GetEntityMetadata(e.LogicalName, e.AttributeNames.Split(',')))
+            .Select(e => GetEntityMetadata(e.LogicalName, e.AttributeNames.Split(','), entityCodeGenConfig.RemovePrefixes))
             .ToList();
 
-    private EntityMetadata? GetEntityMetadata(string logicalName, string[] attributes)
+    private EntityMetadata? GetEntityMetadata(string logicalName, IEnumerable<string> attributeNames, IEnumerable<string> prefixesToRemove)
     {
-        // Make a new cancellation token for 2 minutes.
+        var entityMetadataRepo = ThreadHelper.JoinableTaskFactory.Run(async () => await RepositoryFactory.CreateRepositoryAsync<IEntityMetadataRepository>());
+        if (entityMetadataRepo is null) return null;
         using var cts = new CancellationTokenSource(120000);
-        var metadata = ThreadHelper.JoinableTaskFactory.Run(async () => await EntityMetadataRepository?.GetAsync(logicalName, cts.Token));
-        if (metadata == null) { return null; }
-        var filteredAttributes = metadata.Attributes.Where(a => attributes.Contains(a.LogicalName)).ToArray();
-        var propertyInfo = typeof(EntityMetadata).GetProperty("Attributes", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
-        propertyInfo.SetValue(metadata, filteredAttributes);
-        return metadata;
+        var entityDefinition = ThreadHelper.JoinableTaskFactory.Run(async () => await entityMetadataRepo.GetAsync(logicalName, cts.Token));
+        if (entityDefinition == null) { return null; }
+
+        //NOTE!
+        // Logical attributes to avoid unnecessary processing.
+        var filteredAttributes =
+            attributeNames.Count() == 0 ?
+            entityDefinition.Attributes :
+            [.. entityDefinition.Attributes.Where(a => attributeNames.Contains(a.LogicalName))];
+        //    entityDefinition.Attributes.Where(a => a.AttributeType != AttributeTypeCode.EntityName && a.IsLogical != true).ToArray() :
+        //    entityDefinition.Attributes.Where(a => a.AttributeType != AttributeTypeCode.EntityName && attributes.Contains(a.LogicalName)).ToArray();
+
+        FormatSchemNames(filteredAttributes ?? entityDefinition.Attributes, prefixesToRemove);
+        FormatSchemaName(entityDefinition, prefixesToRemove);
+
+        // The cloning is done because we don't want to modify the object in the cache.
+        // In future when we load from local storage this might not be required.
+        if (filteredAttributes?.Length != entityDefinition.Attributes.Length)
+        {
+            var clone = entityDefinition.Clone();
+            var propertyInfo = typeof(EntityMetadata).GetProperty("Attributes");
+            propertyInfo.SetValue(clone, filteredAttributes);
+            return clone;
+        }
+        return entityDefinition;
     }
 
-    #region IDisposable Support
-    protected override void Dispose(bool disposing)
+    private static void FormatSchemaName(EntityMetadata entityDefinition, IEnumerable<string> prefixesToRemove)
     {
-        if (!disposed)
+        // Remove prefixes.
+        foreach (var prefix in prefixesToRemove)
         {
-            if (disposing)
+            if (entityDefinition.SchemaName.StartsWith(prefix, StringComparison.OrdinalIgnoreCase))
             {
-                // Dispose managed resources
-                if (EntityMetadataRepository is IDisposable disposableFactory)
+                entityDefinition.SchemaName = entityDefinition.SchemaName[prefix.Length..];
+            }
+        }
+        // Capitalize first letter.
+        if (char.IsLower(entityDefinition.SchemaName[0]))
+        {
+            entityDefinition.SchemaName = char.ToUpper(entityDefinition.SchemaName[0]) + entityDefinition.SchemaName[1..];
+        }
+    }
+
+    private static void FormatSchemNames(IEnumerable<AttributeMetadata> attributes, IEnumerable<string> prefixesToRemove)
+    {
+        foreach (var attribute in attributes)
+        {
+            // Remove prefixes.
+            foreach (var prefix in prefixesToRemove)
+            {
+                if (attribute.SchemaName.StartsWith(prefix, StringComparison.OrdinalIgnoreCase))
                 {
-                    disposableFactory.Dispose();
+                    attribute.SchemaName = attribute.SchemaName[prefix.Length..];
                 }
             }
-
-            // Free unmanaged resources (if any)
-            // Nope!
-            disposed = true;
+            // Capitalize first letter.
+            if (char.IsLower(attribute.SchemaName[0]))
+            {
+                attribute.SchemaName = char.ToUpper(attribute.SchemaName[0]) + attribute.SchemaName[1..];
+            }
         }
-
-        // Call the base class's Dispose method
-        base.Dispose(disposing);
     }
-
-    // Finalizer to ensure resources are released if Dispose is not called
-    ~EntityCodeGenerator() => Dispose(false);
-    #endregion
 }
+
 #nullable restore

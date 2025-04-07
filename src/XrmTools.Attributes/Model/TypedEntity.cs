@@ -13,6 +13,8 @@ public interface ITypedEntity { }
 
 public abstract class TypedEntity<T>(string entityLogicalName) : Entity(entityLogicalName), ITypedEntity where T : Entity, ITypedEntity, new()
 {
+    public abstract string GetEntitySetName();
+
     public static class Select
     {
         public static ColumnSet AllColumns => new(true);
@@ -21,8 +23,8 @@ public abstract class TypedEntity<T>(string entityLogicalName) : Entity(entityLo
             expression.Body switch
             {
                 NewExpression newExpr => new(newExpr.Arguments.OfType<MemberExpression>()
-                                                          .Select(GetMemberName)
-                                                          .ToArray()),
+                    .Select(GetMemberName)
+                    .ToArray()),
                 MemberExpression memberExpr => new([GetMemberName(memberExpr)]),
                 UnaryExpression { Operand: MemberExpression memberExpr } => new([GetMemberName(memberExpr)]),
                 _ => NoColumns
@@ -37,7 +39,6 @@ public abstract class TypedEntity<T>(string entityLogicalName) : Entity(entityLo
                 _ => throw new ArgumentException("Invalid expression")
             };
     }
-
 
     public static string GetEntityLogicalName()
     {
@@ -93,7 +94,6 @@ public abstract class TypedEntity<T>(string entityLogicalName) : Entity(entityLo
     private static string GetMemberName(MemberExpression memberExpr) =>
         memberExpr.Member.GetCustomAttribute<AttributeLogicalNameAttribute>()?.LogicalName
         ?? (memberExpr.Member.Name is string name && name == "Id" ? GetEntityLogicalName() + "id" : "");
-
 
 }
 #nullable restore

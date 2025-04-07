@@ -14,6 +14,8 @@ using System.Net.Http.Headers;
 using Microsoft.Extensions.Http.Resilience;
 using Microsoft.Identity.Client;
 using Microsoft.VisualStudio.Threading;
+using System.Reflection;
+using System.Net;
 
 [Export(typeof(IXrmHttpClientFactory))]
 internal class XrmHttpClientFactory : IXrmHttpClientFactory, System.IAsyncDisposable, IDisposable
@@ -67,12 +69,17 @@ internal class XrmHttpClientFactory : IXrmHttpClientFactory, System.IAsyncDispos
 
     private async Task ConfigureClientAsync(XrmHttpClient client, DataverseEnvironment environment)
     {
-        client.Timeout = TimeSpan.FromMinutes(10);
+        client.Timeout = TimeSpan.FromMinutes(60);
         if (environment != DataverseEnvironment.Empty)
         {
-            client.BaseAddress = new Uri(new Uri(environment.Url), "/api/data/v9.2/");
+            client.BaseAddress = environment.BaseServiceUrl!;
             client.DefaultRequestHeaders.Add("Prefer", "odata.include-annotations=*");
-
+            var assemblyName = Assembly.GetExecutingAssembly().GetName();
+            client.DefaultRequestHeaders.UserAgent.Add(new ProductInfoHeaderValue(assemblyName.Name.Replace(" ", ""), assemblyName.Version.ToString()));
+            client.DefaultRequestHeaders.Add("OData-MaxVersion", "4.0");
+            client.DefaultRequestHeaders.Add("OData-Version", "4.0");
+            client.DefaultRequestHeaders.Accept.Add(
+                new MediaTypeWithQualityHeaderValue("application/json"));
             if (!_tokenCache.TryGetValue(environment.ConnectionString!, out var authResult) || authResult.ExpiresOn <= timeProvider.GetUtcNow())
             {
                 authResult = await authenticationService.AuthenticateAsync(environment, msg => logger.LogInformation(msg), CancellationToken.None);
@@ -87,7 +94,7 @@ internal class XrmHttpClientFactory : IXrmHttpClientFactory, System.IAsyncDispos
         //var handler = new PolicyHttpMessageHandler(CreateDefaultPolicy());
         var handler = environment == DataverseEnvironment.Empty ?
             new PolicyHandler(new HttpClientHandler() { AllowAutoRedirect = false }, CreateDefaultPolicy()) :
-            new PolicyHandler(new HttpClientHandler(), CreateDefaultPolicy());
+            new PolicyHandler(new HttpClientHandler() { UseCookies = environment.AllowCookies, UseProxy = true, Proxy = new WebProxy { Address = new Uri("http://localhost:8888") } }, CreateDefaultPolicy());
         return new (handler, timeProvider.GetUtcNow());
     }
 
@@ -130,7 +137,7 @@ internal class XrmHttpClientFactory : IXrmHttpClientFactory, System.IAsyncDispos
             .AddCircuitBreaker(new HttpCircuitBreakerStrategyOptions() { Name = "Standard-CircuitBreaker" })
             .AddTimeout(new HttpTimeoutStrategyOptions
             {
-                Timeout = TimeSpan.FromSeconds(10.0),
+                Timeout = TimeSpan.FromSeconds(60.0),
                 Name = "Standard-AttemptTimeout"
             }).Build().AsAsyncPolicy();
 

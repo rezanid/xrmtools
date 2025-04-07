@@ -14,6 +14,8 @@
     <Deterministic>true</Deterministic>
     <LangVersion>12</LangVersion>
     <TargetFrameworkProfile />
+    <DataverseEntityTemplateFilePath>C:\Users\reza\source\repos\rezanid\xrmtools\src\Testbed\XrmGenTest\CodeGenTemplates\Entity.sbncs</DataverseEntityTemplateFilePath>
+    <DataversePluginTemplateFilePath>C:\Users\reza\source\repos\rezanid\xrmtools\src\Testbed\XrmGenTest\CodeGenTemplates\Plugin.sbncs</DataversePluginTemplateFilePath>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
     <PlatformTarget>AnyCPU</PlatformTarget>
@@ -35,11 +37,17 @@
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <PropertyGroup>
-    <EnvironmentUrl>https://orgd67e4e96.crm4.dynamics.com/</EnvironmentUrl>
+    <EnvironmentUrl>https://org8848d2a1.crm4.dynamics.com/</EnvironmentUrl>
     <ApplicationId>51f81489-12ee-4a9e-aaae-a2591f45987d</ApplicationId>
   </PropertyGroup>
   <PropertyGroup>
     <StartupObject />
+  </PropertyGroup>
+  <PropertyGroup>
+    <SignAssembly>true</SignAssembly>
+  </PropertyGroup>
+  <PropertyGroup>
+    <AssemblyOriginatorKeyFile>key.snk</AssemblyOriginatorKeyFile>
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="System" />
@@ -52,17 +60,45 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="AccountPlugin.cs">
+    <Compile Include="AccountCreatePlugin.cs">
       <Generator>Xrm Tools Plugin Code Generator</Generator>
-      <LastGenOutput>AccountPlugin1.cs</LastGenOutput>
+      <LastGenOutput>AccountCreatePlugin1.cs</LastGenOutput>
+      <IsXrmPlugin>True</IsXrmPlugin>
     </Compile>
-    <Compile Include="AccountPlugin1.cs">
+    <Compile Include="AccountCreatePlugin1.cs">
       <AutoGen>True</AutoGen>
       <DesignTime>True</DesignTime>
-      <DependentUpon>AccountPlugin.cs</DependentUpon>
+      <DependentUpon>AccountCreatePlugin.cs</DependentUpon>
     </Compile>
-    <Compile Include="Entities.cs" />
+    <Compile Include="ContactCreatePlugin.cs">
+      <Generator>Xrm Tools Plugin Code Generator</Generator>
+      <LastGenOutput>ContactCreatePlugin1.cs</LastGenOutput>
+    </Compile>
+    <Compile Include="ContactCreatePlugin1.cs">
+      <AutoGen>True</AutoGen>
+      <DesignTime>True</DesignTime>
+      <DependentUpon>ContactCreatePlugin.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Entities.cs">
+      <AutoGen>True</AutoGen>
+      <DesignTime>True</DesignTime>
+      <DependentUpon>Entities.yaml</DependentUpon>
+    </Compile>
+    <Compile Include="Model\Entities.cs">
+      <Generator>Xrm Tools Plugin Code Generator</Generator>
+      <LastGenOutput>Entities1.cs</LastGenOutput>
+    </Compile>
+    <Compile Include="Model\Entities1.cs">
+      <AutoGen>True</AutoGen>
+      <DesignTime>True</DesignTime>
+      <DependentUpon>Entities.cs</DependentUpon>
+    </Compile>
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <None Include="CodeGenTemplates\BigInt.sbncs" />
+    <None Include="CodeGenTemplates\Boolean.sbncs" />
+    <None Include="CodeGenTemplates\Customer.sbncs" />
+    <None Include="CodeGenTemplates\DateTime.sbncs" />
+    <None Include="CodeGenTemplates\Decimal.sbncs" />
     <None Include="CodeGenTemplates\DisplayNameBased\Boolean.sbn" />
     <None Include="CodeGenTemplates\DisplayNameBased\Customer.sbn" />
     <None Include="CodeGenTemplates\DisplayNameBased\DateTime.sbn" />
@@ -83,29 +119,30 @@
     <None Include="CodeGenTemplates\DisplayNameBased\Target.sbn" />
     <None Include="CodeGenTemplates\DisplayNameBased\UniqueIdentifier.sbn" />
     <None Include="CodeGenTemplates\DisplayNameBased\Virtual.sbn" />
+    <None Include="CodeGenTemplates\Double.sbncs" />
     <None Include="CodeGenTemplates\Entity.sbn" />
-    <None Include="CodeGenTemplates\Plugin.sbn" />
-    <None Include="CodeGenTemplates\BigInt.sbn" />
-    <None Include="CodeGenTemplates\Boolean.sbn" />
-    <None Include="CodeGenTemplates\Customer.sbn" />
-    <None Include="CodeGenTemplates\DateTime.sbn" />
-    <None Include="CodeGenTemplates\Decimal.sbn" />
-    <None Include="CodeGenTemplates\Double.sbn" />
-    <None Include="CodeGenTemplates\EntityName.sbn" />
-    <None Include="CodeGenTemplates\Images.sbn" />
-    <None Include="CodeGenTemplates\Integer.sbn" />
-    <None Include="CodeGenTemplates\Lookup.sbn" />
-    <None Include="CodeGenTemplates\Memo.sbn" />
-    <None Include="CodeGenTemplates\Money.sbn" />
-    <None Include="CodeGenTemplates\Owner.sbn" />
-    <None Include="CodeGenTemplates\Picklist.sbn" />
+    <None Include="CodeGenTemplates\EntityName.sbncs" />
+    <None Include="CodeGenTemplates\Images.sbncs" />
+    <None Include="CodeGenTemplates\Integer.sbncs" />
+    <None Include="CodeGenTemplates\Lookup.sbncs" />
+    <None Include="CodeGenTemplates\Memo.sbncs" />
+    <None Include="CodeGenTemplates\Money.sbncs" />
+    <None Include="CodeGenTemplates\Owner.sbncs" />
+    <None Include="CodeGenTemplates\Picklist.sbncs" />
+    <None Include="CodeGenTemplates\Plugin.sbncs" />
     <None Include="CodeGenTemplates\Readme.md" />
-    <None Include="CodeGenTemplates\State.sbn" />
-    <None Include="CodeGenTemplates\Status.sbn" />
-    <None Include="CodeGenTemplates\String.sbn" />
-    <None Include="CodeGenTemplates\Target.sbn" />
-    <None Include="CodeGenTemplates\UniqueIdentifier.sbn" />
-    <None Include="CodeGenTemplates\Virtual.sbn" />
+    <None Include="CodeGenTemplates\State.sbncs" />
+    <None Include="CodeGenTemplates\Status.sbncs" />
+    <None Include="CodeGenTemplates\String.sbncs" />
+    <None Include="CodeGenTemplates\Target.sbncs" />
+    <None Include="CodeGenTemplates\UniqueIdentifier.sbncs" />
+    <None Include="CodeGenTemplates\Virtual.sbncs" />
+    <None Include="Entities.yaml">
+      <Generator>XrmTools Entity Generator</Generator>
+      <LastGenOutput>Entities.cs</LastGenOutput>
+    </None>
+    <None Include="key.snk" />
+    <None Include="Model\Entities.model.json" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="Microsoft.CrmSdk.CoreAssemblies">
@@ -115,6 +152,9 @@
       <Version>1.15.0</Version>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
       <PrivateAssets>all</PrivateAssets>
+    </PackageReference>
+    <PackageReference Include="XrmTools.Meta">
+      <Version>1.0.0</Version>
     </PackageReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />

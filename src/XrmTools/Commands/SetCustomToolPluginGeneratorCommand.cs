@@ -15,7 +15,9 @@ internal sealed class SetCustomToolPluginGeneratorCommand : BaseCommand<SetCusto
     {
         var i = await VS.Solutions.GetActiveItemAsync();
         if (i is null || i.Type != SolutionItemType.PhysicalFile) return;
-        await (i as PhysicalFile).TrySetAttributeAsync(PhysicalFileAttribute.CustomTool, PluginCodeGenerator.Name);
+        var file = i as PhysicalFile;
+        await file.TrySetAttributeAsync(PhysicalFileAttribute.CustomTool, XrmCodeGenerator.Name);
+        await file.TrySetAttributeAsync("IsXrmPlugin", true);
     }
 
     protected override Task InitializeCompletedAsync() 

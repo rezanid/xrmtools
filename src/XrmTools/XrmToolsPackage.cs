@@ -27,13 +27,7 @@ using XrmTools.Commands;
 using XrmTools.Environments;
 using System.Reflection;
 using System.IO;
-
-internal record ProjectDataverseSettings(
-    string EnvironmentUrl, 
-    string? ConnectionString, 
-    string? PluginCodeGenTemplatePath, 
-    string? EntityCodeGenTemplatePath);
-
+using XrmTools.Validation;
 
 /// <summary>
 /// This is the class that implements the package exposed by this assembly.
@@ -57,12 +51,12 @@ internal record ProjectDataverseSettings(
 [ProvideAutoLoad(UIContextGuids80.SolutionExists, PackageAutoLoadFlags.BackgroundLoad)]
 [ProvideCodeGenerator(typeof(EntityCodeGenerator), EntityCodeGenerator.Name, EntityCodeGenerator.Description, true, ProjectSystem = ProvideCodeGeneratorAttribute.CSharpProjectGuid, RegisterCodeBase = true)]
 [ProvideCodeGeneratorExtension(EntityCodeGenerator.Name, ".yaml")]
-[ProvideCodeGenerator(typeof(PluginCodeGenerator), PluginCodeGenerator.Name, PluginCodeGenerator.Description, true, ProjectSystem = ProvideCodeGeneratorAttribute.CSharpProjectGuid, RegisterCodeBase = true)]
-[ProvideCodeGeneratorExtension(PluginCodeGenerator.Name, ".def.json")]
+[ProvideCodeGenerator(typeof(XrmCodeGenerator), XrmCodeGenerator.Name, XrmCodeGenerator.Description, true, ProjectSystem = ProvideCodeGeneratorAttribute.CSharpProjectGuid, RegisterCodeBase = true)]
+[ProvideCodeGeneratorExtension(XrmCodeGenerator.Name, ".def.json")]
 [ProvideMenuResource("Menus.ctmenu", 1)]
 // Decide the visibility of our commands when the commands are NOT yet loaded.
 [ProvideUIContextRule(PackageGuids.SetCustomToolEntitiesCmdUIRuleString,
-    name: "UI Context",
+    name: "UI Context Entity Definition",
     expression: "(Yaml | Proj) & CSharp & (SingleProj | MultiProj)",
     termNames: ["Yaml", "CSharp", "SingleProj", "MultiProj"],
     termValues: [
@@ -85,7 +79,7 @@ internal record ProjectDataverseSettings(
     expression: "Sbn & CSharp & (SingleProj | MultiProj)",
     termNames: ["Sbn", "CSharp", "SingleProj", "MultiProj"],
     termValues: [
-        "HierSingleSelectionName:.sbn$", 
+        "HierSingleSelectionName:.sbncs$", 
         "ActiveProjectCapability:CSharp", 
         VSConstants.UICONTEXT.SolutionHasSingleProject_string, 
         VSConstants.UICONTEXT.SolutionHasMultipleProjects_string])]
@@ -159,6 +153,7 @@ public sealed partial class XrmToolsPackage : ToolkitPackage
         await SetEntityGeneratorTemplateInSolutionCommand.InitializeAsync(this);
         await SetCustomToolEntityGeneratorCommand.InitializeAsync(this);
         await SetCustomToolPluginGeneratorCommand.InitializeAsync(this);
+        await RegisterPluginCommand.InitializeAsync(this);
         await SelectEnvironmentCommand.InitializeAsync(this);
     }
 
@@ -217,11 +212,12 @@ public sealed partial class XrmToolsPackage : ToolkitPackage
 
     private async Task InitializeMefServicesAsync()
     {
-        AddService(
-            typeof(IXrmPluginCodeGenerator),
-            async (container, cancellationToken, type) =>
-                await Task.FromResult(new TemplatedPluginCodeGenerator())
-            , promote: true);
+        //TODO: Temporary remove to test.
+        //AddService(
+        //    typeof(IXrmPluginCodeGenerator),
+        //    async (container, cancellationToken, type) =>
+        //        await Task.FromResult(new TemplatedPluginCodeGenerator())
+        //    , promote: true);
         AddService(
             typeof(IXrmEntityCodeGenerator),
             async (container, cancellationToken, type) =>

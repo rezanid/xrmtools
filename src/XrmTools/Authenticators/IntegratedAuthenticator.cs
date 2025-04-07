@@ -10,20 +10,28 @@ using System.Threading.Tasks;
 internal class IntegratedAuthenticator : DelegatingAuthenticator
 {
     //TODO: The following dictionary is IDisposable.
-    private AsyncDictionary<AuthenticationParameters, IPublicClientApplication> apps = new();
+    private readonly AsyncDictionary<AuthenticationParameters, IPublicClientApplication> apps = new();
 
     public override async Task<AuthenticationResult> AuthenticateAsync(
-        AuthenticationParameters parameters, 
+        AuthenticationParameters parameters,
+        bool clearTokenCache,
         Action<string> onMessageForUser = default, 
         CancellationToken cancellationToken = default)
     {
         AuthenticationResult result = null;
         var app = await apps.GetOrAddAsync(
             parameters, 
-            async (k, ct) => (await GetClientAppAsync(k, ct)).AsPublicClient(),
+            async (k, ct) => (await CreateClientAppAsync(k, ct)).AsPublicClient(),
             cancellationToken);
+
+        if (clearTokenCache)
+        {
+            await ClearTokenCacheAsync(app).ConfigureAwait(false);
+        }
+
         var accounts = await app.GetAccountsAsync();
-        var firstAccount = accounts.FirstOrDefault();
+        var firstAccount = accounts.FirstOrDefault(a => a.HomeAccountId.TenantId == parameters.Tenant);
+
         try
         {
             result = await app.AcquireTokenSilent(parameters.Scopes, firstAccount)

@@ -6,19 +6,19 @@ using Microsoft.Xrm.Sdk.Metadata;
 using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
-using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Runtime.Serialization;
 using System.Text.Json.Serialization;
 using XrmTools.Meta.Attributes.Serialization;
 using XrmTools.Meta.Model;
+using XrmTools.Meta.Serialization;
 
 public interface IPluginAssemblyConfig : IPluginAssemblyEntity
 {
     ICollection<EntityConfig> Entities { get; set; }
     ICollection<EntityMetadata>? EntityDefinitions { get; set; }
-    string? RemovePrefixes { get; set; }
-    IReadOnlyCollection<string> RemovePrefixesCollection { get; }
+    List<string> RemovePrefixes { get; set; }
+    string? FilePath { get; set; }
 }
 
 public interface IPluginAssemblyEntity
@@ -37,11 +37,13 @@ public interface IPluginAssemblyEntity
 public class PluginAssemblyConfig : TypedEntity<PluginAssemblyConfig>, IPluginAssemblyConfig, INotifyPropertyChanged
 {
     public const string EntityLogicalName = "pluginassembly";
+    public const string EntitySetName = "pluginassemblies";
+
+    public override string GetEntitySetName() => EntitySetName;
 
     private ICollection<PluginTypeConfig> pluginTypes = [];
 
     #region IPluginAssemblyConfig-only Properties
-    private string? removePrefixes;
 
     /// <summary>
     /// List of all extra entities (and their comma-delimited attributes) that will be generated.
@@ -56,22 +58,15 @@ public class PluginAssemblyConfig : TypedEntity<PluginAssemblyConfig>, IPluginAs
 
     [JsonPropertyOrder(2)]
     [JsonProperty(Order = 1)]
-    public string? RemovePrefixes
-    {
-        get => removePrefixes;
-        set
-        {
-            removePrefixes = value;
-            if (value == null && RemovePrefixesCollection.Count == 0) { return; }
-            RemovePrefixesCollection = new ReadOnlyCollection<string>(value?.Split(',') ?? []);
-        }
-    }
+    [Newtonsoft.Json.JsonConverter(typeof(CommaDelimitedStringConverter))]
+    public List<string> RemovePrefixes { get; set; } = [];
 
     [IgnoreDataMember]
-    public IReadOnlyCollection<string> RemovePrefixesCollection { private set; get; } = [];
+    public string? FilePath { get; set; }
 
     [JsonPropertyOrder(1)]
-    [JsonProperty("PluginTypes", Order = 1)]
+    //[JsonProperty("PluginTypes", Order = 1)]
+    [JsonProperty("pluginassembly_plugintype", Order = 1)]
     public ICollection<PluginTypeConfig> PluginTypes
     {
         get => pluginTypes;
@@ -86,8 +81,6 @@ public class PluginAssemblyConfig : TypedEntity<PluginAssemblyConfig>, IPluginAs
     #region IPluginAssemblyEntity Properties
     [AttributeLogicalName("pluginassemblyid")]
     [JsonPrimaryKey]
-    //[JsonPropertyName("Id")]
-    //[JsonProperty("Id")]
     public Guid? PluginAssemblyId
     {
         get => TryGetAttributeValue("pluginassemblyid", out Guid value) ? value : null;
@@ -147,6 +140,7 @@ public class PluginAssemblyConfig : TypedEntity<PluginAssemblyConfig>, IPluginAs
         => PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
 
     public PluginAssemblyConfig() : base(EntityLogicalName) { }
+    public PluginAssemblyConfig(string filePath) : base(EntityLogicalName) => FilePath = filePath;
 }
 
 public class EntityConfig

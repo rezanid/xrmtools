@@ -2,6 +2,7 @@
 #nullable enable
 namespace XrmTools.Xrm.Generators;
 
+using System.ComponentModel.DataAnnotations;
 using XrmTools.Xrm.Model;
 
 [Guid(PackageGuids.guidXrmPluginCodeGeneratorString)]
@@ -9,7 +10,7 @@ using XrmTools.Xrm.Model;
 public interface IXrmPluginCodeGenerator
 {
     public XrmCodeGenConfig? Config { get; set; }
-    (bool, string) IsValid(PluginAssemblyConfig plugin);
+    ValidationResult IsValid(PluginAssemblyConfig plugin);
     string GenerateCode(PluginAssemblyConfig plugin);
 }
 #nullable restore

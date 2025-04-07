@@ -138,7 +138,7 @@ public class AssemblySelectionViewModel : ViewModelBase
     private void Serialize(object input)
     {
         if (input is null) { return; }
-        GeneratedCode = StringHelpers.SerializeJson(input);
+        GeneratedCode = StringHelper.SerializeJson(input);
     }
 
     private bool CanSelectAssembly() => SelectedAssembly != null;

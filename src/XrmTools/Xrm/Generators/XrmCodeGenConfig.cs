@@ -11,7 +11,8 @@ public class XrmCodeGenConfig : IEquatable<XrmCodeGenConfig>
     public required string DefaultNamespace { get; set; }
     public required string TemplateFilePath { get; set; }
     public IEnumerable<EntityConfig> Entities { get; set; }
-    public IEnumerable<EntityMetadata> EntityMetadatas { get; set; }
+    public ICollection<EntityMetadata> EntityDefinitions { get; set; }
+    public IEnumerable<string> RemovePrefixes { get; set; } = [];
 
     #region IEquatable
     public bool Equals(XrmCodeGenConfig other)

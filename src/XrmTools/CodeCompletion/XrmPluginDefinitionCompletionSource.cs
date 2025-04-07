@@ -17,10 +17,63 @@ using XrmTools.Xrm.Repositories;
 using System.Collections.Generic;
 using System;
 using XrmTools.Core.Helpers;
+using Microsoft.VisualStudio.Core.Imaging;
+using Microsoft.VisualStudio.Text.Adornments;
+using System.Collections.Immutable;
+using Microsoft.Xrm.Sdk.Metadata;
 
 internal class XrmPluginDefinitionCompletionSource(
     IOutputLoggerService logger, IRepositoryFactory repositoryFactory, VisualStudioWorkspace workspace) : IAsyncCompletionSource
 {
+    static readonly ImageElement StandardTableIcon = new(new ImageId(new Guid("ae27a6b0-e345-4288-96df-5eaf394ee369"), 3032), "Standard");
+    static readonly ImageElement ActivityTableIcon = new (new ImageId(new Guid("ae27a6b0-e345-4288-96df-5eaf394ee369"), 1157), "Activity");
+    static readonly ImageElement ElasticTableIcon = new(new ImageId(new Guid("ae27a6b0-e345-4288-96df-5eaf394ee369"), 1060), "Elastic");
+    static readonly ImageElement VirtualTableIcon = new(new ImageId(new Guid("ae27a6b0-e345-4288-96df-5eaf394ee369"), 887), "Virtual");
+
+    static readonly ImmutableArray<CompletionFilter> StandardTableFilters = [new("Standard", "S", StandardTableIcon)];
+    static readonly ImmutableArray<CompletionFilter> ActivityTableFilters = [new("Activity", "A", ActivityTableIcon)];
+    static readonly ImmutableArray<CompletionFilter> ElasticTableFilters = [new("Elastic", "E", ElasticTableIcon)];
+    static readonly ImmutableArray<CompletionFilter> VirtualTableFilters = [new("Virtual", "V", VirtualTableIcon)];
+
+    static readonly ImageElement BooleanColumnIcon = new(new(new("ae27a6b0-e345-4288-96df-5eaf394ee369"), 296), "Boolean");
+    static readonly ImageElement DateTimeColumnIcon = new(new(new("ae27a6b0-e345-4288-96df-5eaf394ee369"), 371), "DateTime");
+    static readonly ImageElement NumberColumnIcon = new(new(new("ae27a6b0-e345-4288-96df-5eaf394ee369"), 1017), "Number");
+    static readonly ImageElement LookupColumnIcon = new(new(new("ae27a6b0-e345-4288-96df-5eaf394ee369"), 1724), "Lookup");
+    static readonly ImageElement MoneyColumnIcon = new(new(new("ae27a6b0-e345-4288-96df-5eaf394ee369"), 803), "Money");
+    static readonly ImageElement StringColumnIcon = new(new(new("ae27a6b0-e345-4288-96df-5eaf394ee369"), 2985), "String");
+    static readonly ImageElement PickListColumnIcon = new(new(new("ae27a6b0-e345-4288-96df-5eaf394ee369"), 982), "PickList");
+    static readonly ImageElement MiscColumnIcon = new(new(new("ae27a6b0-e345-4288-96df-5eaf394ee369"), 1217), "Other");
+    static readonly ImageElement KeyColumnIcon = new(new(new("ae27a6b0-e345-4288-96df-5eaf394ee369"), 1654), "Key");
+    static readonly ImageElement StateColumnIcon = new(new(new("ae27a6b0-e345-4288-96df-5eaf394ee369"), 2919), "State");
+    
+    static readonly ImmutableArray<CompletionFilter> BooleanColumnFilters = [new("Boolean", "B", BooleanColumnIcon)];
+    static readonly ImmutableArray<CompletionFilter> DateTimeColumnFilters = [new("DateTime", "D", DateTimeColumnIcon)];
+    static readonly ImmutableArray<CompletionFilter> NumberColumnFilters = [new("Number", "N", NumberColumnIcon)];
+    static readonly ImmutableArray<CompletionFilter> LookupColumnFilters = [new("Lookup", "L", LookupColumnIcon)];
+    static readonly ImmutableArray<CompletionFilter> MoneyColumnFilters = [new("Currency", "C", MoneyColumnIcon)];
+    static readonly ImmutableArray<CompletionFilter> StringColumnFilters = [new("String", "S", StringColumnIcon)];
+    static readonly ImmutableArray<CompletionFilter> PickListColumnFilters = [new("PickList", "P", PickListColumnIcon)];
+    static readonly ImmutableArray<CompletionFilter> MiscColumnFilters = [new("Misc", "M", MiscColumnIcon)];//, OtherColumnIcon)]
+
+    private static readonly HashSet<AttributeTypeCode> SupportedAttributeTypes =
+    [
+        AttributeTypeCode.Boolean,
+        AttributeTypeCode.Customer,
+        AttributeTypeCode.DateTime,
+        AttributeTypeCode.Decimal,
+        AttributeTypeCode.Double,
+        AttributeTypeCode.Integer,
+        AttributeTypeCode.Lookup,
+        AttributeTypeCode.Memo,
+        AttributeTypeCode.Money,
+        AttributeTypeCode.Owner,
+        AttributeTypeCode.PartyList,
+        AttributeTypeCode.Picklist,
+        AttributeTypeCode.State,
+        AttributeTypeCode.Status,
+        AttributeTypeCode.String
+    ];
+
     public async Task<CompletionContext> GetCompletionContextAsync(
         IAsyncCompletionSession session,
         CompletionTrigger trigger,
@@ -28,17 +81,6 @@ internal class XrmPluginDefinitionCompletionSource(
         SnapshotSpan applicableToSpan,
         CancellationToken cancellationToken)
     {
-        // Get the VisualStudioWorkspace service
-        //var componentModel = (IComponentModel)Package.GetGlobalService(typeof(SComponentModel));
-        //var workspace = componentModel.GetService<VisualStudioWorkspace>();
-
-        // Retrieve the document associated with the trigger location
-        //var documentId = workspace.CurrentSolution.GetDocumentId(triggerLocation.Snapshot.TextBuffer.AsTextContainer());
-        //if (documentId == null) return CompletionContext.Empty;
-
-        //var document = workspace.CurrentSolution.GetDocument(documentId);
-        //if (document == null) return CompletionContext.Empty;
-
         // Retrieve the document text and syntax tree
         var document = triggerLocation.Snapshot.TextBuffer.GetRelatedDocuments().FirstOrDefault();
         if (document == null) return CompletionContext.Empty;
@@ -91,7 +133,49 @@ internal class XrmPluginDefinitionCompletionSource(
         var entityMetadataRepository = await repositoryFactory.CreateRepositoryAsync<IEntityMetadataRepository>();
         if (entityMetadataRepository == null) return CompletionContext.Empty;
         var entities = await entityMetadataRepository.GetAsync(cancellationToken).ConfigureAwait(false);
-        return new CompletionContext([..entities.Select(entity => new CompletionItem(entity.LogicalName, this))]);
+        return new CompletionContext([..entities.Select(ToCompletionItem)]);
+    }
+
+    private CompletionItem ToCompletionItem(EntityMetadata entity)
+    {
+        var (filters, icon) = entity switch
+        {
+            { IsActivity: true } => (ActivityTableFilters, ActivityTableIcon),
+            { TableType: "Elastic" } => (ElasticTableFilters, ElasticTableIcon),
+            { TableType: "Virtual" } => (VirtualTableFilters, VirtualTableIcon),
+            _ => (StandardTableFilters, StandardTableIcon),
+        };
+        return new(entity.LogicalName, this, icon, filters);
+    }
+
+    private CompletionItem ToCompletionItem(AttributeMetadata attribute)
+    {
+        var (filter, icon) = attribute.AttributeType switch
+        {
+            AttributeTypeCode.Boolean => (BooleanColumnFilters, BooleanColumnIcon),
+            AttributeTypeCode.DateTime => (DateTimeColumnFilters, DateTimeColumnIcon),
+            AttributeTypeCode.Decimal => (NumberColumnFilters, NumberColumnIcon),
+            AttributeTypeCode.Double => (NumberColumnFilters, NumberColumnIcon),
+            AttributeTypeCode.Integer => (NumberColumnFilters, NumberColumnIcon),
+            AttributeTypeCode.Lookup => (LookupColumnFilters, LookupColumnIcon),
+            AttributeTypeCode.Memo => (StringColumnFilters, StringColumnIcon),
+            AttributeTypeCode.Money => (MoneyColumnFilters, MoneyColumnIcon),
+            AttributeTypeCode.Owner => (MiscColumnFilters, MiscColumnIcon),
+            AttributeTypeCode.PartyList => (MiscColumnFilters, MiscColumnIcon),
+            AttributeTypeCode.Picklist => (PickListColumnFilters, PickListColumnIcon),
+            AttributeTypeCode.State => (MiscColumnFilters, StateColumnIcon),
+            AttributeTypeCode.Status => (MiscColumnFilters, StateColumnIcon),
+            AttributeTypeCode.String => (StringColumnFilters, StringColumnIcon),
+            AttributeTypeCode.Uniqueidentifier => (MiscColumnFilters, KeyColumnIcon),
+            AttributeTypeCode.CalendarRules => (PickListColumnFilters, PickListColumnIcon),
+            AttributeTypeCode.Virtual => (PickListColumnFilters, PickListColumnIcon),
+            AttributeTypeCode.BigInt => (NumberColumnFilters, MiscColumnIcon),
+            AttributeTypeCode.ManagedProperty => (MiscColumnFilters, MiscColumnIcon),
+            AttributeTypeCode.EntityName => (MiscColumnFilters, MiscColumnIcon),
+            AttributeTypeCode.Customer => (MiscColumnFilters, MiscColumnIcon),
+            _ => (MiscColumnFilters, MiscColumnIcon)
+        };
+        return new CompletionItem(attribute.LogicalName, this, icon, filter);
     }
 
     private async Task<CompletionContext> GetMessageCompletionsAsync(
@@ -120,7 +204,7 @@ internal class XrmPluginDefinitionCompletionSource(
         var entityMetadataRepository = await repositoryFactory.CreateRepositoryAsync<IEntityMetadataRepository>();
         if (entityMetadataRepository == null) return CompletionContext.Empty;
         var entity = await entityMetadataRepository.GetAsync(entityName, cancellationToken).ConfigureAwait(false);
-        var availableAttributes = entity.Attributes?.Select(a =>a.LogicalName).ToArray();
+        var availableAttributes = entity?.Attributes?.Where(IsSupportedAttribute).ToArray();
         if (availableAttributes == null || availableAttributes.Length == 0) return CompletionContext.Empty;
 
         // Extract current attribute list
@@ -137,8 +221,8 @@ internal class XrmPluginDefinitionCompletionSource(
 
         // Filter and provide completions
         var suggestedAttributes = availableAttributes
-            .Where(attr => !currentXrmAttributes.Contains(attr))
-            .Select(attr => new CompletionItem(attr, this))
+            .Where(attr => !currentXrmAttributes.Contains(attr.LogicalName))
+            .Select(ToCompletionItem)
             .ToList();
 
         return new CompletionContext([.. suggestedAttributes]);
@@ -163,6 +247,8 @@ internal class XrmPluginDefinitionCompletionSource(
         var symbol = (symbolInfo.Symbol ?? symbolInfo.CandidateSymbols.FirstOrDefault()) as IMethodSymbol;
         return symbol?.ContainingType.Name == nameof(EntityAttribute);
     }
+
+    private bool IsSupportedAttribute(AttributeMetadata attribute) => attribute.IsValidForRead.HasValue && attribute.IsValidForRead.Value && attribute.AttributeOf is null;
 
     private int GetArgumentIndexAtPosition(SeparatedSyntaxList<AttributeArgumentSyntax> arguments, int position)
     {

@@ -7,15 +7,26 @@ using XrmTools.Http;
 using XrmTools.Tokens;
 using System.Net.Http;
 using System.ComponentModel.Composition;
+using XrmTools.Options;
 
 [Export(typeof(IAuthenticationService))]
 internal class AuthenticationService : IAuthenticationService
 {
+    bool cleanTokenCache = false;
+
     [Import]
     ITokenExpanderService TokenExpander { get; set; }
 
     [Import]
     Lazy<IXrmHttpClientFactory> HttpClientFactory { get; set; }
+
+    public AuthenticationService()
+    {
+        GeneralOptions.Saved += (options) =>
+        {
+            cleanTokenCache = true;
+        };
+    }
 
     public IAuthenticator Authenticator { get; set; } = new ClientAppAuthenticator
     {
@@ -46,7 +57,12 @@ internal class AuthenticationService : IAuthenticationService
         {
             throw new InvalidOperationException("Unable to detect required authentication flow. Please check the input parameters and try again.");
         }
-        return await current?.AuthenticateAsync(authParams, onMessageForUser, cancellationToken);
+
+        var result = await current?.AuthenticateAsync(authParams, cleanTokenCache, onMessageForUser, cancellationToken);
+
+        cleanTokenCache = false;
+
+        return result;
     }
 
     private async Task<AuthenticationParameters> EnsureTenantAsync(AuthenticationParameters authParams)

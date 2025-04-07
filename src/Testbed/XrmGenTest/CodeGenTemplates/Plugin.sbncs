@@ -1,0 +1,60 @@
+{{~func non_logical; ret ($0?.is_logical != true); end~}}
+{{~func logical; ret ($0?.is_logical == true); end~}}
+{{~func supported_attribute; ret ($0?.attribute_type != 'EntityName'); end~}}
+{{~quote(text) = '"' + text + '"'~}}
+using Microsoft.Xrm.Sdk;
+using Microsoft.Xrm.Sdk.Client;
+using Microsoft.Xrm.Sdk.Extensions;
+using System;
+using System.CodeDom.Compiler;
+
+namespace {{ first_plugin_type?.namespace ?? config.default_namespace }};
+
+{{~for plugintype in model.plugin_types~}}
+{{~for step in plugintype.steps~}}
+{{codegen_attribute}}
+public partial class {{plugintype.type_name | last_segment }}{{ plugintype.base_type_name != 'Object' ? ' : ' + plugintype.base_type_name : ''}}
+{
+	{{include 'Target.sbncs'}}
+	{{~if step.images~}}
+	{{include 'Images.sbncs'~}}
+	{{~end~}}
+
+	{{~target_type_name='Target' + (step.primary_entity_definition.display_name.localized_labels[0].label | tokenize)~}}
+	{{plugintype.type_name | last_segment }}.{{target_type_name}} Target { get; set; }
+	{{~for image in step.images~}}
+	{{plugintype.type_name | last_segment }}.{{image.name}}{{step.primary_entity_definition.display_name.localized_labels[0].label | tokenize}} {{image.name}} { get; set; }
+	{{~end~}}
+
+	/// <summary>
+	/// This method should be called on every <see cref="{{plugintype.base_type_name == 'Object' ? plugintype.type_name : plugintype.base_type_name}}.Execute(IServiceProvider)"/> execution.
+	/// </summary>
+	/// <param name="serviceProvider"></param>
+	/// <exception cref="InvalidPluginExecutionException"></exception>
+	internal {{plugintype.base_type_name == 'Object' ? '' : 'override '}}void Initialize(IServiceProvider serviceProvider)
+    {
+        if (serviceProvider == null)
+        {
+            throw new InvalidPluginExecutionException(nameof(serviceProvider) + " argument is null.");
+        }
+        var executionContext = serviceProvider.Get<IPluginExecutionContext7>();
+        Target = EntityOrDefault<{{target_type_name}}>(executionContext.InputParameters, "Target");
+	{{~for image in step.images~}}
+        {{image.name}} = EntityOrDefault<{{image.name}}{{step.primary_entity_definition.display_name.localized_labels[0].label | tokenize}}>(executionContext.PreEntityImages, "{{image.name}}");
+	{{~end~}}
+    }
+
+	private static T EntityOrDefault<T>(DataCollection<string, object> keyValues, string key) where T : Entity
+    {
+        if (keyValues is null) return default;
+        return keyValues.TryGetValue(key, out var obj) ? obj is Entity entity ? entity.ToEntity<T>() : default : default;
+    }
+
+    private static T EntityOrDefault<T>(DataCollection<string, Entity> keyValues, string key) where T : Entity
+    {
+        if (keyValues is null) return default;
+        return keyValues.TryGetValue(key, out var entity) ? entity?.ToEntity<T>() : default;
+    }
+}
+{{~end~}}
+{{~end~}}

@@ -14,7 +14,7 @@ public class {{image.name}}{{step.primary_entity_metadata.display_name.localized
 
 {{~for attribute in image.message_property_metadata.attributes~}}
     {{# Send the attribute along with the full list of attributes in case template needs it.}}
-	{{include attribute.attribute_type + '.sbn' attribute step.primary_entity_metadata.attributes}}
+	{{include attribute.attribute_type + '.sbncs' attribute step.primary_entity_metadata.attributes}}
 	
 	{{~localized_label = attribute.display_name?.localized_labels | array.first~}}
 	

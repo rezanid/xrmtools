@@ -6,9 +6,9 @@ using System.Threading.Tasks;
 
 internal class ClientAppAuthenticator : DelegatingAuthenticator
 {
-    public override async Task<AuthenticationResult> AuthenticateAsync(AuthenticationParameters parameters, Action<string> onMessageForUser = default, CancellationToken cancellationToken = default)
+    public override async Task<AuthenticationResult> AuthenticateAsync(AuthenticationParameters parameters, bool clearTokenCache, Action<string> onMessageForUser = default, CancellationToken cancellationToken = default)
     {
-        var app = await GetClientAppAsync(parameters, cancellationToken);
+        var app = await CreateClientAppAsync(parameters, cancellationToken);
 
         //TODO: Implement logging
         //ServiceClientTracing.Information($"[DeviceCodeAuthenticator] Calling AcquireTokenWithDeviceCode - Scopes: '{string.Join(", ", parameters.Scopes)}'");
