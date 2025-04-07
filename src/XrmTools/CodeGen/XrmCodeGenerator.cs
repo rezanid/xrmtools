@@ -9,11 +9,13 @@ using Microsoft.Xrm.Sdk.Metadata;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel.Composition;
+using System.ComponentModel.DataAnnotations;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading;
+using System.Threading.Tasks;
 using XrmTools.Analyzers;
 using XrmTools.Core.Helpers;
 using XrmTools.Core.Repositories;
@@ -71,6 +73,7 @@ public class XrmCodeGenerator : BaseCodeGeneratorWithSite
         if (Logger == null) throw new InvalidOperationException(string.Format(Strings.MissingServiceDependency, nameof(XrmCodeGenerator), nameof(Logger)));
         if (TemplateFinder == null) throw new InvalidOperationException(string.Format(Strings.MissingServiceDependency, nameof(XrmCodeGenerator), nameof(TemplateFinder)));
         if (TemplateFileGenerator == null) throw new InvalidOperationException(string.Format(Strings.MissingServiceDependency, nameof(XrmCodeGenerator), nameof(TemplateFileGenerator)));
+        if (XrmMetaDataService == null) throw new InvalidOperationException(string.Format(Strings.MissingServiceDependency, nameof(XrmCodeGenerator), nameof(XrmMetaDataService)));
     }
 
     protected override byte[]? GenerateCode(string inputFileName, string inputFileContent)
@@ -78,56 +81,63 @@ public class XrmCodeGenerator : BaseCodeGeneratorWithSite
         if (string.IsNullOrWhiteSpace(inputFileContent)) { return null; }
         if (Generator is null) { return Encoding.UTF8.GetBytes("// No generator found."); }
 
-        PluginAssemblyConfig? inputModel;
+        return ThreadHelper.JoinableTaskFactory.Run(async () =>
+        {
+            var inputModel = await GetInputModelFromFileAsync(inputFileName, inputFileContent);
+            if (inputModel == null)
+            {
+                Logger.LogWarning("Failed to parse input file for code generation. Please review the input file and try again.");
+                return null;
+            }
+
+            var templateFilePath = GetTemplateFilePath(inputModel);
+            // Check if template file exists.
+            if (string.IsNullOrEmpty(templateFilePath))
+            {
+                return Encoding.UTF8.GetBytes("// " + Strings.PluginGenerator_TemplateNotSet);
+            }
+            if (!File.Exists(templateFilePath))
+            {
+                return Encoding.UTF8.GetBytes("// " + string.Format(Strings.PluginGenerator_TemplateFileNotFound, templateFilePath));
+            }
+
+            Generator.Config = new XrmCodeGenConfig
+            {
+                //TODO: The GetDefaultNamespace is not required. The FileNamespace is never empty even when not set.
+                DefaultNamespace = string.IsNullOrWhiteSpace(FileNamespace) ? GetDefaultNamespace() : FileNamespace,
+                TemplateFilePath = templateFilePath
+            };
+
+            AddEntityMetadataToPluginDefinition(inputModel!);
+
+            if (GeneralOptions.Instance.LogLevel == LogLevel.Trace)
+            {
+                // We use Newtonsoft for serialization because it supports polymorphic types
+                // Probably through old serialization attributes set on Xrm.Sdk types.
+                var serializedConfig = inputModel.SerializeJson(useNewtonsoft: true);
+                File.WriteAllText(Path.ChangeExtension(inputFileName, ".model.json"), serializedConfig);
+            }
+
+            var validation = Generator.IsValid(inputModel);
+            if (validation != ValidationResult.Success)
+            {
+                return Encoding.UTF8.GetBytes("// " + validation.ErrorMessage);
+            }
+            return Encoding.UTF8.GetBytes(Generator.GenerateCode(inputModel));
+        });
+    }
+
+    private async Task<PluginAssemblyConfig?> GetInputModelFromFileAsync(string inputFileName, string inputFileContent)
+    {
         if (".cs".Equals(Path.GetExtension(inputFileName), StringComparison.OrdinalIgnoreCase))
         {
-            inputModel = ThreadHelper.JoinableTaskFactory.Run(async () =>
-                await XrmMetaDataService.ParseAsync(inputFileName));
+            await XrmMetaDataService.ParseAsync(inputFileName);
         }
-        else
+        else if (".json".Equals(Path.GetExtension(inputFileName), StringComparison.OrdinalIgnoreCase))
         {
-            inputModel = ParseJsonInputFile(inputFileName, inputFileContent);
+            return ParseJsonInputFile(inputFileName, inputFileContent);
         }
-        if (inputModel == null) 
-        {
-            Logger.LogWarning("Failed to parse input file for code generation. Please review the input file and try again.");
-            return null; 
-        }
-
-        var templateFilePath = GetTemplateFilePath(inputModel);
-        // Check if template file exists.
-        if (string.IsNullOrEmpty(templateFilePath))
-        {
-            return Encoding.UTF8.GetBytes("// " + Strings.PluginGenerator_TemplateNotSet);
-        }
-        if (!File.Exists(templateFilePath))
-        {
-            return Encoding.UTF8.GetBytes("// " + string.Format(Strings.PluginGenerator_TemplateFileNotFound, templateFilePath));
-        }
-
-        Generator.Config = new XrmCodeGenConfig
-        {
-            //TODO: The GetDefaultNamespace is not required. The FileNamespace is never empty even when not set.
-            DefaultNamespace = string.IsNullOrWhiteSpace(FileNamespace) ? GetDefaultNamespace() : FileNamespace,
-            TemplateFilePath = templateFilePath
-        };
-
-        AddEntityMetadataToPluginDefinition(inputModel!);
-
-        if (GeneralOptions.Instance.LogLevel == LogLevel.Trace)
-        {
-            // We use Newtonsoft for serialization because it supports polymorphic types
-            // Probably through old serialization attributes set on Xrm.Sdk types.
-            var serializedConfig = inputModel.SerializeJson(useNewtonsoft: true);
-            File.WriteAllText(Path.ChangeExtension(inputFileName, ".model.json"), serializedConfig);
-        }
-
-        var (isValid, validationMessage) = Generator.IsValid(inputModel);
-        if (!isValid)
-        {
-            return Encoding.UTF8.GetBytes(validationMessage);
-        }
-        return Encoding.UTF8.GetBytes(Generator.GenerateCode(inputModel));
+        return null;
     }
 
     private PluginAssemblyConfig? ParseJsonInputFile(string inputFileName, string inputFileContent)
@@ -365,6 +375,5 @@ public class XrmCodeGenerator : BaseCodeGeneratorWithSite
     // Finalizer to ensure resources are released if Dispose is not called
     ~XrmCodeGenerator() => Dispose(false);
     #endregion
-
 }
 #nullable restore

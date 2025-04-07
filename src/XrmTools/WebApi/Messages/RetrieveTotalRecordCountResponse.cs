@@ -1,7 +1,6 @@
 ﻿#nullable enable
 namespace XrmTools.WebApi.Messages;
 
-using Microsoft.Xrm.Sdk;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using System.Net.Http;

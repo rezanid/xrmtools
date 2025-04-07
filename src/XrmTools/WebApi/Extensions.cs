@@ -4,6 +4,9 @@ namespace XrmTools.WebApi;
 using System;
 using System.Linq;
 using System.Net.Http;
+using System.Threading.Tasks;
+using XrmTools.Meta.Model;
+using XrmTools.Core.Helpers;
 
 public static partial class Extensions
 {
@@ -24,6 +27,13 @@ public static partial class Extensions
         });
         typedResponse.Content = response.Content;
         return typedResponse;
+    }
+
+    public static async Task<T> CastAsync<T>(this HttpResponseMessage response) where T : ODataResponse
+    {
+        using var content = await response.Content.ReadAsStreamAsync().ConfigureAwait(false);
+        return content.Deserialize<T>() ??
+            throw new InvalidOperationException($"Unable to deserialize {typeof(T).Name}");
     }
 }
 #nullable restore

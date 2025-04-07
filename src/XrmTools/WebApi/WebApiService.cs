@@ -1,11 +1,13 @@
 ﻿#nullable enable
 namespace XrmTools.WebApi;
 
+using Microsoft.VisualStudio.Shell;
 using System;
 using System.ComponentModel.Composition;
 using System.Linq;
 using System.Net.Http;
 using System.Text.Json;
+using System.Threading;
 using System.Threading.Tasks;
 using XrmTools.Environments;
 using XrmTools.Http;
@@ -13,10 +15,10 @@ using XrmTools.Logging.Compatibility;
 
 internal interface IWebApiService
 {
-    Task<HttpResponseMessage> SendAsync(HttpRequestMessage request);
+    Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken);
+    Task<HttpResponseMessage> GetAsync(string uri, CancellationToken cancellationToken);
     Task<T> SendAsync<T>(HttpRequestMessage request) where T : HttpResponseMessage;
 }
-
 
 [Export(typeof(IWebApiService))]
 [method: ImportingConstructor]
@@ -26,7 +28,7 @@ internal class WebApiService(
     private bool _disposedValue;
     private string? _sessionToken = null;
 
-    public async Task<Uri?> GetBaseUrlAsync() => (await environmentProvider.GetActiveEnvironmentAsync())?.BaseServiceUrl;
+    public async Task<Uri?> GetBaseUrlAsync() => (await environmentProvider.GetActiveEnvironmentAsync().ConfigureAwait(false))?.BaseServiceUrl;
 
     /// <summary>
     /// Processes requests and returns responses. Manages Service Protection Limit errors.
@@ -34,7 +36,7 @@ internal class WebApiService(
     /// <param name="request">The request to send.</param>
     /// <returns>The response from the HttpClient</returns>
     /// <exception cref="Exception"></exception>
-    public async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request)
+    public async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken = default)
     {
         // Session token used by elastic tables to enable strong consistency
         // See https://learn.microsoft.com/power-apps/developer/data-platform/use-elastic-tables?tabs=webapi#sending-the-session-token
@@ -42,10 +44,9 @@ internal class WebApiService(
             request.Headers.Add("MSCRM.SessionToken", _sessionToken);
         }
 
-        // Get the named HttpClient from the IHttpClientFactory
-        using var client = await httpClientFactory.CreateClientAsync();
+        using var client = await httpClientFactory.CreateClientAsync().ConfigureAwait(false);
         
-        var response = await client.SendAsync(request);
+        var response =  await client.SendAsync(request, cancellationToken).ConfigureAwait(false);
 
         // Capture the current session token value
         // See https://learn.microsoft.com/power-apps/developer/data-platform/use-elastic-tables?tabs=webapi#getting-the-session-token
@@ -64,7 +65,10 @@ internal class WebApiService(
 
         if (!response.IsSuccessStatusCode && !response.Content.IsMimeMultipartContent())
         {
-            throw await ParseExceptionAsync(response);
+            var exception = await ParseExceptionAsync(response);
+            await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync();
+            logger.LogError(exception, "Error in Web API call.");//: {Message}", exception.Message);
+            throw exception;
         }
         return response;
     }
@@ -77,11 +81,14 @@ internal class WebApiService(
     /// <returns></returns>
     public async Task<T> SendAsync<T>(HttpRequestMessage request) where T : HttpResponseMessage
     {
-        var response = await SendAsync(request);
+        var response = await SendAsync(request).ConfigureAwait(false);
 
         // 'As' method is Extension of HttpResponseMessage see Extensions.cs
         return response.As<T>();
     }
+
+    public async Task<HttpResponseMessage> GetAsync(string uri, CancellationToken cancellationToken = default)
+        => await SendAsync(new HttpRequestMessage(HttpMethod.Get, new Uri(uri, UriKind.Relative)), cancellationToken).ConfigureAwait(false);
 
     public static async Task<ServiceException> ParseExceptionAsync(HttpResponseMessage response)
     {
@@ -91,7 +98,7 @@ internal class WebApiService(
             requestId = response.Headers.GetValues("REQ_ID").FirstOrDefault();
         }
 
-        var content = await response.Content.ReadAsStringAsync();
+        var content = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
         ODataError? oDataError = null;
 
         try

@@ -94,7 +94,6 @@
     <Compile Include="Helpers\ByteExtensions.cs" />
     <Compile Include="Helpers\ExplicitInterfaceInvoker.cs" />
     <Compile Include="Helpers\FileHelper.cs" />
-    <Compile Include="Helpers\GuidFactory.cs" />
     <Compile Include="Helpers\PackageHelper.cs" />
     <Compile Include="Helpers\ProjectExtensions.cs" />
     <Compile Include="Helpers\ProvideSolutionProperties.cs" />
@@ -230,9 +229,8 @@
     <Compile Include="WebApi\Methods\Upsert.cs" />
     <Compile Include="WebApi\ODataError.cs" />
     <Compile Include="WebApi\ODataException.cs" />
-    <Compile Include="WebApi\TypedEntityHelper.cs" />
-    <Compile Include="WebApi\WebApiService.cs" />
     <Compile Include="WebApi\ServiceException.cs" />
+    <Compile Include="WebApi\TypedEntityHelper.cs" />
     <Compile Include="WebApi\Types\AccessRights.cs" />
     <Compile Include="WebApi\Types\ColumnSet.cs" />
     <Compile Include="WebApi\Types\ConditionExpression.cs" />
@@ -268,6 +266,7 @@
     <Compile Include="WebApi\Types\SolutionInfo.cs" />
     <Compile Include="WebApi\Types\SolutionParameters.cs" />
     <Compile Include="WebApi\Types\TargetFieldType.cs" />
+    <Compile Include="WebApi\WebApiService.cs" />
     <Compile Include="XrmHttpClientFactory.cs" />
     <Compile Include="XrmToolsPackage.SolutionProperties.cs" />
     <Compile Include="Xrm\IXrmSchemaProvider.cs" />
@@ -320,11 +319,16 @@
       <DesignTime>True</DesignTime>
       <DependentUpon>Strings.resx</DependentUpon>
     </Compile>
+    <Compile Include="Xrm\Repositories\EntityMetadataRepository.cs" />
+    <Compile Include="Xrm\Repositories\PluginAssemblyRepository.cs" />
+    <Compile Include="Xrm\Repositories\PluginTypeRepository.cs" />
     <Compile Include="Xrm\Repositories\RepositoryFactory.cs" />
+    <Compile Include="Xrm\Repositories\SdkMessageRepository.cs" />
+    <Compile Include="Xrm\Repositories\SystemRepository.cs" />
+    <Compile Include="Xrm\Repositories\XrmRepository.cs" />
     <Compile Include="Xrm\WebApiSchemaProvider.cs" />
     <Compile Include="Xrm\XrmMetadataSource.cs" />
     <Compile Include="Logging\OutputLogger.cs" />
-    <Compile Include="_Core\Validation.cs" />
   </ItemGroup>
   <ItemGroup>
     <Content Include="Microsoft.Bcl.TimeProvider\Microsoft.Bcl.TimeProvider.dll">
@@ -506,7 +510,7 @@
       <PrivateAssets>all</PrivateAssets>
     </PackageReference>
     <PackageReference Include="Scriban">
-      <Version>5.12.0</Version>
+      <Version>6.1.0</Version>
     </PackageReference>
     <PackageReference Include="StrongNamer">
       <Version>0.2.5</Version>
@@ -517,7 +521,7 @@
     <PackageReference Include="System.Runtime.Caching">
       <Version>8.0.0</Version>
     </PackageReference>
-    <PackageReference Include="YamlDotNet" Version="16.2.0" />
+    <PackageReference Include="YamlDotNet" Version="16.3.0" />
   </ItemGroup>
   <ItemGroup>
     <VSCTCompile Include="VSCommandTable.vsct">
@@ -535,6 +539,7 @@
   </ItemGroup>
   <ItemGroup>
     <Folder Include="Xrm\CompletionSample\" />
+    <Folder Include="_Core\" />
   </ItemGroup>
   <ItemGroup>
     <Page Include="UI\AssemblySelectionDialog.xaml">
@@ -554,6 +559,8 @@
     <ProjectReference Include="..\XrmTools.Core\XrmTools.Core.csproj">
       <Project>{4e3f79aa-5694-4dd6-933d-aee2132486a5}</Project>
       <Name>XrmTools.Core</Name>
+      <IncludeOutputGroupsInVSIX>BuiltProjectOutputGroup%3bBuiltProjectOutputGroupDependencies%3bGetCopyToOutputDirectoryItems%3bSatelliteDllsProjectOutputGroup%3b</IncludeOutputGroupsInVSIX>
+      <IncludeOutputGroupsInVSIXLocalOnly>DebugSymbolsProjectOutputGroup%3b</IncludeOutputGroupsInVSIXLocalOnly>
     </ProjectReference>
     <ProjectReference Include="..\XrmTools.UI.Controls\XrmTools.UI.Controls.csproj">
       <Project>{179df0ac-6f44-4656-8332-034d3c594ed1}</Project>

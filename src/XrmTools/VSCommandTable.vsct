@@ -77,17 +77,18 @@
               <CommandFlag>DefaultInvisible</CommandFlag>
               <CommandFlag>DynamicVisibility</CommandFlag>
           If you do not want an image next to your command, remove the Icon node /> -->
-      <!-- Each button is a combination of the Guid and a different id -->
+      <!-- Each button is a combination of the GUID and a different id -->
       <Button guid="XrmToolsCmdSetId" id="SetCustomToolEntityGeneratorCmdId" priority="0x0100" type="Button">
         <Parent guid="XrmToolsCmdSetId" id="XrmToolsContextMenuGroup" />
         <Icon guid="ImageCatalogGuid" id="Type" />
         <CommandFlag>IconIsMoniker</CommandFlag>
         <CommandFlag>DynamicVisibility</CommandFlag>
         <Strings>
-          <ButtonText>Set as entities</ButtonText>
+          <ButtonText>Set as entity definition</ButtonText>
           <LocCanonicalName>.XrmTools.SetAsEntitiesFile</LocCanonicalName>
         </Strings>
       </Button>
+      <!--[Item Context Menu] > "Set as plugin definition..."-->
       <Button guid="XrmToolsCmdSetId" id="SetCustomToolPluginGeneratorCmdId" priority="0x0100" type="Button">
         <Parent guid="XrmToolsCmdSetId" id="XrmToolsContextMenuGroup" />
         <Icon guid="ImageCatalogGuid" id="Type" />
@@ -98,13 +99,14 @@
           <LocCanonicalName>.XrmTools.SetPluginDefinitionFile</LocCanonicalName>
         </Strings>
       </Button>
+      <!-- [Item Context Menu] > "Register plugin(s)"-->
       <Button guid="XrmToolsCmdSetId" id="RegisterPluginCmdId" priority="0x100" type="Button">
         <Parent guid="XrmToolsCmdSetId" id="XrmToolsContextMenuGroup" />
         <Icon guid="ImageCatalogGuid" id="Type" />
         <CommandFlag>IconIsMoniker</CommandFlag>
         <CommandFlag>DynamicVisibility</CommandFlag>
         <Strings>
-          <ButtonText>Register Plugin</ButtonText>
+          <ButtonText>Register Plugin(s)</ButtonText>
           <LocCanonicalName>.XrmTools.RegisterPlugin</LocCanonicalName>
         </Strings>
       </Button>
@@ -148,6 +150,7 @@
           <LocCanonicalName>.XrmTools.SetEntityGeneratorTemplateInProject</LocCanonicalName>
         </Strings>
       </Button>
+      <!--[Solution Context Menu] > "Set environment..."-->
       <Button guid="XrmToolsCmdSetId" id="SetEnvironmentCmdId" priority="0x0100" type="Button">
         <Parent guid="XrmToolsCmdSetId" id="XrmToolsSolutionContextMenuGroup" />
         <Icon guid="ImageCatalogGuid" id="Type" />
@@ -158,6 +161,7 @@
           <LocCanonicalName>.XrmTools.SetEnvironment</LocCanonicalName>
         </Strings>
       </Button>
+      <!--[Project Context Menu] > "Add" > "New plugin definition..."-->
       <Button guid="XrmToolsCmdSetId" id="NewPluginDefinitionCmdId" priority="0x0200" type="Button">
         <Parent guid="guidSHLMainMenu" id="IDG_VS_CTXT_PROJECT_ADD_ITEMS"/>
         <Icon guid="ImageCatalogGuid" id="Type" />
@@ -170,21 +174,21 @@
       </Button>
     </Buttons>
   </Commands>
-
   
   <CommandPlacements>
     <!-- Add commands to more locations. We could also do all the placements here as well -->
+    <!-- ["Project Context Menu"] > ["Register plugin(s)"] -->
     <CommandPlacement guid="XrmToolsCmdSetId" id="RegisterPluginCmdId" priority="0x0200">
       <Parent guid="XrmToolsCmdSetId" id="XrmToolsProjectContextMenuGroup"/>
     </CommandPlacement>
     <CommandPlacement guid="XrmToolsCmdSetId" id="NewPluginDefinitionCmdId" priority="0x0200">
       <Parent guid="guidSHLMainMenu" id="IDG_VS_CTXT_SLNFLDR_ADD_ITEM"/>
     </CommandPlacement>
+    <!--Project Context Menu > "Set environment..."-->
     <CommandPlacement guid="XrmToolsCmdSetId" id="SetEnvironmentCmdId" priority="0x0200">
       <Parent guid="XrmToolsCmdSetId" id="XrmToolsProjectContextMenuGroup"/>
     </CommandPlacement>
   </CommandPlacements>
-  
 
   <VisibilityConstraints>
     <VisibilityItem guid="XrmToolsCmdSetId" id="SetCustomToolEntityGeneratorCmdId" context="SetCustomToolEntitiesCmdUIRule" />

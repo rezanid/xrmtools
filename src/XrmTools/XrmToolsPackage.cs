@@ -27,6 +27,7 @@ using XrmTools.Commands;
 using XrmTools.Environments;
 using System.Reflection;
 using System.IO;
+using XrmTools.Validation;
 
 /// <summary>
 /// This is the class that implements the package exposed by this assembly.
@@ -55,7 +56,7 @@ using System.IO;
 [ProvideMenuResource("Menus.ctmenu", 1)]
 // Decide the visibility of our commands when the commands are NOT yet loaded.
 [ProvideUIContextRule(PackageGuids.SetCustomToolEntitiesCmdUIRuleString,
-    name: "UI Context",
+    name: "UI Context Entity Definition",
     expression: "(Yaml | Proj) & CSharp & (SingleProj | MultiProj)",
     termNames: ["Yaml", "CSharp", "SingleProj", "MultiProj"],
     termValues: [
@@ -211,11 +212,12 @@ public sealed partial class XrmToolsPackage : ToolkitPackage
 
     private async Task InitializeMefServicesAsync()
     {
-        AddService(
-            typeof(IXrmPluginCodeGenerator),
-            async (container, cancellationToken, type) =>
-                await Task.FromResult(new TemplatedPluginCodeGenerator())
-            , promote: true);
+        //TODO: Temporary remove to test.
+        //AddService(
+        //    typeof(IXrmPluginCodeGenerator),
+        //    async (container, cancellationToken, type) =>
+        //        await Task.FromResult(new TemplatedPluginCodeGenerator())
+        //    , promote: true);
         AddService(
             typeof(IXrmEntityCodeGenerator),
             async (container, cancellationToken, type) =>

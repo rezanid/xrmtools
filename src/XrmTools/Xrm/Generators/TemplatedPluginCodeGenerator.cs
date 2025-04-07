@@ -5,28 +5,25 @@ using Scriban;
 using System;
 using System.ComponentModel.Composition;
 using System.IO;
-using System.Linq;
 using System.Text;
 using XrmTools.Xrm.Model;
 using Scriban.Runtime;
+using XrmTools.Validation;
+using System.ComponentModel.DataAnnotations;
 
 [Export(typeof(IXrmPluginCodeGenerator))]
-public class TemplatedPluginCodeGenerator : IXrmPluginCodeGenerator
+[method:ImportingConstructor]
+public class TemplatedPluginCodeGenerator(IValidationService validationService) : IXrmPluginCodeGenerator
 {
     public XrmCodeGenConfig? Config { set; get; }
 
     private static readonly Type generatorType = typeof(TemplatedPluginCodeGenerator);
     private static readonly string generatorAttributeString = $"[GeneratedCode(\"{generatorType.Name}\", \"{generatorType.Assembly.GetName().Version}\")]";
 
-    public (bool, string) IsValid(PluginAssemblyConfig pluginAssembly)
+    public ValidationResult IsValid(PluginAssemblyConfig pluginAssembly)
     {
         if (Config == null) { throw new InvalidOperationException("Config is not set."); }
-        if (pluginAssembly is null) { throw new ArgumentNullException(nameof(pluginAssembly)); }
-        if ((pluginAssembly.PluginTypes is null || !pluginAssembly.PluginTypes.Any()) && (pluginAssembly.Entities is null || !pluginAssembly.Entities.Any())) 
-        { 
-            return (false, Resources.Strings.PluginGenerator_NoPluginTypesOrEntities); 
-        }
-        return (true, string.Empty);
+        return validationService.ValidateIfAvailable(pluginAssembly);
     }
 
     public string GenerateCode(PluginAssemblyConfig plugin)
