@@ -1,5 +1,4 @@
 ﻿namespace XrmTools.Authentication;
-using Microsoft.Identity.Client;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -21,8 +20,6 @@ internal record AuthenticationParameters
     public bool UseDeviceFlow { get; set; }
     public bool UseCurrentUser { get; set; }
     public string RedirectUri { get; set; }
-
-    public IAccount Account { get; set; }
 
     public static AuthenticationParameters Parse(string connectionString)
     {

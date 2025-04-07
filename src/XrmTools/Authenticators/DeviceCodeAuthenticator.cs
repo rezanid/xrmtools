@@ -9,13 +9,13 @@ internal class DeviceCodeAuthenticator : DelegatingAuthenticator
 {
     public override async Task<AuthenticationResult> AuthenticateAsync(
         AuthenticationParameters parameters,
+        bool clearTokenCache,
         Action<string> onMessageForUser = default,
         CancellationToken cancellationToken = default)
     {
-        var app = await GetClientAppAsync(parameters, cancellationToken);
+        var app = await CreateClientAppAsync(parameters, cancellationToken);
 
         // Attempt to get a token silently from the cache
-        //TODO: Currently accounts returned from GetAccountAsync is always null.
         var accounts = await app.GetAccountsAsync().ConfigureAwait(false);
         var account = accounts.FirstOrDefault();
         if (account != null)

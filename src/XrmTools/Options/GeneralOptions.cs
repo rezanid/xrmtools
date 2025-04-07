@@ -1,7 +1,6 @@
 ﻿#nullable enable
 namespace XrmTools.Options;
 using Community.VisualStudio.Toolkit;
-using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Drawing.Design;
@@ -16,8 +15,6 @@ internal partial class OptionsProvider
 
 internal class GeneralOptions : BaseOptionModel<GeneralOptions>
 {
-    public event EventHandler? OptionsChanged;
-
     [Category("Logging")]
     [DisplayName("Logging Level")]
     [Description("Setting the logging level to Trace will have performance implications.")]
@@ -53,8 +50,6 @@ internal class GeneralOptions : BaseOptionModel<GeneralOptions>
         // Remove any empty entries
         Environments.RemoveAll(e => string.IsNullOrWhiteSpace(e.Name) && string.IsNullOrWhiteSpace(e.Url) && string.IsNullOrWhiteSpace(e.ConnectionString));
 
-        OptionsChanged?.Invoke(this, EventArgs.Empty);
-        
         base.Save();
     }
 

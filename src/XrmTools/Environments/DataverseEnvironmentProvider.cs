@@ -7,17 +7,19 @@ using System.ComponentModel.Composition;
 using XrmTools.Settings;
 using Microsoft.VisualStudio.Shell;
 using XrmTools.Environments;
+using System;
 
 internal class DataverseEnvironmentProvider : IEnvironmentProvider
 {
+    public static event Action<DataverseEnvironment>? EnvironmentChanged;
+
     private readonly ISettingsProvider settingsProvider;
 
     [ImportingConstructor]
     public DataverseEnvironmentProvider([Import] ISettingsProvider settingsProvider)
     {
         this.settingsProvider = settingsProvider; 
-        var options = GeneralOptions.Instance;
-        options.OptionsChanged += (s, e) =>
+        GeneralOptions.Saved += (options) =>
         {
             ThreadHelper.JoinableTaskFactory.Run(async () => await SetActiveEnvironmentAsync(options.CurrentEnvironment));
         };
@@ -76,6 +78,7 @@ internal class DataverseEnvironmentProvider : IEnvironmentProvider
                 SetEnvironmentInSolutionUserFile(null);
                 break;
         }
+        EnvironmentChanged?.Invoke(environment);
     }
 
     private DataverseEnvironment? GetEnvironmentFromSolution()

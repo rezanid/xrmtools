@@ -17,11 +17,17 @@ internal abstract class DelegatingAuthenticator : IAuthenticator
     public IAuthenticator NextAuthenticator { get; set; }
 
     public virtual async Task<AuthenticationResult> AuthenticateAsync(
-        AuthenticationParameters parameters, Action<string> onMessageForUser = default, CancellationToken cancellationToken = default)
+        AuthenticationParameters parameters, bool clearTokenCache, Action<string> onMessageForUser = default, CancellationToken cancellationToken = default)
     {
-        var app = await GetClientAppAsync(parameters, cancellationToken);
+        var app = await CreateClientAppAsync(parameters, cancellationToken);
+
+        if (clearTokenCache)
+        {
+            await ClearTokenCacheAsync(app).ConfigureAwait(false);
+        }
+
         var accounts = await app.GetAccountsAsync();
-        var firstAccount = accounts.FirstOrDefault();
+        var firstAccount = accounts.FirstOrDefault(a => a.HomeAccountId.TenantId == parameters.Tenant);
 
         try
         {
@@ -60,7 +66,7 @@ internal abstract class DelegatingAuthenticator : IAuthenticator
 
     public abstract bool CanAuthenticate(AuthenticationParameters parameters);
 
-    public virtual async Task<IClientApplicationBase> GetClientAppAsync(AuthenticationParameters parameters, CancellationToken cancellationToken)
+    public virtual async Task<IClientApplicationBase> CreateClientAppAsync(AuthenticationParameters parameters, CancellationToken cancellationToken)
     {
         if (lastParameters == parameters && lastClientApp != null) return lastClientApp;
         lastParameters = parameters;
@@ -86,16 +92,16 @@ internal abstract class DelegatingAuthenticator : IAuthenticator
     }
 
     public async Task<AuthenticationResult> TryAuthenticateAsync(
-        AuthenticationParameters parameters, Action<string> onMessageForUser = default, CancellationToken cancellationToken = default)
+        AuthenticationParameters parameters, bool clearTokenCache, Action<string> onMessageForUser = default, CancellationToken cancellationToken = default)
     {
         if (CanAuthenticate(parameters))
         {
-            return await AuthenticateAsync(parameters, onMessageForUser, cancellationToken).ConfigureAwait(false);
+            return await AuthenticateAsync(parameters, clearTokenCache, onMessageForUser, cancellationToken).ConfigureAwait(false);
         }
 
         if (NextAuthenticator != null)
         {
-            return await NextAuthenticator.TryAuthenticateAsync(parameters, onMessageForUser, cancellationToken).ConfigureAwait(false);
+            return await NextAuthenticator.TryAuthenticateAsync(parameters, clearTokenCache, onMessageForUser, cancellationToken).ConfigureAwait(false);
         }
 
         return null;
@@ -132,6 +138,16 @@ internal abstract class DelegatingAuthenticator : IAuthenticator
         }).Build();
 
         return client;
+    }
+
+    protected static async Task ClearTokenCacheAsync(IClientApplicationBase app)
+    {
+        var accounts = await app.GetAccountsAsync().ConfigureAwait(false);
+        while (accounts.Any())
+        {
+            await app.RemoveAsync(accounts.FirstOrDefault()).ConfigureAwait(false);
+            accounts = await app.GetAccountsAsync().ConfigureAwait(false);
+        }
     }
 
     private static async Task<IPublicClientApplication> CreatePublicClientAsync(
