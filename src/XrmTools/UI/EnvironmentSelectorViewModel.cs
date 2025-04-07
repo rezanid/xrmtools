@@ -15,10 +15,13 @@ using XrmTools.Xrm;
 using System.Threading;
 using System.Threading.Tasks;
 using XrmTools.Xrm.Repositories;
+using XrmTools.Logging.Compatibility;
+using XrmTools.Meta.Model;
 
 internal class EnvironmentSelectorViewModel : ViewModelBase
 {
     private readonly IRepositoryFactory? repositoryFactory;
+    private readonly ILogger logger;
     private DataverseEnvironment _environment;
     private SolutionItem _solutionItem;
     public DataverseEnvironment Environment 
@@ -40,18 +43,18 @@ internal class EnvironmentSelectorViewModel : ViewModelBase
 
     private readonly ISettingsProvider settingsProvider;
 
-#pragma warning disable CS8618 // False-positive: _environment is set via Environment property.
     public EnvironmentSelectorViewModel(
-#pragma warning restore CS8618 // False-positive: _environment is set via Environment property.
         SettingsStorageTypes storageType,
         SolutionItem solutionItem, 
         ISettingsProvider settingsProvider, 
         Action onSelect, 
         Action onCancel, 
-        IRepositoryFactory? repositoryFactory)
+        IRepositoryFactory? repositoryFactory,
+        ILogger logger)
     {
         this.repositoryFactory = repositoryFactory;
         this.settingsProvider = settingsProvider;
+        this.logger = logger;
         StorageType = storageType;
         SolutionItem = solutionItem;
         Environments = new ObservableCollection<DataverseEnvironment>(GeneralOptions.Instance.Environments);
@@ -112,7 +115,8 @@ internal class EnvironmentSelectorViewModel : ViewModelBase
         }
         else
         {
-            _ = VS.MessageBox.ShowAsync("Test Failed", message, OLEMSGICON.OLEMSGICON_WARNING, OLEMSGBUTTON.OLEMSGBUTTON_OK);
+            logger.LogWarning(message);
+            _ = VS.MessageBox.ShowAsync(Strings.EnvironmentConnectionErrorUITitle, string.Format(Strings.EnvironmentConnectionErrorUIDesc, environment), OLEMSGICON.OLEMSGICON_WARNING, OLEMSGBUTTON.OLEMSGBUTTON_OK);
         }
     }
 
@@ -121,16 +125,22 @@ internal class EnvironmentSelectorViewModel : ViewModelBase
         if (repositoryFactory == null) return (false, "Testing not available.");
         if (environment is null) return (false, "Environment is not selected. Please select an environment first.");
         if (!environment.IsValid) return (false, string.Format(Strings.EnvironmentConnectionStringError, environment.Name));
+        WhoAmIResponse? response = null;
         try
         {
             using var systemRepository = await repositoryFactory.CreateRepositoryAsync<ISystemRepository>(environment);
-            var response = await systemRepository.WhoAmIAsync(CancellationToken.None);
+            response = await systemRepository.WhoAmIAsync(CancellationToken.None);
         }
         catch (Exception ex)
         {
             return (false, string.Format(Strings.EnvironmentConnectionError, environment, ex));
         }
-        return (true, string.Format(Strings.EnvironmentConnectionSuccess, environment));
+        return response is not null ?
+            (true, string.Format(Strings.EnvironmentConnectionSuccess, environment)) :
+            (false, string.Format("WhoAmI request failed.", environment));
     }
+
+    //TODO: Add more tests here:
+
 }
 #nullable restore
