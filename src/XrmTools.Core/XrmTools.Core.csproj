@@ -60,6 +60,7 @@
     <Compile Include="Environments\DataverseEnvironment.cs" />
     <Compile Include="Environments\DataverseEnvironmentList.cs" />
     <Compile Include="Environments\IEnvironmentProvider.cs" />
+    <Compile Include="Helpers\GuidFactory.cs" />
     <Compile Include="Helpers\StreamHelper.cs" />
     <Compile Include="Helpers\StringHelper.cs" />
     <Compile Include="Helpers\TypeExtensions.cs" />
@@ -77,6 +78,11 @@
     <Compile Include="Logging\Compatibility\LogValuesFormatter.cs" />
     <Compile Include="Logging\IOutputLoggerService.cs" />
     <Compile Include="PolicyHandler.cs" />
+    <Compile Include="Resources\Strings.Designer.cs">
+      <AutoGen>True</AutoGen>
+      <DesignTime>True</DesignTime>
+      <DependentUpon>Strings.resx</DependentUpon>
+    </Compile>
     <Compile Include="Serialization\Newtonsoft\EntityResolverForFile.cs" />
     <Compile Include="Serialization\Newtonsoft\IgnoreDataContractResolver.cs" />
     <Compile Include="Serialization\Newtonsoft\IgnoreEntityPropertiesConverter.cs" />
@@ -95,13 +101,17 @@
     <Compile Include="Tokens\EnvironmentTokenExpander.cs" />
     <Compile Include="Tokens\ITokenExpander.cs" />
     <Compile Include="Tokens\TokenExpanderService.cs" />
-    <Compile Include="Xrm\EntityMetadataRepository.cs" />
+    <Compile Include="Validation\AsyncValidatorBase.cs" />
+    <Compile Include="Validation\IValidator.cs" />
+    <Compile Include="Validation\AsyncLoggingValidator.cs" />
+    <Compile Include="Validation\LoggingValidator.cs" />
+    <Compile Include="Validation\LoggingValidatorBase.cs" />
+    <Compile Include="Validation\PluginAssemblyValidator.cs" />
+    <Compile Include="Validation\Categories.cs" />
+    <Compile Include="Validation\ValidationService.cs" />
+    <Compile Include="Validation\ValidatorAttribute.cs" />
+    <Compile Include="Validation\ValidatorBase.cs" />
     <Compile Include="Xrm\IXrmRepository.cs" />
-    <Compile Include="Xrm\PluginAssemblyRepository.cs" />
-    <Compile Include="Xrm\PluginTypeRepository.cs" />
-    <Compile Include="Xrm\SdkMessageRepository.cs" />
-    <Compile Include="Xrm\SystemRepository.cs" />
-    <Compile Include="Xrm\XrmRepository.cs" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="CredentialManagement">
@@ -176,6 +186,14 @@
       <Project>{1F790C13-3B66-41E8-AED5-FA152465B6A0}</Project>
       <Name>XrmTools.Meta</Name>
     </ProjectReference>
+  </ItemGroup>
+  <ItemGroup />
+  <ItemGroup>
+    <EmbeddedResource Include="Resources\Strings.resx">
+      <Generator>ResXFileCodeGenerator</Generator>
+      <LastGenOutput>Strings.Designer.cs</LastGenOutput>
+      <CustomToolNamespace>XrmTools.Core.Resources</CustomToolNamespace>
+    </EmbeddedResource>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>
