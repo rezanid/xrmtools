@@ -95,10 +95,4 @@ public class PluginStepImageConfig : TypedEntity<PluginStepImageConfig>, IMessag
 
     public PluginStepImageConfig() : base(EntityLogicalName) { }
 }
-
-public class MessageProcessingStepImageConverter : System.Text.Json.Serialization.JsonConverter<PluginStepImageConfig>
-{
-    public override PluginStepImageConfig? Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options) => throw new NotImplementedException();
-    public override void Write(Utf8JsonWriter writer, PluginStepImageConfig value, JsonSerializerOptions options) => throw new NotImplementedException();
-}
 #nullable restore

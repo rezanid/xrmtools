@@ -18,6 +18,10 @@ public record SdkMessage(
         bool AutoTransact,
     [property: JsonProperty("introducedversion"), JsonPropertyName("introducedversion")]
         string IntroducedVersion,
+    [property: JsonProperty("customizationleve"), JsonPropertyName("customizationlevel")]
+        int? CustomizationLevel,
+    [property: JsonProperty("availability"), JsonPropertyName("availability")]
+        int? Availability,
     [property: JsonProperty("sdkmessageid"), JsonPropertyName("sdkmessageid")]
         Guid Id,
     [property: JsonProperty("sdkmessageid_sdkmessagefilter"), JsonPropertyName("sdkmessageid_sdkmessagefilter")]
@@ -50,6 +54,8 @@ public record SdkMessage(
         ImageMessageProperties.TryGetValue(Name, out var messageNames)
         ? messageNames
         : [];
+
+    internal bool IsFilteringAttributesSupported => Name is "Create" or "Update" or "CreateMultiple" or "CreateMultiple" or "OnExternalUpdated";
 }
 
 internal record ImageMessagePropertyName(

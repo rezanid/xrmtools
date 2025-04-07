@@ -7,27 +7,27 @@ using Microsoft.VisualStudio.Shell;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel.Composition;
+using System.ComponentModel.DataAnnotations;
 using System.Diagnostics.CodeAnalysis;
-using System.Net.Http;
-using System.Threading.Tasks;
-using XrmTools.WebApi.Batch;
-using XrmTools.WebApi.Messages;
-using XrmTools.Analyzers;
-using XrmTools.Logging.Compatibility;
-using XrmTools.Resources;
-using XrmTools.Xrm.Model;
-using Task = System.Threading.Tasks.Task;
-using XrmTools.Environments;
-using XrmTools.WebApi;
-using XrmTools.WebApi.Methods;
-using XrmTools.Helpers;
 using System.Linq;
-using XrmTools.Xrm.Repositories;
-using XrmTools.Xrm;
+using System.Net.Http;
 using System.Threading;
+using System.Threading.Tasks;
+using XrmTools.Analyzers;
+using XrmTools.Environments;
+using XrmTools.Helpers;
+using XrmTools.Logging.Compatibility;
 using XrmTools.Meta.Model;
+using XrmTools.Resources;
+using XrmTools.WebApi;
+using XrmTools.WebApi.Batch;
 using XrmTools.WebApi.Entities;
-using Community.VisualStudio.Toolkit;
+using XrmTools.WebApi.Messages;
+using XrmTools.WebApi.Methods;
+using XrmTools.Xrm;
+using XrmTools.Xrm.Model;
+using XrmTools.Xrm.Repositories;
+using Task = System.Threading.Tasks.Task;
 
 /// <summary>
 /// Command handler to set the custom tool of the selected item to the Xrm Plugin Code Generator.
@@ -50,116 +50,18 @@ internal sealed class RegisterPluginCommand : BaseCommand<RegisterPluginCommand>
     [Import]
     internal ILogger<RegisterPluginCommand> Logger { get; set; } = null!;
 
-    private async Task<(bool pass, string message)> ValidatePluginAssemblyConfigAsync([NotNullWhen(true)]PluginAssemblyConfig? pluginAssembly)
+    [Import]
+    internal Validation.IValidationService Validator { get; set; } = null!;
+
+    private async Task<bool> ValidatePluginAssemblyConfigAsync([NotNullWhen(true)] PluginAssemblyConfig? pluginAssembly)
     {
-        if (pluginAssembly == null)
+        var result = await Validator.ValidateIfAvailableAsync(pluginAssembly);
+        if (result != ValidationResult.Success)
         {
-            await VS.MessageBox.ShowErrorAsync(
-                Vsix.Name,
-                "Could not parse the file. Make sure the file is a valid C# file with at least a plugin in correct structure.");
-            return (false, "Invalid plugin assembly");
+            await VS.MessageBox.ShowErrorAsync(Vsix.Name, result.ErrorMessage);
+            return false;
         }
-        if (string.IsNullOrWhiteSpace(pluginAssembly.Name))
-        {
-            await VS.MessageBox.ShowErrorAsync(
-                Vsix.Name,
-                "Could not parse assembly name or assembly name has not been set.");
-            return (false, "Invalid plugin assembly");
-        }
-
-        pluginAssembly.PluginAssemblyId = pluginAssembly.PluginAssemblyId.NewIfEmpty(GuidFactory.Namespace.PluginAssembly, pluginAssembly.Name);
-        if (!pluginAssembly.PluginAssemblyId.HasValue || pluginAssembly.PluginAssemblyId.Value == Guid.Empty)
-        {
-            pluginAssembly.PluginAssemblyId = GuidFactory.DeterministicGuid(GuidFactory.Namespace.PluginAssembly, pluginAssembly.Name);
-            Logger.LogTrace($"A deterministic GUID has been asseigned to assembly {pluginAssembly.Name} based on its name.");
-        }
-
-        foreach (var plugin in pluginAssembly.PluginTypes)
-        {
-            if (plugin is null)
-            {
-                await VS.MessageBox.ShowErrorAsync(
-                    Vsix.Name,
-                    "Could not parse plugin type.");
-                return (false, "Could not parse plugin type.");
-            }
-            if (string.IsNullOrWhiteSpace(plugin.TypeName))
-            {
-                await VS.MessageBox.ShowErrorAsync(
-                    Vsix.Name,
-                    "Could not parse plugin type name.");
-                return (false, "Invalid plugin type.");
-            }
-            if (!plugin.PluginTypeId.HasValue || plugin.PluginTypeId.Value == Guid.Empty)
-            {
-                plugin.PluginTypeId = GuidFactory.DeterministicGuid(GuidFactory.Namespace.PluginType, plugin.TypeName);
-                Logger.LogTrace($"A deterministic GUID has been asseigned to plugin type {plugin.TypeName} based on its name.");
-            }
-            foreach (var step in plugin.Steps)
-            {
-                if (step is null)
-                {
-                    await VS.MessageBox.ShowErrorAsync(
-                        Vsix.Name,
-                        "Could not parse plugin step.");
-                    return (false, "Invalid plugin step.");
-                }
-                if (string.IsNullOrWhiteSpace(step.Name))
-                {
-                    await VS.MessageBox.ShowErrorAsync(
-                        Vsix.Name,
-                        "Could not parse plugin step name.");
-                    return (false, "Invalid plugin step.");
-                }
-                if (!step.PluginStepId.HasValue || step.PluginStepId.Value == Guid.Empty)
-                {
-                    step.PluginStepId = GuidFactory.DeterministicGuid(GuidFactory.Namespace.Step, plugin.TypeName + step.Name);
-                    Logger.LogTrace($"A deterministic GUID has been asseigned to sdkmessageprocessingstep based on its plugin type and its name.");
-                }
-                foreach (var image in step.Images)
-                {
-                    if (image is null)
-                    {
-                        await VS.MessageBox.ShowErrorAsync(
-                            Vsix.Name,
-                            "Could not parse plugin image.");
-                        return (false, "Invalid plugin image.");
-                    }
-                    if (string.IsNullOrWhiteSpace(image.Name))
-                    {
-                        await VS.MessageBox.ShowErrorAsync(
-                            Vsix.Name,
-                            "Could not parse plugin image name.");
-                        return (false, "Invalid plugin image.");
-                    }
-                    if (!image.PluginStepImageId.HasValue || image.PluginStepImageId.Value == Guid.Empty)
-                    {
-                        image.PluginStepImageId = GuidFactory.DeterministicGuid(GuidFactory.Namespace.Image, plugin.TypeName + step.Name + image.Name);
-                        Logger.LogTrace($"A deterministic GUID has been asseigned to sdkmessageprocessingstepimage based on its plugin type, step and its name.");
-                    }
-                }
-            }
-
-        }
-
-        return (true, "Valid plugin assembly");
-    }
-
-    private IEnumerable<PhysicalFile> GetProjectCsFiles(SolutionItem item)
-    {
-        if (item.Type == SolutionItemType.PhysicalFile && item.Name.EndsWith(".cs"))
-        {
-            yield return item as PhysicalFile;
-        }
-        if (item.Children == null) yield break;
-        foreach (var child in item.Children)
-        {
-            if (child is null) continue;
-            foreach (var subChild in GetProjectCsFiles(child))
-            {
-                yield return subChild;
-            }
-        }
+        return true;
     }
 
     protected override async Task ExecuteAsync(OleMenuCmdEventArgs e)
@@ -184,10 +86,9 @@ internal sealed class RegisterPluginCommand : BaseCommand<RegisterPluginCommand>
             await MetaDataService.ParseProjectAsync(activeItem.FullPath) :
             await MetaDataService.ParseAsync(activeItem.FullPath);
 
-        var (validationPassed, validationMessage) = await ValidatePluginAssemblyConfigAsync(inputModel);
+        var validationPassed = await ValidatePluginAssemblyConfigAsync(inputModel);
         if (!validationPassed)
         {
-            Logger.LogWarning("Plugin registration will not continue due to validation error(s): " + validationMessage);
             return;
         }
 
@@ -261,7 +162,7 @@ internal sealed class RegisterPluginCommand : BaseCommand<RegisterPluginCommand>
                 }
             }
         }
-        await VS.StatusBar.ShowMessageAsync("Plugin registered successfully.");
+        await VS.StatusBar.ShowMessageAsync("Plugin(s) registered successfully.");
         await VS.StatusBar.EndAnimationAsync(StatusAnimation.General);
     }
 
@@ -297,32 +198,43 @@ internal sealed class RegisterPluginCommand : BaseCommand<RegisterPluginCommand>
 
     protected override async Task InitializeCompletedAsync()
     {
-        Command.Supported = false;
+        //Command.Supported = false;
         var componentModel = await Package.GetServiceAsync<SComponentModel, IComponentModel>().ConfigureAwait(false);
         componentModel?.DefaultCompositionService.SatisfyImportsOnce(this);
         EnsureDependencies();
     }
-    
+
     protected override void BeforeQueryStatus(EventArgs e)
     {
         ThreadHelper.JoinableTaskFactory.Run(async () =>
         {
             var item = await VS.Solutions.GetActiveItemAsync();
-
-            Command.Visible = item is not null && (item.Type == SolutionItemType.Project || (item.Type == SolutionItemType.PhysicalFile &&
-                await ((PhysicalFile)item).GetAttributeAsync("Generator") == XrmCodeGenerator.Name));
+            Command.Visible = await IsVisibleAsync(item).ConfigureAwait(false);
         });
-    }
 
-    [MemberNotNull(nameof(Logger), nameof(MetaDataService), nameof(WebApiService), 
-        nameof(EnvironmentProvider), nameof(RepositoryFactory))]
-    private void EnsureDependencies()
-    {
-        if (Logger == null) throw new InvalidOperationException(string.Format(Strings.MissingServiceDependency, nameof(RegisterPluginCommand), nameof(Logger)));
-        if (MetaDataService == null) throw new InvalidOperationException(string.Format(Strings.MissingServiceDependency, nameof(RegisterPluginCommand), nameof(MetaDataService)));
-        if (WebApiService == null) throw new InvalidOperationException(string.Format(Strings.MissingServiceDependency, nameof(RegisterPluginCommand), nameof(WebApiService)));
-        if (EnvironmentProvider == null) throw new InvalidOperationException(string.Format(Strings.MissingServiceDependency, nameof(RegisterPluginCommand), nameof(EnvironmentProvider)));
-        if (RepositoryFactory == null) throw new InvalidOperationException(string.Format(Strings.MissingServiceDependency, nameof(RegisterPluginCommand), nameof(RepositoryFactory)));
+        async Task<bool> IsVisibleAsync(SolutionItem? item)
+        {
+            if (item is null)
+                return false;
+
+            if (item.Type == SolutionItemType.Project)
+                return true;
+
+            if (item.Type == SolutionItemType.PhysicalFile && item is PhysicalFile file)
+                return await IsXrmPluginFileAsync(file).ConfigureAwait(false);
+
+            return false;
+        }
+
+        async Task<bool> IsXrmPluginFileAsync(PhysicalFile file)
+        {
+            var generator = await file.GetAttributeAsync("Generator").ConfigureAwait(false);
+            if (generator != XrmCodeGenerator.Name)
+                return false;
+
+            var pluginAttr = await file.GetAttributeAsync("IsXrmPlugin").ConfigureAwait(false);
+            return bool.TryParse(pluginAttr, out var isXrmPlugin) && isXrmPlugin;
+        }
     }
 
     private ICollection<HttpRequestMessage> GenerateDeleteRequestsForCleanup(
@@ -348,6 +260,17 @@ internal sealed class RegisterPluginCommand : BaseCommand<RegisterPluginCommand>
         }
 
         return deleteRequests;
+    }
+
+    [MemberNotNull(nameof(Logger), nameof(MetaDataService), nameof(WebApiService),
+        nameof(EnvironmentProvider), nameof(RepositoryFactory))]
+    private void EnsureDependencies()
+    {
+        if (Logger == null) throw new InvalidOperationException(string.Format(Strings.MissingServiceDependency, nameof(RegisterPluginCommand), nameof(Logger)));
+        if (MetaDataService == null) throw new InvalidOperationException(string.Format(Strings.MissingServiceDependency, nameof(RegisterPluginCommand), nameof(MetaDataService)));
+        if (WebApiService == null) throw new InvalidOperationException(string.Format(Strings.MissingServiceDependency, nameof(RegisterPluginCommand), nameof(WebApiService)));
+        if (EnvironmentProvider == null) throw new InvalidOperationException(string.Format(Strings.MissingServiceDependency, nameof(RegisterPluginCommand), nameof(EnvironmentProvider)));
+        if (RepositoryFactory == null) throw new InvalidOperationException(string.Format(Strings.MissingServiceDependency, nameof(RegisterPluginCommand), nameof(RepositoryFactory)));
     }
 }
 #nullable restore

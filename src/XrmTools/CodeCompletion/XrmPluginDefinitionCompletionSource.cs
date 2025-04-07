@@ -204,7 +204,7 @@ internal class XrmPluginDefinitionCompletionSource(
         var entityMetadataRepository = await repositoryFactory.CreateRepositoryAsync<IEntityMetadataRepository>();
         if (entityMetadataRepository == null) return CompletionContext.Empty;
         var entity = await entityMetadataRepository.GetAsync(entityName, cancellationToken).ConfigureAwait(false);
-        var availableAttributes = entity.Attributes?.Where(IsSupportedAttribute).ToArray();
+        var availableAttributes = entity?.Attributes?.Where(IsSupportedAttribute).ToArray();
         if (availableAttributes == null || availableAttributes.Length == 0) return CompletionContext.Empty;
 
         // Extract current attribute list
@@ -248,10 +248,7 @@ internal class XrmPluginDefinitionCompletionSource(
         return symbol?.ContainingType.Name == nameof(EntityAttribute);
     }
 
-    private bool IsSupportedAttribute(AttributeMetadata attribute)
-        => attribute?.AttributeType is not null && (SupportedAttributeTypes.Contains(attribute.AttributeType.Value)
-            || (attribute is { AttributeType: AttributeTypeCode.Uniqueidentifier or AttributeTypeCode.CalendarRules or AttributeTypeCode.Virtual }
-                && (attribute.IsPrimaryId.Value || attribute.AttributeTypeName.Value == "MultiSelectPicklistType")));
+    private bool IsSupportedAttribute(AttributeMetadata attribute) => attribute.IsValidForRead.HasValue && attribute.IsValidForRead.Value && attribute.AttributeOf is null;
 
     private int GetArgumentIndexAtPosition(SeparatedSyntaxList<AttributeArgumentSyntax> arguments, int position)
     {

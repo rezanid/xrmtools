@@ -225,10 +225,10 @@ public class PluginStepConfig : TypedEntity<PluginStepConfig>, IMessageProcessin
     }
     [System.Text.Json.Serialization.JsonIgnore]
     [Newtonsoft.Json.JsonIgnore]
-    [AttributeLogicalName("Impersonatinguserid")]
+    [AttributeLogicalName("impersonatinguserid")]
     public EntityReference? ImpersonatingUserId
     {
-        get => TryGetAttributeValue("Impersonatinguserid", out EntityReference value) ? value : null;
+        get => TryGetAttributeValue("impersonatinguserid", out EntityReference value) ? value : null;
         set => this["Impersonatinguserid"] = value;
     }
     [AttributeLogicalName("impersonatinguserfullname")]

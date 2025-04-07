@@ -223,20 +223,11 @@ namespace XrmTools.Resources {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to // Code generation failed due to invalid input file..
+        ///   Looks up a localized string similar to Input file is not a valid .cs, .json or .yml file. Please provide a valid input file..
         /// </summary>
-        internal static string PluginGenerator_InvalidConfig {
+        internal static string PluginGenerator_InvalidInputFile {
             get {
-                return ResourceManager.GetString("PluginGenerator.InvalidConfig", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   Looks up a localized string similar to Assembly configuration does not contain any plugin types..
-        /// </summary>
-        internal static string PluginGenerator_NoPluginTypesOrEntities {
-            get {
-                return ResourceManager.GetString("PluginGenerator.NoPluginTypesOrEntities", resourceCulture);
+                return ResourceManager.GetString("PluginGenerator.InvalidInputFile", resourceCulture);
             }
         }
         
