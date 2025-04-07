@@ -37,7 +37,7 @@
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <PropertyGroup>
-    <EnvironmentUrl>https://orgd67e4e96.crm4.dynamics.com/</EnvironmentUrl>
+    <EnvironmentUrl>https://org8848d2a1.crm4.dynamics.com/</EnvironmentUrl>
     <ApplicationId>51f81489-12ee-4a9e-aaae-a2591f45987d</ApplicationId>
   </PropertyGroup>
   <PropertyGroup>
@@ -63,6 +63,7 @@
     <Compile Include="AccountCreatePlugin.cs">
       <Generator>Xrm Tools Plugin Code Generator</Generator>
       <LastGenOutput>AccountCreatePlugin1.cs</LastGenOutput>
+      <IsXrmPlugin>True</IsXrmPlugin>
     </Compile>
     <Compile Include="AccountCreatePlugin1.cs">
       <AutoGen>True</AutoGen>
@@ -78,14 +79,19 @@
       <DesignTime>True</DesignTime>
       <DependentUpon>ContactCreatePlugin.cs</DependentUpon>
     </Compile>
+    <Compile Include="Entities.cs">
+      <AutoGen>True</AutoGen>
+      <DesignTime>True</DesignTime>
+      <DependentUpon>Entities.yaml</DependentUpon>
+    </Compile>
     <Compile Include="Model\Entities.cs">
       <Generator>Xrm Tools Plugin Code Generator</Generator>
       <LastGenOutput>Entities1.cs</LastGenOutput>
     </Compile>
     <Compile Include="Model\Entities1.cs">
-      <DependentUpon>Entities.cs</DependentUpon>
-      <DesignTime>True</DesignTime>
       <AutoGen>True</AutoGen>
+      <DesignTime>True</DesignTime>
+      <DependentUpon>Entities.cs</DependentUpon>
     </Compile>
     <Compile Include="Properties\AssemblyInfo.cs" />
     <None Include="CodeGenTemplates\BigInt.sbncs" />
@@ -131,7 +137,12 @@
     <None Include="CodeGenTemplates\Target.sbncs" />
     <None Include="CodeGenTemplates\UniqueIdentifier.sbncs" />
     <None Include="CodeGenTemplates\Virtual.sbncs" />
+    <None Include="Entities.yaml">
+      <Generator>XrmTools Entity Generator</Generator>
+      <LastGenOutput>Entities.cs</LastGenOutput>
+    </None>
     <None Include="key.snk" />
+    <None Include="Model\Entities.model.json" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="Microsoft.CrmSdk.CoreAssemblies">
