@@ -80,6 +80,37 @@ After adding attributes to a plugin class, Xrm Tools knows more about your inten
 >
 > Every time you save the file, XRM Tools reads the attributes and the name of your class, retrieves all the necessary metadata from the environment, finds the best matching template and finally sends everything to the code generator.
 
+# Registering Plugins
+Developing plugins doesn't end with the build of course. Once the first version of your plugin is ready and it's passing all its unit tests you will need to register your plugin. This is the time that you would typically open the Terminal and type `pac tool prt` to start Microsoft's Plugin Registration tool and carefully register the plugin along with its registration steps and images, making sure you are not making any mistakes because it won't be always easy to detect. You might be thinking with all those attributes that you added to your plugin in [Making a new Power Platform Plugin](#making-a-new-power-platform-plugin) could Xrm Tools magically figure out what's needed and take care of the registration for you? That's exactly what we are about to do.
+
+## Registering a single plugin
+1. Right-click on the plugin file in the Solution Explorer.
+2. From the context menu, select "Register Plugin(s)".
+
+<img src="https://github.com/user-attachments/assets/20bd65f7-2bbf-4598-8381-c27548225a8b" alt="Screenshot of context menu of CS file in Visual Studio Solution Explorer" width=500 />
+
+> [!NOTE]
+>
+> If there are more than one plugin in the ".cs" file, all of them will be registered. 
+
+## Registering all plugins in a project
+1. Right-click on the **project** that contains your plugin in the Solution Explorer.
+2. From the context menu, select "Register Plugin(s)".
+
+<img src="https://github.com/user-attachments/assets/5c67ee94-cc77-43e2-abb0-4d4c82a6eebb" alt="Screenshot of context menu of project in Visual Studio Solution Explorer" width=500 />
+
+When running this command at project level, the output assembly of your project along with all the plugins, including their steps and images will be registered.
+
+> [!NOTE]
+>
+> When running "Register plugin(s)" command either at project or file level, everything that's needed will be done automatically for you. For example:
+> * If you have not yet built the project or the build is not up to date with the latest changes, Xrm Tools will build your project.
+> * The output assembly from your project will be uploaded as part of the registration along with assembly registration, plugin registraions, steps and images.
+> * The entire registration will happen in one transaction meaning that if anything goes wrong you will not be left with a faulty registration and instead everything will be rolled back to previous state.
+
+> [!NOTE]
+> The attributes in your source code are the [single source of truth](https://en.wikipedia.org/wiki/Single_source_of_truth). This means that if you have used previously registered your plugins using any other tool, **all plugin registrations** will be replaced by those defined in your source code.
+
 # Learn more
 To learn more about Xrm Tools extension for Visual Studio check the [wiki](https://github.com/rezanid/xrmtools/wiki)
 Now, every time you save your plugin file, another file with be generated that contains all the code you need. You can fully customize the generated code in future if you want. Let's explore what's been generated and how we can use it.
