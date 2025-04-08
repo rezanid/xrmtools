@@ -87,7 +87,7 @@ Developing plugins doesn't end with the build of course. Once the first version 
 1. Right-click on the plugin file in the Solution Explorer.
 2. From the context menu, select "Register Plugin(s)".
 
-<img src="https://github.com/user-attachments/assets/20bd65f7-2bbf-4598-8381-c27548225a8b" alt="Screenshot of context menu of CS file in Visual Studio Solution Explorer" width=500 />
+<img src="https://github.com/user-attachments/assets/20bd65f7-2bbf-4598-8381-c27548225a8b" alt="Screenshot of context menu of CS file in Visual Studio Solution Explorer" width=450 />
 
 > [!NOTE]
 >
