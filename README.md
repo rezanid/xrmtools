@@ -99,14 +99,14 @@ Developing plugins doesn't end with the build of course. Once the first version 
 
 <img src="https://github.com/user-attachments/assets/5c67ee94-cc77-43e2-abb0-4d4c82a6eebb" alt="Screenshot of context menu of project in Visual Studio Solution Explorer" width=500 />
 
-When running this command at project level, the output assembly of your project along with all the plugins, including their steps and images will be registered.
-
 > [!NOTE]
 >
-> When running "Register plugin(s)" command either at project or file level, everything that's needed will be done automatically for you. For example:
-> * If you have not yet built the project or the build is not up to date with the latest changes, Xrm Tools will build your project.
-> * The output assembly from your project will be uploaded as part of the registration along with assembly registration, plugin registraions, steps and images.
-> * The entire registration will happen in one transaction meaning that if anything goes wrong you will not be left with a faulty registration and instead everything will be rolled back to previous state.
+> When running this command at project level, the output assembly of your project along with all the plugins, including their steps and images will be registered.
+
+When running "Register plugin(s)" command either at project or file level, everything that's needed will be done automatically for you. For example:
+* If you have not yet built the project or the build is not up to date with the latest changes, Xrm Tools will build your project.
+* The output assembly from your project will be uploaded as part of the registration along with assembly registration, plugin registraions, steps and images.
+* The entire registration will happen in one transaction meaning that if anything goes wrong you will not be left with a faulty registration and instead everything will be rolled back to previous state.
 
 > [!NOTE]
 > The attributes in your source code are the [single source of truth](https://en.wikipedia.org/wiki/Single_source_of_truth). This means that if you have used previously registered your plugins using any other tool, **all plugin registrations** will be replaced by those defined in your source code.
