@@ -9,11 +9,10 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using XrmTools.Helpers;
-using XrmTools.Meta.Attributes;
-using XrmTools.Meta.Model;
 using XrmTools.Xrm.Model;
 using XrmTools.Logging.Compatibility;
 using System.ComponentModel.Composition;
+using XrmTools.WebApi;
 
 public interface IXrmMetaDataService
 {
@@ -29,13 +28,14 @@ public interface IXrmMetaDataService
 
 [Export(typeof(IXrmMetaDataService))]
 [method: ImportingConstructor]
-public class CSharpXrmMetaDataService(
+internal class CSharpXrmMetaDataService(
     ILogger<CSharpXrmMetaDataService> logger, 
-    IAttributeConverter attributeConverter) : IXrmMetaDataService
+    ICSharpXrmMetaParser parser,
+    IWebApiService webApi) : IXrmMetaDataService
 {
     private readonly ILogger<CSharpXrmMetaDataService> Logger = logger ?? throw new ArgumentNullException(nameof(logger));
 
-    private readonly IAttributeConverter AttributeConverter = attributeConverter ?? throw new ArgumentNullException(nameof(attributeConverter));
+    private readonly ICSharpXrmMetaParser AttributeConverter = parser ?? throw new ArgumentNullException(nameof(parser));
 
     public async Task<PluginAssemblyConfig?> ParseAsync(string filePath, CancellationToken cancellationToken = default)
     {
@@ -118,16 +118,24 @@ public class CSharpXrmMetaDataService(
         var compilation = await project.GetCompilationAsync(cancellationToken).ConfigureAwait(false);
         if (compilation == null) return null;
 
-        var assemblySymbol = compilation.Assembly;
-        var assemblyAttribute = assemblySymbol.GetAttributes()
-            .SingleOrDefault(attr => attr.AttributeClass?.ToDisplayString() == typeof(PluginAssemblyAttribute).FullName);
-        if (assemblyAttribute == null) return null;
-
-        var entityAttributes = GetAssemblyEntityAttributes(assemblySymbol);
-
-        var config = CreatePluginAssemblyConfig(assemblySymbol, assemblyAttribute, entityAttributes);
-        config.FilePath = project.OutputFilePath;
-
+        var config = parser.ParsePluginAssemblyConfig(compilation.Assembly);
+        if (config is not null)
+        {
+            config.FilePath = project.OutputFilePath;
+            if (config.Solution is WebApi.Entities.Solution solution && (solution.Id is null || solution.Id == Guid.Empty))
+            {
+                var queryResult = await webApi.QueryAsync<WebApi.Entities.Solution>($"solutions?$select=solutionid&$filter=uniquename eq '{solution.UniqueName}'", cancellationToken)
+                        .ConfigureAwait(false);
+                if (queryResult != null && queryResult.Entities.Count > 0)
+                {
+                    solution.Id = queryResult.Entities[0].Id;
+                }
+                else
+                {
+                    throw new InvalidOperationException($"Solution with unique name '{solution.UniqueName}' not found.");
+                }
+            }
+        }
         return config;
     }
 
@@ -163,7 +171,7 @@ public class CSharpXrmMetaDataService(
             if (!processedSymbols.Add(typeKey))
                 continue;
 
-            var pluginType = AttributeConverter.ConvertPluginAttributes(typeSymbol);
+            var pluginType = AttributeConverter.ParsePluginConfig(typeSymbol);
             if (pluginType != null)
             {
                 result.Add(pluginType);
@@ -172,35 +180,4 @@ public class CSharpXrmMetaDataService(
 
         return result;
     }
-
-    private PluginAssemblyConfig CreatePluginAssemblyConfig(
-        IAssemblySymbol assemblySymbol, AttributeData assemblyAttribute, IEnumerable<AttributeData> entityAttributes)
-    {
-        var pluginAssemblyConfig = new PluginAssemblyConfig
-        {
-            Name = assemblySymbol.Name,
-            Version = assemblySymbol.Identity.Version.ToString(),
-            PublicKeyToken = assemblySymbol.Identity.PublicKeyToken.ToHexString(),
-            SourceType = assemblyAttribute.GetValue<int?>(nameof(PluginAssemblyAttribute.SourceType)) is int sourceType
-                ? (SourceTypes)sourceType : PluginAssemblyAttribute.DefaultSourceType,
-            IsolationMode = assemblyAttribute.GetValue<int?>(nameof(PluginAssemblyAttribute.IsolationMode)) is int isolationMode
-                ? (IsolationModes)isolationMode : PluginAssemblyAttribute.DefaultIsolationMode,
-            Entities = AttributeConverter.ConvertEntityAttributes(entityAttributes).ToList(),
-        };
-
-        if (assemblyAttribute.GetValue<string>(nameof(PluginAssemblyAttribute.Id)) is string pluginAssemblyId)
-        {
-            pluginAssemblyConfig.PluginAssemblyId = Guid.Parse(pluginAssemblyId);
-        }
-
-        if (assemblyAttribute.GetValue<string>(nameof(PluginAssemblyAttribute.SolutionId)) is string solutionId)
-        {
-            pluginAssemblyConfig.SolutionId = Guid.Parse(solutionId);// new EntityReference("solutions", Guid.Parse(solutionId));
-        }
-
-        return pluginAssemblyConfig;
-    }
-
-    private IEnumerable<AttributeData> GetAssemblyEntityAttributes(IAssemblySymbol assemblySymbol)
-        => [.. assemblySymbol.GetAttributes().Where(attr => attr.AttributeClass?.ToDisplayString() == typeof(EntityAttribute).FullName)];
 }

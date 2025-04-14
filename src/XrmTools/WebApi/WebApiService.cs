@@ -12,11 +12,14 @@ using System.Threading.Tasks;
 using XrmTools.Environments;
 using XrmTools.Http;
 using XrmTools.Logging.Compatibility;
+using XrmTools.Meta.Model;
+using XrmTools.WebApi.Entities;
 
 internal interface IWebApiService
 {
     Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken);
     Task<HttpResponseMessage> GetAsync(string uri, CancellationToken cancellationToken);
+    Task<ODataQueryResponse<T>> QueryAsync<T>(string odataQuery, CancellationToken cancellationToken = default) where T : Entity<T>;
     Task<T> SendAsync<T>(HttpRequestMessage request) where T : HttpResponseMessage;
 }
 
@@ -159,6 +162,19 @@ internal class WebApiService(
             };
             return exception;
         }
+    }
+
+    /// <summary>
+    /// Performs an query with a given OData query string and deserialized the result.
+    /// </summary>
+    /// <typeparam name="T">Type of the entity to serialize the result of the query.</typeparam>
+    /// <param name="odataQuery">OData query.</param>
+    /// <returns>OData response that include deserialized list of records in <see cref="ODataQueryResponse{T}.Entities"/> property.</returns>
+    public async Task<ODataQueryResponse<T>> QueryAsync<T>(string odataQuery, CancellationToken cancellationToken = default) where T : Entity<T>
+    {
+        var request = new HttpRequestMessage(HttpMethod.Get, odataQuery);
+        var response = await SendAsync(request, cancellationToken).ConfigureAwait(false);
+        return await response.CastAsync<ODataQueryResponse<T>>().ConfigureAwait(false);
     }
 
     /// <summary>

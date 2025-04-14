@@ -15,6 +15,7 @@ using XrmTools.Meta.Serialization;
 
 public interface IPluginAssemblyConfig : IPluginAssemblyEntity
 {
+    WebApi.Entities.Solution? Solution { get; set; }
     ICollection<EntityConfig> Entities { get; set; }
     ICollection<EntityMetadata>? EntityDefinitions { get; set; }
     List<string> RemovePrefixes { get; set; }
@@ -28,7 +29,6 @@ public interface IPluginAssemblyEntity
     string? Name { get; set; }
     ICollection<PluginTypeConfig> PluginTypes { get; set; }
     string? PublicKeyToken { get; set; }
-    Guid? SolutionId { get; set; }
     SourceTypes? SourceType { get; set; }
     string? Version { get; set; }
 }
@@ -76,6 +76,8 @@ public class PluginAssemblyConfig : TypedEntity<PluginAssemblyConfig>, IPluginAs
             OnPropertyChanged(nameof(PluginTypes));
         }
     }
+
+    public WebApi.Entities.Solution? Solution { get; set; }
     #endregion
 
     #region IPluginAssemblyEntity Properties
@@ -118,13 +120,6 @@ public class PluginAssemblyConfig : TypedEntity<PluginAssemblyConfig>, IPluginAs
         set => this["publickeytoken"] = value;
     }
 
-    [AttributeLogicalName("solutionid")]
-    public Guid? SolutionId { get; set; }
-    //public EntityReference? SolutionId
-    //{
-    //    get => TryGetAttributeValue("solutionid", out EntityReference? value) ? value : null;
-    //    set => this["solutionid"] = value;
-    //}
 
     [AttributeLogicalName("version")]
     public string? Version

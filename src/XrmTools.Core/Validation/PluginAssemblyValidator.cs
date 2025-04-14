@@ -8,12 +8,14 @@ using System.ComponentModel.DataAnnotations;
 using System.Linq;
 using XrmTools.Helpers;
 using XrmTools.Logging.Compatibility;
+using XrmTools.Xrm;
 using XrmTools.Xrm.Model;
 
 [Export(typeof(IValidator))]
 [Validator(Category = Categories.WebApi)]
 [method:ImportingConstructor]
-public class WebApiPluginAssemblyValidator(Logging.Compatibility.ILogger<WebApiPluginAssemblyValidator> logger) : ValidatorBase<PluginAssemblyConfig>
+internal class WebApiPluginAssemblyValidator(
+    Logging.Compatibility.ILogger<WebApiPluginAssemblyValidator> logger) : ValidatorBase<PluginAssemblyConfig>
 {
     private readonly Logging.Compatibility.ILogger<WebApiPluginAssemblyValidator> Logger = logger ?? throw new ArgumentNullException(nameof(logger));
     
@@ -76,6 +78,11 @@ public class WebApiPluginAssemblyValidator(Logging.Compatibility.ILogger<WebApiP
                     {
                         return new("Invalid plugin image.");
                     }
+                    if (image.ImageType == null)
+                    {
+                        return new($"Image processing step {image.Name} has not ImageType.");
+                    }
+
                     if (!image.PluginStepImageId.HasValue || image.PluginStepImageId.Value == Guid.Empty)
                     {
                         image.PluginStepImageId = GuidFactory.DeterministicGuid(GuidFactory.Namespace.Image, plugin.TypeName + step.Name + image.Name);
@@ -84,13 +91,57 @@ public class WebApiPluginAssemblyValidator(Logging.Compatibility.ILogger<WebApiP
                 }
             }
 
+            if (plugin.CustomApi != null)
+            {
+                if (string.IsNullOrWhiteSpace(plugin.CustomApi.Name))
+                {
+                    return new("Invalid custom API.");
+                }
+
+                if (plugin.CustomApi.Id is null || plugin.CustomApi.Id.Value == Guid.Empty)
+                {
+                    plugin.CustomApi.Id = GuidFactory.DeterministicGuid(GuidFactory.Namespace.CustomApi, plugin.CustomApi.Name);
+                    Logger.LogTrace($"A deterministic GUID has been asseigned to custom API based on its name.");
+                }
+
+                if (plugin.CustomApi.Description is null)
+                {
+                    plugin.CustomApi.Description = plugin.CustomApi.DisplayName ?? plugin.CustomApi.Name;
+                }
+
+                foreach (var parameter in plugin.CustomApi.RequestParameters)
+                {
+                    if (string.IsNullOrWhiteSpace(parameter.Name))
+                    {
+                        return new("Custom API found with no name!");
+                    }
+                    if (parameter.Id is null || parameter.Id == Guid.Empty)
+                    {
+                        parameter.Id = GuidFactory.DeterministicGuid(GuidFactory.Namespace.CustomApiInput, plugin.CustomApi.Name + parameter.Name);
+                        Logger.LogTrace($"A deterministic GUID has been asseigned to customapirequestparameter based on its customapi name and  its name.");
+                    }
+                }
+
+                foreach (var parameter in plugin.CustomApi.ResponseProperties)
+                {
+                    if (string.IsNullOrWhiteSpace(parameter.Name))
+                    {
+                        return new("Custom API found with no name!");
+                    }
+                    if (parameter.Id is null || parameter.Id == Guid.Empty)
+                    {
+                        parameter.Id = GuidFactory.DeterministicGuid(GuidFactory.Namespace.CustomApiOutput, plugin.CustomApi.Name + parameter.Name);
+                        Logger.LogTrace($"A deterministic GUID has been asseigned to customapiresponseproperty based on its customapi name and  its name.");
+                    }
+                }
+            }
         }
         return ValidationResult.Success;
     }
 }
 
 [Export(typeof(IValidator))]
-[Validator]
+[Validator(Category = Categories.CodeGeneration)]
 [method: ImportingConstructor]
 public class CodeGenPluginAssemblyValidator(Logging.Compatibility.ILogger<CodeGenPluginAssemblyValidator> logger) : ValidatorBase<PluginAssemblyConfig>
 {

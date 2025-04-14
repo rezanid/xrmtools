@@ -14,8 +14,8 @@ internal abstract class Entity<T> where T : Entity<T>
     static Entity()
     {
         var attr = typeof(T).GetCustomAttributes(typeof(EntityMetadataAttribute), false)
-                            .OfType<EntityMetadataAttribute>()
-                            .FirstOrDefault() ?? throw new InvalidOperationException($"EntityMetadataAttribute is missing on {typeof(T).Name}");
+            .OfType<EntityMetadataAttribute>()
+            .FirstOrDefault() ?? throw new InvalidOperationException($"EntityMetadataAttribute is missing on {typeof(T).Name}");
         _metadata = attr.Metadata;
     }
 

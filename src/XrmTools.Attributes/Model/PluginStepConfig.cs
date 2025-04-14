@@ -22,10 +22,11 @@ public interface IMessageProcessingStepEntity
     string? MessageName { get; set; }
     string? Name { get; set; }
     string? PrimaryEntityName { get; set; }
-    object? CustomConfiguration { get; set; }
+    string? Configuration { get; set; }
     ExecutionMode? Mode { get; set; }
     int? Rank { get; set; }
     Stages? Stage { get; set; }
+    int? ExecutionOrder { get; set; }
     PluginStepStates? State { get; set; }
     SupportedDeployments? SupportedDeployment { get; set; }
     EntityReference? ImpersonatingUserId { get; set; }
@@ -69,7 +70,7 @@ public class PluginStepConfig : TypedEntity<PluginStepConfig>, IMessageProcessin
     [JsonPropertyOrder(1)]
     public ICollection<PluginStepImageConfig> Images { get; set; } = [];
     public object? ActionDefinition { get; set; }
-    public object? CustomConfiguration { get; set; }
+    public string? Configuration { get; set; }
     public string? StageName
     {
         get => Stage switch
@@ -142,8 +143,15 @@ public class PluginStepConfig : TypedEntity<PluginStepConfig>, IMessageProcessin
     [AttributeLogicalName("mode")]
     public ExecutionMode? Mode 
     {
-        get => TryGetAttributeValue("mode", out OptionSetValue? value) ? (ExecutionMode)value.Value : null;
+        get => TryGetAttributeValue("mode", out OptionSetValue? value) ? (ExecutionMode?)value?.Value : null;
         set => this["mode"] = value == null ? null : new OptionSetValue((int)value);
+    }
+
+    [AttributeLogicalName("executionorder")]
+    public int? ExecutionOrder 
+    { 
+        get => TryGetAttributeValue("executionorder", out int value) ? value : null;
+        set => this["executionorder"] = value;
     }
     //[AttributeLogicalName("primaryentityname")]
     public string? PrimaryEntityName { get; set; }
@@ -166,7 +174,7 @@ public class PluginStepConfig : TypedEntity<PluginStepConfig>, IMessageProcessin
     [AttributeLogicalName("sdkmessageid")]
     public Guid? SdkMessageId 
     { 
-        get => TryGetAttributeValue("sdkmessageid", out EntityReference? value) ? value.Id : null;
+        get => TryGetAttributeValue("sdkmessageid", out EntityReference? value) ? value?.Id : null;
         set
         {
             if (value == null)
@@ -196,6 +204,7 @@ public class PluginStepConfig : TypedEntity<PluginStepConfig>, IMessageProcessin
             this["sdkmessageid"] = currentValue;
         }
     }
+
     /// <summary>
     /// Required, Picklist
     /// </summary>

@@ -12,12 +12,18 @@ internal static class GuidFactory
         PluginAssembly = 0,
         PluginType = 1,
         Step = 2,
-        Image = 3
+        Image = 3,
+        CustomApi = 4,
+        CustomApiInput = 5,
+        CustomApiOutput = 6
     }
     private static readonly Guid Namespace_PluginAssembly = Guid.Parse("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa");
     private static readonly Guid Namespace_PluginType = Guid.Parse("bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb");
     private static readonly Guid Namespace_Step = Guid.Parse("cccccccc-cccc-cccc-cccc-cccccccccccc");
     private static readonly Guid Namespace_Image = Guid.Parse("dddddddd-dddd-dddd-dddd-dddddddddddd");
+    private static readonly Guid Namespace_CustommApi = Guid.Parse("eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee");
+    private static readonly Guid Namespace_CustommApiInput = Guid.Parse("ffffffff-ffff-ffff-ffff-ffffffffffff");
+    private static readonly Guid Namespace_CustommApiOutput = Guid.Parse("11111111-1111-1111-1111-111111111111");
 
     /// <summary>
     /// Ensures that the Guid is set to a valid value. If not, it will be set to a deterministic Guid based on the namespace and name.
@@ -36,6 +42,9 @@ internal static class GuidFactory
             Namespace.PluginType => Namespace_PluginType,
             Namespace.Step => Namespace_Step,
             Namespace.Image => Namespace_Image,
+            Namespace.CustomApi => Namespace_CustommApi,
+            Namespace.CustomApiInput => Namespace_CustommApiInput,
+            Namespace.CustomApiOutput => Namespace_CustommApiOutput,
             _ => throw new ArgumentOutOfRangeException(nameof(@namespace))
         }, name);
 

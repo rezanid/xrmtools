@@ -6,9 +6,11 @@ using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
+using XrmTools.Core.Helpers;
 using XrmTools.Http;
 using XrmTools.Logging.Compatibility;
 using XrmTools.Meta.Model;
@@ -17,10 +19,17 @@ using XrmTools.WebApi;
 
 internal interface IEntityMetadataRepository : IXrmRepository
 {
+    /// <summary>
+    /// Get all the entities metadata.
+    /// </summary>
+    /// <param name="cancellationToken">The cancellation token.</param>
+    /// <returns></returns>
     Task<IEnumerable<EntityMetadata>> GetAsync(CancellationToken cancellationToken);
+    Task<IEnumerable<EntityMetadata>> GetByMessageNameAsync(string messageName, CancellationToken cancellationToken);
     Task<EntityMetadata> GetAsync(string entityLogicalName, CancellationToken cancellationToken);
-    Task<IEnumerable<SdkMessage>> GetAvailableMessageAsync(string entityLogicalName, CancellationToken cancellationToken);
+    Task<IEnumerable<SdkMessage>> GetAvailableMessagesAsync(string entityLogicalName, CancellationToken cancellationToken);
     Task<EntityMetadata> GetRelationshipsAsync(string entityLogicalName, CancellationToken cancellationToken);
+    Task<IEnumerable<string>> GetEntityNamesAsync(string messageName, CancellationToken cancellationToken = default);
 }
 
 internal class EntityMetadataRepository(XrmHttpClient client, IWebApiService service, ILogger logger) : XrmRepository(client, service), IEntityMetadataRepository
@@ -32,18 +41,42 @@ internal class EntityMetadataRepository(XrmHttpClient client, IWebApiService ser
         "&$filter=sdkmessageid_sdkmessagefilter/any(n:n/primaryobjecttypecode eq '{0}' and n/iscustomprocessingstepallowed eq true))" +
         "&$expand=sdkmessageid_sdkmessagefilter($filter=primaryobjecttypecode eq '{0}' and iscustomprocessingstepallowed eq true)";
     private const string entityRelationshipsQuery = "EntityDefinitions(LogicalName='{0}')?$select=MetadataId&$expand=ManyToOneRelationships,OneToManyRelationships,ManyToManyRelationships";
+    private const string sdkMessageEntityNamesQuery = "sdkmessagefilters?$top=10&$filter=sdkmessageid/name eq '{0}'&$select=primaryobjecttypecode";
 
     private static readonly JsonSerializerSettings serializerSetting = new()
     {
         ContractResolver = new PolymorphicContractResolver()
     };
 
-    /// <summary>
-    /// Get all the entities metadata.
-    /// </summary>
-    /// <param name="cancellationToken">The cancellation token.</param>
-    /// <returns></returns>
+    public async Task<IEnumerable<string>> GetEntityNamesAsync(string messageName, CancellationToken cancellationToken = default)
+    {
+        var response = await service.GetAsync(sdkMessageEntityNamesQuery.FormatWith(messageName), cancellationToken).ConfigureAwait(false);
+        if (response.IsSuccessStatusCode)
+        {
+            using var content = await response.Content.ReadAsStreamAsync().ConfigureAwait(false);
+            var typed = content.Deserialize<ODataQueryResponse<SdkMessageFilter>>().Entities;
+            if (typed is not null && typed.Any())
+            {
+                return typed.Select(e => e.PrimaryObjectTypeCode).Distinct();
+            }
+        }
+        return [];
+    }
+
+    /// <inheritdoc/>
     public async Task<IEnumerable<EntityMetadata>> GetAsync(CancellationToken cancellationToken)
+    {
+        var response = await service.SendAsync(new(HttpMethod.Get, entityMetadataQueryAll), cancellationToken).ConfigureAwait(false);
+        var typed = await response.CastAsync<RetrieveAllEntitiesResponse>().ConfigureAwait(false);
+        if (typed is not null && typed.EntityMetadata is not null)
+        {
+            return typed.EntityMetadata;
+        }
+        return [];
+    }
+
+    /// <inheritdoc/>
+    public async Task<IEnumerable<EntityMetadata>> GetByMessageNameAsync(string messageName, CancellationToken cancellationToken)
     {
         var response = await service.SendAsync(new(HttpMethod.Get, entityMetadataQueryAll), cancellationToken).ConfigureAwait(false);
         var typed = await response.CastAsync<RetrieveAllEntitiesResponse>().ConfigureAwait(false);
@@ -60,7 +93,7 @@ internal class EntityMetadataRepository(XrmHttpClient client, IWebApiService ser
     /// <param name="entityLogicalName">The logical name of the entity to retrieve its metadata.</param>
     /// <param name="cancellationToken">The cancellation token.</param>
     /// <returns></returns>
-    public async Task<IEnumerable<SdkMessage>> GetAvailableMessageAsync(string entityLogicalName, CancellationToken cancellationToken)
+    public async Task<IEnumerable<SdkMessage>> GetAvailableMessagesAsync(string entityLogicalName, CancellationToken cancellationToken)
     {
         var response = await service.SendAsync(new(HttpMethod.Get, entityMessagesQuery.FormatWith(entityLogicalName)), cancellationToken).ConfigureAwait(false);
         var typed = await response.CastAsync<ODataQueryResponse<SdkMessage>>().ConfigureAwait(false);

@@ -3,5 +3,5 @@ using Microsoft.Xrm.Sdk.Metadata;
 
 public class RetrieveEntityResponse : ODataResponse
 {
-    public EntityMetadata EntityMetadata { get; set; }
+    public required EntityMetadata EntityMetadata { get; set; }
 }

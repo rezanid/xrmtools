@@ -23,7 +23,7 @@ public class TemplatedPluginCodeGenerator(IValidationService validationService) 
     public ValidationResult IsValid(PluginAssemblyConfig pluginAssembly)
     {
         if (Config == null) { throw new InvalidOperationException("Config is not set."); }
-        return validationService.ValidateIfAvailable(pluginAssembly);
+        return validationService.ValidateIfValidatorAvailable(pluginAssembly, Categories.CodeGeneration);
     }
 
     public string GenerateCode(PluginAssemblyConfig plugin)

@@ -1,12 +1,12 @@
-﻿namespace XrmTools.Meta.Model;
+﻿#nullable enable
+namespace XrmTools.Meta.Model;
 
-using Microsoft.Xrm.Sdk.Metadata;
-using Newtonsoft.Json;
 using System.Collections.Generic;
-using System.Text.Json.Serialization;
+using Microsoft.Xrm.Sdk.Metadata;
 
 public class RetrieveAllEntitiesResponse : ODataResponse
 {
-    public string Timestamp { get; set; }
-    public IList<EntityMetadata> EntityMetadata { get; set; }
+    public string? Timestamp { get; set; }
+    public IList<EntityMetadata> EntityMetadata { get; set; } = [];
 }
+#nullable restore

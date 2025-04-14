@@ -8,6 +8,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq.Expressions;
 using System.Text.Json.Serialization;
+using XrmTools.WebApi.Entities;
 
 public interface IPluginTypeEntity
 {
@@ -81,6 +82,11 @@ public class PluginTypeConfig : TypedEntity<PluginTypeConfig>, IPluginTypeConfig
     [JsonProperty("plugintype_sdkmessageprocessingstep", Order = 1)]
     [JsonPropertyOrder(1)]
     public ICollection<PluginStepConfig> Steps { get; set; } = [];
+
+    [JsonPropertyName("CustomApi")]
+    [JsonProperty("CustomApi")]
+    [JsonPropertyOrder(2)]
+    public CustomApi? CustomApi { get; set; }
 
     public string? Namespace { get; set; }
 
