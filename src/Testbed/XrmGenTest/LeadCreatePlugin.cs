@@ -6,9 +6,8 @@ using XrmTools.Meta.Model;
 namespace XrmGenTest;
 
 [Plugin]
-[Step("Create", "contact", "firstname,lastname", Stages.PostOperation, ExecutionMode.Synchronous)]
-[Image(ImageTypes.PostImage, "firstname,lastname")]
-public partial class ContactCreatePlugin : IPlugin
+[Step("Update", "annotation", "owningteam", Stages.PostOperation, ExecutionMode.Synchronous)]
+public partial class LeadCreatePlugin : IPlugin
 {
     public void Execute(IServiceProvider serviceProvider)
     {

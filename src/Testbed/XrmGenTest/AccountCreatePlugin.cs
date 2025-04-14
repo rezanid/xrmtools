@@ -10,19 +10,6 @@ public abstract class PluginBase : IPlugin
 {
     public void Execute(IServiceProvider serviceProvider)
     {
-        Initialize(serviceProvider);
-    }
-
-    internal virtual void Initialize(IServiceProvider serviceProvider) { }
-}
-
-[Plugin("AccountPostCreate")]
-[Step("account", "Create", "name,accountnumber,createdon", Stages.PostOperation, ExecutionMode.Synchronous)]
-[Image(ImageTypes.PostImage, "Target", "name,accountnumber,createdon")]
-public partial class AccountCreatePlugin : PluginBase
-{
-    public void ExecuteLocal(IServiceProvider serviceProvider)
-    {
         if (serviceProvider == null)
         {
             throw new InvalidPluginExecutionException(nameof(serviceProvider));
@@ -30,6 +17,19 @@ public partial class AccountCreatePlugin : PluginBase
         var executionContext = serviceProvider.Get<IPluginExecutionContext7>();
         var organizationService = serviceProvider.GetOrganizationService(executionContext.UserId);
         var tracing = serviceProvider.Get<ITracingService>();
-        //Initialize(serviceProvider);
+        Initialize(serviceProvider);
+    }
+
+    internal virtual void Initialize(IServiceProvider serviceProvider) { }
+}
+
+[Plugin]
+[Step("Create", "account", "accountnumber,accountcategorycode,accountclassificationcode", Stages.PostOperation, ExecutionMode.Synchronous)]
+[Image(ImageTypes.PostImage, "accountnumber")]
+public partial class AccountCreatePlugin : PluginBase, IPlugin
+{
+    public void ExecuteLocal(IServiceProvider serviceProvider)
+    {
+        // It's just business logic!
     }
 }

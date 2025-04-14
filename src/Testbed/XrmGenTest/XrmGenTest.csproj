@@ -12,7 +12,7 @@
     <FileAlignment>512</FileAlignment>
     <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
     <Deterministic>true</Deterministic>
-    <LangVersion>12</LangVersion>
+    <LangVersion>13</LangVersion>
     <TargetFrameworkProfile />
     <DataverseEntityTemplateFilePath>C:\Users\reza\source\repos\rezanid\xrmtools\src\Testbed\XrmGenTest\CodeGenTemplates\Entity.sbncs</DataverseEntityTemplateFilePath>
     <DataversePluginTemplateFilePath>C:\Users\reza\source\repos\rezanid\xrmtools\src\Testbed\XrmGenTest\CodeGenTemplates\Plugin.sbncs</DataversePluginTemplateFilePath>
@@ -72,6 +72,7 @@
     </Compile>
     <Compile Include="ContactCreatePlugin.cs">
       <Generator>Xrm Tools Plugin Code Generator</Generator>
+      <IsXrmPlugin>True</IsXrmPlugin>
       <LastGenOutput>ContactCreatePlugin1.cs</LastGenOutput>
     </Compile>
     <Compile Include="ContactCreatePlugin1.cs">
@@ -84,6 +85,16 @@
       <DesignTime>True</DesignTime>
       <DependentUpon>Entities.yaml</DependentUpon>
     </Compile>
+    <Compile Include="LeadCreatePlugin.cs">
+      <Generator>Xrm Tools Plugin Code Generator</Generator>
+      <LastGenOutput>LeadCreatePlugin1.cs</LastGenOutput>
+      <IsXrmPlugin>True</IsXrmPlugin>
+    </Compile>
+    <Compile Include="LeadCreatePlugin1.cs">
+      <AutoGen>True</AutoGen>
+      <DesignTime>True</DesignTime>
+      <DependentUpon>LeadCreatePlugin.cs</DependentUpon>
+    </Compile>
     <Compile Include="Model\Entities.cs">
       <Generator>Xrm Tools Plugin Code Generator</Generator>
       <LastGenOutput>Entities1.cs</LastGenOutput>
@@ -92,6 +103,16 @@
       <AutoGen>True</AutoGen>
       <DesignTime>True</DesignTime>
       <DependentUpon>Entities.cs</DependentUpon>
+    </Compile>
+    <Compile Include="MyCustomApiPlugin.cs">
+      <Generator>Xrm Tools Plugin Code Generator</Generator>
+      <IsXrmPlugin>True</IsXrmPlugin>
+      <LastGenOutput>MyCustomApiPlugin1.cs</LastGenOutput>
+    </Compile>
+    <Compile Include="MyCustomApiPlugin1.cs">
+      <AutoGen>True</AutoGen>
+      <DesignTime>True</DesignTime>
+      <DependentUpon>MyCustomApiPlugin.cs</DependentUpon>
     </Compile>
     <Compile Include="Properties\AssemblyInfo.cs" />
     <None Include="CodeGenTemplates\BigInt.sbncs" />
@@ -146,7 +167,7 @@
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="Microsoft.CrmSdk.CoreAssemblies">
-      <Version>9.0.2.56</Version>
+      <Version>9.0.2.59</Version>
     </PackageReference>
     <PackageReference Include="PolySharp">
       <Version>1.15.0</Version>
@@ -154,7 +175,7 @@
       <PrivateAssets>all</PrivateAssets>
     </PackageReference>
     <PackageReference Include="XrmTools.Meta">
-      <Version>1.0.0</Version>
+      <Version>1.0.5</Version>
     </PackageReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
