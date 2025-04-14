@@ -131,7 +131,7 @@ public class XrmCodeGenerator : BaseCodeGeneratorWithSite
     {
         if (".cs".Equals(Path.GetExtension(inputFileName), StringComparison.OrdinalIgnoreCase))
         {
-            await XrmMetaDataService.ParseAsync(inputFileName);
+            return await XrmMetaDataService.ParseAsync(inputFileName);
         }
         else if (".json".Equals(Path.GetExtension(inputFileName), StringComparison.OrdinalIgnoreCase))
         {
@@ -272,66 +272,60 @@ public class XrmCodeGenerator : BaseCodeGeneratorWithSite
     private void AddEntityMetadataToPluginDefinition(PluginAssemblyConfig config)
     {
         // Let's first keep track of all the attributes that are used in the plugin definitions.
-        var entityAttributes = new Dictionary<string, HashSet<string>>();
+        var entitiesAndAttributes = new Dictionary<string, HashSet<string>>();
         // We also keep track of all the entities that are used in the plugin definitions.
         var entityDefinitions = new Dictionary<string, EntityMetadata>();
-        foreach (var step in config.PluginTypes.SelectMany(plugin => plugin.Steps))
+        foreach (var step in config.PluginTypes.SelectMany(plugin => plugin.Steps).Where(s => !string.IsNullOrWhiteSpace(s.PrimaryEntityName)))
         {
-            if (!string.IsNullOrWhiteSpace(step.PrimaryEntityName))
+            var filteringAttributes = step.FilteringAttributes?.Split([','], StringSplitOptions.RemoveEmptyEntries) ?? [];
+            if (!entitiesAndAttributes.ContainsKey(step.PrimaryEntityName!))
             {
-                var filteringAttributes = step.FilteringAttributes?.Split([','], StringSplitOptions.RemoveEmptyEntries) ?? [];
-                if (!entityAttributes.ContainsKey(step.PrimaryEntityName!))
+                entitiesAndAttributes[step.PrimaryEntityName!] = [.. filteringAttributes];
+            }
+            else if (filteringAttributes.Length == 0)
+            {
+                // Since we don't have any filtering attributes, we assume all attributes are used.
+                // so we don't need to keep track of them.
+                entitiesAndAttributes[step.PrimaryEntityName!] = [];
+            }
+            else if (entitiesAndAttributes[step.PrimaryEntityName!].Count > 0)
+            {
+                // We have some attributes already, so we add the new ones too.
+                entitiesAndAttributes[step.PrimaryEntityName!].UnionWith(filteringAttributes);
+            }
+            var entityDefinition = GetEntityMetadata(step.PrimaryEntityName!, filteringAttributes, config.RemovePrefixes);
+            step.PrimaryEntityDefinition = entityDefinition;
+            //if (entityDefinition is not null && !entityDefinitions.ContainsKey(entityDefinition.LogicalName))
+            //{
+            //    entityDefinitions[entityDefinition.LogicalName] = GetEntityMetadata(step.PrimaryEntityName!, [], config.RemovePrefixesCollection)!;
+            //}
+            foreach (var image in step.Images)
+            {
+                var imageAttributes = image.ImageAttributes?.Split(',') ?? [];
+                if (!entitiesAndAttributes.ContainsKey(step.PrimaryEntityName!))
                 {
-                    entityAttributes[step.PrimaryEntityName!] = [.. filteringAttributes];
+                    entitiesAndAttributes[step.PrimaryEntityName!] = [.. imageAttributes];
                 }
-                else if (filteringAttributes.Length == 0)
+                else if (imageAttributes.Length == 0)
                 {
                     // Since we don't have any filtering attributes, we assume all attributes are used.
                     // so we don't need to keep track of them.
-                    entityAttributes[step.PrimaryEntityName!] = [];
+                    entitiesAndAttributes[step.PrimaryEntityName!] = [];
                 }
-                else if (entityAttributes[step.PrimaryEntityName!].Count > 0)
+                else if (entitiesAndAttributes[step.PrimaryEntityName!].Count > 0)
                 {
-                    // We have some attributes already, so we add the new ones too.
-                    entityAttributes[step.PrimaryEntityName!].UnionWith(filteringAttributes);
+                    entitiesAndAttributes[step.PrimaryEntityName!].UnionWith(imageAttributes);
                 }
-                var entityDefinition = GetEntityMetadata(step.PrimaryEntityName!, filteringAttributes, config.RemovePrefixes);
-                step.PrimaryEntityDefinition = entityDefinition;
+                entityDefinition = GetEntityMetadata(step.PrimaryEntityName!, imageAttributes, config.RemovePrefixes);
+                image.MessagePropertyDefinition = entityDefinition;
                 //if (entityDefinition is not null && !entityDefinitions.ContainsKey(entityDefinition.LogicalName))
                 //{
                 //    entityDefinitions[entityDefinition.LogicalName] = GetEntityMetadata(step.PrimaryEntityName!, [], config.RemovePrefixesCollection)!;
                 //}
             }
-            foreach (var image in step.Images)
-            {
-                if (!string.IsNullOrWhiteSpace(image.EntityAlias))
-                {
-                    var attributes = image.ImageAttributes?.Split(',') ?? [];
-                    if (!entityAttributes.ContainsKey(step.PrimaryEntityName!))
-                    {
-                        entityAttributes[step.PrimaryEntityName!] = [.. attributes];
-                    }
-                    else if (attributes.Length == 0)
-                    {
-                        // Since we don't have any filtering attributes, we assume all attributes are used.
-                        // so we don't need to keep track of them.
-                        entityAttributes[step.PrimaryEntityName!] = [];
-                    }
-                    else if (entityAttributes[step.PrimaryEntityName!].Count > 0)
-                    {
-                        entityAttributes[step.PrimaryEntityName!].UnionWith(attributes);
-                    }
-                    var entityDefinition = GetEntityMetadata(step.PrimaryEntityName!, attributes, config.RemovePrefixes);
-                    image.MessagePropertyDefinition = entityDefinition;
-                    //if (entityDefinition is not null && !entityDefinitions.ContainsKey(entityDefinition.LogicalName))
-                    //{
-                    //    entityDefinitions[entityDefinition.LogicalName] = GetEntityMetadata(step.PrimaryEntityName!, [], config.RemovePrefixesCollection)!;
-                    //}
-                }
-            }
         }
         // Now we update entity definitions with the attributes used in the plugin definitions.
-        foreach(var entityEntry in entityAttributes)//.Where(e => e.Value.Count > 0))
+        foreach(var entityEntry in entitiesAndAttributes)//.Where(e => e.Value.Count > 0))
         {
             //var entityDefinition = entityDefinitions[entity.Key];
             //var entityDefinition = GetEntityMetadata(entity.Key, entity.Value, config.RemovePrefixesCollection);

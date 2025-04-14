@@ -27,7 +27,6 @@ using XrmTools.Commands;
 using XrmTools.Environments;
 using System.Reflection;
 using System.IO;
-using XrmTools.Validation;
 
 /// <summary>
 /// This is the class that implements the package exposed by this assembly.
@@ -144,19 +143,6 @@ public sealed partial class XrmToolsPackage : ToolkitPackage
         return null;
     }
 
-    private async Task RegisterCommandsAsync()
-    {
-        await NewPluginDefinitionFileCommand.InitializeAsync(this);
-        await SetPluginGeneratorTemplateInProjectCommand.InitializeAsync(this);
-        await SetPluginGeneratorTemplateInSolutionCommand.InitializeAsync(this);
-        await SetEntityGeneratorTemplateInProjectCommand.InitializeAsync(this);
-        await SetEntityGeneratorTemplateInSolutionCommand.InitializeAsync(this);
-        await SetCustomToolEntityGeneratorCommand.InitializeAsync(this);
-        await SetCustomToolPluginGeneratorCommand.InitializeAsync(this);
-        await RegisterPluginCommand.InitializeAsync(this);
-        await SelectEnvironmentCommand.InitializeAsync(this);
-    }
-
     /// <summary>
     /// Initialization of the package; this method is called right after the package is sited, so this is the place
     /// where you can put all the initialization code that rely on services provided by VisualStudio.
@@ -182,7 +168,15 @@ public sealed partial class XrmToolsPackage : ToolkitPackage
 
         await InitializeMefServicesAsync();
 
-        await RegisterCommandsAsync();
+        await NewPluginDefinitionFileCommand.InitializeAsync(this);
+        await SetPluginGeneratorTemplateInProjectCommand.InitializeAsync(this);
+        await SetPluginGeneratorTemplateInSolutionCommand.InitializeAsync(this);
+        await SetEntityGeneratorTemplateInProjectCommand.InitializeAsync(this);
+        await SetEntityGeneratorTemplateInSolutionCommand.InitializeAsync(this);
+        await SetCustomToolEntityGeneratorCommand.InitializeAsync(this);
+        await SetCustomToolPluginGeneratorCommand.InitializeAsync(this);
+        await RegisterPluginCommand.InitializeAsync(this);
+        await SelectEnvironmentCommand.InitializeAsync(this);
 
         // When initialized asynchronously, the current thread may be a background thread at this point.
         // Do any initialization that requires the UI thread after switching to the UI thread.
