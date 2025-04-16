@@ -14,8 +14,8 @@ public class CustomApiAttribute(string uniqueName) : Attribute
     public string? Name { get; set; }
     public string? UniqueName { get; set; } = uniqueName;
     public string? Description { get; set; }
-    public ProcessingStepTypes? StepType { get; set; } = ProcessingStepTypes.SyncAndAsync;
-    public BindingTypes? BindingType { get; set; } = BindingTypes.Global;
+    public ProcessingStepTypes StepType { get; set; } = ProcessingStepTypes.SyncAndAsync;
+    public BindingTypes BindingType { get; set; } = BindingTypes.Global;
     public string? BoundEntityLogicalName { get; set; }
     public string? ExecutePrivilegeName { get; set; } 
     public bool IsFunction { get; set; } = false;

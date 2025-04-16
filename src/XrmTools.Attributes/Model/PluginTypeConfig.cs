@@ -39,7 +39,11 @@ public class PluginTypeConfig : TypedEntity<PluginTypeConfig>, IPluginTypeConfig
     public Guid? PluginTypeId
     {
         get => TryGetAttributeValue("plugintypeid", out Guid value) ? value : null;
-        set => this["plugintypeid"] = value;
+        set
+        {
+            this["plugintypeid"] = value;
+            Id = value ?? Guid.Empty;
+        }
     }
 
     [AttributeLogicalName("pluginassemblyid")]
@@ -91,6 +95,7 @@ public class PluginTypeConfig : TypedEntity<PluginTypeConfig>, IPluginTypeConfig
     public string? Namespace { get; set; }
 
     public string? BaseTypeName { get; set; }
+    public string? BaseTypeNamespace { get; set; }
 
     public static LinkEntity LinkWithSteps(ColumnSet columns, JoinOperator join = JoinOperator.LeftOuter)
         => new (EntityLogicalName, PluginStepConfig.EntityLogicalName, "plugintypeid", "plugintypeid", join)

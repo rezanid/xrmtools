@@ -122,19 +122,6 @@ internal class CSharpXrmMetaDataService(
         if (config is not null)
         {
             config.FilePath = project.OutputFilePath;
-            if (config.Solution is WebApi.Entities.Solution solution && (solution.Id is null || solution.Id == Guid.Empty))
-            {
-                var queryResult = await webApi.QueryAsync<WebApi.Entities.Solution>($"solutions?$select=solutionid&$filter=uniquename eq '{solution.UniqueName}'", cancellationToken)
-                        .ConfigureAwait(false);
-                if (queryResult != null && queryResult.Entities.Count > 0)
-                {
-                    solution.Id = queryResult.Entities[0].Id;
-                }
-                else
-                {
-                    throw new InvalidOperationException($"Solution with unique name '{solution.UniqueName}' not found.");
-                }
-            }
         }
         return config;
     }
@@ -159,6 +146,8 @@ internal class CSharpXrmMetaDataService(
         }
 
         var root = await syntaxTree.GetRootAsync(cancellationToken).ConfigureAwait(false);
+        //var usingDirectives = root.DescendantNodes().OfType<UsingDirectiveSyntax>()
+        //    .Select(u => u.ToString());
         var classDeclarations = root.DescendantNodes().OfType<ClassDeclarationSyntax>();
 
         foreach (var classDeclaration in classDeclarations)

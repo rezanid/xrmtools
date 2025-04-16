@@ -5,6 +5,7 @@ using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
 using System.Text.Json.Serialization;
+using XrmTools.Meta.Model;
 using XrmTools.WebApi.Entities.Attributes;
 
 [EntityMetadata("sdkmessageprocessingstep", "sdkmessageprocessingsteps")]
@@ -28,7 +29,7 @@ internal class SdkMessageProcessingStep : Component<SdkMessageProcessingStep>
     public int? Rank { get; set; }
     public string? Description { get; set; }
     public string? Category { get; set; }
-    public int? Stage { get; set; }
+    public Stages? Stage { get; set; }
     public int? StatusCode { get; set; }
     public string? FilteringAttributes { get; set; }
     public string? RuntimeIntegrationProperties { get; set; }

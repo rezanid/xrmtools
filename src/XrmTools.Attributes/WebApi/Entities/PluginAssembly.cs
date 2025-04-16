@@ -36,5 +36,7 @@ internal class PluginAssembly : Component<PluginAssembly>
     public ManagedBooleanProperty? IsHidden { get; set; }
     [JsonPropertyName("pluginassembly_plugintype")]
     public List<PluginType> PluginTypes { get; set; } = [];
+    [JsonPropertyName("PackageId")]
+    public PluginPackage? Package { get; set; }
 }
 #nullable restore

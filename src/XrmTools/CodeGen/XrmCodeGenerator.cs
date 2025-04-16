@@ -1,5 +1,7 @@
 ﻿#nullable enable
 namespace XrmTools;
+
+using Community.VisualStudio.Toolkit;
 using Microsoft.VisualStudio;
 using Microsoft.VisualStudio.ComponentModelHost;
 using Microsoft.VisualStudio.Shell;
@@ -27,6 +29,7 @@ using XrmTools.Settings;
 using XrmTools.Xrm.Generators;
 using XrmTools.Xrm.Model;
 using XrmTools.Xrm.Repositories;
+using static XrmTools.Helpers.ProjectExtensions;
 
 public class XrmCodeGenerator : BaseCodeGeneratorWithSite
 {
@@ -83,7 +86,15 @@ public class XrmCodeGenerator : BaseCodeGeneratorWithSite
 
         return ThreadHelper.JoinableTaskFactory.Run(async () =>
         {
-            var inputModel = await GetInputModelFromFileAsync(inputFileName, inputFileContent);
+            PluginAssemblyConfig? inputModel = null;
+            try
+            {
+                inputModel = await GetInputModelFromFileAsync(inputFileName, inputFileContent);
+            }
+            catch (Exception ex)
+            {
+                Logger.LogError(ex, "Parsing input file filed due to an error.");
+            }
             if (inputModel == null)
             {
                 Logger.LogWarning("Failed to parse input file for code generation. Please review the input file and try again.");
@@ -123,6 +134,15 @@ public class XrmCodeGenerator : BaseCodeGeneratorWithSite
             {
                 return Encoding.UTF8.GetBytes("// " + validation.ErrorMessage);
             }
+
+            var inputFile = await PhysicalFile.FromFileAsync(inputFileName);
+            if (inputFile is not null && inputFile.FindParent(SolutionItemType.Project) is Project project && project.IsSdkStyle())
+            {
+                var lastGenFileName = await inputFile.GetAttributeAsync("LastGenOutput");
+                var lastGenFilePath = Path.Combine(Path.GetDirectoryName(inputFileName), lastGenFileName);
+                File.WriteAllText(lastGenFilePath, "// SDK-Style Code Gen\r\n" + Generator.GenerateCode(inputModel));
+            }
+
             return Encoding.UTF8.GetBytes(Generator.GenerateCode(inputModel));
         });
     }
@@ -169,11 +189,12 @@ public class XrmCodeGenerator : BaseCodeGeneratorWithSite
 
         Logger.LogTrace("No template found for " + (isTemplatePlugin ? "plugin code generation." : "entity code generation."));
         Logger.LogInformation("Atempting to create plugin default templates.");
-        ThreadHelper.JoinableTaskFactory.Run(async () =>
-        {
-            await TemplateFileGenerator.GenerateTemplatesAsync();
-            await SettingsProvider.ProjectSettings.EntityTemplateFilePathAsync();
-        });
+        //ThreadHelper.JoinableTaskFactory.Run(async () =>
+        //{
+        //    await TemplateFileGenerator.GenerateTemplatesAsync();
+        //    await SettingsProvider.ProjectSettings.EntityTemplateFilePathAsync();
+        //});
+        ThreadHelper.JoinableTaskFactory.Run(TemplateFileGenerator.GenerateTemplatesAsync);
         Logger.LogInformation("Default template generation completed.");
 
         templateFilePath = isTemplatePlugin ? TemplateFinder.FindPluginTemplatePath(InputFilePath) : TemplateFinder.FindEntityTemplatePath(InputFilePath);

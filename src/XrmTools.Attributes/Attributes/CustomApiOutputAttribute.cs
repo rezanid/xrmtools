@@ -9,11 +9,12 @@ using XrmTools.Meta.Model;
 /// </summary>
 /// <param name="type"></param>
 /// <param name="displayName"></param>
+[AttributeUsage(AttributeTargets.Property, AllowMultiple = false, Inherited = false)]
 public class CustomApiOutputAttribute(CustomApiFieldType type, string displayName) : Attribute
 {
     public string DisplayName { get; set; } = displayName;
-    public string Name { get; set; } = displayName.Replace(" ", string.Empty);
-    public string UniqueName { get; set; } = displayName.Replace(" ", string.Empty);
+    public string? Name { get; set; }
+    public string? UniqueName { get; set; }
     public string? Description { get; set; }
     public CustomApiFieldType Type { get; set; } = type;
     public string? LogicalEntityName { get; set; }

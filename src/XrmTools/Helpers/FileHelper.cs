@@ -54,7 +54,7 @@ internal static class FileHelper
 
     public static async Task AddItemAsync(string name, string content, SolutionItem activeItem)
     {
-        if (activeItem is null || string.IsNullOrWhiteSpace(name) || string.IsNullOrWhiteSpace(content)) return;
+        if (activeItem is null || string.IsNullOrWhiteSpace(name) || content is null) return;
         ValidatePath(name);
 
         var proj = activeItem.Type is SolutionItemType.Project or SolutionItemType.VirtualProject or SolutionItemType.MiscProject

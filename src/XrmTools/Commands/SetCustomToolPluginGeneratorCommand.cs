@@ -1,9 +1,10 @@
 ﻿namespace XrmTools.Commands;
 
-using EnvDTE;
 using Microsoft.VisualStudio.Shell;
 using Task = System.Threading.Tasks.Task;
 using Community.VisualStudio.Toolkit;
+using XrmTools.Helpers;
+using System.IO;
 
 /// <summary>
 /// Command handler to set the custom tool of the selected item to the Xrm Plugin Code Generator.
@@ -15,8 +16,27 @@ internal sealed class SetCustomToolPluginGeneratorCommand : BaseCommand<SetCusto
     {
         var i = await VS.Solutions.GetActiveItemAsync();
         if (i is null || i.Type != SolutionItemType.PhysicalFile) return;
+
+        if (i.FindParent(SolutionItemType.Project) is not Project project) return;
+
         var file = i as PhysicalFile;
-        await file.TrySetAttributeAsync(PhysicalFileAttribute.CustomTool, XrmCodeGenerator.Name);
+        if (project.IsSdkStyle())
+        {
+            var genFilePath = Path.Combine(
+                Path.GetDirectoryName(file.FullPath), 
+                Path.GetFileNameWithoutExtension(file.FullPath)) + ".Generated.cs";
+            if (!File.Exists(genFilePath)) await FileHelper.AddItemAsync(genFilePath, "", file);
+            var genFile = await PhysicalFile.FromFileAsync(genFilePath);
+            await genFile.TrySetAttributeAsync(PhysicalFileAttribute.AutoGen, true);
+            await genFile.TrySetAttributeAsync(PhysicalFileAttribute.DesignTime, true);
+            await genFile.TrySetAttributeAsync(PhysicalFileAttribute.DependentUpon, Path.GetFileName(file.FullPath));
+            await file.TrySetAttributeAsync(PhysicalFileAttribute.LastGenOutput, Path.GetFileName(genFilePath));
+            await file.TrySetAttributeAsync(PhysicalFileAttribute.Generator, XrmCodeGenerator.Name);
+        }
+        else
+        {
+            await file.TrySetAttributeAsync(PhysicalFileAttribute.Generator, XrmCodeGenerator.Name);
+        }
         await file.TrySetAttributeAsync("IsXrmPlugin", true);
     }
 

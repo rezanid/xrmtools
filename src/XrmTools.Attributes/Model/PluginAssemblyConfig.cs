@@ -31,6 +31,7 @@ public interface IPluginAssemblyEntity
     string? PublicKeyToken { get; set; }
     SourceTypes? SourceType { get; set; }
     string? Version { get; set; }
+    WebApi.Entities.PluginPackage Package { get; set; }
 }
 
 [EntityLogicalName(EntityLogicalName)]
@@ -76,6 +77,8 @@ public class PluginAssemblyConfig : TypedEntity<PluginAssemblyConfig>, IPluginAs
             OnPropertyChanged(nameof(PluginTypes));
         }
     }
+
+    public WebApi.Entities.PluginPackage Package { get; set; }
 
     public WebApi.Entities.Solution? Solution { get; set; }
     #endregion
@@ -126,6 +129,13 @@ public class PluginAssemblyConfig : TypedEntity<PluginAssemblyConfig>, IPluginAs
     {
         get => TryGetAttributeValue("version", out string? value) ? value : null;
         set => this["version"] = value;
+    }
+
+    [AttributeLogicalName("content")]
+    public string? Content
+    {
+        get => TryGetAttributeValue("content", out string? value) ? value : null;
+        set => this["content"] = value;
     }
     #endregion
 

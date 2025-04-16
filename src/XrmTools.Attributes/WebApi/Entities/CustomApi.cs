@@ -47,5 +47,13 @@ public class CustomApi : Entity<CustomApi>
     [JsonPropertyName("CustomAPIResponseProperties")]
     [JsonProperty("CustomAPIResponseProperties")]
     public ICollection<CustomApiResponseProperty> ResponseProperties { get; set; } = [];
+
+    [System.Text.Json.Serialization.JsonIgnore]
+    [Newtonsoft.Json.JsonIgnore]
+    public string? RequestTypeName { get; set; }
+
+    [System.Text.Json.Serialization.JsonIgnore]
+    [Newtonsoft.Json.JsonIgnore]
+    public string? ResponseTypeName { get; set; }
 }
 #nullable restore

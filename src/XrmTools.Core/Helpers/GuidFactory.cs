@@ -9,14 +9,16 @@ internal static class GuidFactory
 {
     internal enum Namespace
     {
-        PluginAssembly = 0,
-        PluginType = 1,
-        Step = 2,
-        Image = 3,
-        CustomApi = 4,
-        CustomApiInput = 5,
-        CustomApiOutput = 6
+        PluginPackage = 0,
+        PluginAssembly = 1,
+        PluginType = 2,
+        Step = 3,
+        Image = 4,
+        CustomApi = 5,
+        CustomApiInput = 6,
+        CustomApiOutput = 7
     }
+    private static readonly Guid Namespace_PluginPackage = Guid.Parse("22222222-2222-2222-2222-222222222222");
     private static readonly Guid Namespace_PluginAssembly = Guid.Parse("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa");
     private static readonly Guid Namespace_PluginType = Guid.Parse("bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb");
     private static readonly Guid Namespace_Step = Guid.Parse("cccccccc-cccc-cccc-cccc-cccccccccccc");
@@ -38,6 +40,7 @@ internal static class GuidFactory
     public static Guid DeterministicGuid(Namespace @namespace, string name) =>
         DeterministicGuid(@namespace switch
         {
+            Namespace.PluginPackage => Namespace_PluginPackage,
             Namespace.PluginAssembly => Namespace_PluginAssembly,
             Namespace.PluginType => Namespace_PluginType,
             Namespace.Step => Namespace_Step,

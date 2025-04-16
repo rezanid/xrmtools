@@ -9,8 +9,6 @@ using System.Linq;
 using XrmTools.Helpers;
 using XrmTools.Meta.Attributes;
 using XrmTools.Meta.Model;
-using XrmTools.WebApi;
-using XrmTools.WebApi.Messages;
 using XrmTools.Xrm.Model;
 
 internal interface ICSharpXrmMetaParser
@@ -58,16 +56,14 @@ internal class CSharpXrmMetaParser : ICSharpXrmMetaParser
             }
         }
 
-        if (assemblyAttribute == null) return null;
-
         var pluginAssemblyConfig = new PluginAssemblyConfig
         {
             Name = assemblySymbol.Name,
             Version = assemblySymbol.Identity.Version.ToString(),
             PublicKeyToken = assemblySymbol.Identity.PublicKeyToken.ToHexString(),
-            SourceType = assemblyAttribute.GetValue<int?>(nameof(PluginAssemblyAttribute.SourceType)) is int sourceType
+            SourceType = assemblyAttribute?.GetValue<int?>(nameof(PluginAssemblyAttribute.SourceType)) is int sourceType
                 ? (SourceTypes)sourceType : PluginAssemblyAttribute.DefaultSourceType,
-            IsolationMode = assemblyAttribute.GetValue<int?>(nameof(PluginAssemblyAttribute.IsolationMode)) is int isolationMode
+            IsolationMode = assemblyAttribute?.GetValue<int?>(nameof(PluginAssemblyAttribute.IsolationMode)) is int isolationMode
                 ? (IsolationModes)isolationMode : PluginAssemblyAttribute.DefaultIsolationMode,
         };
 
@@ -75,8 +71,9 @@ internal class CSharpXrmMetaParser : ICSharpXrmMetaParser
         {
             var solution = ReflectionHelper.SetPropertiesFromAttribute(new WebApi.Entities.Solution(), solutionAttribute);
             pluginAssemblyConfig.Solution = solution;
-
         }
+
+        if (assemblyAttribute == null) return pluginAssemblyConfig;
 
         return pluginAssemblyConfig.SetPropertiesFromAttribute(assemblyAttribute);
     }
@@ -107,20 +104,21 @@ internal class CSharpXrmMetaParser : ICSharpXrmMetaParser
                 case var name when name == typeof(CustomApiAttribute).FullName:
                     customApi = new WebApi.Entities.CustomApi();
                     customApi.SetPropertiesFromAttribute(attributeData);
-
                     if (string.IsNullOrWhiteSpace(customApi.DisplayName) && string.IsNullOrWhiteSpace(customApi.Name) && string.IsNullOrWhiteSpace(customApi.UniqueName))
                     {
                         customApi.DisplayName = customApi.Name = customApi.UniqueName = typeSymbol.ToDisplayString(SymbolDisplayFormat.CSharpErrorMessageFormat);
                     }
-                    else if (string.IsNullOrWhiteSpace(customApi.Name) && string.IsNullOrWhiteSpace(customApi.UniqueName))
+                    else
                     {
-                        customApi.Name = customApi.UniqueName = customApi.DisplayName!.Replace(" ", "");
+                        if (string.IsNullOrWhiteSpace(customApi.DisplayName))
+                        {
+                            customApi.DisplayName = customApi.Name ?? customApi.UniqueName;
+                        }
+                        if (string.IsNullOrWhiteSpace(customApi.Name))
+                        {
+                            customApi.Name = customApi.DisplayName is string displayName ? displayName.Replace(" ", "") : customApi.UniqueName;
+                        }
                     }
-                    else if (string.IsNullOrWhiteSpace(customApi.UniqueName))
-                    {
-                        customApi.UniqueName = customApi.Name;
-                    }
-
                     break;
                 case var name when name == typeof(PluginAttribute).FullName:
                     pluginConfig = CreatePluginTypeConfig(typeSymbol, attributeData);
@@ -177,10 +175,11 @@ internal class CSharpXrmMetaParser : ICSharpXrmMetaParser
                 var requestAttribute = innerSymbol.GetAttributes().FirstOrDefault(x => x.AttributeClass?.ToDisplayString() == typeof(CustomApiRequestAttribute).FullName);
                 if (requestAttribute != null)
                 {
+                    customApi.RequestTypeName = innerSymbol.ToDisplayString(SymbolDisplayFormat.CSharpShortErrorMessageFormat);
                     foreach (var member in innerSymbol.GetMembers())
                     {
                         // we are only interested in properties.
-                        if (member is IPropertySymbol innerProperty)
+                        if (member is IPropertySymbol innerProperty && innerProperty.DeclaredAccessibility is Accessibility.Public or Accessibility.Internal or Accessibility.ProtectedAndInternal)
                         {
                             var requestParameter = new WebApi.Entities.CustomApiRequestParameter()
                             {
@@ -199,10 +198,11 @@ internal class CSharpXrmMetaParser : ICSharpXrmMetaParser
                 var responseAttribute = innerSymbol.GetAttributes().FirstOrDefault(x => x.AttributeClass?.ToDisplayString() == typeof(CustomApiResponseAttribute).FullName);
                 if (responseAttribute != null)
                 {
+                    customApi.ResponseTypeName = innerSymbol.ToDisplayString(SymbolDisplayFormat.CSharpShortErrorMessageFormat);
                     foreach (var member in innerSymbol.GetMembers())
                     {
                         // we are only interested in properties.
-                        if (member is IPropertySymbol innerProperty)
+                        if (member is IPropertySymbol innerProperty && innerProperty.DeclaredAccessibility is Accessibility.Public or Accessibility.Internal or Accessibility.ProtectedAndInternal)
                         {
                             var responseProperty = new WebApi.Entities.CustomApiResponseProperty()
                             {
@@ -231,6 +231,7 @@ internal class CSharpXrmMetaParser : ICSharpXrmMetaParser
         {
             Namespace = typeSymbol.ContainingNamespace.ToDisplayString(),
             BaseTypeName = typeSymbol.BaseType?.Name,
+            BaseTypeNamespace = typeSymbol.BaseType?.ContainingNamespace.ToDisplayString(),
             TypeName = typeName,
             // Default values:
             Name = typeName,

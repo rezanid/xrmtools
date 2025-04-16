@@ -10,15 +10,31 @@ using System.Linq;
 using XrmTools.Meta.Model;
 using XrmTools.WebApi.Entities;
 
+//TODO: Make this class IDisposable and dispose requests.
 public class UpsertRequestBuilder(
     PluginAssemblyConfig config,
-    string base64Assembly,
+    //string base64Assembly,
     Dictionary<string, SdkMessage> sdkMessages)
 {
     private readonly PluginAssemblyConfig _config = config;
-    private readonly string _base64Assembly = base64Assembly;
+    //private readonly string _base64Assembly = base64Assembly;
     private readonly Dictionary<string, SdkMessage> _sdkMessages = sdkMessages;
     private readonly List<HttpRequestMessage> _requests = [];
+
+    public UpsertRequestBuilder WithPackage()
+    {
+        var package = _config.Package;
+        _requests.Add(new UpsertRequest(
+            package.ToReference(),
+            new JObject
+            {
+                ["name"] = package.Name,
+                ["version"] = package.Version,
+                ["content"] = package.Content
+            },
+            solutionUniqueName: _config.Solution?.UniqueName));
+        return this;
+    }
 
     public UpsertRequestBuilder WithAssembly()
     {
@@ -31,14 +47,15 @@ public class UpsertRequestBuilder(
                 ["isolationmode"] = (int?)_config.IsolationMode,
                 ["publickeytoken"] = _config.PublicKeyToken,
                 ["sourcetype"] = (int?)_config.SourceType,
-                ["content"] = _base64Assembly
+                ["content"] = _config.Content,
+                ["PackageId@odata.bind"] = _config.Package?.ToReference().Path,
             },
             solutionUniqueName: _config.Solution?.UniqueName));
 
         return this;
     }
 
-    public UpsertRequestBuilder WithPluginTypes()
+    public UpsertRequestBuilder WithPluginTypesAndStepsAndCustomApis()
     {
         foreach (var pluginType in _config.PluginTypes)
         {
@@ -78,18 +95,56 @@ public class UpsertRequestBuilder(
         return this;
     }
 
-    public ICollection<HttpRequestMessage> Build() => _requests;
+    public UpsertRequestBuilder WithStepsAndCustomApis()
+    {
+        foreach (var pluginType in _config.PluginTypes)
+        {
+            foreach (var step in pluginType.Steps)
+            {
+                if (!string.IsNullOrEmpty(step.MessageName) &&
+                    _sdkMessages.TryGetValue(step.MessageName!, out var message))
+                {
+                    step.Message = message;
+                }
+
+                _requests.Add(UpsertPluginStepRequestFor(pluginType, step));
+
+                foreach (var image in step.Images)
+                {
+                    _requests.Add(UpsertPluginImageRequestFor(step, image));
+                }
+            }
+
+            if (pluginType.CustomApi != null)
+            {
+                _requests.Add(UpsertCustomApiFor(pluginType, pluginType.CustomApi));
+
+                foreach (var parameter in pluginType.CustomApi.RequestParameters)
+                {
+                    _requests.Add(UpsertRequestParameter(pluginType.CustomApi, parameter));
+                }
+                foreach (var parameter in pluginType.CustomApi.ResponseProperties)
+                {
+                    _requests.Add(UpsertResponseParameter(pluginType.CustomApi, parameter));
+                }
+            }
+        }
+
+        return this;
+    }
+
+    public List<HttpRequestMessage> Build() => _requests;
 
     private HttpRequestMessage UpsertPluginTypeRequestFor(PluginTypeConfig pluginType)
     {
-        return new UpsertRequest(new EntityReference(pluginType.GetEntitySetName(), pluginType.PluginTypeId),
+        return new UpsertRequest(new EntityReference(pluginType.GetEntitySetName(), pluginType.Id),
             new JObject
             {
                 ["name"] = pluginType.Name,
                 ["friendlyname"] = pluginType.FriendlyName,
                 ["description"] = pluginType.Description,
                 ["typename"] = pluginType.TypeName,
-                ["pluginassemblyid@odata.bind"] = $"{_config.GetEntitySetName()}({_config.PluginAssemblyId})"
+                ["pluginassemblyid@odata.bind"] = $"{_config.GetEntitySetName()}({_config.Id})"
             },
             solutionUniqueName: _config.Solution?.UniqueName);
     }
@@ -156,7 +211,8 @@ public class UpsertRequestBuilder(
                 ["executeprivilegename"] = customApi.ExecutePrivilegeName,
                 ["boundentitylogicalname"] = customApi.BoundEntityLogicalName,
                 ["isprivate"] = customApi.IsPrivate,
-                ["allowedcustomprocessingsteptype"] = (int?)customApi.StepType
+                ["allowedcustomprocessingsteptype"] = (int?)customApi.StepType,
+                ["PluginTypeId@odata.bind"] = PluginType.CreateReference(parentPlugin.Id).Path
             },
             solutionUniqueName: _config.Solution?.UniqueName);
 
