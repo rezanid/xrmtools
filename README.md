@@ -9,7 +9,7 @@ Xrm Tools is a Visual Studio extension that aims to make Power Platform developm
 You will soon be able to get it from Visual Studio's native Extensions gallery. Once installed, just create a new solution and a library project under it or just open an existing solution that you already have. Don't worry It will not change your project structure. You are the one behind the driving wheel at all times.
 
 # Connecting to a development environment
-First you need to connect to an environment so that XrmTools can see where you are developing so that it can help you along the way. You can add as many environments as you want and you can use your own account to connect to all your environments or you can safely use application accounts if you would prefer that. Let's connect to an environment.
+First you need to connect to an environment so that XrmTools can connect to that environment. You can add as many environments as you want in Visual Studio and assign them to your solutions or projects. Let's add a new environment.
 1. Open the "Tool" menu and select "Options"
 2. All the way to the bottom you will find "Xrm Tools".
 3. Click on the three dots in front of "Environments".
