@@ -16,15 +16,15 @@ First you need to connect to an environment so that XrmTools can connect to that
 
 <img src="https://github.com/user-attachments/assets/fe042c93-b923-4522-9811-ea7032674ec0" alt="https://github.com/user-attachments/assets/fe042c93-b923-4522-9811-ea7032674ec0" width=605 />
 
-5. Here you can add a new Power Platform environment to Visual Studio. You can give your environment a name and a connection string. The connection string is very similar to the Xrm Tooling of Microsoft, only simpler and with extra security features built-in. For example you can use the following to use your current account to connect to an environment.
+5. Here you can add a new Power Platform environment to Visual Studio. You can give your environment a name and a connection string. The connection string is very similar to the Xrm Tooling of Microsoft, only simpler and with extra security features built-in. For example you can use the following syntax to connect to an environment using your AD account.
    ```shell
    Url=<environment URL>;Integrated Security=True;TenantId=<your tenant id>
    ```
-   Your connection string can be even as simple as just the URL of your environment.
+   Since integrated security is the default, you can leave it out and then Url will be the only parameter you can just enter the Url of your environment as connection string.
    ```shell
    <environment URL>
    ```
-   Xrm Tools will try to find your tenant ID by making a request and will try to use your currently authenticated user that is running Visual Studio if you have SSO with your tenant. Otherwise it will display a popup and asks your to login.
+   Xrm Tools will try to find your tenant ID by making a request and will try to use your currently authenticated user that is running Visual Studio if you have SSO with your tenant. Otherwise it will display a popup and asks for your credentials.
    You can read more about connection strings [here](https://github.com/rezanid/xrmtools/wiki/Providing-Connection-Strings).
 7. Set "Current Environment" to the environment that you just created.
 8. Click "Ok" button to save the settings.
