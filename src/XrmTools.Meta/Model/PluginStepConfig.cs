@@ -9,6 +9,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq.Expressions;
 using System.Text.Json.Serialization;
+using XrmTools.Meta.Attributes;
 using XrmTools.Meta.Model;
 
 public interface IMessageProcessingStepEntity

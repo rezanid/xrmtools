@@ -10,8 +10,8 @@ using System.ComponentModel;
 using System.Runtime.Serialization;
 using System.Text.Json.Serialization;
 using XrmTools.Meta.Attributes.Serialization;
-using XrmTools.Meta.Model;
 using XrmTools.Meta.Serialization;
+using XrmTools.Meta.Attributes;
 
 public interface IPluginAssemblyConfig : IPluginAssemblyEntity
 {
@@ -31,7 +31,7 @@ public interface IPluginAssemblyEntity
     string? PublicKeyToken { get; set; }
     SourceTypes? SourceType { get; set; }
     string? Version { get; set; }
-    WebApi.Entities.PluginPackage Package { get; set; }
+    WebApi.Entities.PluginPackage? Package { get; set; }
 }
 
 [EntityLogicalName(EntityLogicalName)]
@@ -78,7 +78,7 @@ public class PluginAssemblyConfig : TypedEntity<PluginAssemblyConfig>, IPluginAs
         }
     }
 
-    public WebApi.Entities.PluginPackage Package { get; set; }
+    public WebApi.Entities.PluginPackage? Package { get; set; }
 
     public WebApi.Entities.Solution? Solution { get; set; }
     #endregion
@@ -151,6 +151,6 @@ public class PluginAssemblyConfig : TypedEntity<PluginAssemblyConfig>, IPluginAs
 public class EntityConfig
 {
     public string? LogicalName { get; set; }
-    public string? Attributes { get; set; }
+    public string? AttributeNames { get; set; }
 }
 #nullable restore

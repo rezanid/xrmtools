@@ -5,7 +5,7 @@ using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
 using System.Text.Json.Serialization;
-using XrmTools.Meta.Model;
+using XrmTools.Meta.Attributes;
 using XrmTools.WebApi.Entities.Attributes;
 
 [EntityMetadata("sdkmessageprocessingstep", "sdkmessageprocessingsteps")]

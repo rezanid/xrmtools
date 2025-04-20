@@ -185,12 +185,11 @@
     </None>
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\XrmTools.Attributes\XrmTools.Meta.csproj">
-      <Project>{1F790C13-3B66-41E8-AED5-FA152465B6A0}</Project>
+    <ProjectReference Include="..\XrmTools.Meta\XrmTools.Meta.csproj">
+      <Project>{838257e1-7f69-8823-ad8a-b1a9aff47b81}</Project>
       <Name>XrmTools.Meta</Name>
     </ProjectReference>
   </ItemGroup>
-  <ItemGroup />
   <ItemGroup>
     <EmbeddedResource Include="Resources\Strings.resx">
       <Generator>ResXFileCodeGenerator</Generator>

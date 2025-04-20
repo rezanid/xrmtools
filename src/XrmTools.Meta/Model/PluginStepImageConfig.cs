@@ -8,7 +8,7 @@ using Newtonsoft.Json;
 using System;
 using System.Text.Json;
 using System.Text.Json.Serialization;
-using XrmTools.Meta.Model;
+using XrmTools.Meta.Attributes;
 
 public interface IMessageProcessingStepImageEntity
 {
