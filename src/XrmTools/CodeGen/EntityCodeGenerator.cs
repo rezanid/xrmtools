@@ -25,6 +25,13 @@ using XrmTools.Settings;
 using System.Collections.Generic;
 using XrmTools.Helpers;
 using System.IO;
+using System.Threading.Tasks;
+using XrmTools.Xrm.Model;
+using XrmTools.Core.Helpers;
+using XrmTools.Options;
+using System.ComponentModel.DataAnnotations;
+using Community.VisualStudio.Toolkit;
+using XrmTools.Analyzers;
 
 public class EntityCodeGenerator : BaseCodeGeneratorWithSite
 {
@@ -34,7 +41,7 @@ public class EntityCodeGenerator : BaseCodeGeneratorWithSite
     private bool disposed = false;
 
     [Import]
-    public IXrmEntityCodeGenerator? Generator { get; set; }
+    public IXrmCodeGenerator? Generator { get; set; }
 
     [Import]
     internal IRepositoryFactory? RepositoryFactory { get; set; }
@@ -52,6 +59,9 @@ public class EntityCodeGenerator : BaseCodeGeneratorWithSite
     internal ITemplateFileGenerator TemplateFileGenerator { get; set; }
 
     [Import]
+    internal IXrmMetaDataService XrmMetaDataService { get; set; }
+
+    [Import]
     internal ISettingsProvider SettingsProvider { get; set; }
 
     public override string GetDefaultExtension() => ".cs";
@@ -61,7 +71,7 @@ public class EntityCodeGenerator : BaseCodeGeneratorWithSite
     [MemberNotNull(
         nameof(Generator), nameof(RepositoryFactory), nameof(EnvironmentProvider), 
         nameof(Logger), nameof(TemplateFinder), nameof(TemplateFileGenerator),
-        nameof(SettingsProvider))]
+        nameof(SettingsProvider), nameof(XrmMetaDataService))]
     private void SatisfyImports()
     {
         var componentModel = (IComponentModel)Package.GetGlobalService(typeof(SComponentModel));
@@ -73,6 +83,7 @@ public class EntityCodeGenerator : BaseCodeGeneratorWithSite
         if (TemplateFinder == null) throw new InvalidOperationException(string.Format(Strings.MissingServiceDependency, nameof(EntityCodeGenerator), nameof(TemplateFinder)));
         if (TemplateFileGenerator == null) throw new InvalidOperationException(string.Format(Strings.MissingServiceDependency, nameof(EntityCodeGenerator), nameof(TemplateFileGenerator)));
         if (SettingsProvider == null) throw new InvalidOperationException(string.Format(Strings.MissingServiceDependency, nameof(EntityCodeGenerator), nameof(SettingsProvider)));
+        if (XrmMetaDataService == null) throw new InvalidOperationException(string.Format(Strings.MissingServiceDependency, nameof(PluginCodeGenerator), nameof(XrmMetaDataService)));
     }
 
     protected override byte[]? GenerateCode(string inputFileName, string inputFileContent)
@@ -84,46 +95,77 @@ public class EntityCodeGenerator : BaseCodeGeneratorWithSite
         {
             if (TemplateFinder.FindEntityTemplatePath(InputFilePath) is not string templateFilePath)
             { 
+                Logger.LogTrace("No template found for entity code generation.");
+                Logger.LogInformation("Creating default templates.");
                 await TemplateFileGenerator.GenerateTemplatesAsync();
-                await SettingsProvider.ProjectSettings.EntityTemplateFilePathAsync();
                 templateFilePath = TemplateFinder.FindEntityTemplatePath(InputFilePath) ?? string.Empty;
-                if (templateFilePath == string.Empty) return Encoding.UTF8.GetBytes("// Template not found.");
+                Logger.LogCritical("Still no template found for entity code generation.");
+                if (templateFilePath == string.Empty) return Encoding.UTF8.GetBytes("// No template found for entity code generation.");
             }
 
-            var entityConfig = ".cs".Equals(Path.GetExtension(inputFileName), StringComparison.OrdinalIgnoreCase) ?
-                //TODO: Add ".cs" file parsing logic.
-                ParseInputFile(inputFileName, inputFileContent) : null;
-            if (entityConfig?.Entities?.Any() != true) { return null; }
+            var inputModel = await GetInputModelFromFileAsync(inputFileName, inputFileContent);
 
-            if (string.IsNullOrWhiteSpace(entityConfig.DefaultNamespace))
+            if (inputModel?.Entities?.Any() != true) 
+            { 
+                return Encoding.UTF8.GetBytes("// No entity definition found for entity code generation.");
+            }
+
+            Generator.Config = new XrmCodeGenConfig
             {
-                entityConfig.DefaultNamespace = GetDefaultNamespace();
-            }
-            if (string.IsNullOrWhiteSpace(entityConfig.TemplateFilePath))
-            {
-                entityConfig.TemplateFilePath = templateFilePath;
-            }
-            Generator.Config = entityConfig;
+                //TODO: The GetDefaultNamespace is not required. The FileNamespace is never empty even when not set.
+                DefaultNamespace = string.IsNullOrWhiteSpace(FileNamespace) ? GetDefaultNamespace() : FileNamespace,
+                TemplateFilePath = templateFilePath
+            };
 
-            AddEntityMetadataToEntityConfig(entityConfig);
+            AddEntityMetadataToEntityConfig(inputModel);
 
-            var (isValid, validationMessage) = Generator.IsValid(entityConfig);
-            if (!isValid)
+            if (GeneralOptions.Instance.LogLevel == LogLevel.Trace)
             {
-                return Encoding.UTF8.GetBytes("// " + validationMessage);
+                // We use Newtonsoft for serialization because it supports polymorphic types
+                // Probably through old serialization attributes set on Xrm.Sdk types.
+                var serializedConfig = inputModel.SerializeJson(useNewtonsoft: true);
+                File.WriteAllText(Path.ChangeExtension(inputFileName, ".model.json"), serializedConfig);
             }
-            return Encoding.UTF8.GetBytes(Generator.GenerateCode(entityConfig));
+
+            var validation = Generator.IsValid(inputModel);
+            if (validation != ValidationResult.Success)
+            {
+                return Encoding.UTF8.GetBytes("// " + validation.ErrorMessage);
+            }
+
+            var inputFile = await PhysicalFile.FromFileAsync(inputFileName);
+            if (inputFile is not null && inputFile.FindParent(SolutionItemType.Project) is Project project && project.IsSdkStyle())
+            {
+                var lastGenFileName = await inputFile.GetAttributeAsync("LastGenOutput");
+                var lastGenFilePath = Path.Combine(Path.GetDirectoryName(inputFileName), lastGenFileName);
+                File.WriteAllText(lastGenFilePath, "// SDK-Style Code Gen\r\n" + Generator.GenerateCode(inputModel));
+            }
+
+            return Encoding.UTF8.GetBytes(Generator.GenerateCode(inputModel));
         });
     }
 
-    private XrmCodeGenConfig? ParseInputFile(string inputFileName, string inputFileContent)
+    private async Task<PluginAssemblyConfig?> GetInputModelFromFileAsync(string inputFileName, string inputFileContent)
+    {
+        if (".cs".Equals(Path.GetExtension(inputFileName), StringComparison.OrdinalIgnoreCase))
+        {
+            return await XrmMetaDataService.ParseEntitiesAsync(inputFileName);
+        }
+        else if (".yml".Equals(Path.GetExtension(inputFileName), StringComparison.OrdinalIgnoreCase))
+        {
+            return ParseYamlInputFile(inputFileName, inputFileContent);
+        }
+        return null;
+    }
+
+    private PluginAssemblyConfig? ParseYamlInputFile(string inputFileName, string inputFileContent)
     {
         var deserializer = new DeserializerBuilder()
             .WithNamingConvention(CamelCaseNamingConvention.Instance)
             .Build();
         try
         {
-            return deserializer.Deserialize<XrmCodeGenConfig>(inputFileContent);
+            return deserializer.Deserialize<PluginAssemblyConfig>(inputFileContent);
         }
         catch (Exception ex)
         {
@@ -131,8 +173,6 @@ public class EntityCodeGenerator : BaseCodeGeneratorWithSite
         }
         return null;
     }
-
-    private bool IsValidEntityConfig(EntityConfig entityConfig) => !string.IsNullOrWhiteSpace(entityConfig.LogicalName) && !string.IsNullOrWhiteSpace(entityConfig.AttributeNames);
 
     private string GetDefaultNamespace()
     {
@@ -150,13 +190,12 @@ public class EntityCodeGenerator : BaseCodeGeneratorWithSite
         return string.Empty;
     }
 
-    private void AddEntityMetadataToEntityConfig(XrmCodeGenConfig entityCodeGenConfig) 
-        => entityCodeGenConfig.EntityDefinitions = entityCodeGenConfig.Entities
-            .Where(IsValidEntityConfig)
-            .Select(e => GetEntityMetadata(e.LogicalName, e.AttributeNames.Split(','), entityCodeGenConfig.RemovePrefixes))
-            .ToList();
+    private void AddEntityMetadataToEntityConfig(IPluginAssemblyConfig config) 
+        => config.EntityDefinitions = [.. config.Entities
+            .Where(c => !string.IsNullOrWhiteSpace(c.LogicalName))
+            .Select(e => GetEntityMetadata(e.LogicalName!, e.AttributeNames?.Split(',') ?? [], config.RemovePrefixes))];
 
-    private EntityMetadata? GetEntityMetadata(string logicalName, IEnumerable<string> attributeNames, IEnumerable<string> prefixesToRemove)
+    private EntityMetadata GetEntityMetadata(string logicalName, IEnumerable<string> attributeNames, IEnumerable<string> prefixesToRemove)
     {
         var entityMetadataRepo = ThreadHelper.JoinableTaskFactory.Run(async () => await RepositoryFactory.CreateRepositoryAsync<IEntityMetadataRepository>());
         if (entityMetadataRepo is null) return null;
@@ -225,5 +264,4 @@ public class EntityCodeGenerator : BaseCodeGeneratorWithSite
         }
     }
 }
-
 #nullable restore

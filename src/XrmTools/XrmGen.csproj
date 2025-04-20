@@ -80,7 +80,7 @@
     <Compile Include="CodeCompletion\XrmPluginDefinitionCompletionSource.cs" />
     <Compile Include="CodeGen\Constants.cs" />
     <Compile Include="CodeGen\EntityCodeGenerator.cs" />
-    <Compile Include="CodeGen\XrmCodeGenerator.cs" />
+    <Compile Include="CodeGen\PluginCodeGenerator.cs" />
     <Compile Include="CodeGen\TemplateFileGenerator.cs" />
     <Compile Include="CodeGen\TemplatePathFinder.cs" />
     <Compile Include="Commands\SelectEnvironmentCommand.cs" />
@@ -89,6 +89,7 @@
     <Compile Include="Commands\SetPluginGeneratorTemplateInProjectCommand.cs" />
     <Compile Include="Commands\SetEntityGeneratorTemplateInSolutionCommand.cs" />
     <Compile Include="Commands\SetPluginGeneratorTemplateInSolutionCommand.cs" />
+    <Compile Include="Helpers\RoslynHelper.cs" />
     <Compile Include="Helpers\UpsertRequestBuilder.cs" />
     <Compile Include="Environments\DataverseEnvironmentProvider.cs" />
     <Compile Include="Helpers\AttributeDataHelper.cs" />
@@ -248,12 +249,10 @@
     <Compile Include="Xrm\Extensions\QueryExpressionExtensions.cs" />
     <Compile Include="Xrm\Generators\FileTemplateLoader.cs" />
     <Compile Include="Xrm\Generators\XrmCodeGenConfig.cs" />
-    <Compile Include="Xrm\Generators\IXrmEntityCodeGenerator.cs" />
-    <Compile Include="Xrm\Generators\IXrmPluginCodeGenerator.cs" />
+    <Compile Include="Xrm\Generators\IXrmCodeGenerator.cs" />
     <Compile Include="Xrm\Generators\ScribanExtensionCache.cs" />
     <Compile Include="Xrm\Generators\ScribanExtensions.cs" />
-    <Compile Include="Xrm\Generators\TemplatedEntityCodeGenerator.cs" />
-    <Compile Include="Xrm\Generators\TemplatedPluginCodeGenerator.cs" />
+    <Compile Include="Xrm\Generators\TemplatedCodeGenerator.cs" />
     <Compile Include="Xrm\CodeCompletion\XrmPluginDefCompletionProvider.cs" />
     <Compile Include="Xrm\CodeCompletion\XrmPluginDefCompletionSource.cs" />
     <Compile Include="Xrm\Constants.cs" />
@@ -386,8 +385,6 @@
       <Generator>VsixManifestGenerator</Generator>
       <LastGenOutput>source.extension.cs</LastGenOutput>
     </None>
-    <None Include="Xrm\Generators\EntityTemplate.sbn" />
-    <None Include="Xrm\Generators\PluginTemplate.sbn" />
   </ItemGroup>
   <ItemGroup>
     <Reference Include="Microsoft.CSharp" />
@@ -508,15 +505,15 @@
     </Page>
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\XrmTools.Attributes\XrmTools.Meta.csproj">
-      <Project>{1F790C13-3B66-41E8-AED5-FA152465B6A0}</Project>
-      <Name>XrmTools.Meta</Name>
-    </ProjectReference>
     <ProjectReference Include="..\XrmTools.Core\XrmTools.Core.csproj">
       <Project>{4e3f79aa-5694-4dd6-933d-aee2132486a5}</Project>
       <Name>XrmTools.Core</Name>
       <IncludeOutputGroupsInVSIX>BuiltProjectOutputGroup%3bBuiltProjectOutputGroupDependencies%3bGetCopyToOutputDirectoryItems%3bSatelliteDllsProjectOutputGroup%3b</IncludeOutputGroupsInVSIX>
       <IncludeOutputGroupsInVSIXLocalOnly>DebugSymbolsProjectOutputGroup%3b</IncludeOutputGroupsInVSIXLocalOnly>
+    </ProjectReference>
+    <ProjectReference Include="..\XrmTools.Meta\XrmTools.Meta.csproj">
+      <Project>{838257e1-7f69-8823-ad8a-b1a9aff47b81}</Project>
+      <Name>XrmTools.Meta</Name>
     </ProjectReference>
     <ProjectReference Include="..\XrmTools.UI.Controls\XrmTools.UI.Controls.csproj">
       <Project>{179df0ac-6f44-4656-8332-034d3c594ed1}</Project>

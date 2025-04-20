@@ -41,7 +41,7 @@ internal class EntityMetadataRepository(XrmHttpClient client, IWebApiService ser
         "&$filter=sdkmessageid_sdkmessagefilter/any(n:n/primaryobjecttypecode eq '{0}' and n/iscustomprocessingstepallowed eq true))" +
         "&$expand=sdkmessageid_sdkmessagefilter($filter=primaryobjecttypecode eq '{0}' and iscustomprocessingstepallowed eq true)";
     private const string entityRelationshipsQuery = "EntityDefinitions(LogicalName='{0}')?$select=MetadataId&$expand=ManyToOneRelationships,OneToManyRelationships,ManyToManyRelationships";
-    private const string sdkMessageEntityNamesQuery = "sdkmessagefilters?$top=10&$filter=sdkmessageid/name eq '{0}'&$select=primaryobjecttypecode";
+    private const string sdkMessageEntityNamesQuery = "sdkmessagefilters?$filter=sdkmessageid/name eq '{0}'&$select=primaryobjecttypecode";
 
     private static readonly JsonSerializerSettings serializerSetting = new()
     {

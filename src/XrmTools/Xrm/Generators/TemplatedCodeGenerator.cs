@@ -11,13 +11,13 @@ using Scriban.Runtime;
 using XrmTools.Validation;
 using System.ComponentModel.DataAnnotations;
 
-[Export(typeof(IXrmPluginCodeGenerator))]
+[Export(typeof(IXrmCodeGenerator))]
 [method:ImportingConstructor]
-public class TemplatedPluginCodeGenerator(IValidationService validationService) : IXrmPluginCodeGenerator
+public class TemplatedCodeGenerator(IValidationService validationService) : IXrmCodeGenerator
 {
     public XrmCodeGenConfig? Config { set; get; }
 
-    private static readonly Type generatorType = typeof(TemplatedPluginCodeGenerator);
+    private static readonly Type generatorType = typeof(TemplatedCodeGenerator);
     private static readonly string generatorAttributeString = $"[GeneratedCode(\"{generatorType.Name}\", \"{generatorType.Assembly.GetName().Version}\")]";
 
     public ValidationResult IsValid(PluginAssemblyConfig pluginAssembly)

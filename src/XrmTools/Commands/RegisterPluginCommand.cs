@@ -18,6 +18,7 @@ using XrmTools.Analyzers;
 using XrmTools.Environments;
 using XrmTools.Helpers;
 using XrmTools.Logging.Compatibility;
+using XrmTools.Meta.Attributes;
 using XrmTools.Meta.Model;
 using XrmTools.Resources;
 using XrmTools.WebApi;
@@ -86,7 +87,10 @@ internal sealed class RegisterPluginCommand : BaseCommand<RegisterPluginCommand>
         if (!projectIsUpToDate)
         {
             var buildSucceeded = await project.BuildAsync();
-            if (!buildSucceeded) return;
+            if (!buildSucceeded)
+            {
+                return;
+            }
         }
 
         // Parse the file and generate the PluginAssemblyConfig model from it.
@@ -94,8 +98,8 @@ internal sealed class RegisterPluginCommand : BaseCommand<RegisterPluginCommand>
         try
         {
             inputModel = activeItem.Type == SolutionItemType.Project ?
-                await MetaDataService.ParseProjectAsync(activeItem.FullPath) :
-                await MetaDataService.ParseAsync(activeItem.FullPath);
+                await MetaDataService.ParseProjectPluginsAsync(activeItem.FullPath) :
+                await MetaDataService.ParsePluginsAsync(activeItem.FullPath);
         }
         catch (Exception ex)
         {
@@ -376,7 +380,7 @@ internal sealed class RegisterPluginCommand : BaseCommand<RegisterPluginCommand>
         async Task<bool> IsXrmPluginFileAsync(PhysicalFile file)
         {
             var generator = await file.GetAttributeAsync("Generator").ConfigureAwait(false);
-            if (generator != XrmCodeGenerator.Name)
+            if (generator != PluginCodeGenerator.Name)
                 return false;
 
             var pluginAttr = await file.GetAttributeAsync("IsXrmPlugin").ConfigureAwait(false);

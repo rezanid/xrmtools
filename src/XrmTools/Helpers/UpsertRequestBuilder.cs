@@ -9,6 +9,7 @@ using Newtonsoft.Json.Linq;
 using System.Linq;
 using XrmTools.Meta.Model;
 using XrmTools.WebApi.Entities;
+using XrmTools.Meta.Attributes;
 
 //TODO: Make this class IDisposable and dispose requests.
 public class UpsertRequestBuilder(
@@ -191,7 +192,7 @@ public class UpsertRequestBuilder(
             ["attributes"] = pluginImage.ImageAttributes,
             ["entityalias"] = pluginImage.EntityAlias,
             ["messagepropertyname"] = parentStep.Message?.MessagePropertyNames.FirstOrDefault().Name,
-            ["imagetype"] = (int)pluginImage.ImageType,
+            ["imagetype"] = (int?)pluginImage.ImageType,
             ["sdkmessageprocessingstepid@odata.bind"] = $"sdkmessageprocessingsteps({parentStep.PluginStepId})"
             //["sdkmessageprocessingstepid@odata.bind"] = $"${parentStepContentId}"
         },

@@ -1,8 +1,9 @@
 ﻿namespace XrmTools.Commands;
 
 using Community.VisualStudio.Toolkit;
-using EnvDTE;
 using Microsoft.VisualStudio.Shell;
+using System.IO;
+using XrmTools.Helpers;
 using Task = System.Threading.Tasks.Task;
 
 /// <summary>
@@ -15,7 +16,27 @@ internal sealed class SetCustomToolEntityGeneratorCommand : BaseCommand<SetCusto
     {
         var i = await VS.Solutions.GetActiveItemAsync();
         if (i is null || i.Type != SolutionItemType.PhysicalFile) return;
-        await (i as PhysicalFile).TrySetAttributeAsync(PhysicalFileAttribute.CustomTool, EntityCodeGenerator.Name);
+
+        if (i.FindParent(SolutionItemType.Project) is not Project project) return;
+
+        var file = i as PhysicalFile;
+        if (project.IsSdkStyle())
+        {
+            var genFilePath = Path.Combine(
+                Path.GetDirectoryName(file.FullPath),
+                Path.GetFileNameWithoutExtension(file.FullPath)) + ".Generated.cs";
+            if (!File.Exists(genFilePath)) await FileHelper.AddItemAsync(genFilePath, "", file);
+            var genFile = await PhysicalFile.FromFileAsync(genFilePath);
+            await genFile.TrySetAttributeAsync(PhysicalFileAttribute.AutoGen, true);
+            await genFile.TrySetAttributeAsync(PhysicalFileAttribute.DesignTime, true);
+            await genFile.TrySetAttributeAsync(PhysicalFileAttribute.DependentUpon, Path.GetFileName(file.FullPath));
+            await file.TrySetAttributeAsync(PhysicalFileAttribute.LastGenOutput, Path.GetFileName(genFilePath));
+            await file.TrySetAttributeAsync(PhysicalFileAttribute.Generator, EntityCodeGenerator.Name);
+        }
+        else
+        {
+            await file.TrySetAttributeAsync(PhysicalFileAttribute.Generator, EntityCodeGenerator.Name);
+        }
     }
 
     protected override Task InitializeCompletedAsync()

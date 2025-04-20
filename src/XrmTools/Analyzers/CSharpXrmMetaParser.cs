@@ -8,16 +8,16 @@ using System.ComponentModel.Composition;
 using System.Linq;
 using XrmTools.Helpers;
 using XrmTools.Meta.Attributes;
-using XrmTools.Meta.Model;
 using XrmTools.Xrm.Model;
 
 internal interface ICSharpXrmMetaParser
 {
-    IEnumerable<EntityConfig> ParseEntitieConfigsFrom(IEnumerable<AttributeData> entityAttributes);
+    IEnumerable<EntityConfig> ParseEntitiyConfigs(IEnumerable<AttributeData> entityAttributes);
 
     PluginTypeConfig? ParsePluginConfig(INamedTypeSymbol pluginType);
 
     PluginAssemblyConfig? ParsePluginAssemblyConfig(IAssemblySymbol assembly);
+    EntityConfig ParseEntityConfig(AttributeData entityAttribute);
 }
 
 [Export(typeof(ICSharpXrmMetaParser))]
@@ -44,6 +44,7 @@ internal class CSharpXrmMetaParser : ICSharpXrmMetaParser
     {
         AttributeData? assemblyAttribute = null;
         AttributeData? solutionAttribute = null;
+        //List<EntityConfig> entityConfigs = [];
         foreach (var attr in assemblySymbol.GetAttributes())
         {
             if (attr.AttributeClass?.ToDisplayString() == typeof(PluginAssemblyAttribute).FullName)
@@ -53,6 +54,10 @@ internal class CSharpXrmMetaParser : ICSharpXrmMetaParser
             else if (attr.AttributeClass?.ToDisplayString() == typeof(SolutionAttribute).FullName)
             {
                 solutionAttribute = attr;
+            }
+            else
+            {
+                // Not interested in other attributes.
             }
         }
 
@@ -78,18 +83,18 @@ internal class CSharpXrmMetaParser : ICSharpXrmMetaParser
         return pluginAssemblyConfig.SetPropertiesFromAttribute(assemblyAttribute);
     }
 
-    public IEnumerable<EntityConfig> ParseEntitieConfigsFrom(IEnumerable<AttributeData> entityAttributes)
+    public IEnumerable<EntityConfig> ParseEntitiyConfigs(IEnumerable<AttributeData> entityAttributes)
     {
-        const int entityNameIndex = 0;
         foreach (var attribute in entityAttributes)
         {
-            yield return new EntityConfig
-            {
-                Attributes = attribute.GetValue<string>(nameof(EntityAttribute.AttributeNames)),
-                LogicalName = attribute.ConstructorArguments[entityNameIndex].Value!.ToString(),
-            };
+            if (attribute.AttributeClass?.ToDisplayString() != typeof(EntityAttribute).FullName)
+                continue;
+            yield return ParseEntityConfig(attribute);
         }
     }
+
+    public EntityConfig ParseEntityConfig(AttributeData entityAttribute)
+        => new EntityConfig().SetPropertiesFromAttribute(entityAttribute);
 
     public PluginTypeConfig? ParsePluginConfig(INamedTypeSymbol typeSymbol)
     {

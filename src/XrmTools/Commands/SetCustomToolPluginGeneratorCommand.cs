@@ -31,13 +31,12 @@ internal sealed class SetCustomToolPluginGeneratorCommand : BaseCommand<SetCusto
             await genFile.TrySetAttributeAsync(PhysicalFileAttribute.DesignTime, true);
             await genFile.TrySetAttributeAsync(PhysicalFileAttribute.DependentUpon, Path.GetFileName(file.FullPath));
             await file.TrySetAttributeAsync(PhysicalFileAttribute.LastGenOutput, Path.GetFileName(genFilePath));
-            await file.TrySetAttributeAsync(PhysicalFileAttribute.Generator, XrmCodeGenerator.Name);
+            await file.TrySetAttributeAsync(PhysicalFileAttribute.Generator, PluginCodeGenerator.Name);
         }
         else
         {
-            await file.TrySetAttributeAsync(PhysicalFileAttribute.Generator, XrmCodeGenerator.Name);
+            await file.TrySetAttributeAsync(PhysicalFileAttribute.Generator, PluginCodeGenerator.Name);
         }
-        await file.TrySetAttributeAsync("IsXrmPlugin", true);
     }
 
     protected override Task InitializeCompletedAsync() 

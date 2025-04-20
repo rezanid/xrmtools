@@ -50,16 +50,17 @@ using System.IO;
 [ProvideAutoLoad(UIContextGuids80.SolutionExists, PackageAutoLoadFlags.BackgroundLoad)]
 [ProvideCodeGenerator(typeof(EntityCodeGenerator), EntityCodeGenerator.Name, EntityCodeGenerator.Description, true, ProjectSystem = ProvideCodeGeneratorAttribute.CSharpProjectGuid, RegisterCodeBase = true)]
 [ProvideCodeGeneratorExtension(EntityCodeGenerator.Name, ".yaml")]
-[ProvideCodeGenerator(typeof(XrmCodeGenerator), XrmCodeGenerator.Name, XrmCodeGenerator.Description, true, ProjectSystem = ProvideCodeGeneratorAttribute.CSharpProjectGuid, RegisterCodeBase = true)]
-[ProvideCodeGeneratorExtension(XrmCodeGenerator.Name, ".def.json")]
+[ProvideCodeGenerator(typeof(PluginCodeGenerator), PluginCodeGenerator.Name, PluginCodeGenerator.Description, true, ProjectSystem = ProvideCodeGeneratorAttribute.CSharpProjectGuid, RegisterCodeBase = true)]
+[ProvideCodeGeneratorExtension(PluginCodeGenerator.Name, ".def.json")]
 [ProvideMenuResource("Menus.ctmenu", 1)]
 // Decide the visibility of our commands when the commands are NOT yet loaded.
 [ProvideUIContextRule(PackageGuids.SetCustomToolEntitiesCmdUIRuleString,
     name: "UI Context Entity Definition",
-    expression: "(Yaml | Proj) & CSharp & (SingleProj | MultiProj)",
-    termNames: ["Yaml", "CSharp", "SingleProj", "MultiProj"],
+    expression: "(Yaml | CSEntity) & CSharp & (SingleProj | MultiProj)",
+    termNames: ["Yaml", "CSEntity", "CSharp", "SingleProj", "MultiProj"],
     termValues: [
         "HierSingleSelectionName:.yaml$|.yml$", 
+        "HierSingleSelectionName:.*Entit.*\\.cs$",
         "ActiveProjectCapability:CSharp", 
         VSConstants.UICONTEXT.SolutionHasSingleProject_string, 
         VSConstants.UICONTEXT.SolutionHasMultipleProjects_string])]
@@ -90,8 +91,7 @@ using System.IO;
         "ActiveProjectCapability:CSharp",
         VSConstants.UICONTEXT.SolutionHasSingleProject_string,
         VSConstants.UICONTEXT.SolutionHasMultipleProjects_string])]
-[ProvideService(typeof(IXrmPluginCodeGenerator), IsAsyncQueryable = true, IsCacheable = true, IsFreeThreaded = true)]
-[ProvideService(typeof(IXrmEntityCodeGenerator), IsAsyncQueryable = true, IsCacheable = true, IsFreeThreaded = true)]
+[ProvideService(typeof(IXrmCodeGenerator), IsAsyncQueryable = true, IsCacheable = true, IsFreeThreaded = true)]
 [ProvideService(typeof(IEnvironmentProvider), IsAsyncQueryable = true, IsCacheable = true, IsFreeThreaded = true)]
 [ProvideService(typeof(ISettingsProvider), IsAsyncQueryable = true, IsCacheable = true, IsFreeThreaded = true)]
 [ProvideOptionPage(typeof(OptionsProvider.GeneralOptions), Vsix.Name, "General", 0, 0, true, SupportsProfiles = true)]
@@ -212,12 +212,6 @@ public sealed partial class XrmToolsPackage : ToolkitPackage
         //    async (container, cancellationToken, type) =>
         //        await Task.FromResult(new TemplatedPluginCodeGenerator())
         //    , promote: true);
-        AddService(
-            typeof(IXrmEntityCodeGenerator),
-            async (container, cancellationToken, type) =>
-                await Task.FromResult(new TemplatedEntityCodeGenerator())
-            // Add service at global level to make it available to Single-File generators.
-            , promote: true);
         AddService(
             typeof(ISettingsProvider),
             async (container, cancellationToken, type) =>

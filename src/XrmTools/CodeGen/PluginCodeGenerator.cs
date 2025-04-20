@@ -31,7 +31,7 @@ using XrmTools.Xrm.Model;
 using XrmTools.Xrm.Repositories;
 using static XrmTools.Helpers.ProjectExtensions;
 
-public class XrmCodeGenerator : BaseCodeGeneratorWithSite
+public class PluginCodeGenerator : BaseCodeGeneratorWithSite
 {
     public const string Name = Vsix.Name + " Plugin Code Generator";
     public const string Description = "Generates plugin code from .dej.json file.";
@@ -39,7 +39,7 @@ public class XrmCodeGenerator : BaseCodeGeneratorWithSite
     private bool disposed = false;
 
     [Import]
-    IXrmPluginCodeGenerator Generator { get; set; }
+    IXrmCodeGenerator Generator { get; set; }
 
     [Import]
     internal IRepositoryFactory RepositoryFactory { get; set; }
@@ -48,7 +48,7 @@ public class XrmCodeGenerator : BaseCodeGeneratorWithSite
     internal ISettingsProvider SettingsProvider { get; set; }
 
     [Import]
-    internal ILogger<XrmCodeGenerator> Logger { get; set; }
+    internal ILogger<PluginCodeGenerator> Logger { get; set; }
 
     [Import]
     internal ITemplateFinder TemplateFinder { get; set; }
@@ -61,7 +61,7 @@ public class XrmCodeGenerator : BaseCodeGeneratorWithSite
 
     public override string GetDefaultExtension() => ".cs";
 
-    public XrmCodeGenerator() => SatisfyImports();
+    public PluginCodeGenerator() => SatisfyImports();
 
     [MemberNotNull(nameof(Generator), nameof(RepositoryFactory), 
         nameof(Logger), nameof(TemplateFinder), nameof(TemplateFileGenerator),
@@ -70,13 +70,13 @@ public class XrmCodeGenerator : BaseCodeGeneratorWithSite
     {
         var componentModel = (IComponentModel)Package.GetGlobalService(typeof(SComponentModel));
         componentModel?.DefaultCompositionService.SatisfyImportsOnce(this);
-        if (Generator == null) throw new InvalidOperationException(string.Format(Strings.MissingServiceDependency, nameof(XrmCodeGenerator), nameof(Generator)));
-        if (RepositoryFactory == null) throw new InvalidOperationException(string.Format(Strings.MissingServiceDependency, nameof(XrmCodeGenerator), nameof(RepositoryFactory)));
-        if (SettingsProvider == null) throw new InvalidOperationException(string.Format(Strings.MissingServiceDependency, nameof(XrmCodeGenerator), nameof(SettingsProvider)));
-        if (Logger == null) throw new InvalidOperationException(string.Format(Strings.MissingServiceDependency, nameof(XrmCodeGenerator), nameof(Logger)));
-        if (TemplateFinder == null) throw new InvalidOperationException(string.Format(Strings.MissingServiceDependency, nameof(XrmCodeGenerator), nameof(TemplateFinder)));
-        if (TemplateFileGenerator == null) throw new InvalidOperationException(string.Format(Strings.MissingServiceDependency, nameof(XrmCodeGenerator), nameof(TemplateFileGenerator)));
-        if (XrmMetaDataService == null) throw new InvalidOperationException(string.Format(Strings.MissingServiceDependency, nameof(XrmCodeGenerator), nameof(XrmMetaDataService)));
+        if (Generator == null) throw new InvalidOperationException(string.Format(Strings.MissingServiceDependency, nameof(PluginCodeGenerator), nameof(Generator)));
+        if (RepositoryFactory == null) throw new InvalidOperationException(string.Format(Strings.MissingServiceDependency, nameof(PluginCodeGenerator), nameof(RepositoryFactory)));
+        if (SettingsProvider == null) throw new InvalidOperationException(string.Format(Strings.MissingServiceDependency, nameof(PluginCodeGenerator), nameof(SettingsProvider)));
+        if (Logger == null) throw new InvalidOperationException(string.Format(Strings.MissingServiceDependency, nameof(PluginCodeGenerator), nameof(Logger)));
+        if (TemplateFinder == null) throw new InvalidOperationException(string.Format(Strings.MissingServiceDependency, nameof(PluginCodeGenerator), nameof(TemplateFinder)));
+        if (TemplateFileGenerator == null) throw new InvalidOperationException(string.Format(Strings.MissingServiceDependency, nameof(PluginCodeGenerator), nameof(TemplateFileGenerator)));
+        if (XrmMetaDataService == null) throw new InvalidOperationException(string.Format(Strings.MissingServiceDependency, nameof(PluginCodeGenerator), nameof(XrmMetaDataService)));
     }
 
     protected override byte[]? GenerateCode(string inputFileName, string inputFileContent)
@@ -102,7 +102,7 @@ public class XrmCodeGenerator : BaseCodeGeneratorWithSite
             }
 
             var templateFilePath = GetTemplateFilePath(inputModel);
-            // Check if template file exists.
+
             if (string.IsNullOrEmpty(templateFilePath))
             {
                 return Encoding.UTF8.GetBytes("// " + Strings.PluginGenerator_TemplateNotSet);
@@ -151,7 +151,7 @@ public class XrmCodeGenerator : BaseCodeGeneratorWithSite
     {
         if (".cs".Equals(Path.GetExtension(inputFileName), StringComparison.OrdinalIgnoreCase))
         {
-            return await XrmMetaDataService.ParseAsync(inputFileName);
+            return await XrmMetaDataService.ParsePluginsAsync(inputFileName);
         }
         else if (".json".Equals(Path.GetExtension(inputFileName), StringComparison.OrdinalIgnoreCase))
         {
@@ -358,7 +358,7 @@ public class XrmCodeGenerator : BaseCodeGeneratorWithSite
         {
             if (!string.IsNullOrEmpty(entityConfig.LogicalName))
             {
-                entityDefinitions[entityConfig.LogicalName!] = GetEntityMetadata(entityConfig.LogicalName!, entityConfig.Attributes?.SplitAndTrim(',') ?? [], config.RemovePrefixes)!;
+                entityDefinitions[entityConfig.LogicalName!] = GetEntityMetadata(entityConfig.LogicalName!, entityConfig.AttributeNames?.SplitAndTrim(',') ?? [], config.RemovePrefixes)!;
             }
         }
         config.EntityDefinitions = entityDefinitions.Values;
@@ -388,7 +388,7 @@ public class XrmCodeGenerator : BaseCodeGeneratorWithSite
     }
 
     // Finalizer to ensure resources are released if Dispose is not called
-    ~XrmCodeGenerator() => Dispose(false);
+    ~PluginCodeGenerator() => Dispose(false);
     #endregion
 }
 #nullable restore
