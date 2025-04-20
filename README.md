@@ -1,5 +1,5 @@
 # What is Xrm Tools
-Xrm Tools is a Visual Studio extension that aims to make Power Platform development feel native within Visual Studio. You will get Intellisense support for your Plugins, generate boiler plate code, typed entities and more right from within Visual Studio. You have full control over code generation using [Scriban](https://github.com/scriban/scriban) templates.. Let me show you!
+Xrm Tools is a Visual Studio extension that aims to make Power Platform development feel native within Visual Studio. You will get Intellisense support for your Plugins, generate boiler plate code, typed entities and more right from within Visual Studio. You will also have full control over code generation using [Scriban](https://github.com/scriban/scriban) templates. Let me show you!
 
 > [!NOTE]
 >
