@@ -63,56 +63,43 @@
     <Compile Include="AccountCreatePlugin.cs">
       <Generator>Xrm Tools Plugin Code Generator</Generator>
       <LastGenOutput>AccountCreatePlugin1.cs</LastGenOutput>
-      <IsXrmPlugin>True</IsXrmPlugin>
     </Compile>
     <Compile Include="AccountCreatePlugin1.cs">
-      <AutoGen>True</AutoGen>
-      <DesignTime>True</DesignTime>
       <DependentUpon>AccountCreatePlugin.cs</DependentUpon>
+      <DesignTime>True</DesignTime>
+      <AutoGen>True</AutoGen>
     </Compile>
     <Compile Include="ContactCreatePlugin.cs">
       <Generator>Xrm Tools Plugin Code Generator</Generator>
-      <IsXrmPlugin>True</IsXrmPlugin>
       <LastGenOutput>ContactCreatePlugin1.cs</LastGenOutput>
     </Compile>
     <Compile Include="ContactCreatePlugin1.cs">
-      <AutoGen>True</AutoGen>
-      <DesignTime>True</DesignTime>
       <DependentUpon>ContactCreatePlugin.cs</DependentUpon>
+      <DesignTime>True</DesignTime>
+      <AutoGen>True</AutoGen>
     </Compile>
     <Compile Include="Entities.cs">
-      <AutoGen>True</AutoGen>
-      <DesignTime>True</DesignTime>
       <DependentUpon>Entities.yaml</DependentUpon>
+      <DesignTime>True</DesignTime>
+      <AutoGen>True</AutoGen>
     </Compile>
     <Compile Include="LeadCreatePlugin.cs">
       <Generator>Xrm Tools Plugin Code Generator</Generator>
       <LastGenOutput>LeadCreatePlugin1.cs</LastGenOutput>
-      <IsXrmPlugin>True</IsXrmPlugin>
     </Compile>
     <Compile Include="LeadCreatePlugin1.cs">
-      <AutoGen>True</AutoGen>
-      <DesignTime>True</DesignTime>
       <DependentUpon>LeadCreatePlugin.cs</DependentUpon>
-    </Compile>
-    <Compile Include="Model\Entities.cs">
-      <Generator>Xrm Tools Plugin Code Generator</Generator>
-      <LastGenOutput>Entities1.cs</LastGenOutput>
-    </Compile>
-    <Compile Include="Model\Entities1.cs">
-      <AutoGen>True</AutoGen>
       <DesignTime>True</DesignTime>
-      <DependentUpon>Entities.cs</DependentUpon>
+      <AutoGen>True</AutoGen>
     </Compile>
     <Compile Include="MyCustomApiPlugin.cs">
       <Generator>Xrm Tools Plugin Code Generator</Generator>
-      <IsXrmPlugin>True</IsXrmPlugin>
       <LastGenOutput>MyCustomApiPlugin1.cs</LastGenOutput>
     </Compile>
     <Compile Include="MyCustomApiPlugin1.cs">
-      <AutoGen>True</AutoGen>
-      <DesignTime>True</DesignTime>
       <DependentUpon>MyCustomApiPlugin.cs</DependentUpon>
+      <DesignTime>True</DesignTime>
+      <AutoGen>True</AutoGen>
     </Compile>
     <Compile Include="Properties\AssemblyInfo.cs" />
     <None Include="CodeGenTemplates\BigInt.sbncs" />
@@ -141,7 +128,7 @@
     <None Include="CodeGenTemplates\DisplayNameBased\UniqueIdentifier.sbn" />
     <None Include="CodeGenTemplates\DisplayNameBased\Virtual.sbn" />
     <None Include="CodeGenTemplates\Double.sbncs" />
-    <None Include="CodeGenTemplates\Entity.sbn" />
+    <None Include="CodeGenTemplates\Entity.sbncs" />
     <None Include="CodeGenTemplates\EntityName.sbncs" />
     <None Include="CodeGenTemplates\Images.sbncs" />
     <None Include="CodeGenTemplates\Integer.sbncs" />
@@ -163,7 +150,6 @@
       <LastGenOutput>Entities.cs</LastGenOutput>
     </None>
     <None Include="key.snk" />
-    <None Include="Model\Entities.model.json" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="Microsoft.CrmSdk.CoreAssemblies">
@@ -174,8 +160,10 @@
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
       <PrivateAssets>all</PrivateAssets>
     </PackageReference>
-    <PackageReference Include="XrmTools.Meta">
-      <Version>1.0.5</Version>
+    <PackageReference Include="XrmTools.Meta.Attributes">
+      <Version>1.0.2</Version>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+      <PrivateAssets>all</PrivateAssets>
     </PackageReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />

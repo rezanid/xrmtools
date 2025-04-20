@@ -8,10 +8,10 @@ using System.Runtime.Serialization;
 
 namespace XrmGenTest;
 
-[GeneratedCode("TemplatedPluginCodeGenerator", "1.0.0.0")]
+[GeneratedCode("TemplatedCodeGenerator", "1.0.0.0")]
 public partial class AccountCreatePlugin : PluginBase
 {
-	[GeneratedCode("TemplatedPluginCodeGenerator", "1.0.0.0")]
+	[GeneratedCode("TemplatedCodeGenerator", "1.0.0.0")]
 	[EntityLogicalName("account")]
 	public class TargetAccount : Entity
 	{
@@ -87,7 +87,7 @@ public partial class AccountCreatePlugin : PluginBase
 			set => this["accountnumber"] = value;
 		}
 	}
-	[GeneratedCode("TemplatedPluginCodeGenerator", "1.0.0.0")]
+	[GeneratedCode("TemplatedCodeGenerator", "1.0.0.0")]
 	[EntityLogicalName("account")]
 	public class PostImageAccount : Entity
 	{
@@ -735,15 +735,16 @@ public partial class AccountCreatePlugin : PluginBase
         PostImage = EntityOrDefault<PostImageAccount>(executionContext.PreEntityImages, "PostImage");
     }
 
-	private static T EntityOrDefault<T>(DataCollection<string, object> keyValues, string key) where T : Entity
+	protected static T EntityOrDefault<T>(DataCollection<string, object> keyValues, string key) where T : Entity
     {
         if (keyValues is null) return default;
         return keyValues.TryGetValue(key, out var obj) ? obj is Entity entity ? entity.ToEntity<T>() : default : default;
     }
 
-    private static T EntityOrDefault<T>(DataCollection<string, Entity> keyValues, string key) where T : Entity
+    protected static T EntityOrDefault<T>(DataCollection<string, Entity> keyValues, string key) where T : Entity
     {
         if (keyValues is null) return default;
         return keyValues.TryGetValue(key, out var entity) ? entity?.ToEntity<T>() : default;
     }
+
 }
