@@ -43,8 +43,8 @@ public class TemplateFileGenerator(ISettingsProvider settings, ILogger<TemplateF
                 await proj.AddExistingFilesAsync(targetFile);
             }
         }
-        await settings.ProjectSettings.EntityTemplateFilePathAsync(Path.Combine(templatesDirectory, Constants.ScribanEntityTemplateFileName));
-        await settings.ProjectSettings.PluginTemplateFilePathAsync(Path.Combine(templatesDirectory, Constants.ScribanPluginTemplateFileName));
+        await settings.ProjectSettings.EntityTemplateFilePathAsync(Path.Combine(Path.DirectorySeparatorChar + "CodeGenTemplates", Constants.ScribanEntityTemplateFileName));
+        await settings.ProjectSettings.PluginTemplateFilePathAsync(Path.Combine(Path.DirectorySeparatorChar + "CodeGenTemplates", Constants.ScribanPluginTemplateFileName));
     }
 }
 #nullable restore

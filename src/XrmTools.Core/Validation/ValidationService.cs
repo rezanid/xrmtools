@@ -13,8 +13,8 @@ using ILogger = Logging.Compatibility.ILogger;
 
 public interface IValidationService
 {
-    Task<ValidationResult> ValidateIfAvailableAsync<T>(T value, string? category = null, CancellationToken cancellationToken = default);
-    ValidationResult ValidateIfAvailable<T>(T value, string? category = null);
+    Task<ValidationResult> ValidateIfValidatorAvailableAsync<T>(T value, string? category = null, CancellationToken cancellationToken = default);
+    ValidationResult ValidateIfValidatorAvailable<T>(T value, string? category = null);
 }
 
 [Export(typeof(IValidationService))]
@@ -53,7 +53,7 @@ public class ValidationService : IValidationService
     /// </summary>
     /// <exception cref="InvalidOperationException">If for any unknown reason a validator does not 
     /// implement <see cref="IAsyncValidator{T}"/> or <see cref="IValidator{T}"/>.</exception>
-    public ValidationResult ValidateIfAvailable<T>(T value, string? category = null)
+    public ValidationResult ValidateIfValidatorAvailable<T>(T value, string? category = null)
     {
         if (_validators.TryGetValue(typeof(T), out var list))
         {
@@ -74,7 +74,7 @@ public class ValidationService : IValidationService
         return ValidationResult.Success;
     }
 
-    public async Task<ValidationResult> ValidateIfAvailableAsync<T>(
+    public async Task<ValidationResult> ValidateIfValidatorAvailableAsync<T>(
         T value,
         string? category = null,
         CancellationToken cancellationToken = default)

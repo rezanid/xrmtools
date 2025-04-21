@@ -1,4 +1,5 @@
-﻿namespace XrmTools.WebApi.Messages;
+﻿#nullable enable
+namespace XrmTools.WebApi.Messages;
 
 using Newtonsoft.Json.Linq;
 using System;
@@ -13,8 +14,6 @@ using XrmTools.WebApi;
 /// </summary>
 public sealed class UpsertRequest : HttpRequestMessage
 {
-
-
     /// <summary>
     /// Initializes the UpsertRequest
     /// </summary>
@@ -24,7 +23,8 @@ public sealed class UpsertRequest : HttpRequestMessage
     public UpsertRequest(
         EntityReference entityReference,
         JObject record,
-        UpsertBehavior upsertBehavior = UpsertBehavior.CreateOrUpdate)
+        UpsertBehavior upsertBehavior = UpsertBehavior.CreateOrUpdate,
+        string? solutionUniqueName = null)
     {
         Method = HttpMethods.Patch;
         RequestUri = new Uri(uriString: entityReference.Path, uriKind: UriKind.Relative);
@@ -41,9 +41,12 @@ public sealed class UpsertRequest : HttpRequestMessage
                 Headers.Add("If-None-Match", "*");
                 break;
         }
+        if (!string.IsNullOrEmpty(solutionUniqueName))
+        {
+            Headers.Add("MSCRM.SolutionUniqueName", solutionUniqueName);
+        }
     }
 }
-
 
 /// <summary>
 /// Specifies the behavior for an Upsert operation.
@@ -80,3 +83,4 @@ public enum UpsertBehavior
     PreventUpdate = 1,
     PreventCreate = 2
 }
+#nullable restore

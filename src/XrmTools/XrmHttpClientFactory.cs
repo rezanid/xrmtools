@@ -16,6 +16,7 @@ using Microsoft.Identity.Client;
 using Microsoft.VisualStudio.Threading;
 using System.Reflection;
 using System.Net;
+using XrmTools.Options;
 
 [Export(typeof(IXrmHttpClientFactory))]
 internal class XrmHttpClientFactory : IXrmHttpClientFactory, System.IAsyncDisposable, IDisposable
@@ -94,8 +95,29 @@ internal class XrmHttpClientFactory : IXrmHttpClientFactory, System.IAsyncDispos
         //var handler = new PolicyHttpMessageHandler(CreateDefaultPolicy());
         var handler = environment == DataverseEnvironment.Empty ?
             new PolicyHandler(new HttpClientHandler() { AllowAutoRedirect = false }, CreateDefaultPolicy()) :
-            new PolicyHandler(new HttpClientHandler() { UseCookies = environment.AllowCookies, UseProxy = true, Proxy = new WebProxy { Address = new Uri("http://localhost:8888") } }, CreateDefaultPolicy());
+            new PolicyHandler(CreateHandler(environment), CreateDefaultPolicy());
         return new (handler, timeProvider.GetUtcNow());
+    }
+
+    private HttpClientHandler CreateHandler(DataverseEnvironment environment)
+    {
+        var proxyAddress = GeneralOptions.Instance.Proxy;
+        var useProxy = !string.IsNullOrWhiteSpace(proxyAddress);
+        var handler = new HttpClientHandler()
+        {
+            AllowAutoRedirect = false,
+            UseCookies = environment.AllowCookies,
+        };
+        if (useProxy)
+        {
+            handler.Proxy = new WebProxy(proxyAddress);
+            handler.UseProxy = true;
+        }
+        else
+        {
+            handler.UseProxy = false;
+        }
+        return handler;
     }
 
     private async Task RecycleHandlersAsync()

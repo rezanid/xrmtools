@@ -1,22 +1,15 @@
 ﻿using Microsoft.Xrm.Sdk;
 using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using XrmTools.Meta.Attributes;
-using XrmTools.Meta.Model;
 
-namespace XrmGenTest
+namespace XrmGenTest;
+
+[Plugin]
+[Step("Create", "contact", "firstname,lastname,description", Stages.PreOperation, ExecutionMode.Synchronous)]
+public partial class ContactCreatePlugin : IPlugin
 {
-    [Plugin("ContactCreate")]
-    [Step("contact", "Create", "firstname,lastname", Stages.PostOperation, ExecutionMode.Synchronous)]
-    [Image(ImageTypes.PostImage, "Target", "firstname,lastname")]
-    public partial class ContactCreatePlugin : IPlugin
+    public void Execute(IServiceProvider serviceProvider)
     {
-        public void Execute(IServiceProvider serviceProvider)
-        {
-            throw new NotImplementedException();
-        }
+        Target.Description = $"Hello {Target.FirstName} {Target.LastName}!";
     }
 }

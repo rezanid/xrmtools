@@ -14,14 +14,18 @@ internal class AuthenticationService : IAuthenticationService
 {
     bool cleanTokenCache = false;
 
-    [Import]
     ITokenExpanderService TokenExpander { get; set; }
 
-    [Import]
     Lazy<IXrmHttpClientFactory> HttpClientFactory { get; set; }
 
-    public AuthenticationService()
+    [ImportingConstructor]
+    public AuthenticationService(
+        ITokenExpanderService tokenExpander,
+        Lazy<IXrmHttpClientFactory> httpClientFactory
+        )
     {
+        TokenExpander = tokenExpander;
+        HttpClientFactory = httpClientFactory;
         GeneralOptions.Saved += (options) =>
         {
             cleanTokenCache = true;

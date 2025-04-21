@@ -38,7 +38,6 @@ public class ProjectSettings(ProjectStorageType storageType) : IAsyncXrmToolsSet
         else
         {
             return await proj.TrySetAttributeAsync(name, value, storageType);
-
         }
     }
 }

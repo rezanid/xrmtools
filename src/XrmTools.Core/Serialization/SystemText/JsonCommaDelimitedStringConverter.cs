@@ -1,4 +1,5 @@
-﻿namespace XrmTools.Serialization;
+﻿#nullable enable
+namespace XrmTools.Serialization;
 
 using System;
 using System.Collections.Generic;
@@ -39,3 +40,4 @@ public class JsonCommaDelimitedStringConverter : JsonConverter<List<string>>
     }
 
 }
+#nullable restore

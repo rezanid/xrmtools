@@ -9,6 +9,7 @@ using System.Collections.Generic;
 using System.ComponentModel.Composition;
 using System.ComponentModel.DataAnnotations;
 using System.Diagnostics.CodeAnalysis;
+using System.IO;
 using System.Linq;
 using System.Net.Http;
 using System.Threading;
@@ -17,6 +18,7 @@ using XrmTools.Analyzers;
 using XrmTools.Environments;
 using XrmTools.Helpers;
 using XrmTools.Logging.Compatibility;
+using XrmTools.Meta.Attributes;
 using XrmTools.Meta.Model;
 using XrmTools.Resources;
 using XrmTools.WebApi;
@@ -27,6 +29,7 @@ using XrmTools.WebApi.Methods;
 using XrmTools.Xrm;
 using XrmTools.Xrm.Model;
 using XrmTools.Xrm.Repositories;
+using static XrmTools.Helpers.ProjectExtensions;
 using Task = System.Threading.Tasks.Task;
 
 /// <summary>
@@ -55,13 +58,19 @@ internal sealed class RegisterPluginCommand : BaseCommand<RegisterPluginCommand>
 
     private async Task<bool> ValidatePluginAssemblyConfigAsync([NotNullWhen(true)] PluginAssemblyConfig? pluginAssembly)
     {
-        var result = await Validator.ValidateIfAvailableAsync(pluginAssembly);
+        var result = await Validator.ValidateIfValidatorAvailableAsync(pluginAssembly, Validation.Categories.WebApi);
         if (result != ValidationResult.Success)
         {
             await VS.MessageBox.ShowErrorAsync(Vsix.Name, result.ErrorMessage);
             return false;
         }
         return true;
+    }
+
+    public (bool suceeded, string message) RegisterPluginPackage()
+    {
+
+        return (true, string.Empty);
     }
 
     protected override async Task ExecuteAsync(OleMenuCmdEventArgs e)
@@ -71,20 +80,56 @@ internal sealed class RegisterPluginCommand : BaseCommand<RegisterPluginCommand>
         var project = activeItem.Type == SolutionItemType.Project ? (Project)activeItem : activeItem.FindParent(SolutionItemType.Project) as Project;
         if (project is null)
         {
-            await VS.MessageBox.ShowErrorAsync(Vsix.Name, "The selected item is not a project or part of the project.");
+            await VS.MessageBox.ShowErrorAsync(Vsix.Name, "The selected item is not a project or part of a project.");
             return;
         }
         var projectIsUpToDate = await VS.Build.ProjectIsUpToDateAsync(project);
         if (!projectIsUpToDate)
         {
             var buildSucceeded = await project.BuildAsync();
-            if (!buildSucceeded) return;
+            if (!buildSucceeded)
+            {
+                return;
+            }
         }
 
         // Parse the file and generate the PluginAssemblyConfig model from it.
-        var inputModel = activeItem.Type == SolutionItemType.Project ?
-            await MetaDataService.ParseProjectAsync(activeItem.FullPath) :
-            await MetaDataService.ParseAsync(activeItem.FullPath);
+        PluginAssemblyConfig? inputModel;
+        try
+        {
+            inputModel = activeItem.Type == SolutionItemType.Project ?
+                await MetaDataService.ParseProjectPluginsAsync(activeItem.FullPath) :
+                await MetaDataService.ParsePluginsAsync(activeItem.FullPath);
+        }
+        catch (Exception ex)
+        {
+            await VS.StatusBar.EndAnimationAsync(StatusAnimation.General);
+            await VS.StatusBar.ShowMessageAsync("Plugin registration failed.");
+            Logger.LogError(ex, "An error occurred while parsing registration code.");
+            await VS.MessageBox.ShowErrorAsync(Vsix.Name, "Plugin registration failed due to an error while while parsing registration code. " + ex.Message);
+            return;
+        }
+
+        try
+        {
+            if (inputModel is not null && project.GetBuildProperty<bool>(BuildProperties.GeneratePackageOnBuild))
+            {
+                var nugetFilePath = Path.Combine(project.FullPath, project.GetOutputPackagePath());
+                inputModel!.Package = NugetParser.LoadFromNugetFile(nugetFilePath);
+            }
+            else
+            {
+                inputModel!.Content = Convert.ToBase64String(File.ReadAllBytes(inputModel.FilePath));
+            }
+        }
+        catch (Exception ex)
+        {
+            await VS.StatusBar.EndAnimationAsync(StatusAnimation.General);
+            await VS.StatusBar.ShowMessageAsync("Plugin registration failed.");
+            Logger.LogError(ex, "An error occurred while parsing plugin package code.");
+            await VS.MessageBox.ShowErrorAsync(Vsix.Name, "Plugin registration failed due to an error while while parsing plugin package. " + ex.Message);
+            return;
+        }
 
         var validationPassed = await ValidatePluginAssemblyConfigAsync(inputModel);
         if (!validationPassed)
@@ -92,30 +137,46 @@ internal sealed class RegisterPluginCommand : BaseCommand<RegisterPluginCommand>
             return;
         }
 
-        await VS.StatusBar.ShowMessageAsync("Registering plugin assembly...");
+        var pluginCount = inputModel!.PluginTypes.Count;
+        await VS.StatusBar.ShowMessageAsync($"Registering {pluginCount} plugin(s)...");
         await VS.StatusBar.StartAnimationAsync(StatusAnimation.General);
 
-        var assemblyQuery = await WebApiService.RetrieveMultipleAsync<PluginAssembly>(
-            $"{PluginAssemblyConfig.EntitySetName}?$select=name" +
-            $"&$filter=name eq '{inputModel.Name}'" +
-            $"&$expand=pluginassembly_plugintype($select=name" +
-                $";$expand=plugintype_sdkmessageprocessingstep($select=sdkmessageprocessingstepid))");
         var requests = new List<HttpRequestMessage>();
-        if (assemblyQuery?.Entities?.SingleOrDefault() is PluginAssembly existingAssembly)
+        
+        try
         {
-            inputModel.PluginAssemblyId = existingAssembly.Id;
-            Logger.LogInformation($"Found existing assembly ({existingAssembly.Id}).");
-            requests.AddRange(GenerateDeleteRequestsForCleanup(
-                newAssembly: inputModel, existingAssembly: existingAssembly, skipPlugins: true));
-            Logger.LogInformation($"Generated {requests.Count} delete requests for cleanup.");
+            var assemblyQuery = await WebApiService.RetrieveMultipleAsync<PluginAssembly>(
+                $"{PluginAssembly.Metadata.EntitySetName}?$select=name" +
+                $"&$filter=name eq '{inputModel.Name}'" +
+                $"&$expand=PackageId($select=name),pluginassembly_plugintype($select=name,typename" +
+                    $";$expand=plugintype_sdkmessageprocessingstep($select=name,stage),CustomAPIId($select=uniquename))");
+            if (assemblyQuery?.Entities?.SingleOrDefault() is PluginAssembly existingAssembly)
+            {
+                inputModel.PluginAssemblyId = existingAssembly.Id;
+                Logger.LogInformation($"Found existing assembly ({existingAssembly.Id}).");
+                requests.AddRange(GenerateDeleteRequestsForCleanup(
+                    newAssembly: inputModel, existingAssembly: existingAssembly, skipPlugins: true));
+                Logger.LogInformation($"Generated {requests.Count} delete requests for cleanup.");
+
+                AssignIds(inputModel, existingAssembly);
+            }
+        }
+        catch (Exception ex)
+        {
+            await VS.StatusBar.EndAnimationAsync(StatusAnimation.General);
+            await VS.StatusBar.ShowMessageAsync("Plugin registration failed.");
+            Logger.LogError(ex, "An error occurred while querying existin registrations.");
+            await VS.MessageBox.ShowErrorAsync(Vsix.Name, "Plugin registration failed due to an error while querying existin registrations. " + ex.Message);
+            return;
         }
 
         BatchRequest? batch;
+        Dictionary<string, SdkMessage>? sdkMessages = null;
+        DataverseEnvironment? environment = null;
+
         try
         {
-            var upserts = await GenerateUpsertRequestsAsync(inputModel);
-
-            var environment = await EnvironmentProvider.GetActiveEnvironmentAsync();
+            environment = await EnvironmentProvider.GetActiveEnvironmentAsync();
             if (environment == null)
             {
                 await VS.StatusBar.EndAnimationAsync(StatusAnimation.General);
@@ -125,11 +186,35 @@ internal sealed class RegisterPluginCommand : BaseCommand<RegisterPluginCommand>
                     "No active environment found. Please connect to an environment and try again.");
                 return;
             }
-            requests.AddRange(upserts);
-            batch = new BatchRequest(environment.BaseServiceUrl)
+
+            sdkMessages = await FetchSdkMessagesAsync(inputModel, default);
+            var builder = new UpsertRequestBuilder(inputModel, sdkMessages);
+
+            if (inputModel.Package is null)
             {
-                ChangeSets = [new(requests)]
-            };
+                var upserts = builder
+                    .WithAssembly()
+                    .WithPluginTypesAndStepsAndCustomApis()
+                    .Build();
+
+                requests.AddRange(upserts);
+                batch = new BatchRequest(environment.BaseServiceUrl)
+                {
+                    ChangeSets = [new(requests)]
+                };
+            }
+            else
+            {
+                var upserts = builder
+                    .WithPackage()
+                    .Build();
+
+                requests.AddRange(upserts);
+                batch = new BatchRequest(environment.BaseServiceUrl)
+                {
+                    ChangeSets = [new(requests)]
+                };
+            }
         }
         catch (Exception ex)
         {
@@ -162,20 +247,86 @@ internal sealed class RegisterPluginCommand : BaseCommand<RegisterPluginCommand>
                 }
             }
         }
+
+        if (inputModel.Package is not null)
+        {
+            var assemblyQuery = await WebApiService.RetrieveMultipleAsync<PluginAssembly>(
+                $"{PluginAssembly.Metadata.EntitySetName}?$select=name" +
+                $"&$filter=name eq '{inputModel.Name}'" +
+                $"&$expand=PackageId($select=name),pluginassembly_plugintype($select=name,typename" +
+                    $";$expand=plugintype_sdkmessageprocessingstep($select=name,stage),CustomAPIId($select=uniquename))");
+            if (assemblyQuery?.Entities?.SingleOrDefault() is PluginAssembly existingAssembly)
+            {
+                AssignIds(inputModel, existingAssembly);
+            }
+
+            var builder = new UpsertRequestBuilder(inputModel, sdkMessages);
+            var upserts = builder.WithStepsAndCustomApis().Build();
+            batch = new BatchRequest(environment.BaseServiceUrl)
+            {
+                ChangeSets = [new(upserts)]
+            };
+
+            batchResponse = await WebApiService.SendAsync<BatchResponse>(batch);
+            responses = await batchResponse.ParseResponseAsync();
+            foreach (var response in responses)
+            {
+                if (!response.IsSuccessStatusCode)
+                {
+                    await VS.StatusBar.EndAnimationAsync(StatusAnimation.General);
+                    await VS.StatusBar.ShowMessageAsync("Plugin registration failed.");
+                    var error = await WebApi.WebApiService.ParseExceptionAsync(response);
+                    Logger.LogCritical(error.ToString());
+                    await VS.MessageBox.ShowErrorAsync(Vsix.Name, error.Message);
+                    return;
+                }
+                else
+                {
+                    if (response.Headers.Contains("OData-EntityId"))
+                    {
+                        var path = response.As<UpsertResponse>().EntityReference?.Path;
+                        Logger.LogTrace($"Registered ({path}).");
+                    }
+                }
+            }
+        }
+
         await VS.StatusBar.ShowMessageAsync("Plugin(s) registered successfully.");
         await VS.StatusBar.EndAnimationAsync(StatusAnimation.General);
     }
 
-    private async Task<ICollection<HttpRequestMessage>> GenerateUpsertRequestsAsync(PluginAssemblyConfig config, CancellationToken cancellationToken = default)
+    private void AssignIds(PluginAssemblyConfig newAssembly, PluginAssembly existingAssembly)
     {
-        var sdkMessages = await FetchSdkMessagesAsync(config, cancellationToken);
-        var base64Assembly = Convert.ToBase64String(System.IO.File.ReadAllBytes(config.FilePath));
-
-        var builder = new UpsertRequestBuilder(config, base64Assembly, sdkMessages);
-        return builder
-            .WithAssembly()
-            .WithPluginTypes()
-            .Build();
+        newAssembly.PluginAssemblyId = existingAssembly.Id;
+        if (newAssembly.Package is not null)
+        {
+            newAssembly.Package.Id = existingAssembly.Package?.Id ?? GuidFactory.DeterministicGuid(GuidFactory.Namespace.PluginPackage, newAssembly.Package.Name!);
+        }
+        foreach(var newPluginType in newAssembly.PluginTypes)
+        {
+            var existingPluginType = existingAssembly.PluginTypes.FirstOrDefault(p => p.TypeName!.Equals(newPluginType.TypeName, StringComparison.OrdinalIgnoreCase));
+            newPluginType.Id = existingPluginType?.Id ?? GuidFactory.DeterministicGuid(GuidFactory.Namespace.PluginType, newPluginType.TypeName!);
+            foreach (var step in newPluginType.Steps)
+            {
+                var existingStep = existingPluginType?.Steps.FirstOrDefault(s => s.Name == step.Name);
+                step.Id = existingStep?.Id ?? GuidFactory.DeterministicGuid(GuidFactory.Namespace.Step, newPluginType.TypeName + step.Name!);
+            }
+            if (newPluginType.CustomApi is CustomApi newCustomApi)
+            {
+                var existingCustomApi = existingPluginType?.CustomApi.FirstOrDefault(c => string.Equals(c.UniqueName, newCustomApi.UniqueName, StringComparison.OrdinalIgnoreCase));
+                newCustomApi.Id = existingCustomApi?.Id ?? GuidFactory.DeterministicGuid(GuidFactory.Namespace.CustomApi, newCustomApi.UniqueName!);
+                foreach (var newParameter in newCustomApi.RequestParameters)
+                {
+                    var existingParameter = existingCustomApi?.RequestParameters.FirstOrDefault(p => p.UniqueName == newParameter.UniqueName);
+                    newParameter.Id = existingParameter?.Id ?? GuidFactory.DeterministicGuid(GuidFactory.Namespace.CustomApiInput, newParameter.UniqueName!);
+                }
+                foreach (var newParameter in newCustomApi.ResponseProperties)
+                {
+                    var existingParameter = existingCustomApi?.ResponseProperties.FirstOrDefault(p => p.UniqueName == newParameter.UniqueName);
+                    newParameter.Id = existingParameter?.Id ?? GuidFactory.DeterministicGuid(GuidFactory.Namespace.CustomApiOutput, newParameter.UniqueName!);
+                }
+            }
+        }
     }
 
     private async Task<Dictionary<string, SdkMessage>> FetchSdkMessagesAsync(PluginAssemblyConfig config, CancellationToken cancellationToken)
@@ -229,7 +380,7 @@ internal sealed class RegisterPluginCommand : BaseCommand<RegisterPluginCommand>
         async Task<bool> IsXrmPluginFileAsync(PhysicalFile file)
         {
             var generator = await file.GetAttributeAsync("Generator").ConfigureAwait(false);
-            if (generator != XrmCodeGenerator.Name)
+            if (generator != PluginCodeGenerator.Name)
                 return false;
 
             var pluginAttr = await file.GetAttributeAsync("IsXrmPlugin").ConfigureAwait(false);
@@ -246,18 +397,36 @@ internal sealed class RegisterPluginCommand : BaseCommand<RegisterPluginCommand>
         {
             if (string.IsNullOrEmpty(existingPlugin.Name)) continue;
 
-            if (newAssembly.PluginTypes.FirstOrDefault(p => p.Name == existingPlugin.Name) is PluginTypeConfig newPlugin)
+            // If plugin type exists, delete all its steps, later plugin type will be upserted and its new steps created.
+            if (newAssembly.PluginTypes.FirstOrDefault(p => string.Equals(p.TypeName, existingPlugin.TypeName, StringComparison.InvariantCulture)) is PluginTypeConfig newPlugin)
             {
                 foreach (var step in existingPlugin.Steps)
                 {
-                    deleteRequests.Add(new DeleteRequest(step.ToReference()));
+                    // We shouldn't (and cannot) delete / modify MainOperations (generated automatically by Dataverse for CustomApis).
+                    if (step.Stage != Stages.MainOperation)
+                        deleteRequests.Add(new DeleteRequest(step.ToReference()));
                 }
             }
+            // Delete all existing plguin types (if needed)
             else if (!skipPlugins)
             {
                 deleteRequests.Add(new DeleteRequest(PluginType.CreateReference(existingPlugin.Id!.Value)));
             }
+            // Delete all existing custom APIs
+            if (existingPlugin.CustomApi != null)
+            {
+                foreach (var customApi in existingPlugin.CustomApi)
+                {
+                    deleteRequests.Add(new DeleteRequest(customApi.ToReference()));
+                }
+            }
         }
+
+        //TODO: Let's not delete the package for now, we will see with more testing if we need to do this.
+        //if (newAssembly.Package ==  null && existingAssembly.Package != null)
+        //{
+        //    deleteRequests.Add(new DeleteRequest(existingAssembly.Package.ToReference()));
+        //}
 
         return deleteRequests;
     }

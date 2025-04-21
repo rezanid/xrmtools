@@ -1,0 +1,33 @@
+﻿<Project Sdk="Microsoft.Build.NoTargets/2.0.1" DefaultTargets="Pack">
+  <PropertyGroup>
+    <TargetFramework>net462</TargetFramework>
+    <!--<OutputType>Library</OutputType>-->
+    <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
+    <ImplicitUsings>disable</ImplicitUsings>
+    <DevelopmentDependency>true</DevelopmentDependency>
+    <VersionPrefix>1.0.5</VersionPrefix>
+    <Description>Attributes to be used by Xrm Tools for source generation, registration and other featurs in Visual Studio. This is a source only package with no assemblies included.</Description>
+    <Authors>Reza Niroomand</Authors>
+  </PropertyGroup>
+  <PropertyGroup>
+    <GeneratePackageOnBuild>True</GeneratePackageOnBuild>
+    <PackageTags>Power Platform Apps XRM Tools</PackageTags>
+    <PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+    <RepositoryUrl>https://github.com/rezanid/xrmtools/tree/main/src/XrmTools.Attributes</RepositoryUrl>
+  </PropertyGroup>
+  <!-- Pack the source files  -->
+  <ItemGroup>
+    <None Include="*.cs" PackagePath="/contentFiles/any/net462/" Pack="true" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="buildTransitive\XrmTools.Meta.Attributes.targets" PackagePath="/buildTransitive" Pack="true" />
+    <None Include="buildTransitive/XrmTools.Meta.Attributes.targets" PackagePath="/build" Pack="true" />
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="README.md" PackagePath="/" Pack="true" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\XrmTools.Meta\XrmTools.Meta.csproj" />
+  </ItemGroup>
+</Project>

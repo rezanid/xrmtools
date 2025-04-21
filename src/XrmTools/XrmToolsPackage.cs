@@ -27,7 +27,6 @@ using XrmTools.Commands;
 using XrmTools.Environments;
 using System.Reflection;
 using System.IO;
-using XrmTools.Validation;
 
 /// <summary>
 /// This is the class that implements the package exposed by this assembly.
@@ -51,16 +50,17 @@ using XrmTools.Validation;
 [ProvideAutoLoad(UIContextGuids80.SolutionExists, PackageAutoLoadFlags.BackgroundLoad)]
 [ProvideCodeGenerator(typeof(EntityCodeGenerator), EntityCodeGenerator.Name, EntityCodeGenerator.Description, true, ProjectSystem = ProvideCodeGeneratorAttribute.CSharpProjectGuid, RegisterCodeBase = true)]
 [ProvideCodeGeneratorExtension(EntityCodeGenerator.Name, ".yaml")]
-[ProvideCodeGenerator(typeof(XrmCodeGenerator), XrmCodeGenerator.Name, XrmCodeGenerator.Description, true, ProjectSystem = ProvideCodeGeneratorAttribute.CSharpProjectGuid, RegisterCodeBase = true)]
-[ProvideCodeGeneratorExtension(XrmCodeGenerator.Name, ".def.json")]
+[ProvideCodeGenerator(typeof(PluginCodeGenerator), PluginCodeGenerator.Name, PluginCodeGenerator.Description, true, ProjectSystem = ProvideCodeGeneratorAttribute.CSharpProjectGuid, RegisterCodeBase = true)]
+[ProvideCodeGeneratorExtension(PluginCodeGenerator.Name, ".def.json")]
 [ProvideMenuResource("Menus.ctmenu", 1)]
 // Decide the visibility of our commands when the commands are NOT yet loaded.
 [ProvideUIContextRule(PackageGuids.SetCustomToolEntitiesCmdUIRuleString,
     name: "UI Context Entity Definition",
-    expression: "(Yaml | Proj) & CSharp & (SingleProj | MultiProj)",
-    termNames: ["Yaml", "CSharp", "SingleProj", "MultiProj"],
+    expression: "(Yaml | CSEntity) & CSharp & (SingleProj | MultiProj)",
+    termNames: ["Yaml", "CSEntity", "CSharp", "SingleProj", "MultiProj"],
     termValues: [
         "HierSingleSelectionName:.yaml$|.yml$", 
+        "HierSingleSelectionName:.*Entit.*\\.cs$",
         "ActiveProjectCapability:CSharp", 
         VSConstants.UICONTEXT.SolutionHasSingleProject_string, 
         VSConstants.UICONTEXT.SolutionHasMultipleProjects_string])]
@@ -91,8 +91,7 @@ using XrmTools.Validation;
         "ActiveProjectCapability:CSharp",
         VSConstants.UICONTEXT.SolutionHasSingleProject_string,
         VSConstants.UICONTEXT.SolutionHasMultipleProjects_string])]
-[ProvideService(typeof(IXrmPluginCodeGenerator), IsAsyncQueryable = true, IsCacheable = true, IsFreeThreaded = true)]
-[ProvideService(typeof(IXrmEntityCodeGenerator), IsAsyncQueryable = true, IsCacheable = true, IsFreeThreaded = true)]
+[ProvideService(typeof(IXrmCodeGenerator), IsAsyncQueryable = true, IsCacheable = true, IsFreeThreaded = true)]
 [ProvideService(typeof(IEnvironmentProvider), IsAsyncQueryable = true, IsCacheable = true, IsFreeThreaded = true)]
 [ProvideService(typeof(ISettingsProvider), IsAsyncQueryable = true, IsCacheable = true, IsFreeThreaded = true)]
 [ProvideOptionPage(typeof(OptionsProvider.GeneralOptions), Vsix.Name, "General", 0, 0, true, SupportsProfiles = true)]
@@ -144,19 +143,6 @@ public sealed partial class XrmToolsPackage : ToolkitPackage
         return null;
     }
 
-    private async Task RegisterCommandsAsync()
-    {
-        await NewPluginDefinitionFileCommand.InitializeAsync(this);
-        await SetPluginGeneratorTemplateInProjectCommand.InitializeAsync(this);
-        await SetPluginGeneratorTemplateInSolutionCommand.InitializeAsync(this);
-        await SetEntityGeneratorTemplateInProjectCommand.InitializeAsync(this);
-        await SetEntityGeneratorTemplateInSolutionCommand.InitializeAsync(this);
-        await SetCustomToolEntityGeneratorCommand.InitializeAsync(this);
-        await SetCustomToolPluginGeneratorCommand.InitializeAsync(this);
-        await RegisterPluginCommand.InitializeAsync(this);
-        await SelectEnvironmentCommand.InitializeAsync(this);
-    }
-
     /// <summary>
     /// Initialization of the package; this method is called right after the package is sited, so this is the place
     /// where you can put all the initialization code that rely on services provided by VisualStudio.
@@ -182,7 +168,15 @@ public sealed partial class XrmToolsPackage : ToolkitPackage
 
         await InitializeMefServicesAsync();
 
-        await RegisterCommandsAsync();
+        await NewPluginDefinitionFileCommand.InitializeAsync(this);
+        await SetPluginGeneratorTemplateInProjectCommand.InitializeAsync(this);
+        await SetPluginGeneratorTemplateInSolutionCommand.InitializeAsync(this);
+        await SetEntityGeneratorTemplateInProjectCommand.InitializeAsync(this);
+        await SetEntityGeneratorTemplateInSolutionCommand.InitializeAsync(this);
+        await SetCustomToolEntityGeneratorCommand.InitializeAsync(this);
+        await SetCustomToolPluginGeneratorCommand.InitializeAsync(this);
+        await RegisterPluginCommand.InitializeAsync(this);
+        await SelectEnvironmentCommand.InitializeAsync(this);
 
         // When initialized asynchronously, the current thread may be a background thread at this point.
         // Do any initialization that requires the UI thread after switching to the UI thread.
@@ -218,12 +212,6 @@ public sealed partial class XrmToolsPackage : ToolkitPackage
         //    async (container, cancellationToken, type) =>
         //        await Task.FromResult(new TemplatedPluginCodeGenerator())
         //    , promote: true);
-        AddService(
-            typeof(IXrmEntityCodeGenerator),
-            async (container, cancellationToken, type) =>
-                await Task.FromResult(new TemplatedEntityCodeGenerator())
-            // Add service at global level to make it available to Single-File generators.
-            , promote: true);
         AddService(
             typeof(ISettingsProvider),
             async (container, cancellationToken, type) =>

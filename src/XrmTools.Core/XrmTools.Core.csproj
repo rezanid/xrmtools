@@ -42,6 +42,7 @@
     <Reference Include="System" />
     <Reference Include="System.ComponentModel.Composition" />
     <Reference Include="System.Core" />
+    <Reference Include="System.IO.Compression" />
     <Reference Include="System.Xml.Linq" />
     <Reference Include="System.Data.DataSetExtensions" />
     <Reference Include="Microsoft.CSharp" />
@@ -61,6 +62,7 @@
     <Compile Include="Environments\DataverseEnvironmentList.cs" />
     <Compile Include="Environments\IEnvironmentProvider.cs" />
     <Compile Include="Helpers\GuidFactory.cs" />
+    <Compile Include="Helpers\NugetParser.cs" />
     <Compile Include="Helpers\StreamHelper.cs" />
     <Compile Include="Helpers\StringHelper.cs" />
     <Compile Include="Helpers\TypeExtensions.cs" />
@@ -102,11 +104,12 @@
     <Compile Include="Tokens\ITokenExpander.cs" />
     <Compile Include="Tokens\TokenExpanderService.cs" />
     <Compile Include="Validation\AsyncValidatorBase.cs" />
+    <Compile Include="Validation\CodeGenPluginAssemblyValidator.cs" />
     <Compile Include="Validation\IValidator.cs" />
     <Compile Include="Validation\AsyncLoggingValidator.cs" />
     <Compile Include="Validation\LoggingValidator.cs" />
     <Compile Include="Validation\LoggingValidatorBase.cs" />
-    <Compile Include="Validation\PluginAssemblyValidator.cs" />
+    <Compile Include="Validation\WebApiPluginAssemblyValidator.cs" />
     <Compile Include="Validation\Categories.cs" />
     <Compile Include="Validation\ValidationService.cs" />
     <Compile Include="Validation\ValidatorAttribute.cs" />
@@ -182,12 +185,11 @@
     </None>
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\XrmTools.Attributes\XrmTools.Meta.csproj">
-      <Project>{1F790C13-3B66-41E8-AED5-FA152465B6A0}</Project>
+    <ProjectReference Include="..\XrmTools.Meta\XrmTools.Meta.csproj">
+      <Project>{838257e1-7f69-8823-ad8a-b1a9aff47b81}</Project>
       <Name>XrmTools.Meta</Name>
     </ProjectReference>
   </ItemGroup>
-  <ItemGroup />
   <ItemGroup>
     <EmbeddedResource Include="Resources\Strings.resx">
       <Generator>ResXFileCodeGenerator</Generator>

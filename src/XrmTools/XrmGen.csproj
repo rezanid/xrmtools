@@ -68,7 +68,8 @@
     </Compile>
     <Compile Include="Analyzers\PluginAssemblyInfo.cs" />
     <Compile Include="Analyzers\CSharpXrmMetaDataService.cs" />
-    <Compile Include="Analyzers\PluginAttributeConverter.cs" />
+    <Compile Include="Analyzers\CSharpXrmMetaParser.cs" />
+    <Compile Include="Helpers\ReflectionHelper.cs" />
     <Compile Include="AuthenticationService.cs" />
     <Compile Include="Authenticators\ClientAppAuthenticator.cs" />
     <Compile Include="Authenticators\DelegatingAuthenticator.cs" />
@@ -79,7 +80,7 @@
     <Compile Include="CodeCompletion\XrmPluginDefinitionCompletionSource.cs" />
     <Compile Include="CodeGen\Constants.cs" />
     <Compile Include="CodeGen\EntityCodeGenerator.cs" />
-    <Compile Include="CodeGen\XrmCodeGenerator.cs" />
+    <Compile Include="CodeGen\PluginCodeGenerator.cs" />
     <Compile Include="CodeGen\TemplateFileGenerator.cs" />
     <Compile Include="CodeGen\TemplatePathFinder.cs" />
     <Compile Include="Commands\SelectEnvironmentCommand.cs" />
@@ -118,16 +119,6 @@
     <Compile Include="WebApi\Batch\BatchRequest.cs" />
     <Compile Include="WebApi\Batch\BatchResponse.cs" />
     <Compile Include="WebApi\Batch\ChangeSet.cs" />
-    <Compile Include="WebApi\Entities\Attributes\EntityMetadataAttribute.cs" />
-    <Compile Include="WebApi\Entities\Component.cs" />
-    <Compile Include="WebApi\Entities\Entity.cs" />
-    <Compile Include="WebApi\Entities\EntityMetadata.cs" />
-    <Compile Include="WebApi\Entities\ManagedBooleanProperty.cs" />
-    <Compile Include="WebApi\Entities\PluginAssembly.cs" />
-    <Compile Include="WebApi\Entities\PluginType.cs" />
-    <Compile Include="WebApi\Entities\SdkMessageProcessingStep.cs" />
-    <Compile Include="WebApi\Entities\SdkMessageProcessingStepImage.cs" />
-    <Compile Include="WebApi\EntityReference.cs" />
     <Compile Include="WebApi\Extensions.cs" />
     <Compile Include="WebApi\Messages\AddPrivilegesRoleRequest.cs" />
     <Compile Include="WebApi\Messages\AssociateRequest.cs" />
@@ -231,41 +222,6 @@
     <Compile Include="WebApi\ODataException.cs" />
     <Compile Include="WebApi\ServiceException.cs" />
     <Compile Include="WebApi\TypedEntityHelper.cs" />
-    <Compile Include="WebApi\Types\AccessRights.cs" />
-    <Compile Include="WebApi\Types\ColumnSet.cs" />
-    <Compile Include="WebApi\Types\ConditionExpression.cs" />
-    <Compile Include="WebApi\Types\ConditionOperator.cs" />
-    <Compile Include="WebApi\Types\EndpointAccessType.cs" />
-    <Compile Include="WebApi\Types\EndpointCollection.cs" />
-    <Compile Include="WebApi\Types\EndpointType.cs" />
-    <Compile Include="WebApi\Types\EntityRecordCountCollection.cs" />
-    <Compile Include="WebApi\Types\ExportComponentDetails.cs" />
-    <Compile Include="WebApi\Types\ExportComponentsParams.cs" />
-    <Compile Include="WebApi\Types\ExportSolutionParameters.cs" />
-    <Compile Include="WebApi\Types\FilterExpression.cs" />
-    <Compile Include="WebApi\Types\ImportDecision.cs" />
-    <Compile Include="WebApi\Types\ImportSolutionParameters.cs" />
-    <Compile Include="WebApi\Types\JoinOperator.cs" />
-    <Compile Include="WebApi\Types\LayerDesiredOrder.cs" />
-    <Compile Include="WebApi\Types\LayerDesiredOrderType.cs" />
-    <Compile Include="WebApi\Types\LinkEntity.cs" />
-    <Compile Include="WebApi\Types\LogicalOperator.cs" />
-    <Compile Include="WebApi\Types\Object.cs" />
-    <Compile Include="WebApi\Types\ObjectType.cs" />
-    <Compile Include="WebApi\Types\OrderExpression.cs" />
-    <Compile Include="WebApi\Types\OrderType.cs" />
-    <Compile Include="WebApi\Types\OrganizationDetail.cs" />
-    <Compile Include="WebApi\Types\OrganizationState.cs" />
-    <Compile Include="WebApi\Types\PagingInfo.cs" />
-    <Compile Include="WebApi\Types\ParameterCollection.cs" />
-    <Compile Include="WebApi\Types\PrincipalAccess.cs" />
-    <Compile Include="WebApi\Types\PrivilegeDepth.cs" />
-    <Compile Include="WebApi\Types\QueryExpression.cs" />
-    <Compile Include="WebApi\Types\RolePrivilege.cs" />
-    <Compile Include="WebApi\Types\SolutionComponentOption.cs" />
-    <Compile Include="WebApi\Types\SolutionInfo.cs" />
-    <Compile Include="WebApi\Types\SolutionParameters.cs" />
-    <Compile Include="WebApi\Types\TargetFieldType.cs" />
     <Compile Include="WebApi\WebApiService.cs" />
     <Compile Include="XrmHttpClientFactory.cs" />
     <Compile Include="XrmToolsPackage.SolutionProperties.cs" />
@@ -292,12 +248,10 @@
     <Compile Include="Xrm\Extensions\QueryExpressionExtensions.cs" />
     <Compile Include="Xrm\Generators\FileTemplateLoader.cs" />
     <Compile Include="Xrm\Generators\XrmCodeGenConfig.cs" />
-    <Compile Include="Xrm\Generators\IXrmEntityCodeGenerator.cs" />
-    <Compile Include="Xrm\Generators\IXrmPluginCodeGenerator.cs" />
+    <Compile Include="Xrm\Generators\IXrmCodeGenerator.cs" />
     <Compile Include="Xrm\Generators\ScribanExtensionCache.cs" />
     <Compile Include="Xrm\Generators\ScribanExtensions.cs" />
-    <Compile Include="Xrm\Generators\TemplatedEntityCodeGenerator.cs" />
-    <Compile Include="Xrm\Generators\TemplatedPluginCodeGenerator.cs" />
+    <Compile Include="Xrm\Generators\TemplatedCodeGenerator.cs" />
     <Compile Include="Xrm\CodeCompletion\XrmPluginDefCompletionProvider.cs" />
     <Compile Include="Xrm\CodeCompletion\XrmPluginDefCompletionSource.cs" />
     <Compile Include="Xrm\Constants.cs" />
@@ -430,8 +384,6 @@
       <Generator>VsixManifestGenerator</Generator>
       <LastGenOutput>source.extension.cs</LastGenOutput>
     </None>
-    <None Include="Xrm\Generators\EntityTemplate.sbn" />
-    <None Include="Xrm\Generators\PluginTemplate.sbn" />
   </ItemGroup>
   <ItemGroup>
     <Reference Include="Microsoft.CSharp" />
@@ -552,15 +504,15 @@
     </Page>
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\XrmTools.Attributes\XrmTools.Meta.csproj">
-      <Project>{1F790C13-3B66-41E8-AED5-FA152465B6A0}</Project>
-      <Name>XrmTools.Meta</Name>
-    </ProjectReference>
     <ProjectReference Include="..\XrmTools.Core\XrmTools.Core.csproj">
       <Project>{4e3f79aa-5694-4dd6-933d-aee2132486a5}</Project>
       <Name>XrmTools.Core</Name>
       <IncludeOutputGroupsInVSIX>BuiltProjectOutputGroup%3bBuiltProjectOutputGroupDependencies%3bGetCopyToOutputDirectoryItems%3bSatelliteDllsProjectOutputGroup%3b</IncludeOutputGroupsInVSIX>
       <IncludeOutputGroupsInVSIXLocalOnly>DebugSymbolsProjectOutputGroup%3b</IncludeOutputGroupsInVSIXLocalOnly>
+    </ProjectReference>
+    <ProjectReference Include="..\XrmTools.Meta\XrmTools.Meta.csproj">
+      <Project>{838257e1-7f69-8823-ad8a-b1a9aff47b81}</Project>
+      <Name>XrmTools.Meta</Name>
     </ProjectReference>
     <ProjectReference Include="..\XrmTools.UI.Controls\XrmTools.UI.Controls.csproj">
       <Project>{179df0ac-6f44-4656-8332-034d3c594ed1}</Project>

@@ -42,6 +42,12 @@ internal class GeneralOptions : BaseOptionModel<GeneralOptions>
     [Editor(typeof(CurrentEnvironmentEditor), typeof(UITypeEditor))]
     public DataverseEnvironment CurrentEnvironment { get; set; } = DataverseEnvironment.Empty;
 
+    [Category("Advanced")]
+    [DisplayName("Proxy")]
+    [Description("Use a proxy server for all requests. This is useful for debugging.")]
+    [DefaultValue("")]
+    public string Proxy { get; set; } = string.Empty;
+
     public override void Save()
     {
         // Ensure that the list is not null
