@@ -62,12 +62,12 @@
   <ItemGroup>
     <Compile Include="AccountCreatePlugin.cs">
       <Generator>Xrm Tools Plugin Code Generator</Generator>
-      <LastGenOutput>AccountCreatePlugin1.cs</LastGenOutput>
+      <LastGenOutput>AccountCreatePlugin.Generated.cs</LastGenOutput>
     </Compile>
-    <Compile Include="AccountCreatePlugin1.cs">
-      <DependentUpon>AccountCreatePlugin.cs</DependentUpon>
-      <DesignTime>True</DesignTime>
+    <Compile Include="AccountCreatePlugin.Generated.cs">
       <AutoGen>True</AutoGen>
+      <DesignTime>True</DesignTime>
+      <DependentUpon>AccountCreatePlugin.cs</DependentUpon>
     </Compile>
     <Compile Include="ContactCreatePlugin.cs">
       <Generator>Xrm Tools Plugin Code Generator</Generator>

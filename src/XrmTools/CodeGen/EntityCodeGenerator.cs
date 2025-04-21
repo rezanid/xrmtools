@@ -64,7 +64,7 @@ public class EntityCodeGenerator : BaseCodeGeneratorWithSite
     [Import]
     internal ISettingsProvider SettingsProvider { get; set; }
 
-    public override string GetDefaultExtension() => ".cs";
+    public override string GetDefaultExtension() => ".Generated.cs";
 
     public EntityCodeGenerator() => SatisfyImports();
 

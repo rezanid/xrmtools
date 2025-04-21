@@ -59,7 +59,7 @@ public class PluginCodeGenerator : BaseCodeGeneratorWithSite
     [Import]
     internal IXrmMetaDataService XrmMetaDataService { get; set; }
 
-    public override string GetDefaultExtension() => ".cs";
+    public override string GetDefaultExtension() => ".Generated.cs";
 
     public PluginCodeGenerator() => SatisfyImports();
 
