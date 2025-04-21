@@ -55,6 +55,7 @@ After you install Xrm Tools, the first thing you need to do is to connect to an 
    >
    > Xrm Tools will never see or store your credentials.
    > You can read more about the connection string syntax [here](https://github.com/rezanid/xrmtools/wiki/Providing-Connection-Strings).
+
 7. Set "Current Environment" to the environment that you just created.
 8. Click "Ok" button to save the settings.
 
