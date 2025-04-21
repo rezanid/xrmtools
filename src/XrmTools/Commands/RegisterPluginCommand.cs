@@ -150,16 +150,16 @@ internal sealed class RegisterPluginCommand : BaseCommand<RegisterPluginCommand>
                 $"&$filter=name eq '{inputModel.Name}'" +
                 $"&$expand=PackageId($select=name),pluginassembly_plugintype($select=name,typename" +
                     $";$expand=plugintype_sdkmessageprocessingstep($select=name,stage),CustomAPIId($select=uniquename))");
-            if (assemblyQuery?.Entities?.SingleOrDefault() is PluginAssembly existingAssembly)
+            var existingAssembly = assemblyQuery?.Entities?.SingleOrDefault();
+            if (existingAssembly is not null)
             {
                 inputModel.PluginAssemblyId = existingAssembly.Id;
                 Logger.LogInformation($"Found existing assembly ({existingAssembly.Id}).");
                 requests.AddRange(GenerateDeleteRequestsForCleanup(
                     newAssembly: inputModel, existingAssembly: existingAssembly, skipPlugins: true));
                 Logger.LogInformation($"Generated {requests.Count} delete requests for cleanup.");
-
-                AssignIds(inputModel, existingAssembly);
             }
+            AssignIds(inputModel, existingAssembly);
         }
         catch (Exception ex)
         {
@@ -171,9 +171,8 @@ internal sealed class RegisterPluginCommand : BaseCommand<RegisterPluginCommand>
         }
 
         BatchRequest? batch;
-        Dictionary<string, SdkMessage>? sdkMessages = null;
-        DataverseEnvironment? environment = null;
-
+        DataverseEnvironment? environment;
+        Dictionary<string, SdkMessage>? sdkMessages;
         try
         {
             environment = await EnvironmentProvider.GetActiveEnvironmentAsync();
@@ -255,10 +254,8 @@ internal sealed class RegisterPluginCommand : BaseCommand<RegisterPluginCommand>
                 $"&$filter=name eq '{inputModel.Name}'" +
                 $"&$expand=PackageId($select=name),pluginassembly_plugintype($select=name,typename" +
                     $";$expand=plugintype_sdkmessageprocessingstep($select=name,stage),CustomAPIId($select=uniquename))");
-            if (assemblyQuery?.Entities?.SingleOrDefault() is PluginAssembly existingAssembly)
-            {
-                AssignIds(inputModel, existingAssembly);
-            }
+            var existingAssembly = assemblyQuery?.Entities?.SingleOrDefault();
+            AssignIds(inputModel, existingAssembly);
 
             var builder = new UpsertRequestBuilder(inputModel, sdkMessages);
             var upserts = builder.WithStepsAndCustomApis().Build();
@@ -295,35 +292,40 @@ internal sealed class RegisterPluginCommand : BaseCommand<RegisterPluginCommand>
         await VS.StatusBar.EndAnimationAsync(StatusAnimation.General);
     }
 
-    private void AssignIds(PluginAssemblyConfig newAssembly, PluginAssembly existingAssembly)
+    private void AssignIds(PluginAssemblyConfig pluginAssembly, PluginAssembly? existingPluginAssembly)
     {
-        newAssembly.PluginAssemblyId = existingAssembly.Id;
-        if (newAssembly.Package is not null)
+        pluginAssembly.PluginAssemblyId = existingPluginAssembly?.Id ?? GuidFactory.DeterministicGuid(GuidFactory.Namespace.PluginAssembly, pluginAssembly.Name!);
+        if (pluginAssembly.Package is not null)
         {
-            newAssembly.Package.Id = existingAssembly.Package?.Id ?? GuidFactory.DeterministicGuid(GuidFactory.Namespace.PluginPackage, newAssembly.Package.Name!);
+            pluginAssembly.Package.Id = existingPluginAssembly?.Package?.Id ?? GuidFactory.DeterministicGuid(GuidFactory.Namespace.PluginPackage, pluginAssembly.Package.Name!);
         }
-        foreach(var newPluginType in newAssembly.PluginTypes)
+        foreach(var pluginType in pluginAssembly.PluginTypes)
         {
-            var existingPluginType = existingAssembly.PluginTypes.FirstOrDefault(p => p.TypeName!.Equals(newPluginType.TypeName, StringComparison.OrdinalIgnoreCase));
-            newPluginType.Id = existingPluginType?.Id ?? GuidFactory.DeterministicGuid(GuidFactory.Namespace.PluginType, newPluginType.TypeName!);
-            foreach (var step in newPluginType.Steps)
+            var existingPluginType = existingPluginAssembly?.PluginTypes.FirstOrDefault(p => p.TypeName!.Equals(pluginType.TypeName, StringComparison.OrdinalIgnoreCase));
+            pluginType.Id = existingPluginType?.Id ?? GuidFactory.DeterministicGuid(GuidFactory.Namespace.PluginType, pluginType.TypeName!);
+            foreach (var step in pluginType.Steps)
             {
                 var existingStep = existingPluginType?.Steps.FirstOrDefault(s => s.Name == step.Name);
-                step.Id = existingStep?.Id ?? GuidFactory.DeterministicGuid(GuidFactory.Namespace.Step, newPluginType.TypeName + step.Name!);
-            }
-            if (newPluginType.CustomApi is CustomApi newCustomApi)
-            {
-                var existingCustomApi = existingPluginType?.CustomApi.FirstOrDefault(c => string.Equals(c.UniqueName, newCustomApi.UniqueName, StringComparison.OrdinalIgnoreCase));
-                newCustomApi.Id = existingCustomApi?.Id ?? GuidFactory.DeterministicGuid(GuidFactory.Namespace.CustomApi, newCustomApi.UniqueName!);
-                foreach (var newParameter in newCustomApi.RequestParameters)
+                step.Id = existingStep?.Id ?? GuidFactory.DeterministicGuid(GuidFactory.Namespace.Step, pluginType.TypeName + step.Name!);
+                foreach (var image in step.Images)
                 {
-                    var existingParameter = existingCustomApi?.RequestParameters.FirstOrDefault(p => p.UniqueName == newParameter.UniqueName);
-                    newParameter.Id = existingParameter?.Id ?? GuidFactory.DeterministicGuid(GuidFactory.Namespace.CustomApiInput, newParameter.UniqueName!);
+                    var existingImage = existingStep?.Images.FirstOrDefault(i => i.Name == image.Name);
+                    image.Id = existingImage?.Id ?? GuidFactory.DeterministicGuid(GuidFactory.Namespace.Image, pluginType.TypeName + step.Name! + image.Name);
                 }
-                foreach (var newParameter in newCustomApi.ResponseProperties)
+            }
+            if (pluginType.CustomApi is CustomApi customApi)
+            {
+                var existingCustomApi = existingPluginType?.CustomApi.FirstOrDefault(c => string.Equals(c.UniqueName, customApi.UniqueName, StringComparison.OrdinalIgnoreCase));
+                customApi.Id = existingCustomApi?.Id ?? GuidFactory.DeterministicGuid(GuidFactory.Namespace.CustomApi, customApi.UniqueName!);
+                foreach (var parameter in customApi.RequestParameters)
                 {
-                    var existingParameter = existingCustomApi?.ResponseProperties.FirstOrDefault(p => p.UniqueName == newParameter.UniqueName);
-                    newParameter.Id = existingParameter?.Id ?? GuidFactory.DeterministicGuid(GuidFactory.Namespace.CustomApiOutput, newParameter.UniqueName!);
+                    var existingParameter = existingCustomApi?.RequestParameters.FirstOrDefault(p => p.UniqueName == parameter.UniqueName);
+                    parameter.Id = existingParameter?.Id ?? GuidFactory.DeterministicGuid(GuidFactory.Namespace.CustomApiInput, parameter.UniqueName!);
+                }
+                foreach (var parameter in customApi.ResponseProperties)
+                {
+                    var existingParameter = existingCustomApi?.ResponseProperties.FirstOrDefault(p => p.UniqueName == parameter.UniqueName);
+                    parameter.Id = existingParameter?.Id ?? GuidFactory.DeterministicGuid(GuidFactory.Namespace.CustomApiOutput, parameter.UniqueName!);
                 }
             }
         }

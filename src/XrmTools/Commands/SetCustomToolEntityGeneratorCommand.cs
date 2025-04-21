@@ -35,7 +35,7 @@ internal sealed class SetCustomToolEntityGeneratorCommand : BaseCommand<SetCusto
         }
         else
         {
-            await file.TrySetAttributeAsync(PhysicalFileAttribute.Generator, EntityCodeGenerator.Name);
+            await file.TrySetAttributeAsync(PhysicalFileAttribute.CustomTool, EntityCodeGenerator.Name);
         }
     }
 

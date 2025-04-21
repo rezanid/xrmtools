@@ -130,7 +130,7 @@ public class PluginStepConfig : TypedEntity<PluginStepConfig>, IMessageProcessin
     public string? FilteringAttributes 
     {
         get => TryGetAttributeValue("filteringattributes", out string value) ? value : null;
-        set => this["filteringattributes"] = value;
+        set => this["filteringattributes"] = value?.Replace(" ", "");
     }
     [AttributeLogicalName("invocationsource")]
     public int? InvocationSource 

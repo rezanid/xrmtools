@@ -163,7 +163,7 @@ public class UpsertRequestBuilder(
             ["rank"] = pluginStepConfig.Rank ?? 0,
             ["stage"] = (int?)pluginStepConfig.Stage,
             ["supporteddeployment"] = (int)(pluginStepConfig.SupportedDeployment ?? SupportedDeployments.Server),
-            ["plugintypeid@odata.bind"] = $"plugintypes({parentPlugin.PluginTypeId})"
+            ["plugintypeid@odata.bind"] = $"plugintypes({parentPlugin.Id})"
             //["plugintypeid@odata.bind"] = $"${parentPluginContentId}"
         };
         if (pluginStepConfig.Message is SdkMessage message)
@@ -176,7 +176,7 @@ public class UpsertRequestBuilder(
             }
         }
         return new UpsertRequest(new EntityReference(
-            pluginStepConfig.GetEntitySetName(), pluginStepConfig.PluginStepId),
+            pluginStepConfig.GetEntitySetName(), pluginStepConfig.Id),
         //return new CreateRequest(pluginStepConfig.GetEntitySetName(),
             pluginStep,
             solutionUniqueName: _config.Solution?.UniqueName);
@@ -185,7 +185,7 @@ public class UpsertRequestBuilder(
     private HttpRequestMessage UpsertPluginImageRequestFor(PluginStepConfig parentStep, PluginStepImageConfig pluginImage)
         => new UpsertRequest(new EntityReference(
             pluginImage.GetEntitySetName(),
-            pluginImage.PluginStepImageId),
+            pluginImage.Id),
         new JObject
         {
             ["name"] = pluginImage.Name,
@@ -193,7 +193,7 @@ public class UpsertRequestBuilder(
             ["entityalias"] = pluginImage.EntityAlias,
             ["messagepropertyname"] = parentStep.Message?.MessagePropertyNames.FirstOrDefault().Name,
             ["imagetype"] = (int?)pluginImage.ImageType,
-            ["sdkmessageprocessingstepid@odata.bind"] = $"sdkmessageprocessingsteps({parentStep.PluginStepId})"
+            ["sdkmessageprocessingstepid@odata.bind"] = $"sdkmessageprocessingsteps({parentStep.Id})"
             //["sdkmessageprocessingstepid@odata.bind"] = $"${parentStepContentId}"
         },
         solutionUniqueName: _config.Solution?.UniqueName);

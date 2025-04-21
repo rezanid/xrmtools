@@ -35,8 +35,9 @@ internal sealed class SetCustomToolPluginGeneratorCommand : BaseCommand<SetCusto
         }
         else
         {
-            await file.TrySetAttributeAsync(PhysicalFileAttribute.Generator, PluginCodeGenerator.Name);
+            await file.TrySetAttributeAsync(PhysicalFileAttribute.CustomTool, PluginCodeGenerator.Name);
         }
+        await file.TrySetAttributeAsync("IsXrmPlugin", true);
     }
 
     protected override Task InitializeCompletedAsync() 
