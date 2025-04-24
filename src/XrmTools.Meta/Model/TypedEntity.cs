@@ -22,9 +22,7 @@ public abstract class TypedEntity<T>(string entityLogicalName) : Entity(entityLo
         public static ColumnSet From(Expression<Func<T, object>> expression) =>
             expression.Body switch
             {
-                NewExpression newExpr => new(newExpr.Arguments.OfType<MemberExpression>()
-                    .Select(GetMemberName)
-                    .ToArray()),
+                NewExpression newExpr => new([.. newExpr.Arguments.OfType<MemberExpression>().Select(GetMemberName)]),
                 MemberExpression memberExpr => new([GetMemberName(memberExpr)]),
                 UnaryExpression { Operand: MemberExpression memberExpr } => new([GetMemberName(memberExpr)]),
                 _ => NoColumns
@@ -60,12 +58,6 @@ public abstract class TypedEntity<T>(string entityLogicalName) : Entity(entityLo
         // Extract attribute logical name
         var attributeLogicalName = memberExpression.Member.GetCustomAttributes(typeof(AttributeLogicalNameAttribute), true)
             .OfType<AttributeLogicalNameAttribute>()
-            .FirstOrDefault();
-
-        // Extract entity logical name
-        var entityType = typeof(T);
-        var entityLogicalName = entityType.GetCustomAttributes(typeof(EntityLogicalNameAttribute), true)
-            .OfType<EntityLogicalNameAttribute>() 
             .FirstOrDefault();
 
         return 
