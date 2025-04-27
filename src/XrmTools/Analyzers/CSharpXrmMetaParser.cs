@@ -8,20 +8,24 @@ using System.ComponentModel.Composition;
 using System.Linq;
 using XrmTools.Helpers;
 using XrmTools.Meta.Attributes;
+using XrmTools.Meta.Model;
 using XrmTools.Xrm.Model;
 
 internal interface ICSharpXrmMetaParser
 {
     IEnumerable<EntityConfig> ParseEntitiyConfigs(IEnumerable<AttributeData> entityAttributes);
 
-    PluginTypeConfig? ParsePluginConfig(INamedTypeSymbol pluginType);
+    PluginTypeConfig? ParsePluginConfig(INamedTypeSymbol pluginType, Compilation compilation);
 
-    PluginAssemblyConfig? ParsePluginAssemblyConfig(IAssemblySymbol assembly);
+    PluginAssemblyConfig? ParsePluginAssemblyConfig(Compilation compilation);
     EntityConfig ParseEntityConfig(AttributeData entityAttribute);
 }
 
 [Export(typeof(ICSharpXrmMetaParser))]
-internal class CSharpXrmMetaParser : ICSharpXrmMetaParser
+[method: ImportingConstructor]
+internal class CSharpXrmMetaParser(
+    ILocalDependencyAnalyzer dependencyAnalyzer,
+    IDependencyPreparation dependencyPreparation) : ICSharpXrmMetaParser
 {
     private static readonly Dictionary<string, WebApi.Types.CustomApiFieldType> CustomApiFieldTypeMapping = new()
     {
@@ -40,8 +44,9 @@ internal class CSharpXrmMetaParser : ICSharpXrmMetaParser
         ["Guid"] = WebApi.Types.CustomApiFieldType.Guid
     };
 
-    public PluginAssemblyConfig? ParsePluginAssemblyConfig(IAssemblySymbol assemblySymbol)
+    public PluginAssemblyConfig? ParsePluginAssemblyConfig(Compilation compilation)
     {
+        IAssemblySymbol assemblySymbol = compilation.Assembly;
         AttributeData? assemblyAttribute = null;
         AttributeData? solutionAttribute = null;
         //List<EntityConfig> entityConfigs = [];
@@ -96,7 +101,7 @@ internal class CSharpXrmMetaParser : ICSharpXrmMetaParser
     public EntityConfig ParseEntityConfig(AttributeData entityAttribute)
         => new EntityConfig().SetPropertiesFromAttribute(entityAttribute);
 
-    public PluginTypeConfig? ParsePluginConfig(INamedTypeSymbol typeSymbol)
+    public PluginTypeConfig? ParsePluginConfig(INamedTypeSymbol typeSymbol, Compilation compilation)
     {
         WebApi.Entities.CustomApi? customApi = null;
         PluginTypeConfig? pluginConfig = null;
@@ -226,6 +231,16 @@ internal class CSharpXrmMetaParser : ICSharpXrmMetaParser
             }
             pluginConfig.CustomApi = customApi;
         }
+
+        if (pluginConfig == null) return null;
+
+        var dependencyGraph = dependencyAnalyzer.Analyze(typeSymbol, compilation);
+        if (dependencyGraph != null)
+        {
+            dependencyPreparation.Prepare(dependencyGraph);
+        }
+
+        pluginConfig.DependencyGraph = dependencyGraph;
 
         return pluginConfig;
     }
