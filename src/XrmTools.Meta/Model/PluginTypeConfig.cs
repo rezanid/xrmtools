@@ -8,6 +8,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq.Expressions;
 using System.Text.Json.Serialization;
+using XrmTools.Meta.Model;
 using XrmTools.WebApi.Entities;
 
 public interface IPluginTypeEntity
@@ -25,6 +26,7 @@ public interface IPluginTypeConfig : IPluginTypeEntity
     string? Namespace { get; set; }
     string? BaseTypeName { get; set; }
     ICollection<PluginStepConfig> Steps { get; set; }
+    Dependency? DependencyGraph { get; set; }
 }
 
 [EntityLogicalName(EntityLogicalName)]
@@ -96,6 +98,8 @@ public class PluginTypeConfig : TypedEntity<PluginTypeConfig>, IPluginTypeConfig
 
     public string? BaseTypeName { get; set; }
     public string? BaseTypeNamespace { get; set; }
+
+    public Dependency? DependencyGraph { get; set; }
 
     public static LinkEntity LinkWithSteps(ColumnSet columns, JoinOperator join = JoinOperator.LeftOuter)
         => new (EntityLogicalName, PluginStepConfig.EntityLogicalName, "plugintypeid", "plugintypeid", join)
