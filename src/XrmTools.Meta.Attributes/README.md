@@ -7,6 +7,8 @@ By installing this nuget packge, you will be able to use attributes to decorate 
 - `CustomApiAttribute`: Used to decorate a clas that implements `IPlugin` to specify the custom API registration details. This attribute comes after the `PluginRegistrattionAttribute` and can be used only once to register a custom API for the same plugin.
 - `CustomApiRequestAttribute`: Used to decorate a class, INSIDE the calss that implements `IPlugin` to specify the custom API request parameters. By applying this attribute, all properties of the class will become request parameters for your custom API. This attribute can only be applied to a single class within the plugin class.
 - `CustomApiResponseAttribute`: Used to decorate a class, INSIDE the calss that implements `IPlugin` to specify the custom API response properties. By applying this attribute, all properties of the class will become response properties for your custom API. This attribute can only be applied to a single class within the plugin class.
+- `DependencyAttribute`: Decorate a property as a dependency so that code generator can generate code to inject this dependency.
+- `DependencyConstructor`: Decorate a constructor method as depdency so that code generator can generate code to inject this dependency.
 
 Let's look at some examples:
 
@@ -100,7 +102,8 @@ public partial class MyCustomApiPlugin : IPlugin
     {
         public bool BooleanParameter { get; set; }
         public DateTime DateTimeParameter { get; set; }
-        public decimal DecimalParameter { get; set; }
+        // Marking the type as nullable will make the parameter optional in the Custom API.
+        public decimal? DecimalParameter { get; set; }
         public Entity EntityParameter { get; set; }
         public EntityCollection EntityCollectionParameter { get; set; }
         public EntityReference EntityReferenceParameter { get; set; }
