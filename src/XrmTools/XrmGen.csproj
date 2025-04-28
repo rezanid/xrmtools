@@ -66,6 +66,9 @@
     <Compile Include="..\XrmTools.Core\System\Runtime\CompilerServices\RuntimeHelpers.cs">
       <Link>System\Runtime\CompilerServices\RuntimeHelpers.cs</Link>
     </Compile>
+    <Compile Include="Analyzers\CSharpLocalDependencyAnalyzer.cs" />
+    <Compile Include="Analyzers\CSharpLocalDependencyAnalyzerOld.cs" />
+    <Compile Include="Analyzers\DependencyPreparation.cs" />
     <Compile Include="Analyzers\PluginAssemblyInfo.cs" />
     <Compile Include="Analyzers\CSharpXrmMetaDataService.cs" />
     <Compile Include="Analyzers\CSharpXrmMetaParser.cs" />
@@ -381,6 +384,7 @@
     <Content Include="CodeGenTemplates\Virtual.sbncs">
       <IncludeInVSIX>true</IncludeInVSIX>
     </Content>
+    <None Include="CodeGenTemplates\InjectDepdendencies.sbncs" />
     <None Include="Samples\AHRMBeOne_Plugin_Request.def.json" />
     <None Include="Samples\EntityConfigExample1.yaml" />
     <Content Include="Schemas\pluginregistration-schema.json">

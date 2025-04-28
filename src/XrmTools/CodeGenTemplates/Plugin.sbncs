@@ -10,7 +10,7 @@ using System.CodeDom.Compiler;
 using System.Collections.ObjectModel;
 using System.Runtime.Serialization;
 
-{{~first_plugin_type = model.plugin_types | array.first~}}
+{{-first_plugin_type = model.plugin_types | array.first~}}
 
 namespace {{ first_plugin_type?.namespace ?? config.default_namespace }};
 
@@ -18,6 +18,9 @@ namespace {{ first_plugin_type?.namespace ?? config.default_namespace }};
 {{codegen_attribute}}
 public partial class {{plugintype.type_name | last_segment }}
 {
+    {{~dependencies = plugintype.dependency_graph?.dependencies~}}
+    {{~include 'InjectDepdendencies.sbncs'~}}
+
 {{~for step in plugintype.steps~}}
 	{{include 'Target.sbncs'}}
 	{{~if step.images~}}

@@ -67,10 +67,10 @@ internal class CSharpXrmMetaDataService(
             var processedSymbols = new HashSet<string>();
             var semanticModelCache = new Dictionary<DocumentId, SemanticModel>();
 
-            var pluginTypes = await ParsePluginConfigsFromDocumentAsync(document, processedSymbols, semanticModelCache, cancellationToken).ConfigureAwait(false);
-            pluginTypes.ForEach(config.PluginTypes.Add);
-
             var compilation = await document.Project.GetCompilationAsync(cancellationToken).ConfigureAwait(false);
+            if (compilation == null) return null;
+            var pluginTypes = await ParsePluginConfigsFromDocumentAsync(document, compilation, processedSymbols, semanticModelCache, cancellationToken).ConfigureAwait(false);
+            pluginTypes.ForEach(config.PluginTypes.Add);
 
             return config;
         }
@@ -139,9 +139,11 @@ internal class CSharpXrmMetaDataService(
 
             var allPluginTypes = new List<PluginTypeConfig>();
 
+            var compilation = await project.GetCompilationAsync(cancellationToken).ConfigureAwait(false);
+
             foreach (var document in project.Documents.Where(d => d.SourceCodeKind == SourceCodeKind.Regular))
             {
-                var pluginTypes = await ParsePluginConfigsFromDocumentAsync(document, processedSymbols, semanticModelCache, cancellationToken).ConfigureAwait(false);
+                var pluginTypes = await ParsePluginConfigsFromDocumentAsync(document, compilation, processedSymbols, semanticModelCache, cancellationToken).ConfigureAwait(false);
                 allPluginTypes.AddRange(pluginTypes);
             }
 
@@ -160,7 +162,7 @@ internal class CSharpXrmMetaDataService(
         var compilation = await project.GetCompilationAsync(cancellationToken).ConfigureAwait(false);
         if (compilation == null) return null;
 
-        var config = parser.ParsePluginAssemblyConfig(compilation.Assembly);
+        var config = parser.ParsePluginAssemblyConfig(compilation);
         if (config is not null)
         {
             config.FilePath = project.OutputFilePath;
@@ -170,6 +172,7 @@ internal class CSharpXrmMetaDataService(
 
     private async Task<List<PluginTypeConfig>> ParsePluginConfigsFromDocumentAsync(
         Document document,
+        Compilation compilation,
         HashSet<string> processedSymbols,
         Dictionary<DocumentId, SemanticModel> semanticModelCache,
         CancellationToken cancellationToken)
@@ -202,7 +205,7 @@ internal class CSharpXrmMetaDataService(
             if (!processedSymbols.Add(typeKey))
                 continue;
 
-            var pluginType = AttributeParser.ParsePluginConfig(typeSymbol);
+            var pluginType = AttributeParser.ParsePluginConfig(typeSymbol, compilation);
             if (pluginType != null)
             {
                 result.Add(pluginType);
