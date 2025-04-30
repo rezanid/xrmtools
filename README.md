@@ -45,7 +45,7 @@ After you install Xrm Tools, the first thing you need to do is to connect to an 
    ```shell
    Url=<environment URL>;Integrated Security=True;TenantId=<your tenant id>
    ```
-   You can also simplify that just the URL of your environment.
+   You can also simply enter the URL of your environment.
    ```shell
    <environment URL>
    ```
