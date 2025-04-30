@@ -48,7 +48,7 @@ internal class XrmHttpClientFactory : IXrmHttpClientFactory, System.IAsyncDispos
     public async Task<XrmHttpClient> CreateClientAsync()
     {
         var environment = await environmentProvider.GetActiveEnvironmentAsync();
-        return environment == null ? throw new InvalidOperationException("No environment selected.") : await CreateClientAsync(environment);
+        return environment == null || environment == DataverseEnvironment.Empty ? throw new InvalidOperationException("No environment selected.") : await CreateClientAsync(environment);
     }
 
     public async Task<XrmHttpClient> CreateClientAsync(DataverseEnvironment environment)

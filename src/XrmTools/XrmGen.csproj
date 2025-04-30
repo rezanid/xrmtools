@@ -66,8 +66,7 @@
     <Compile Include="..\XrmTools.Core\System\Runtime\CompilerServices\RuntimeHelpers.cs">
       <Link>System\Runtime\CompilerServices\RuntimeHelpers.cs</Link>
     </Compile>
-    <Compile Include="Analyzers\CSharpLocalDependencyAnalyzer.cs" />
-    <Compile Include="Analyzers\CSharpLocalDependencyAnalyzerOld.cs" />
+    <Compile Include="Analyzers\CSharpDependencyAnalyzer.cs" />
     <Compile Include="Analyzers\DependencyPreparation.cs" />
     <Compile Include="Analyzers\PluginAssemblyInfo.cs" />
     <Compile Include="Analyzers\CSharpXrmMetaDataService.cs" />
