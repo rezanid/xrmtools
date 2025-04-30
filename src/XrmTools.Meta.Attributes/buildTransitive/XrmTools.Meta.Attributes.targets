@@ -1,0 +1,9 @@
+<Project>
+  <ItemGroup>
+    <Compile Include="$(MSBuildThisFileDirectory)..\**\*.cs"
+             Visible="false"
+             Link="Generated\%(RecursiveDir)%(Filename)%(Extension)" />
+  </ItemGroup>
+  <Target Name="BeforeBuild">
+  </Target>
+</Project>

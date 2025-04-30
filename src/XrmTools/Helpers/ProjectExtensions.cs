@@ -5,6 +5,8 @@ using Microsoft.VisualStudio.Shell.Interop;
 using Microsoft.VisualStudio;
 using Microsoft.VisualStudio.Shell;
 using System.IO;
+using System;
+using System.Linq;
 
 public static class ProjectExtensions
 {
@@ -13,7 +15,16 @@ public static class ProjectExtensions
         public const string OutputPath = "OutputPath";
         public const string AssemblyName = "AssemblyName";
         public const string OutputType = "OutputType";
+        public const string GeneratePackageOnBuild = "GeneratePackageOnBuild";
+        public const string PackageId = "PackageId";
+        public const string PackageVersion = "PackageVersion";
+        public const string PackageOutputPath = "PackageOutputPath";
+        public const string VersionPrefix = "VersionPrefix";
     }
+
+    public static bool IsSdkStyle(this Project project)
+        => project.IsCapabilityMatch("OpenProjectFile");
+        // Other capabilities that are also true for SDK-Style projects: ProjectReferences, PackageReferences
 
     public static IVsBuildPropertyStorage? ToBuildPropertyStorage(this Project project)
     {
@@ -34,6 +45,9 @@ public static class ProjectExtensions
         return null;
     }
 
+    public static T? GetBuildProperty<T>(this Project project, string name) where T : IConvertible
+        => GetBuildProperty(project, name) is string value ? (T)Convert.ChangeType(value, typeof(T)) : default;
+
     public static string? GetOutputAssemblyPath(this Project project)
     {
         var storage = project.ToBuildPropertyStorage();
@@ -42,6 +56,17 @@ public static class ProjectExtensions
         var outputPath = GetBuildProperty(storage, BuildProperties.OutputPath);
         var assemblyName = GetBuildProperty(storage, BuildProperties.AssemblyName);
         return Path.Combine(Path.Combine(Path.GetDirectoryName(project.FullPath), outputPath), assemblyName + (outputType == "Library" ? ".dll" : ".exe"));
+    }
+
+    public static string? GetOutputPackagePath(this Project project)
+    {
+        var storage = project.ToBuildPropertyStorage();
+        if (storage is null) return null;
+        var packageOutputDir = GetBuildProperty(storage, BuildProperties.PackageOutputPath);
+        var packageName = GetBuildProperty(storage, BuildProperties.PackageId);
+        var packageVersion = GetBuildProperty(storage, BuildProperties.PackageVersion);
+        if (packageVersion?.Count(c => c.Equals('.')) > 2) packageVersion = packageVersion[..packageVersion.LastIndexOf('.')];
+        return Path.Combine(Path.GetDirectoryName(project.FullPath), packageOutputDir, $"{packageName}.{packageVersion}.nupkg");
     }
 
     private static string? GetBuildProperty(IVsBuildPropertyStorage storage, string name)

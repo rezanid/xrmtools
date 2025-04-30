@@ -1,5 +1,4 @@
 ﻿namespace XrmTools.Authentication;
-using Microsoft.Identity.Client;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -7,6 +6,9 @@ using System.Security.Cryptography.X509Certificates;
 
 internal record AuthenticationParameters
 {
+    private const string DefaultClientId = "51f81489-12ee-4a9e-aaae-a2591f45987d";
+    private const string DefaultRedirectUrl = "app://58145B91-0C36-4500-8554-080854F2AC97";
+
     public string Authority { get; set; }
     public string Resource { get; set; }
     public string ClientId { get; set; }
@@ -19,22 +21,39 @@ internal record AuthenticationParameters
     public bool UseCurrentUser { get; set; }
     public string RedirectUri { get; set; }
 
-    public IAccount Account { get; set; }
-
     public static AuthenticationParameters Parse(string connectionString)
     {
         if (string.IsNullOrEmpty(connectionString)) throw new ArgumentNullException(nameof(connectionString));
-        var dictionary =
-            connectionString.Split([';'], StringSplitOptions.RemoveEmptyEntries)
-            .ToDictionary(
-                s => s[..s.IndexOf('=')].Trim(), 
-                s => s[(s.IndexOf('=') + 1)..].Trim(),
-                StringComparer.OrdinalIgnoreCase);
-        var resource = dictionary.TryGetValue("resource", out var url) 
-            ? url 
-            : dictionary.TryGetValue("url", out url) 
-            ? url 
-            : throw new ArgumentException("Connection string should contain either Url or Resource. Both are missing.");
+        string resource = null;
+        Dictionary<string, string> dictionary = null;
+        if (connectionString.IndexOf('=') <= 0)
+        {
+            if (connectionString.StartsWith("https://"))
+            {
+                resource = connectionString;
+                if (!resource.EndsWith("/")) resource += "/";
+                dictionary = new Dictionary<string, string>() { ["resource"] = connectionString, ["integrated security"] = true.ToString() };
+            }
+            else
+            {
+                throw new InvalidOperationException("Connection string is invalid. Please check your environment setting in Tools > Options > Xrm Tools");
+            }
+        }
+        else
+        {
+            dictionary =
+                connectionString.Split([';'], StringSplitOptions.RemoveEmptyEntries)
+                .ToDictionary(
+                    s => s[..s.IndexOf('=')].Trim(),
+                    s => s[(s.IndexOf('=') + 1)..].Trim(),
+                    StringComparer.OrdinalIgnoreCase);
+            resource = 
+                dictionary.TryGetValue("resource", out var url) 
+                ? url 
+                : dictionary.TryGetValue("url", out url) 
+                ? url 
+                : throw new ArgumentException("Connection string should contain either Url or Resource. Both are missing.");
+        }
         if (string.IsNullOrEmpty(resource))
         {
             throw new ArgumentException("Either Resource or Url is required.");
@@ -44,8 +63,8 @@ internal record AuthenticationParameters
         var parameters = new AuthenticationParameters
         {
             Authority = dictionary.TryGetValue("authority", out var authority) ? authority : null,
-            ClientId = dictionary.TryGetValue("clientid", out var clientid) ? clientid : "51f81489-12ee-4a9e-aaae-a2591f45987d",
-            RedirectUri = dictionary.TryGetValue("redirecturi", out var redirecturi) ? redirecturi : "app://58145B91-0C36-4500-8554-080854F2AC97",
+            ClientId = dictionary.TryGetValue("clientid", out var clientid) ? clientid : DefaultClientId,
+            RedirectUri = dictionary.TryGetValue("redirecturi", out var redirecturi) ? redirecturi : DefaultRedirectUrl,
             Resource = resource,
             ClientSecret = dictionary.TryGetValue("clientsecret", out var secret) ? secret : null,
             CertificateThumbprint = dictionary.TryGetValue("thumbprint", out var thumbprint) ? thumbprint : null,
@@ -58,11 +77,7 @@ internal record AuthenticationParameters
             UseDeviceFlow = dictionary.TryGetValue("device", out var device) && bool.Parse(device),
             UseCurrentUser = dictionary.TryGetValue("integrated security", out var defaultcreds) && bool.Parse(defaultcreds)
         };
-        if (string.IsNullOrEmpty(parameters.Authority) && string.IsNullOrEmpty(parameters.Tenant))
-        {
-            throw new ArgumentException("Either Authority or TenantId must be provided.");
-        }
-        if (string.IsNullOrEmpty(parameters.Authority))
+        if (string.IsNullOrEmpty(parameters.Authority) && !string.IsNullOrEmpty(parameters.Tenant))
         {
             parameters.Authority = $"https://login.microsoftonline.com/{parameters.Tenant}/oauth2/authorize";
         }

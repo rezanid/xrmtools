@@ -28,6 +28,9 @@ public record DataverseEnvironment
     //[Browsable(false)]
     public string? Url { get => _url; }
 
+    [Browsable(false)]
+    public Uri? BaseServiceUrl => new(new Uri(Url), "/api/data/v9.2/");
+
     [DisplayName("Connection String")]
     [Description("The connection string to the environment according to https://learn.microsoft.com/en-us/power-apps/developer/data-platform/xrm-tooling/use-connection-strings-xrm-tooling-connect.")]
     [DefaultValue("AuthType=OAuth;Url=https://contoso.crm.dynamics.com;Integrated Security=True")]
@@ -38,10 +41,25 @@ public record DataverseEnvironment
         {
             _connectionstring = value;
             var segments = value?.Split([';'], StringSplitOptions.RemoveEmptyEntries);
-            _url = segments.FirstOrDefault(s => s.StartsWith("Url=", StringComparison.OrdinalIgnoreCase))?.Substring(4);
-            isValidConnectionString = !string.IsNullOrWhiteSpace(value) && !string.IsNullOrWhiteSpace(Url);
+            if (segments is null)
+            {
+                isValidConnectionString = false;
+                return;
+            }
+            if (segments.Length == 1)
+            {
+                _url = segments[0];
+                if (!_url.StartsWith("https://")) { _url = "https://" + _url; }
+            }
+            else
+            {
+                _url = segments.FirstOrDefault(s => s.StartsWith("Url=", StringComparison.OrdinalIgnoreCase))?.Substring(4);
+            }
+            isValidConnectionString = !string.IsNullOrWhiteSpace(value) && !string.IsNullOrWhiteSpace(_url);
         }
     }
+
+    public bool AllowCookies { get; set; } = false;
 
     [MemberNotNullWhen(true, nameof(Url), nameof(ConnectionString))]
     [Browsable(false)]

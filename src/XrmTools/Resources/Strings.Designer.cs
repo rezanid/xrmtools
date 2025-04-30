@@ -187,20 +187,20 @@ namespace XrmTools.Resources {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to Environment not initialized. You will have to first initialize the environment by calling {0}..
-        /// </summary>
-        internal static string EnvironmentNotInitialized {
-            get {
-                return ResourceManager.GetString("EnvironmentNotInitialized", resourceCulture);
-            }
-        }
-        
-        /// <summary>
         ///   Looks up a localized string similar to Missing {0} service depndency. {0} is not available..
         /// </summary>
         internal static string MissingServiceDependency {
             get {
                 return ResourceManager.GetString("MissingServiceDependency", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to No active project found. Please select a project and try again..
+        /// </summary>
+        internal static string NoActiveProject {
+            get {
+                return ResourceManager.GetString("NoActiveProject", resourceCulture);
             }
         }
         
@@ -223,20 +223,11 @@ namespace XrmTools.Resources {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to // Code generation failed due to invalid input file..
+        ///   Looks up a localized string similar to Input file is not a valid .cs, .json or .yml file. Please provide a valid input file..
         /// </summary>
-        internal static string PluginGenerator_InvalidConfig {
+        internal static string PluginGenerator_InvalidInputFile {
             get {
-                return ResourceManager.GetString("PluginGenerator.InvalidConfig", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   Looks up a localized string similar to Assembly configuration does not contain any plugin types..
-        /// </summary>
-        internal static string PluginGenerator_NoPluginTypes {
-            get {
-                return ResourceManager.GetString("PluginGenerator.NoPluginTypes", resourceCulture);
+                return ResourceManager.GetString("PluginGenerator.InvalidInputFile", resourceCulture);
             }
         }
         
@@ -250,7 +241,7 @@ namespace XrmTools.Resources {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to The template provided for plugin code generation has erros. FilePath: {0}
+        ///   Looks up a localized string similar to The template provided for plugin code generation has errors. FilePath: {0}
         ///Error details: {1}.
         /// </summary>
         internal static string PluginGenerator_TemplateError {

@@ -14,6 +14,9 @@ using System.Net.Http.Headers;
 using Microsoft.Extensions.Http.Resilience;
 using Microsoft.Identity.Client;
 using Microsoft.VisualStudio.Threading;
+using System.Reflection;
+using System.Net;
+using XrmTools.Options;
 
 [Export(typeof(IXrmHttpClientFactory))]
 internal class XrmHttpClientFactory : IXrmHttpClientFactory, System.IAsyncDisposable, IDisposable
@@ -45,16 +48,18 @@ internal class XrmHttpClientFactory : IXrmHttpClientFactory, System.IAsyncDispos
     public async Task<XrmHttpClient> CreateClientAsync()
     {
         var environment = await environmentProvider.GetActiveEnvironmentAsync();
-        return environment == null ? throw new InvalidOperationException("No environment selected.") : await CreateClientAsync(environment);
+        return environment == null || environment == DataverseEnvironment.Empty ? throw new InvalidOperationException("No environment selected.") : await CreateClientAsync(environment);
     }
 
     public async Task<XrmHttpClient> CreateClientAsync(DataverseEnvironment environment)
     {
-        if (string.IsNullOrEmpty(environment.ConnectionString))
+        if (environment == null) throw new ArgumentNullException(nameof(environment));
+
+        if (environment != DataverseEnvironment.Empty && string.IsNullOrEmpty(environment.ConnectionString))
         {
             throw new InvalidOperationException($"Environment '{environment.Name}' connection string is empty.");
         }
-        var handlerEntry = _handlerPool.GetOrAdd(environment, _ => new Lazy<HttpMessageHandlerEntry>(() => CreateHandlerEntry())).Value;
+        var handlerEntry = _handlerPool.GetOrAdd(environment, _ => new Lazy<HttpMessageHandlerEntry>(() => CreateHandlerEntry(environment))).Value;
 
         handlerEntry.IncrementUsage();
         var client = new XrmHttpClient(handlerEntry.Handler, handlerEntry.DecrementUsage);
@@ -65,22 +70,54 @@ internal class XrmHttpClientFactory : IXrmHttpClientFactory, System.IAsyncDispos
 
     private async Task ConfigureClientAsync(XrmHttpClient client, DataverseEnvironment environment)
     {
-        client.Timeout = TimeSpan.FromMinutes(10);
-        client.BaseAddress = new Uri(new Uri(environment.Url), "/api/data/v9.2/");
-        client.DefaultRequestHeaders.Add("Prefer", "odata.include-annotations=*");
-        if (!_tokenCache.TryGetValue(environment.ConnectionString!, out var authResult) || authResult.ExpiresOn <= timeProvider.GetUtcNow())
+        client.Timeout = TimeSpan.FromMinutes(60);
+        if (environment != DataverseEnvironment.Empty)
         {
-            authResult = await authenticationService.AuthenticateAsync(environment, msg => logger.LogInformation(msg), CancellationToken.None);
-            _tokenCache[environment.ConnectionString!] = authResult;
+            client.BaseAddress = environment.BaseServiceUrl!;
+            client.DefaultRequestHeaders.Add("Prefer", "odata.include-annotations=*");
+            var assemblyName = Assembly.GetExecutingAssembly().GetName();
+            client.DefaultRequestHeaders.UserAgent.Add(new ProductInfoHeaderValue(assemblyName.Name.Replace(" ", ""), assemblyName.Version.ToString()));
+            client.DefaultRequestHeaders.Add("OData-MaxVersion", "4.0");
+            client.DefaultRequestHeaders.Add("OData-Version", "4.0");
+            client.DefaultRequestHeaders.Accept.Add(
+                new MediaTypeWithQualityHeaderValue("application/json"));
+            if (!_tokenCache.TryGetValue(environment.ConnectionString!, out var authResult) || authResult.ExpiresOn <= timeProvider.GetUtcNow())
+            {
+                authResult = await authenticationService.AuthenticateAsync(environment, msg => logger.LogInformation(msg), CancellationToken.None);
+                _tokenCache[environment.ConnectionString!] = authResult;
+            }
+            client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", authResult.AccessToken);
         }
-        client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", authResult.AccessToken);
     }
 
-    private HttpMessageHandlerEntry CreateHandlerEntry()
+    private HttpMessageHandlerEntry CreateHandlerEntry(DataverseEnvironment environment)
     {
         //var handler = new PolicyHttpMessageHandler(CreateDefaultPolicy());
-        var handler = new PolicyHandler(new HttpClientHandler(), CreateDefaultPolicy());
+        var handler = environment == DataverseEnvironment.Empty ?
+            new PolicyHandler(new HttpClientHandler() { AllowAutoRedirect = false }, CreateDefaultPolicy()) :
+            new PolicyHandler(CreateHandler(environment), CreateDefaultPolicy());
         return new (handler, timeProvider.GetUtcNow());
+    }
+
+    private HttpClientHandler CreateHandler(DataverseEnvironment environment)
+    {
+        var proxyAddress = GeneralOptions.Instance.Proxy;
+        var useProxy = !string.IsNullOrWhiteSpace(proxyAddress);
+        var handler = new HttpClientHandler()
+        {
+            AllowAutoRedirect = false,
+            UseCookies = environment.AllowCookies,
+        };
+        if (useProxy)
+        {
+            handler.Proxy = new WebProxy(proxyAddress);
+            handler.UseProxy = true;
+        }
+        else
+        {
+            handler.UseProxy = false;
+        }
+        return handler;
     }
 
     private async Task RecycleHandlersAsync()
@@ -89,14 +126,14 @@ internal class XrmHttpClientFactory : IXrmHttpClientFactory, System.IAsyncDispos
         {
             foreach (var kvp in _handlerPool)
             {
-                var name = kvp.Key;
+                var environment = kvp.Key;
                 var entry = kvp.Value;
                 if (entry.IsValueCreated && entry.Value.CanDispose())
                 {
                     await _semaphore.WaitAsync();
                     try
                     {
-                        if (_handlerPool.TryUpdate(name, new Lazy<HttpMessageHandlerEntry>(CreateHandlerEntry), entry))
+                        if (_handlerPool.TryUpdate(environment, new Lazy<HttpMessageHandlerEntry>(() => CreateHandlerEntry(environment)), entry))
                         {
                             entry.Value.Handler.Dispose();
                         }
@@ -122,7 +159,7 @@ internal class XrmHttpClientFactory : IXrmHttpClientFactory, System.IAsyncDispos
             .AddCircuitBreaker(new HttpCircuitBreakerStrategyOptions() { Name = "Standard-CircuitBreaker" })
             .AddTimeout(new HttpTimeoutStrategyOptions
             {
-                Timeout = TimeSpan.FromSeconds(10.0),
+                Timeout = TimeSpan.FromSeconds(60.0),
                 Name = "Standard-AttemptTimeout"
             }).Build().AsAsyncPolicy();
 

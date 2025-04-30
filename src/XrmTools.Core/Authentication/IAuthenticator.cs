@@ -9,10 +9,10 @@ internal interface IAuthenticator
     IAuthenticator NextAuthenticator { get; set; }
 
     Task<AuthenticationResult> AuthenticateAsync(
-        AuthenticationParameters parameters, Action<string> onMessageForUser = default, CancellationToken cancellationToken = default);
+        AuthenticationParameters parameters, bool clearTokenCache, Action<string> onMessageForUser = default, CancellationToken cancellationToken = default);
 
     bool CanAuthenticate(AuthenticationParameters parameters);
 
     Task<AuthenticationResult> TryAuthenticateAsync(
-        AuthenticationParameters parameters, Action<string> onMessageForUser = default, CancellationToken cancellationToken = default);
+        AuthenticationParameters parameters, bool clearTokenCache, Action<string> onMessageForUser = default, CancellationToken cancellationToken = default);
 }

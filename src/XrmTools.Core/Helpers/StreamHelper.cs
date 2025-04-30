@@ -7,9 +7,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Reflection;
-using System.Runtime.InteropServices.ComTypes;
 using System.Runtime.Serialization;
-using System.Security.AccessControl;
 using XrmTools.Core.Serialization;
 
 internal static class StreamHelper

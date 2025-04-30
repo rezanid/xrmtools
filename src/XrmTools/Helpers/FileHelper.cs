@@ -9,10 +9,14 @@ using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using System.Collections.Generic;
+using Microsoft.VisualStudio.ComponentModelHost;
+using Microsoft.VisualStudio.LanguageServices;
+using Microsoft.VisualStudio.Shell;
+using Microsoft.CodeAnalysis;
 
 internal static class FileHelper
 {
-    private static readonly HashSet<char> _invalidFileNameChars = new(Path.GetInvalidFileNameChars());
+    private static readonly HashSet<char> _invalidFileNameChars = [.. Path.GetInvalidFileNameChars()];
     private static readonly Regex _reservedFileNamePattern = new($@"(?i)^(PRN|AUX|NUL|CON|COM\d|LPT\d)(\.|$)");
 
     public static async Task<SolutionItem?> FindActiveItemAsync()
@@ -28,9 +32,29 @@ internal static class FileHelper
         return await PhysicalFile.FromFileAsync(filePath);
     }
 
+    public static async Task<Document?> GetDocumentAsync(string filePath)
+    {
+        await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync();
+        var componentModel = (IComponentModel)Package.GetGlobalService(typeof(SComponentModel));
+        var workspace = componentModel.GetService<VisualStudioWorkspace>();
+        var documentId = workspace.CurrentSolution.GetDocumentIdsWithFilePath(filePath).FirstOrDefault();
+        if (documentId == null) return null;
+        return workspace.CurrentSolution.GetDocument(documentId);
+    }
+
+    public static async Task<Microsoft.CodeAnalysis.Project?> GetProjectAsync(string projectFilePath)
+    {
+        await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync();
+        var componentModel = (IComponentModel)Package.GetGlobalService(typeof(SComponentModel));
+        var workspace = componentModel.GetService<VisualStudioWorkspace>();
+
+        // Find the project by its file path
+        return workspace.CurrentSolution.Projects.FirstOrDefault(p => p.FilePath == projectFilePath);
+    }
+
     public static async Task AddItemAsync(string name, string content, SolutionItem activeItem)
     {
-        if (activeItem is null || string.IsNullOrWhiteSpace(name) || string.IsNullOrWhiteSpace(content)) return;
+        if (activeItem is null || string.IsNullOrWhiteSpace(name) || content is null) return;
         ValidatePath(name);
 
         var proj = activeItem.Type is SolutionItemType.Project or SolutionItemType.VirtualProject or SolutionItemType.MiscProject
@@ -59,7 +83,7 @@ internal static class FileHelper
             return;
         }
 
-        var folder = proj != null ? null : activeItem.FindParent(SolutionItemType.PhysicalFolder) as Community.VisualStudio.Toolkit.PhysicalFolder;
+        var folder = proj != null ? null : activeItem.FindParent(SolutionItemType.PhysicalFolder) as PhysicalFolder;
 
         if (folder == null)
         {
@@ -100,7 +124,7 @@ internal static class FileHelper
         } while (!string.IsNullOrEmpty(path));
     }
 
-    private static async Task AddItemAsync(FileInfo file, string content, Project project)
+    private static async Task AddItemAsync(FileInfo file, string content, Community.VisualStudio.Toolkit.Project project)
     {
         try
         {

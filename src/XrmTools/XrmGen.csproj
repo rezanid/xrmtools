@@ -10,6 +10,10 @@
   <PropertyGroup>
     <AssemblyOriginatorKeyFile>..\key.snk</AssemblyOriginatorKeyFile>
   </PropertyGroup>
+  <PropertyGroup>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
   <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
@@ -62,15 +66,32 @@
     <Compile Include="..\XrmTools.Core\System\Runtime\CompilerServices\RuntimeHelpers.cs">
       <Link>System\Runtime\CompilerServices\RuntimeHelpers.cs</Link>
     </Compile>
+    <Compile Include="Analyzers\CSharpDependencyAnalyzer.cs" />
+    <Compile Include="Analyzers\DependencyPreparation.cs" />
     <Compile Include="Analyzers\PluginAssemblyInfo.cs" />
-    <Compile Include="Analyzers\PluginAssemblyMetadataService.cs" />
-    <Compile Include="Analyzers\PluginAttributeExtractor.cs" />
+    <Compile Include="Analyzers\CSharpXrmMetaDataService.cs" />
+    <Compile Include="Analyzers\CSharpXrmMetaParser.cs" />
+    <Compile Include="Helpers\ReflectionHelper.cs" />
+    <Compile Include="AuthenticationService.cs" />
+    <Compile Include="Authenticators\ClientAppAuthenticator.cs" />
+    <Compile Include="Authenticators\DelegatingAuthenticator.cs" />
+    <Compile Include="Authenticators\DeviceCodeAuthenticator.cs" />
+    <Compile Include="Authenticators\IntegratedAuthenticator.cs" />
     <Compile Include="Classifiers\XrmStringClassifierProvider.cs" />
     <Compile Include="CodeCompletion\XrmPluginCompletionProvider.cs" />
     <Compile Include="CodeCompletion\XrmPluginDefinitionCompletionSource.cs" />
+    <Compile Include="CodeGen\Constants.cs" />
+    <Compile Include="CodeGen\EntityCodeGenerator.cs" />
+    <Compile Include="CodeGen\PluginCodeGenerator.cs" />
+    <Compile Include="CodeGen\TemplateFileGenerator.cs" />
+    <Compile Include="CodeGen\TemplatePathFinder.cs" />
     <Compile Include="Commands\SelectEnvironmentCommand.cs" />
+    <Compile Include="Commands\RegisterPluginCommand.cs" />
+    <Compile Include="Commands\SetEntityGeneratorTemplateInProjectCommand.cs" />
     <Compile Include="Commands\SetPluginGeneratorTemplateInProjectCommand.cs" />
+    <Compile Include="Commands\SetEntityGeneratorTemplateInSolutionCommand.cs" />
     <Compile Include="Commands\SetPluginGeneratorTemplateInSolutionCommand.cs" />
+    <Compile Include="Helpers\UpsertRequestBuilder.cs" />
     <Compile Include="Environments\DataverseEnvironmentProvider.cs" />
     <Compile Include="Helpers\AttributeDataHelper.cs" />
     <Compile Include="Helpers\ByteExtensions.cs" />
@@ -97,12 +118,115 @@
       <DependentUpon>EnvironmentSelectorDialog.xaml</DependentUpon>
     </Compile>
     <Compile Include="UI\EnvironmentSelectorViewModel.cs" />
+    <Compile Include="WebApi\Batch\BatchRequest.cs" />
+    <Compile Include="WebApi\Batch\BatchResponse.cs" />
+    <Compile Include="WebApi\Batch\ChangeSet.cs" />
+    <Compile Include="WebApi\Extensions.cs" />
+    <Compile Include="WebApi\Messages\AddPrivilegesRoleRequest.cs" />
+    <Compile Include="WebApi\Messages\AssociateRequest.cs" />
+    <Compile Include="WebApi\Messages\BulkDeleteRequest.cs" />
+    <Compile Include="WebApi\Messages\BulkDeleteResponse.cs" />
+    <Compile Include="WebApi\Messages\CommitAnnotationBlocksUploadRequest.cs" />
+    <Compile Include="WebApi\Messages\CommitAnnotationBlocksUploadResponse.cs" />
+    <Compile Include="WebApi\Messages\CommitAttachmentBlocksUploadRequest.cs" />
+    <Compile Include="WebApi\Messages\CommitAttachmentBlocksUploadResponse.cs" />
+    <Compile Include="WebApi\Messages\CommitFileBlocksUploadRequest.cs" />
+    <Compile Include="WebApi\Messages\CommitFileBlocksUploadResponse.cs" />
+    <Compile Include="WebApi\Messages\CreateMultipleRequest.cs" />
+    <Compile Include="WebApi\Messages\CreateMultipleResponse.cs" />
+    <Compile Include="WebApi\Messages\CreateRequest.cs" />
+    <Compile Include="WebApi\Messages\CreateResponse.cs" />
+    <Compile Include="WebApi\Messages\CreateRetrieveRequest.cs" />
+    <Compile Include="WebApi\Messages\CreateRetrieveResponse.cs" />
+    <Compile Include="WebApi\Messages\DeleteColumnValueRequest.cs" />
+    <Compile Include="WebApi\Messages\DeleteFileRequest.cs" />
+    <Compile Include="WebApi\Messages\DeleteMultipleRequest.cs" />
+    <Compile Include="WebApi\Messages\DeleteRequest.cs" />
+    <Compile Include="WebApi\Messages\DisassociateRequest.cs" />
+    <Compile Include="WebApi\Messages\DownloadAnnotationFileRequest.cs" />
+    <Compile Include="WebApi\Messages\DownloadAnnotationFileResponse.cs" />
+    <Compile Include="WebApi\Messages\DownloadAttachmentFileRequest.cs" />
+    <Compile Include="WebApi\Messages\DownloadAttachmentFileResponse.cs" />
+    <Compile Include="WebApi\Messages\DownloadBlockRequest.cs" />
+    <Compile Include="WebApi\Messages\DownloadBlockResponse.cs" />
+    <Compile Include="WebApi\Messages\DownloadFileChunkRequest.cs" />
+    <Compile Include="WebApi\Messages\DownloadFileChunkResponse.cs" />
+    <Compile Include="WebApi\Messages\DownloadFileRequest.cs" />
+    <Compile Include="WebApi\Messages\DownloadFileResponse.cs" />
+    <Compile Include="WebApi\Messages\ExecuteCosmosSqlQueryRequest.cs" />
+    <Compile Include="WebApi\Messages\ExecuteCosmosSqlQueryResponse.cs" />
+    <Compile Include="WebApi\Messages\ExportSolutionRequest.cs" />
+    <Compile Include="WebApi\Messages\ExportSolutionResponse.cs" />
+    <Compile Include="WebApi\Messages\FetchXMLRequest.cs" />
+    <Compile Include="WebApi\Messages\FetchXMLResponse.cs" />
+    <Compile Include="WebApi\Messages\FormatAddressRequest.cs" />
+    <Compile Include="WebApi\Messages\FormatAddressResponse.cs" />
+    <Compile Include="WebApi\Messages\GetCollectionCountRequest.cs" />
+    <Compile Include="WebApi\Messages\GetCollectionCountResponse.cs" />
+    <Compile Include="WebApi\Messages\GetColumnValueRequest.cs" />
+    <Compile Include="WebApi\Messages\GetColumnValueResponse.cs" />
+    <Compile Include="WebApi\Messages\GrantAccessRequest.cs" />
+    <Compile Include="WebApi\Messages\ImportSolutionRequest.cs" />
+    <Compile Include="WebApi\Messages\InitializeAnnotationBlocksDownloadRequest.cs" />
+    <Compile Include="WebApi\Messages\InitializeAnnotationBlocksDownloadResponse.cs" />
+    <Compile Include="WebApi\Messages\InitializeAnnotationBlocksUploadRequest.cs" />
+    <Compile Include="WebApi\Messages\InitializeAnnotationBlocksUploadResponse.cs" />
+    <Compile Include="WebApi\Messages\InitializeAttachmentBlocksDownloadRequest.cs" />
+    <Compile Include="WebApi\Messages\InitializeAttachmentBlocksDownloadResponse.cs" />
+    <Compile Include="WebApi\Messages\InitializeAttachmentBlocksUploadRequest.cs" />
+    <Compile Include="WebApi\Messages\InitializeAttachmentBlocksUploadResponse.cs" />
+    <Compile Include="WebApi\Messages\InitializeChunkedFileUploadRequest.cs" />
+    <Compile Include="WebApi\Messages\InitializeChunkedFileUploadResponse.cs" />
+    <Compile Include="WebApi\Messages\InitializeFileBlocksDownloadRequest.cs" />
+    <Compile Include="WebApi\Messages\InitializeFileBlocksDownloadResponse.cs" />
+    <Compile Include="WebApi\Messages\InitializeFileBlocksUploadRequest.cs" />
+    <Compile Include="WebApi\Messages\InitializeFileBlocksUploadResponse.cs" />
+    <Compile Include="WebApi\Messages\InitializeFromRequest.cs" />
+    <Compile Include="WebApi\Messages\InitializeFromResponse.cs" />
+    <Compile Include="WebApi\Messages\ModifyAccessRequest.cs" />
+    <Compile Include="WebApi\Messages\RetrieveCurrentOrganizationRequest.cs" />
+    <Compile Include="WebApi\Messages\RetrieveCurrentOrganizationResponse.cs" />
+    <Compile Include="WebApi\Messages\RetrieveMultipleRequest.cs" />
+    <Compile Include="WebApi\Messages\RetrieveMultipleResponse.cs" />
+    <Compile Include="WebApi\Messages\RetrievePrincipalAccessRequest.cs" />
+    <Compile Include="WebApi\Messages\RetrievePrincipalAccessResponse.cs" />
+    <Compile Include="WebApi\Messages\RetrieveRequest.cs" />
+    <Compile Include="WebApi\Messages\RetrieveResponse.cs" />
+    <Compile Include="WebApi\Messages\RetrieveSharedPrincipalsAndAccess.cs" />
+    <Compile Include="WebApi\Messages\RetrieveSharedPrincipalsAndAccessResponse.cs" />
+    <Compile Include="WebApi\Messages\RetrieveTotalRecordCountRequest.cs" />
+    <Compile Include="WebApi\Messages\RetrieveTotalRecordCountResponse.cs" />
+    <Compile Include="WebApi\Messages\RevokeAccessRequest .cs" />
+    <Compile Include="WebApi\Messages\SetColumnValueRequest.cs" />
+    <Compile Include="WebApi\Messages\UpdateMultipleRequest.cs" />
+    <Compile Include="WebApi\Messages\UpdateRequest.cs" />
+    <Compile Include="WebApi\Messages\UploadBlockRequest.cs" />
+    <Compile Include="WebApi\Messages\UploadFileChunkRequest.cs" />
+    <Compile Include="WebApi\Messages\UploadFileRequest.cs" />
+    <Compile Include="WebApi\Messages\UpsertMultipleRequest.cs" />
+    <Compile Include="WebApi\Messages\UpsertRequest.cs" />
+    <Compile Include="WebApi\Messages\UpsertResponse.cs" />
+    <Compile Include="WebApi\Messages\WhoAmIRequest.cs" />
+    <Compile Include="WebApi\Messages\WhoAmIResponse.cs" />
+    <Compile Include="WebApi\Methods\Create.cs" />
+    <Compile Include="WebApi\Methods\CreateRetrieve.cs" />
+    <Compile Include="WebApi\Methods\Delete.cs" />
+    <Compile Include="WebApi\Methods\DeleteColumnValue.cs" />
+    <Compile Include="WebApi\Methods\Extensions.cs" />
+    <Compile Include="WebApi\Methods\FetchXml.cs" />
+    <Compile Include="WebApi\Methods\GetColumnValue.cs" />
+    <Compile Include="WebApi\Methods\Retrieve.cs" />
+    <Compile Include="WebApi\Methods\RetrieveMultiple.cs" />
+    <Compile Include="WebApi\Methods\SetColumnValue.cs" />
+    <Compile Include="WebApi\Methods\Update.cs" />
+    <Compile Include="WebApi\Methods\Upsert.cs" />
+    <Compile Include="WebApi\ODataError.cs" />
+    <Compile Include="WebApi\ODataException.cs" />
+    <Compile Include="WebApi\ServiceException.cs" />
+    <Compile Include="WebApi\TypedEntityHelper.cs" />
+    <Compile Include="WebApi\WebApiService.cs" />
     <Compile Include="XrmHttpClientFactory.cs" />
     <Compile Include="XrmToolsPackage.SolutionProperties.cs" />
-    <Compile Include="Xrm\Auth\ClientAppAuthenticator.cs" />
-    <Compile Include="Xrm\Auth\DelegatingAuthenticator.cs" />
-    <Compile Include="Xrm\Auth\DeviceCodeAuthenticator.cs" />
-    <Compile Include="Xrm\Auth\IntegratedAuthenticator.cs" />
     <Compile Include="Xrm\IXrmSchemaProvider.cs" />
     <Compile Include="Xrm\OptionSetMetadataNameComparer.cs" />
     <Compile Include="Helpers\DteExtensions.cs" />
@@ -113,8 +237,6 @@
       <DependentUpon>AssemblySelectionDialog.xaml</DependentUpon>
     </Compile>
     <Compile Include="UI\AssemblySelectionViewModel.cs" />
-    <Compile Include="CodeGenerators\PluginCodeGenerator.cs" />
-    <Compile Include="CodeGenerators\EntityCodeGenerator.cs" />
     <Compile Include="Commands\SetCustomToolEntityGeneratorCommand.cs" />
     <Compile Include="Commands\SetCustomToolPluginGeneratorCommand.cs" />
     <Compile Include="Helpers\IVsHierarchyExtensions.cs" />
@@ -128,12 +250,10 @@
     <Compile Include="Xrm\Extensions\QueryExpressionExtensions.cs" />
     <Compile Include="Xrm\Generators\FileTemplateLoader.cs" />
     <Compile Include="Xrm\Generators\XrmCodeGenConfig.cs" />
-    <Compile Include="Xrm\Generators\IXrmEntityCodeGenerator.cs" />
-    <Compile Include="Xrm\Generators\IXrmPluginCodeGenerator.cs" />
+    <Compile Include="Xrm\Generators\IXrmCodeGenerator.cs" />
     <Compile Include="Xrm\Generators\ScribanExtensionCache.cs" />
     <Compile Include="Xrm\Generators\ScribanExtensions.cs" />
-    <Compile Include="Xrm\Generators\TemplatedEntityCodeGenerator.cs" />
-    <Compile Include="Xrm\Generators\TemplatedPluginCodeGenerator.cs" />
+    <Compile Include="Xrm\Generators\TemplatedCodeGenerator.cs" />
     <Compile Include="Xrm\CodeCompletion\XrmPluginDefCompletionProvider.cs" />
     <Compile Include="Xrm\CodeCompletion\XrmPluginDefCompletionSource.cs" />
     <Compile Include="Xrm\Constants.cs" />
@@ -155,11 +275,16 @@
       <DesignTime>True</DesignTime>
       <DependentUpon>Strings.resx</DependentUpon>
     </Compile>
+    <Compile Include="Xrm\Repositories\EntityMetadataRepository.cs" />
+    <Compile Include="Xrm\Repositories\PluginAssemblyRepository.cs" />
+    <Compile Include="Xrm\Repositories\PluginTypeRepository.cs" />
     <Compile Include="Xrm\Repositories\RepositoryFactory.cs" />
+    <Compile Include="Xrm\Repositories\SdkMessageRepository.cs" />
+    <Compile Include="Xrm\Repositories\SystemRepository.cs" />
+    <Compile Include="Xrm\Repositories\XrmRepository.cs" />
     <Compile Include="Xrm\WebApiSchemaProvider.cs" />
     <Compile Include="Xrm\XrmMetadataSource.cs" />
     <Compile Include="Logging\OutputLogger.cs" />
-    <Compile Include="_Core\Validation.cs" />
   </ItemGroup>
   <ItemGroup>
     <Content Include="Microsoft.Bcl.TimeProvider\Microsoft.Bcl.TimeProvider.dll">
@@ -170,12 +295,97 @@
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
       <IncludeInVSIX>true</IncludeInVSIX>
     </Content>
+    <Content Include="Resources\GettingStarted.html">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+      <IncludeInVSIX>true</IncludeInVSIX>
+    </Content>
+    <Content Include="Resources\Write-Plugin.gif">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+      <IncludeInVSIX>true</IncludeInVSIX>
+    </Content>
+    <Content Include="Resources\XrmTools_256.png">
+      <IncludeInVSIX>true</IncludeInVSIX>
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
     <Content Include="UI\WebResources\preview.html" />
     <Content Include="UI\WebResources\themes\prism.css" />
     <Content Include="UI\WebResources\prism.js" />
+    <Content Include="..\..\LICENSE.md">
+      <Link>Resources\LICENSE.md</Link>
+      <IncludeInVSIX>true</IncludeInVSIX>
+    </Content>
+    <Content Include="CodeGenTemplates\BigInt.sbncs">
+      <IncludeInVSIX>true</IncludeInVSIX>
+    </Content>
+    <Content Include="CodeGenTemplates\Boolean.sbncs">
+      <IncludeInVSIX>true</IncludeInVSIX>
+    </Content>
+    <Content Include="CodeGenTemplates\Customer.sbncs">
+      <IncludeInVSIX>true</IncludeInVSIX>
+    </Content>
+    <Content Include="CodeGenTemplates\DateTime.sbncs">
+      <IncludeInVSIX>true</IncludeInVSIX>
+    </Content>
+    <Content Include="CodeGenTemplates\Decimal.sbncs">
+      <IncludeInVSIX>true</IncludeInVSIX>
+    </Content>
+    <Content Include="CodeGenTemplates\Double.sbncs">
+      <IncludeInVSIX>true</IncludeInVSIX>
+    </Content>
+    <Content Include="CodeGenTemplates\Entity.sbncs">
+      <IncludeInVSIX>true</IncludeInVSIX>
+    </Content>
+    <Content Include="CodeGenTemplates\EntityName.sbncs">
+      <IncludeInVSIX>true</IncludeInVSIX>
+    </Content>
+    <Content Include="CodeGenTemplates\Images.sbncs">
+      <IncludeInVSIX>true</IncludeInVSIX>
+    </Content>
+    <Content Include="CodeGenTemplates\Integer.sbncs">
+      <IncludeInVSIX>true</IncludeInVSIX>
+    </Content>
+    <Content Include="CodeGenTemplates\Lookup.sbncs">
+      <IncludeInVSIX>true</IncludeInVSIX>
+    </Content>
+    <Content Include="CodeGenTemplates\Memo.sbncs">
+      <IncludeInVSIX>true</IncludeInVSIX>
+    </Content>
+    <Content Include="CodeGenTemplates\Money.sbncs">
+      <IncludeInVSIX>true</IncludeInVSIX>
+    </Content>
+    <Content Include="CodeGenTemplates\Owner.sbncs">
+      <IncludeInVSIX>true</IncludeInVSIX>
+    </Content>
+    <Content Include="CodeGenTemplates\Picklist.sbncs">
+      <IncludeInVSIX>true</IncludeInVSIX>
+    </Content>
+    <Content Include="CodeGenTemplates\Plugin.sbncs">
+      <IncludeInVSIX>true</IncludeInVSIX>
+    </Content>
+    <Content Include="CodeGenTemplates\Readme.md">
+      <IncludeInVSIX>true</IncludeInVSIX>
+    </Content>
+    <Content Include="CodeGenTemplates\State.sbncs">
+      <IncludeInVSIX>true</IncludeInVSIX>
+    </Content>
+    <Content Include="CodeGenTemplates\Status.sbncs">
+      <IncludeInVSIX>true</IncludeInVSIX>
+    </Content>
+    <Content Include="CodeGenTemplates\String.sbncs">
+      <IncludeInVSIX>true</IncludeInVSIX>
+    </Content>
+    <Content Include="CodeGenTemplates\Target.sbncs">
+      <IncludeInVSIX>true</IncludeInVSIX>
+    </Content>
+    <Content Include="CodeGenTemplates\UniqueIdentifier.sbncs">
+      <IncludeInVSIX>true</IncludeInVSIX>
+    </Content>
+    <Content Include="CodeGenTemplates\Virtual.sbncs">
+      <IncludeInVSIX>true</IncludeInVSIX>
+    </Content>
+    <None Include="CodeGenTemplates\InjectDepdendencies.sbncs" />
     <None Include="Samples\AHRMBeOne_Plugin_Request.def.json" />
     <None Include="Samples\EntityConfigExample1.yaml" />
-    <Content Include="Resources\npm.png" />
     <Content Include="Schemas\pluginregistration-schema.json">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
       <IncludeInVSIX>true</IncludeInVSIX>
@@ -185,8 +395,6 @@
       <Generator>VsixManifestGenerator</Generator>
       <LastGenOutput>source.extension.cs</LastGenOutput>
     </None>
-    <None Include="Xrm\Generators\EntityTemplate.sbn" />
-    <None Include="Xrm\Generators\PluginTemplate.sbn" />
   </ItemGroup>
   <ItemGroup>
     <Reference Include="Microsoft.CSharp" />
@@ -215,6 +423,9 @@
     </PackageReference>
     <PackageReference Include="Humanizer.Core">
       <Version>2.14.1</Version>
+    </PackageReference>
+    <PackageReference Include="Microsoft.AspNet.WebApi.Client">
+      <Version>6.0.0</Version>
     </PackageReference>
     <PackageReference Include="Microsoft.Bcl.TimeProvider">
       <Version>8.0.0</Version>
@@ -253,13 +464,16 @@
     <PackageReference Include="Nito.AsyncEx">
       <Version>5.1.2</Version>
     </PackageReference>
+    <PackageReference Include="Polly.Extensions.Http">
+      <Version>3.0.0</Version>
+    </PackageReference>
     <PackageReference Include="PolySharp">
       <Version>1.15.0</Version>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
       <PrivateAssets>all</PrivateAssets>
     </PackageReference>
     <PackageReference Include="Scriban">
-      <Version>5.12.0</Version>
+      <Version>6.1.0</Version>
     </PackageReference>
     <PackageReference Include="StrongNamer">
       <Version>0.2.5</Version>
@@ -270,7 +484,7 @@
     <PackageReference Include="System.Runtime.Caching">
       <Version>8.0.0</Version>
     </PackageReference>
-    <PackageReference Include="YamlDotNet" Version="16.2.0" />
+    <PackageReference Include="YamlDotNet" Version="16.3.0" />
   </ItemGroup>
   <ItemGroup>
     <VSCTCompile Include="VSCommandTable.vsct">
@@ -278,9 +492,6 @@
       <Generator>VsctGenerator</Generator>
       <LastGenOutput>VSCommandTable.cs</LastGenOutput>
     </VSCTCompile>
-  </ItemGroup>
-  <ItemGroup>
-    <Content Include="Resources\EntityGeneratorCommand.png" />
   </ItemGroup>
   <ItemGroup>
     <EmbeddedResource Include="Resources\Strings.resx">
@@ -291,7 +502,7 @@
   </ItemGroup>
   <ItemGroup>
     <Folder Include="Xrm\CompletionSample\" />
-    <Folder Include="Xrm\Model\" />
+    <Folder Include="_Core\" />
   </ItemGroup>
   <ItemGroup>
     <Page Include="UI\AssemblySelectionDialog.xaml">
@@ -304,13 +515,15 @@
     </Page>
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\XrmTools.Attributes\XrmTools.Meta.csproj">
-      <Project>{1F790C13-3B66-41E8-AED5-FA152465B6A0}</Project>
-      <Name>XrmTools.Meta</Name>
-    </ProjectReference>
     <ProjectReference Include="..\XrmTools.Core\XrmTools.Core.csproj">
       <Project>{4e3f79aa-5694-4dd6-933d-aee2132486a5}</Project>
       <Name>XrmTools.Core</Name>
+      <IncludeOutputGroupsInVSIX>BuiltProjectOutputGroup%3bBuiltProjectOutputGroupDependencies%3bGetCopyToOutputDirectoryItems%3bSatelliteDllsProjectOutputGroup%3b</IncludeOutputGroupsInVSIX>
+      <IncludeOutputGroupsInVSIXLocalOnly>DebugSymbolsProjectOutputGroup%3b</IncludeOutputGroupsInVSIXLocalOnly>
+    </ProjectReference>
+    <ProjectReference Include="..\XrmTools.Meta\XrmTools.Meta.csproj">
+      <Project>{838257e1-7f69-8823-ad8a-b1a9aff47b81}</Project>
+      <Name>XrmTools.Meta</Name>
     </ProjectReference>
     <ProjectReference Include="..\XrmTools.UI.Controls\XrmTools.UI.Controls.csproj">
       <Project>{179df0ac-6f44-4656-8332-034d3c594ed1}</Project>

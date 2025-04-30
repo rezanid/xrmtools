@@ -1,6 +1,7 @@
 ﻿#nullable enable
 namespace XrmTools.Settings;
 using Community.VisualStudio.Toolkit;
+using Microsoft.VisualStudio.Shell;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 
@@ -20,6 +21,7 @@ public class ProjectSettings(ProjectStorageType storageType) : IAsyncXrmToolsSet
 
     private async Task<string?> GetSettingAsync(string name)
     {
+        await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync();
         var proj = await VS.Solutions.GetActiveProjectAsync();
         if (proj == null) return null;
         return await proj.GetAttributeAsync(name);
@@ -36,7 +38,6 @@ public class ProjectSettings(ProjectStorageType storageType) : IAsyncXrmToolsSet
         else
         {
             return await proj.TrySetAttributeAsync(name, value, storageType);
-
         }
     }
 }

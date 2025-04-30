@@ -7,6 +7,7 @@ using Microsoft.VisualStudio.Shell.Interop;
 using System;
 using System.Linq;
 using System.Reflection;
+using XrmTools.Logging.Compatibility;
 using XrmTools.Options;
 using XrmTools.Settings;
 using XrmTools.Xrm.Repositories;
@@ -17,10 +18,10 @@ using XrmTools.Xrm.Repositories;
 internal partial class EnvironmentSelectorDialog : DialogWindow
 {
     internal EnvironmentSelectorDialog(
-        SettingsStorageTypes storageType, ISettingsProvider settingsProvider, SolutionItem solutionItem, IRepositoryFactory? repositoryFactory)
+        SettingsStorageTypes storageType, ISettingsProvider settingsProvider, SolutionItem solutionItem, IRepositoryFactory? repositoryFactory, ILogger logger)
     {
         EnsureReferencedAssembliesInMarkupAreLoaded();
-        DataContext = new EnvironmentSelectorViewModel(storageType, solutionItem, settingsProvider, OnSelect, OnCancel, repositoryFactory);
+        DataContext = new EnvironmentSelectorViewModel(storageType, solutionItem, settingsProvider, OnSelect, OnCancel, repositoryFactory, logger);
         InitializeComponent();
     }
 

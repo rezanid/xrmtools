@@ -1,0 +1,43 @@
+{{~base_class_name = step.primary_entity_definition.display_name.localized_labels[0].label | tokenize~}}
+{{codegen_attribute}}
+[EntityLogicalName("{{step.primary_entity_definition.logical_name}}")]
+public class Target{{base_class_name}} : Entity
+{
+	public const string EntityLogicalName = "{{step.primary_entity_definition.logical_name}}";
+	public const string EntityLogicalCollectionName = "{{step.primary_entity_definition.logical_collection_name}}";
+	public const string EntitySetName = "{{step.primary_entity_definition.entity_set_name}}";
+	public const int EntityTypeCode = {{step.primary_entity_definition.object_type_code}};
+	public const string PrimaryNameAttribute = "{{step.primary_entity_definition.primary_name_atribute}}";
+	public const string PrimaryIdAttribute = "{{step.primary_entity_definition.primary_id_attribute}}";
+
+	public partial class Fields
+	{
+	{{~for attribute in step.primary_entity_definition.attributes~}}
+		{{~localized_name = attribute | safe_display_name step.primary_entity_definition.attributes~}}
+		public const string {{localized_name}} = "{{attribute.logical_name}}";
+	{{~end~}}
+	}
+
+	public Target{{base_class_name}}() : base(EntityLogicalName) { }
+    public Target{{base_class_name}}(string keyName, object keyValue) : base(EntityLogicalName, keyName, keyValue) { }
+    public Target{{base_class_name}}(KeyAttributeCollection keyAttributes) : base(EntityLogicalName, keyAttributes) { }
+
+	{{~for attribute in step.primary_entity_definition.attributes~}}
+	{{~description = attribute.description?.localized_labels[0]?.label~}}
+	/// <summary>
+	{{~if description != null && description.length > 0~}}
+	/// {{description}}
+	{{~end~}}
+	{{~if attribute.max_length~}}
+	/// Max Length: {{attribute.max_length}}
+	{{~end~}}
+	/// Required Level: {{attribute.required_level.value}}
+	/// Valid for create: {{attribute.is_valid_for_create ? "Yes" : "No"}}
+	/// Valid for update: {{attribute.is_valid_for_update ? "Yes" : "No"}}
+	/// Valid for read: {{attribute.is_valid_for_read ? "Yes" : "No"}}
+	/// </summary>
+	{{~## There should be a template for each entity type.
+	     Send the attribute along with the full list of attributes in case template needs it.##~}}
+	{{include attribute.attribute_type + '.sbn' }}
+	{{~end~}}
+}

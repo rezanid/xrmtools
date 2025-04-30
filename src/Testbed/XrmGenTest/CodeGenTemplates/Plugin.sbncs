@@ -1,0 +1,99 @@
+{{~func non_logical; ret ($0?.is_logical != true); end~}}
+{{~func logical; ret ($0?.is_logical == true); end~}}
+{{~func supported_attribute; ret ($0?.attribute_type != 'EntityName'); end~}}
+{{~quote(text) = '"' + text + '"'~}}
+using Microsoft.Xrm.Sdk;
+using Microsoft.Xrm.Sdk.Client;
+using Microsoft.Xrm.Sdk.Extensions;
+using System;
+using System.CodeDom.Compiler;
+using System.Collections.ObjectModel;
+using System.Runtime.Serialization;
+
+namespace {{ first_plugin_type?.namespace ?? config.default_namespace }};
+
+{{~for plugintype in model.plugin_types~}}
+{{codegen_attribute}}
+public partial class {{plugintype.type_name | last_segment }}{{ plugintype.base_type_name != 'Object' ? ' : ' + plugintype.base_type_name : ''}}
+{
+{{~for step in plugintype.steps~}}
+	{{include 'Target.sbncs'}}
+	{{~if step.images~}}
+	{{include 'Images.sbncs'~}}
+	{{~end~}}
+
+	{{~target_type_name='Target' + (step.primary_entity_definition.display_name.localized_labels[0].label | tokenize)~}}
+	public {{target_type_name}} Target { get; set; }
+	{{~for image in step.images~}}
+	public {{image.name}}{{step.primary_entity_definition.display_name.localized_labels[0].label | tokenize}} {{image.name}} { get; set; }
+	{{~end~}}
+
+	/// <summary>
+	/// This method should be called on every <see cref="{{plugintype.base_type_name == 'Object' ? plugintype.type_name : plugintype.base_type_name}}.Execute(IServiceProvider)"/> execution.
+	/// </summary>
+	/// <param name="serviceProvider"></param>
+	/// <exception cref="InvalidPluginExecutionException"></exception>
+	internal {{plugintype.base_type_name == 'Object' ? '' : 'override '}}void Initialize(IServiceProvider serviceProvider)
+    {
+        if (serviceProvider == null)
+        {
+            throw new InvalidPluginExecutionException(nameof(serviceProvider) + " argument is null.");
+        }
+        var executionContext = serviceProvider.Get<IPluginExecutionContext7>();
+        Target = EntityOrDefault<{{target_type_name}}>(executionContext.InputParameters, "Target");
+	{{~for image in step.images~}}
+        {{image.name}} = EntityOrDefault<{{image.name}}{{step.primary_entity_definition.display_name.localized_labels[0].label | tokenize}}>(executionContext.PreEntityImages, "{{image.name}}");
+	{{~end~}}
+    }
+{{~end~}}
+
+	protected static T EntityOrDefault<T>(DataCollection<string, object> keyValues, string key) where T : Entity
+    {
+        if (keyValues is null) return default;
+        return keyValues.TryGetValue(key, out var obj) ? obj is Entity entity ? entity.ToEntity<T>() : default : default;
+    }
+
+    protected static T EntityOrDefault<T>(DataCollection<string, Entity> keyValues, string key) where T : Entity
+    {
+        if (keyValues is null) return default;
+        return keyValues.TryGetValue(key, out var entity) ? entity?.ToEntity<T>() : default;
+    }
+
+{{~if plugintype.custom_api ~}}
+    protected static Request GetRequest(IExecutionContext context)
+        => new()
+        {
+            {{~for param in plugintype.custom_api.request_parameters~}}
+            {{~case param.type~}}
+            {{~when 'Boolean'~}}
+            {{param.name}} = context.InputParameters.TryGetValue("{{param.name}}", out var {{param.name}}) && Convert.To{{param.type_name}}({{param.name}}),
+            {{~when 'DateTime', 'Decimal', 'Float', 'Integer', 'String'~}}
+            {{param.name}} = context.InputParameters.TryGetValue("{{param.name}}", out var {{param.name}}) ? Convert.To{{param.type_name}}({{param.name}}) : default,
+            {{~when 'StringArray'~}}
+            {{param.name}} = context.InputParameters.TryGetValue("{{param.name}}", out var {{param.name}}) ? (string[]){{param.name}} : default,
+            {{~when 'Picklist'~}}
+            {{~converter = param.type_name == 'OptionSetValue' ? '(OptionSetValue)' + param.name : '(' + param.full_type_name + ')((OptionSetValue)' + param.name + ').Value' ~}}
+            {{param.name}} = context.InputParameters.TryGetValue("{{param.name}}", out var {{param.name}}) ? {{converter}} : default,
+            {{~else~}}
+            {{param.name}} = context.InputParameters.TryGetValue("{{param.name}}", out var {{param.name}}) ? ({{param.type_name}}){{param.name}} : default,
+            {{~end~}}
+            {{~end~}}
+        };
+    
+    protected static void SetResponse(IExecutionContext context, Response response)
+    {
+        {{~for param in plugintype.custom_api.response_properties~}}
+        {{~case param.type~}}
+        {{~when 'Picklist'~}}
+        {{~converter = param.type_name == 'OptionSetValue' ? (param.type_name | string.downcase) + 'Value' : 'new OptionSetValue((int)' + (param.type_name | string.downcase) + 'Value)' ~}}
+        if (response.{{param.name}} is {{param.full_type_name}} {{param.type_name | string.downcase}}Value) context.OutputParameters["{{param.name}}"] = {{converter}};
+        {{~when 'StringArray'~}}
+        if (response.{{param.name}} is {{param.full_type_name}} stringArrayValue) context.OutputParameters["{{param.name}}"] = stringArrayValue;
+        {{~else~}}
+        if (response.{{param.name}} is {{param.type_name}} {{param.type_name | string.downcase}}Value) context.OutputParameters["{{param.name}}"] = {{param.type_name | string.downcase}}Value;
+        {{~end~}}
+        {{~end~}}
+    }
+{{~end~}}
+}
+{{~end~}}

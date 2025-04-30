@@ -1,0 +1,96 @@
+{{~func non_logical; ret ($0?.is_logical != true); end~}}
+{{~func logical; ret ($0?.is_logical == true); end~}}
+{{~func supported_attribute; ret ($0?.attribute_type != 'EntityName'); end~}}
+{{~quote(text) = '"' + text + '"'~}}
+using AG.RM.Xrm.Utility;
+using Microsoft.Xrm.Sdk;
+using Microsoft.Xrm.Sdk.Client;
+using System;
+using System.CodeDom.Compiler;
+using System.Collections.Generic;
+using System.Collections.ObjectModel;
+using System.Globalization;
+using System.Linq;
+using System.Runtime.Serialization;
+
+{{~ first_plugin_type = model.plugin_types | array.first ~}}
+namespace {{ first_plugin_type?.namespace ?? config.default_namespace }};
+{{~for entity_definition in model.entity_definitions~}}
+{{~#base_class_name = entity_definition.schema_name}}
+{{~base_class_name = entity_definition.display_name.localized_labels[0].label | tokenize~}}
+[EntityLogicalName("{{entity_definition.logical_name}}")]
+[global::System.Diagnostics.CodeAnalysis.ExcludeFromCodeCoverage]
+public class {{base_class_name}} : Entity
+{
+	public const string EntityLogicalName = "{{entity_definition.logical_name}}";
+	public const string EntityLogicalCollectionName = "{{entity_definition.logical_collection_name}}";
+	public const string EntitySetName = "{{entity_definition.entity_set_name}}";
+	public const int EntityTypeCode = {{entity_definition.object_type_code}};
+	public const string PrimaryNameAttribute = "{{entity_definition.primary_name_attribute}}";
+	public const string PrimaryIdAttribute = "{{entity_definition.primary_id_attribute}}";
+
+	public partial class Fields
+	{
+	{{~for attribute in entity_definition.attributes | array.filter @supported_attribute~}}
+		public const string {{attribute.schema_name}} = "{{attribute.logical_name}}";
+		{{~if attribute.attribute_type == 'Lookup' || attribute.attribute_type == 'Customer'~}}
+		public static readonly ReadOnlyCollection<string> {{attribute.schema_name}}Targets = new ([{{attribute.targets | array.join ',' @quote}}]);
+		{{~end~}}
+	{{~end~}}
+	}
+
+	public partial class Choices
+	{
+	{{~for attribute_meta in entity_definition.attributes | filter_enum_attributes~}}
+	{{~if attribute_meta.option_set != null~}}
+	{{~if attribute_meta.option_set.description.localized_labels[0].label != ''~}}
+		/// <summary>
+		/// {{attribute_meta.option_set.description.localized_labels[0].label}}
+		/// </summary>
+	{{~end~}}
+		{{codegen_attribute}}
+		[DataContract]
+		{{~enum_name = attribute_meta.option_set.display_name.localized_labels[0].label | tokenize~}}
+		public enum {{enum_name}}
+		{
+		{{~for option_meta in attribute_meta.option_set.options~}}
+			[EnumMember]
+			{{option_meta.label.localized_labels[0].label | tokenize}} = {{option_meta.value}},
+		{{~end~}}
+		}
+	{{~end~}}
+	{{~end~}}
+	}
+
+	{{~for attribute in entity_definition.attributes | array.filter @supported_attribute~}}
+	{{~description = attribute.description?.localized_labels[0]?.label~}}
+	/// <summary>
+	{{~if description != null && description.length > 0~}}
+	/// {{description}}</br>
+	{{~end~}}
+	{{~ if attribute.attribute_of != null && !attribute.attribute_of.empty?~}}
+	/// Attribute of: {{attribute.attribute_of}}</br>
+	{{~end~}}
+	{{~if attribute.max_length~}}
+	/// Max Length: {{attribute.max_length}}</br>
+	{{~end~}}
+	/// Required Level: {{attribute.required_level.value}}<br/>
+	/// Valid for: {{~ attribute.is_valid_for_create ? ' Create' : null ~}}{{attribute.is_valid_for_update ? ' Update' : null}}{{attribute.is_valid_for_read ? ' Read' : null}}</br>
+	{{~if attribute.is_entity_reference_stored~}}
+	/// EntityReference Is Stored</br>
+	{{~end~}}
+	{{~if attribute.targets~}}
+	/// Targets: {{attribute.targets | array.join ','}}</br>
+	{{~end~}}
+	{{~if attribute.auto_number_format~}}
+	/// Auto Number Format: {{attribute.auto_number_format}}
+	{{~end~}}
+	/// </summary>
+	{{~prop_name = attribute.schema_name ~}}
+	{{include attribute.attribute_type + '.sbn' attributes:entity_definition.attributes}}
+	{{~end~}}
+	public {{base_class_name}}() : base(EntityLogicalName) { }
+    public {{base_class_name}}(string keyName, object keyValue) : base(EntityLogicalName, keyName, keyValue) { }
+    public {{base_class_name}}(KeyAttributeCollection keyAttributes) : base(EntityLogicalName, keyAttributes) { }
+}
+{{~end~}}

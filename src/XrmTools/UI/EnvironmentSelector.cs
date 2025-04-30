@@ -10,7 +10,6 @@ using XrmTools.Helpers;
 using XrmTools.Logging.Compatibility;
 using XrmTools.Options;
 using XrmTools.Settings;
-using XrmTools.Xrm;
 using XrmTools.Xrm.Repositories;
 
 internal interface IEnvironmentSelector
@@ -21,6 +20,8 @@ internal interface IEnvironmentSelector
 [Export(typeof(IEnvironmentSelector))]
 internal class EnvironmentSelector : IEnvironmentSelector
 {
+    public event EventHandler<DataverseEnvironment>? EnvironmentChanged;
+
     [Import]
     ISettingsProvider? SettingsProvider { get; set; }
 
@@ -42,13 +43,13 @@ internal class EnvironmentSelector : IEnvironmentSelector
         }
 
         var dialog = new EnvironmentSelectorDialog(
-            settingLevel, SettingsProvider, solutionItem, RepositoryFactory);
+            settingLevel, SettingsProvider, solutionItem, RepositoryFactory, Logger);
         if (dialog == null)
         {
             Logger.LogWarning("Environment level is not set to Solution or Project.");
             await VS.MessageBox.ShowAsync(
-                "Environment level not selected", 
-                "Please select an environment level other than Visual Studio in Tools > Options > Xrm Tools.",
+                Vsix.Name,
+                "Environment level not selected. Please select at which level you would like to set the environment in Tools > Options > Xrm Tools.",
                 OLEMSGICON.OLEMSGICON_WARNING);
             return null;
         }
@@ -56,6 +57,7 @@ internal class EnvironmentSelector : IEnvironmentSelector
         {
             Logger.LogInformation("Environment selected");
             var viewmodel = (EnvironmentSelectorViewModel)dialog.DataContext;
+            EnvironmentChanged?.Invoke(this, viewmodel.Environment);
             return viewmodel.Environment;
         }
         return null;

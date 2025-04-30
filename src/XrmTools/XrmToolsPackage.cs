@@ -24,18 +24,9 @@ using XrmTools.Xrm.Generators;
 using XrmTools.Tokens;
 using Task = System.Threading.Tasks.Task;
 using XrmTools.Commands;
-using XrmTools.Xrm.Auth;
-using XrmTools.Authentication;
 using XrmTools.Environments;
 using System.Reflection;
 using System.IO;
-
-internal record ProjectDataverseSettings(
-    string EnvironmentUrl, 
-    string? ConnectionString, 
-    string? PluginCodeGenTemplatePath, 
-    string? EntityCodeGenTemplatePath);
-
 
 /// <summary>
 /// This is the class that implements the package exposed by this assembly.
@@ -64,11 +55,12 @@ internal record ProjectDataverseSettings(
 [ProvideMenuResource("Menus.ctmenu", 1)]
 // Decide the visibility of our commands when the commands are NOT yet loaded.
 [ProvideUIContextRule(PackageGuids.SetCustomToolEntitiesCmdUIRuleString,
-    name: "UI Context",
-    expression: "(Yaml | Proj) & CSharp & (SingleProj | MultiProj)",
-    termNames: ["Yaml", "CSharp", "SingleProj", "MultiProj"],
+    name: "UI Context Entity Definition",
+    expression: "(Yaml | CSEntity) & CSharp & (SingleProj | MultiProj)",
+    termNames: ["Yaml", "CSEntity", "CSharp", "SingleProj", "MultiProj"],
     termValues: [
         "HierSingleSelectionName:.yaml$|.yml$", 
+        "HierSingleSelectionName:.*Entit.*\\.cs$",
         "ActiveProjectCapability:CSharp", 
         VSConstants.UICONTEXT.SolutionHasSingleProject_string, 
         VSConstants.UICONTEXT.SolutionHasMultipleProjects_string])]
@@ -87,7 +79,7 @@ internal record ProjectDataverseSettings(
     expression: "Sbn & CSharp & (SingleProj | MultiProj)",
     termNames: ["Sbn", "CSharp", "SingleProj", "MultiProj"],
     termValues: [
-        "HierSingleSelectionName:.sbn$", 
+        "HierSingleSelectionName:.sbncs$", 
         "ActiveProjectCapability:CSharp", 
         VSConstants.UICONTEXT.SolutionHasSingleProject_string, 
         VSConstants.UICONTEXT.SolutionHasMultipleProjects_string])]
@@ -99,8 +91,7 @@ internal record ProjectDataverseSettings(
         "ActiveProjectCapability:CSharp",
         VSConstants.UICONTEXT.SolutionHasSingleProject_string,
         VSConstants.UICONTEXT.SolutionHasMultipleProjects_string])]
-[ProvideService(typeof(IXrmPluginCodeGenerator), IsAsyncQueryable = true, IsCacheable = true, IsFreeThreaded = true)]
-[ProvideService(typeof(IXrmEntityCodeGenerator), IsAsyncQueryable = true, IsCacheable = true, IsFreeThreaded = true)]
+[ProvideService(typeof(IXrmCodeGenerator), IsAsyncQueryable = true, IsCacheable = true, IsFreeThreaded = true)]
 [ProvideService(typeof(IEnvironmentProvider), IsAsyncQueryable = true, IsCacheable = true, IsFreeThreaded = true)]
 [ProvideService(typeof(ISettingsProvider), IsAsyncQueryable = true, IsCacheable = true, IsFreeThreaded = true)]
 [ProvideOptionPage(typeof(OptionsProvider.GeneralOptions), Vsix.Name, "General", 0, 0, true, SupportsProfiles = true)]
@@ -113,7 +104,6 @@ public sealed partial class XrmToolsPackage : ToolkitPackage
     private readonly static IOutputLoggerService _loggerService;
     private readonly static IEnvironmentProvider _environmentProvider;
     private readonly static ISettingsProvider _settingsProvider;
-    private readonly static IAuthenticationService _authentionService;
     private readonly static ITokenExpanderService _tokenExpanderService;
 
     public const string SolutionPersistanceKey = "XrmToolsProperies";
@@ -130,9 +120,7 @@ public sealed partial class XrmToolsPackage : ToolkitPackage
     [Export(typeof(IOutputLoggerService))] internal IOutputLoggerService OutputLoggerService { get => _loggerService; }
     [Export(typeof(IEnvironmentProvider))] internal IEnvironmentProvider EnvironmentProvider { get => _environmentProvider; }
     [Export(typeof(ISettingsProvider))] internal ISettingsProvider SettingsProvider { get => _settingsProvider; }
-    [Export(typeof(IAuthenticationService))] internal IAuthenticationService AuthenticationService { get => _authentionService; }
-    //[Import(typeof(IXrmHttpClientFactory))] internal IXrmHttpClientFactory? HttpClientFactory { get; set; }
-    //[Import(typeof(IRepositoryFactory))] internal IRepositoryFactory? RepositoryFactory { get; set; }
+    [Export(typeof(ITokenExpanderService))] internal ITokenExpanderService TokenExpanderService { get => _tokenExpanderService; }
 
     static XrmToolsPackage()
     {
@@ -142,15 +130,6 @@ public sealed partial class XrmToolsPackage : ToolkitPackage
         _tokenExpanderService = new TokenExpanderService([
             new CredentialTokenExpander(new CredentialManager()),
             new EnvironmentTokenExpander()]);
-        _authentionService = new AuthenticationService(
-            _tokenExpanderService,
-            new ClientAppAuthenticator
-        {
-            NextAuthenticator = new DeviceCodeAuthenticator
-            {
-                NextAuthenticator = new IntegratedAuthenticator()
-            }
-        });
         AppDomain.CurrentDomain.AssemblyResolve += CurrentDomain_AssemblyResolve;
     }
 
@@ -162,16 +141,6 @@ public sealed partial class XrmToolsPackage : ToolkitPackage
             return Assembly.LoadFile(Path.Combine(Assembly.GetExecutingAssembly().Location, "System.Security.Cryptography.ProtectedData.dll"));
         }
         return null;
-    }
-
-    private async Task RegisterCommandsAsync()
-    {
-        await NewPluginDefinitionFileCommand.InitializeAsync(this);
-        await SetPluginGeneratorTemplateInProjectCommand.InitializeAsync(this);
-        await SetPluginGeneratorTemplateInSolutionCommand.InitializeAsync(this);
-        await SetCustomToolEntityGeneratorCommand.InitializeAsync(this);
-        await SetCustomToolPluginGeneratorCommand.InitializeAsync(this);
-        await SelectEnvironmentCommand.InitializeAsync(this);
     }
 
     /// <summary>
@@ -199,7 +168,15 @@ public sealed partial class XrmToolsPackage : ToolkitPackage
 
         await InitializeMefServicesAsync();
 
-        await RegisterCommandsAsync();
+        await NewPluginDefinitionFileCommand.InitializeAsync(this);
+        await SetPluginGeneratorTemplateInProjectCommand.InitializeAsync(this);
+        await SetPluginGeneratorTemplateInSolutionCommand.InitializeAsync(this);
+        await SetEntityGeneratorTemplateInProjectCommand.InitializeAsync(this);
+        await SetEntityGeneratorTemplateInSolutionCommand.InitializeAsync(this);
+        await SetCustomToolEntityGeneratorCommand.InitializeAsync(this);
+        await SetCustomToolPluginGeneratorCommand.InitializeAsync(this);
+        await RegisterPluginCommand.InitializeAsync(this);
+        await SelectEnvironmentCommand.InitializeAsync(this);
 
         // When initialized asynchronously, the current thread may be a background thread at this point.
         // Do any initialization that requires the UI thread after switching to the UI thread.
@@ -229,17 +206,12 @@ public sealed partial class XrmToolsPackage : ToolkitPackage
 
     private async Task InitializeMefServicesAsync()
     {
-        AddService(
-            typeof(IXrmPluginCodeGenerator),
-            async (container, cancellationToken, type) =>
-                await Task.FromResult(new TemplatedPluginCodeGenerator())
-            , promote: true);
-        AddService(
-            typeof(IXrmEntityCodeGenerator),
-            async (container, cancellationToken, type) =>
-                await Task.FromResult(new TemplatedEntityCodeGenerator())
-            // Add service at global level to make it available to Single-File generators.
-            , promote: true);
+        //TODO: Temporary remove to test.
+        //AddService(
+        //    typeof(IXrmPluginCodeGenerator),
+        //    async (container, cancellationToken, type) =>
+        //        await Task.FromResult(new TemplatedPluginCodeGenerator())
+        //    , promote: true);
         AddService(
             typeof(ISettingsProvider),
             async (container, cancellationToken, type) =>
