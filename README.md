@@ -1,6 +1,8 @@
 # What is Xrm Tools
 Xrm Tools is a Visual Studio extension that aims to make Power Platform development feel native within Visual Studio. You will get Intellisense support for your Plugins, generate boiler plate code, typed entities and more right from within Visual Studio. If you don't agree with the opinionated code or anything like that you get to customize your craft easily and safely. Let me show you!
 
+The code that you write with Xrm Tools is still standard C# following the best practices of Power Platform and your plugins are just standard plugins. You or other developers don't need to have Xrm Tools to build or deploy the assemblies. In other words Xrm Tools is there just to enhance your development experience.
+
 # How to install
 You will soon be able to get it from Visual Studio's native Extensions gallery. Once installed, just create a new solution and a library project under it or just open an existing solution that you already have. Don't worry It will not change your project structure. You are the one behind the driving wheel at all times.
 
