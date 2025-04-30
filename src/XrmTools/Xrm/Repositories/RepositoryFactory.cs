@@ -17,6 +17,7 @@ internal interface IRepositoryFactory
 
 [Export(typeof(IRepositoryFactory))]
 [method: ImportingConstructor]
+//TODO: Adapt to use IWebApiService in all repositories and eventually remove XrmHttpClientFactory from constructor.
 internal class RepositoryFactory(IXrmHttpClientFactory httpClientFactory, IWebApiService service, ILogger<RepositoryFactory> logger) : IRepositoryFactory
 {
     private readonly IXrmHttpClientFactory httpClientFactory = httpClientFactory;

@@ -21,6 +21,7 @@ using System.Threading.Tasks;
 using XrmTools.Analyzers;
 using XrmTools.Core.Helpers;
 using XrmTools.Core.Repositories;
+using XrmTools.Environments;
 using XrmTools.Helpers;
 using XrmTools.Logging.Compatibility;
 using XrmTools.Options;
@@ -45,6 +46,9 @@ public class PluginCodeGenerator : BaseCodeGeneratorWithSite
     internal IRepositoryFactory RepositoryFactory { get; set; }
 
     [Import]
+    public IEnvironmentProvider? EnvironmentProvider { get; set; }
+
+    [Import]
     internal ISettingsProvider SettingsProvider { get; set; }
 
     [Import]
@@ -63,7 +67,7 @@ public class PluginCodeGenerator : BaseCodeGeneratorWithSite
 
     public PluginCodeGenerator() => SatisfyImports();
 
-    [MemberNotNull(nameof(Generator), nameof(RepositoryFactory), 
+    [MemberNotNull(nameof(Generator), nameof(RepositoryFactory), nameof(EnvironmentProvider),
         nameof(Logger), nameof(TemplateFinder), nameof(TemplateFileGenerator),
         nameof(SettingsProvider), nameof(XrmMetaDataService))]
     private void SatisfyImports()
@@ -72,6 +76,7 @@ public class PluginCodeGenerator : BaseCodeGeneratorWithSite
         componentModel?.DefaultCompositionService.SatisfyImportsOnce(this);
         if (Generator == null) throw new InvalidOperationException(string.Format(Strings.MissingServiceDependency, nameof(PluginCodeGenerator), nameof(Generator)));
         if (RepositoryFactory == null) throw new InvalidOperationException(string.Format(Strings.MissingServiceDependency, nameof(PluginCodeGenerator), nameof(RepositoryFactory)));
+        if (EnvironmentProvider == null) throw new InvalidOperationException(string.Format(Strings.MissingServiceDependency, nameof(PluginCodeGenerator), nameof(EnvironmentProvider)));
         if (SettingsProvider == null) throw new InvalidOperationException(string.Format(Strings.MissingServiceDependency, nameof(PluginCodeGenerator), nameof(SettingsProvider)));
         if (Logger == null) throw new InvalidOperationException(string.Format(Strings.MissingServiceDependency, nameof(PluginCodeGenerator), nameof(Logger)));
         if (TemplateFinder == null) throw new InvalidOperationException(string.Format(Strings.MissingServiceDependency, nameof(PluginCodeGenerator), nameof(TemplateFinder)));
@@ -118,6 +123,14 @@ public class PluginCodeGenerator : BaseCodeGeneratorWithSite
                 DefaultNamespace = string.IsNullOrWhiteSpace(FileNamespace) ? GetDefaultNamespace() : FileNamespace,
                 TemplateFilePath = templateFilePath
             };
+
+            var currentEnvironment = await EnvironmentProvider.GetActiveEnvironmentAsync();
+            if (currentEnvironment == null || currentEnvironment == DataverseEnvironment.Empty)
+            {
+                return Encoding.UTF8.GetBytes(
+                    "// Code generation failed because active environment has not been setup." +
+                    " Please go to Tools > Options > XRM Tools to setup the environment and set the current environment.");
+            }
 
             AddEntityMetadataToPluginDefinition(inputModel!);
 

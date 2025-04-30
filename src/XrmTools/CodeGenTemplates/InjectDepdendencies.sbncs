@@ -13,7 +13,7 @@ end -}}
     for sub in dep.dependencies 
         gather_locals(sub) 
     end 
-    if dep.is_local_variable_needed 
+    if dep.is_local_variable_needed && !dep.provided_by_base_property
         if !(localTypeNames | array.contains dep.full_type_name) 
             localTypeNames = localTypeNames | array.add dep.full_type_name 
             localDeps = localDeps | array.add dep 
@@ -23,6 +23,9 @@ end -}}
 
 {{- # Function to instantiate a dependency (returns the C# expression as string) -}}
 {{func instantiate(dep) 
+    if dep.provided_by_base_property 
+        ret "this." + dep.provided_by_base_property
+    end 
     if dep.full_type_name == "System.IServiceProvider" 
         ret "serviceProvider" 
     end 
@@ -48,7 +51,10 @@ end -}}
 end -}}
 
 {{- # Function to instantiate a dependency *even if* marked local (for local var declarations) -}}
-{{func instantiate_new(dep) 
+{{func instantiate_new(dep)
+    if dep.provided_by_base_property 
+        ret "this." + dep.provided_by_base_property
+    end 
     if dep.full_type_name == "System.IServiceProvider" 
         ret "serviceProvider" 
     end 

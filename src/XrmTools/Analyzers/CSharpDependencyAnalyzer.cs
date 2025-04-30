@@ -8,20 +8,24 @@ using System.Linq;
 using XrmTools.Meta.Attributes;
 using XrmTools.Meta.Model;
 
-public interface ILocalDependencyAnalyzer
+public interface ICSharpDependencyAnalyzer
 {
     Dependency Analyze(INamedTypeSymbol rootType, Compilation compilation);
 }
 
 
-[Export(typeof(ILocalDependencyAnalyzer))]
-public class LocalDependencyAnalyzer : ILocalDependencyAnalyzer
+[Export(typeof(ICSharpDependencyAnalyzer))]
+public class CSharpDependencyAnalyzer : ICSharpDependencyAnalyzer
 {
+    private INamedTypeSymbol? serviceProviderType;
+
     public Dependency Analyze(INamedTypeSymbol rootType, Compilation compilation)
     {
+        serviceProviderType = compilation.GetTypeByMetadataName("System.IServiceProvider");
         var implementationMap = BuildImplementationMap(compilation);
+        var providerProperties = DiscoverProviderProperties(rootType);
         var dependedOn = new HashSet<INamedTypeSymbol>(SymbolEqualityComparer.Default);
-        return BuildNode(rootType, null, compilation, implementationMap, dependedOn);
+        return BuildNode(rootType, null, compilation, implementationMap, dependedOn, providerProperties);
     }
 
     private Dependency BuildNode(
@@ -29,10 +33,10 @@ public class LocalDependencyAnalyzer : ILocalDependencyAnalyzer
         string? propertyName,
         Compilation compilation,
         Dictionary<ITypeSymbol, INamedTypeSymbol> implementationMap,
-        HashSet<INamedTypeSymbol> dependedOn)
+        HashSet<INamedTypeSymbol> dependedOn,
+        Dictionary<ITypeSymbol, string> providerProperties
+        )
     {
-        var serviceProvider = compilation.GetTypeByMetadataName("System.IServiceProvider");
-
         var node = new Dependency
         {
             PropertyName = propertyName,
@@ -47,33 +51,40 @@ public class LocalDependencyAnalyzer : ILocalDependencyAnalyzer
             if (!prop.GetAttributes().Any(attr => attr.AttributeClass?.ToDisplayString() == typeof(DependencyAttribute).FullName))
                 continue;
 
-            if (SymbolEqualityComparer.Default.Equals(prop.Type, serviceProvider))
+            if (SymbolEqualityComparer.Default.Equals(prop.Type, serviceProviderType))
             {
                 node.Dependencies.Add(new()
                 {
                     PropertyName = prop.Name,
-                    FullTypeName = serviceProvider.ToDisplayString(),
-                    ShortTypeName = serviceProvider.Name,
+                    FullTypeName = serviceProviderType.ToDisplayString(),
+                    ShortTypeName = serviceProviderType.Name,
                     Dependencies = [],
                     IsProperty = true
                 });
                 continue;
             }
 
-            var propType = ResolveType(prop.Type, implementationMap);
+            var propResolvedType = ResolveType(prop.Type, implementationMap);
 
-            if (propType is not INamedTypeSymbol depSymbol || depSymbol.ContainingType != null)
+            if (propResolvedType is not INamedTypeSymbol depSymbol || depSymbol.ContainingType != null)
                 continue;
 
-            //if (!dependedOn.Add(depSymbol))
-            //    continue;
+            //var existingPropertyName = FindExistingProperty(classSymbol, propType);
 
-            //var childNode = BuildNode(depSymbol, prop.Name, compilation, implementationMap, dependedOn);
-
-            //childNode.IsProperty = true;
-            //node.Dependencies.Add(childNode);
-
-            //INSTEAD:
+            if (providerProperties.TryGetValue(prop.Type, out var existingPropertyName) ||
+                providerProperties.TryGetValue(propResolvedType, out existingPropertyName))
+            {
+                node.Dependencies.Add(new Dependency
+                {
+                    PropertyName = prop.Name,
+                    FullTypeName = propResolvedType.ToDisplayString(),
+                    ShortTypeName = propResolvedType.Name,
+                    Dependencies = [],
+                    IsProperty = true,
+                    ProvidedByBaseProperty = existingPropertyName
+                });
+                continue;
+            }
 
             // Recursive analysis — per branch copy of dependedOn
             if (!dependedOn.Contains(depSymbol))
@@ -83,7 +94,7 @@ public class LocalDependencyAnalyzer : ILocalDependencyAnalyzer
                     depSymbol
                 };
 
-                var childNode = BuildNode(depSymbol, prop.Name, compilation, implementationMap, newDependedOn);
+                var childNode = BuildNode(depSymbol, prop.Name, compilation, implementationMap, newDependedOn, providerProperties);
                 childNode.IsProperty = true;
                 node.Dependencies.Add(childNode);
             }
@@ -95,7 +106,7 @@ public class LocalDependencyAnalyzer : ILocalDependencyAnalyzer
         {
             foreach (var param in ctor.Parameters)
             {
-                if (SymbolEqualityComparer.Default.Equals(param.Type, serviceProvider))
+                if (SymbolEqualityComparer.Default.Equals(param.Type, serviceProviderType))
                 {
                     node.Dependencies.Add(new Dependency
                     {
@@ -107,20 +118,29 @@ public class LocalDependencyAnalyzer : ILocalDependencyAnalyzer
                     continue;
                 }
 
-                var paramType = ResolveType(param.Type, implementationMap);
+                var paramResolvedType = ResolveType(param.Type, implementationMap);
 
 
-                if (paramType is not INamedTypeSymbol depSymbol || depSymbol.ContainingType != null)
+                if (paramResolvedType is not INamedTypeSymbol depSymbol || depSymbol.ContainingType != null)
                     continue;
 
-                //if (!dependedOn.Add(depSymbol))
-                //    continue;
+                //var existingPropertyName = FindExistingProperty(classSymbol, paramType);
 
-                //var childNode = BuildNode(depSymbol, param.Name, compilation, implementationMap, dependedOn);
-                //childNode.IsProperty = false;
-                //node.Dependencies.Add(childNode);
+                if (providerProperties.TryGetValue(param.Type, out var existingPropertyName) ||
+                    providerProperties.TryGetValue(paramResolvedType, out existingPropertyName))
+                {
+                    node.Dependencies.Add(new Dependency
+                    {
+                        PropertyName = param.Name,
+                        FullTypeName = paramResolvedType.ToDisplayString(),
+                        ShortTypeName = paramResolvedType.Name,
+                        Dependencies = [],
+                        IsProperty = false,
+                        ProvidedByBaseProperty = existingPropertyName
+                    });
+                    continue;
+                }
 
-                //INSTEAD:
                 // Recursive analysis — per branch copy of dependedOn
                 if (!dependedOn.Contains(depSymbol))
                 {
@@ -129,7 +149,7 @@ public class LocalDependencyAnalyzer : ILocalDependencyAnalyzer
                         depSymbol
                     };
 
-                    var childNode = BuildNode(depSymbol, param.Name, compilation, implementationMap, newDependedOn);
+                    var childNode = BuildNode(depSymbol, param.Name, compilation, implementationMap, newDependedOn, providerProperties);
                     childNode.IsProperty = false;
                     node.Dependencies.Add(childNode);
                 }
@@ -139,10 +159,52 @@ public class LocalDependencyAnalyzer : ILocalDependencyAnalyzer
         return node;
     }
 
-    private ITypeSymbol ResolveType(ITypeSymbol originalType, Dictionary<ITypeSymbol, INamedTypeSymbol> implementationMap)
+    private string? FindExistingProperty(INamedTypeSymbol classSymbol, ITypeSymbol dependencyType)
+    {
+        INamedTypeSymbol? current = classSymbol;
+        while (current != null && current.SpecialType != SpecialType.System_Object)
+        {
+            foreach (var member in current.GetMembers().OfType<IPropertySymbol>())
+            {
+                if (member.DeclaredAccessibility == Accessibility.Public &&
+                    SymbolEqualityComparer.Default.Equals(member.Type, dependencyType))
+                {
+                    return member.Name;
+                }
+            }
+            current = current.BaseType;
+        }
+        return null;
+    }
+
+    private Dictionary<ITypeSymbol, string> DiscoverProviderProperties(INamedTypeSymbol classSymbol)
+    {
+        var result = new Dictionary<ITypeSymbol, string>(SymbolEqualityComparer.Default);
+
+        INamedTypeSymbol? current = classSymbol;
+        while (current is not null && current.SpecialType != SpecialType.System_Object)
+        {
+            foreach (var member in current.GetMembers().OfType<IPropertySymbol>())
+            {
+                if (member.DeclaredAccessibility != Accessibility.Private && 
+                    !member.IsWriteOnly && 
+                    member.Type.TypeKind is TypeKind.Class or TypeKind.Interface &&
+                    member.Type.SpecialType != SpecialType.System_String &&
+                    !result.ContainsKey(member.Type))
+                {
+                    result[member.Type] = member.Name;
+                }
+            }
+            current = current.BaseType;
+        }
+
+        return result;
+    }
+
+    private ITypeSymbol? ResolveType(ITypeSymbol originalType, Dictionary<ITypeSymbol, INamedTypeSymbol> implementationMap)
     {
         if (originalType is null)
-            return originalType;
+            return null;
 
         if (implementationMap.TryGetValue(originalType, out var impl))
             return impl;

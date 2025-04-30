@@ -24,7 +24,7 @@ internal interface ICSharpXrmMetaParser
 [Export(typeof(ICSharpXrmMetaParser))]
 [method: ImportingConstructor]
 internal class CSharpXrmMetaParser(
-    ILocalDependencyAnalyzer dependencyAnalyzer,
+    ICSharpDependencyAnalyzer dependencyAnalyzer,
     IDependencyPreparation dependencyPreparation) : ICSharpXrmMetaParser
 {
     private static readonly Dictionary<string, WebApi.Types.CustomApiFieldType> CustomApiFieldTypeMapping = new()

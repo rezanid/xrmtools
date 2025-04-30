@@ -117,6 +117,14 @@ public class EntityCodeGenerator : BaseCodeGeneratorWithSite
                 TemplateFilePath = templateFilePath
             };
 
+            var currentEnvironment = await EnvironmentProvider.GetActiveEnvironmentAsync();
+            if (currentEnvironment == null || currentEnvironment == DataverseEnvironment.Empty)
+            {
+                return Encoding.UTF8.GetBytes(
+                    "// Code generation failed because active environment has not been setup." +
+                    " Please go to Tools > Options > XRM Tools to setup the environment and set the current environment.");
+            }
+
             AddEntityMetadataToEntityConfig(inputModel);
 
             if (GeneralOptions.Instance.LogLevel == LogLevel.Trace)
