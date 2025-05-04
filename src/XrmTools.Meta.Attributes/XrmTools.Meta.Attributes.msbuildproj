@@ -15,7 +15,7 @@
     <PackageTags>Power Platform Apps XRM Tools</PackageTags>
     <PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
     <PackageReadmeFile>README.md</PackageReadmeFile>
-    <RepositoryUrl>https://github.com/rezanid/xrmtools/tree/main/src/XrmTools.Meta.Attributes</RepositoryUrl>
+    <RepositoryUrl>https://github.com/rezanid/xrmtools</RepositoryUrl>
   </PropertyGroup>
   <!-- Pack the source files  -->
   <ItemGroup>
