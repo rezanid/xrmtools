@@ -9,6 +9,7 @@ By installing this nuget packge, you will be able to use attributes to decorate 
 - `CustomApiResponseAttribute`: Used to decorate a class, INSIDE the calss that implements `IPlugin` to specify the custom API response properties. By applying this attribute, all properties of the class will become response properties for your custom API. This attribute can only be applied to a single class within the plugin class.
 - `DependencyAttribute`: Decorate a property as a dependency so that code generator can generate code to inject this dependency.
 - `DependencyConstructor`: Decorate a constructor method as depdency so that code generator can generate code to inject this dependency.
+- `EntityAttribute`: Assembly scoped attribute that instructs the code generator to generate a typed entity with the given attributes.
 
 Let's look at some examples:
 
@@ -136,6 +137,15 @@ public partial class MyCustomApiPlugin : IPlugin
         public Guid GuidParameter { get; set; }
     }
 }
+```
+
+### Example 4: Two typed entities.
+```csharp
+// Entities.cs
+
+[assembly:Entity("contact", "firstname,lastname")]
+[assembly:Entity("account", "name") ]
+
 ```
 
 To learn more about Xrm Tools extension for Visual Studio, please refer to:

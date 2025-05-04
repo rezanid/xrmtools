@@ -142,7 +142,7 @@ internal sealed class RegisterPluginCommand : BaseCommand<RegisterPluginCommand>
         await VS.StatusBar.StartAnimationAsync(StatusAnimation.General);
 
         var requests = new List<HttpRequestMessage>();
-        
+
         try
         {
             var assemblyQuery = await WebApiService.RetrieveMultipleAsync<PluginAssembly>(
@@ -299,7 +299,7 @@ internal sealed class RegisterPluginCommand : BaseCommand<RegisterPluginCommand>
         {
             pluginAssembly.Package.Id = existingPluginAssembly?.Package?.Id ?? GuidFactory.DeterministicGuid(GuidFactory.Namespace.PluginPackage, pluginAssembly.Package.Name!);
         }
-        foreach(var pluginType in pluginAssembly.PluginTypes)
+        foreach (var pluginType in pluginAssembly.PluginTypes)
         {
             var existingPluginType = existingPluginAssembly?.PluginTypes.FirstOrDefault(p => p.TypeName!.Equals(pluginType.TypeName, StringComparison.OrdinalIgnoreCase));
             pluginType.Id = existingPluginType?.Id ?? GuidFactory.DeterministicGuid(GuidFactory.Namespace.PluginType, pluginType.TypeName!);
@@ -365,7 +365,7 @@ internal sealed class RegisterPluginCommand : BaseCommand<RegisterPluginCommand>
             Command.Visible = await IsVisibleAsync(item).ConfigureAwait(false);
         });
 
-        async Task<bool> IsVisibleAsync(SolutionItem? item)
+        static async Task<bool> IsVisibleAsync(SolutionItem? item)
         {
             if (item is null)
                 return false;
@@ -374,19 +374,9 @@ internal sealed class RegisterPluginCommand : BaseCommand<RegisterPluginCommand>
                 return true;
 
             if (item.Type == SolutionItemType.PhysicalFile && item is PhysicalFile file)
-                return await IsXrmPluginFileAsync(file).ConfigureAwait(false);
+                return await file.IsXrmPluginFileAsync().ConfigureAwait(false);
 
             return false;
-        }
-
-        async Task<bool> IsXrmPluginFileAsync(PhysicalFile file)
-        {
-            var generator = await file.GetAttributeAsync("Generator").ConfigureAwait(false);
-            if (generator != PluginCodeGenerator.Name)
-                return false;
-
-            var pluginAttr = await file.GetAttributeAsync("IsXrmPlugin").ConfigureAwait(false);
-            return bool.TryParse(pluginAttr, out var isXrmPlugin) && isXrmPlugin;
         }
     }
 

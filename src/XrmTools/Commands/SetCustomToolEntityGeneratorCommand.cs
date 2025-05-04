@@ -1,10 +1,13 @@
-﻿namespace XrmTools.Commands;
+﻿#nullable enable
+namespace XrmTools.Commands;
 
 using Community.VisualStudio.Toolkit;
 using Microsoft.VisualStudio.Shell;
+using System;
 using System.IO;
 using XrmTools.Helpers;
 using Task = System.Threading.Tasks.Task;
+using System.Threading.Tasks;
 
 /// <summary>
 /// Command handler to set the custom tool of the selected item to the Xrm Entity Code Generator.
@@ -19,7 +22,20 @@ internal sealed class SetCustomToolEntityGeneratorCommand : BaseCommand<SetCusto
 
         if (i.FindParent(SolutionItemType.Project) is not Project project) return;
 
-        var file = i as PhysicalFile;
+        if (i is not PhysicalFile file) return;
+
+        if (await file.IsXrmEntityFileAsync())
+        {
+            await DisableCustomToolAsync(file, project);
+        }
+        else
+        {
+            await EnableCustomToolAsync(file, project);
+        }
+    }
+
+    private async Task EnableCustomToolAsync(PhysicalFile file, Project project)
+    {
         if (project.IsSdkStyle())
         {
             var genFilePath = Path.Combine(
@@ -39,9 +55,75 @@ internal sealed class SetCustomToolEntityGeneratorCommand : BaseCommand<SetCusto
         }
     }
 
+    private async Task DisableCustomToolAsync(PhysicalFile file, Project project)
+    {
+        if (project.IsSdkStyle())
+        {
+            var genFilePath = Path.Combine(
+                Path.GetDirectoryName(file.FullPath),
+                Path.GetFileNameWithoutExtension(file.FullPath)) + ".Generated.cs";
+            if (File.Exists(genFilePath))
+            {
+                if ((await PhysicalFile.FromFileAsync(genFilePath)) is PhysicalFile genFile)
+                    await genFile.TryRemoveAsync();
+            }
+            await file.TrySetAttributeAsync(PhysicalFileAttribute.LastGenOutput, null);
+            await file.TrySetAttributeAsync(PhysicalFileAttribute.Generator, null);
+        }
+        else
+        {
+            await file.TrySetAttributeAsync(PhysicalFileAttribute.CustomTool, null);
+        }
+    }
+
     protected override Task InitializeCompletedAsync()
     {
         Command.Supported = false;
         return Task.CompletedTask;
     }
+
+    protected override void BeforeQueryStatus(EventArgs e)
+    {
+        ThreadHelper.JoinableTaskFactory.Run(async () =>
+        {
+            var item = await VS.Solutions.GetActiveItemAsync();
+            Command.Supported = true;
+            Command.Visible = await IsVisibleAsync(item).ConfigureAwait(false);
+            Command.Checked = await IsEntityFileAsync(item).ConfigureAwait(false);
+        });
+
+        static async Task<bool> IsVisibleAsync(SolutionItem? item)
+        {
+            await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync();
+
+            if (!KnownUIContexts.SolutionHasSingleProjectContext.IsActive && !KnownUIContexts.SolutionHasMultipleProjectsContext.IsActive)
+                return false;
+
+            var proj = await VS.Solutions.GetActiveProjectAsync();
+            if (!proj?.IsCapabilityMatch("CSharp") ?? false)
+                return false;
+
+            if (item is null)
+                return false;
+
+            if (item.Type != SolutionItemType.PhysicalFile || item is not PhysicalFile file)
+                return false;
+
+            if (item.Name.EndsWith(".Designer.cs", StringComparison.OrdinalIgnoreCase))
+                return false;
+
+            if (!item.Name.EndsWith(".cs", StringComparison.OrdinalIgnoreCase))
+                return false;
+
+            return true;
+        }
+
+        static async Task<bool> IsEntityFileAsync(SolutionItem item)
+        {
+            if (item is null || item.Type != SolutionItemType.PhysicalFile) return false;
+            var file = item as PhysicalFile;
+            return await file.IsXrmEntityFileAsync();
+        }
+    }
 }
+#nullable restore

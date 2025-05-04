@@ -1,4 +1,4 @@
-﻿namespace XrmTools.Meta.Attributes.Assembly
+﻿namespace XrmTools.Meta.Attributes
 {
     using System;
 
