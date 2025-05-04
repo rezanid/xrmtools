@@ -71,6 +71,7 @@
     <Compile Include="Analyzers\PluginAssemblyInfo.cs" />
     <Compile Include="Analyzers\CSharpXrmMetaDataService.cs" />
     <Compile Include="Analyzers\CSharpXrmMetaParser.cs" />
+    <Compile Include="Helpers\PhysicalFileHelper.cs" />
     <Compile Include="Helpers\ReflectionHelper.cs" />
     <Compile Include="AuthenticationService.cs" />
     <Compile Include="Authenticators\ClientAppAuthenticator.cs" />

@@ -78,31 +78,32 @@
               <CommandFlag>DynamicVisibility</CommandFlag>
           If you do not want an image next to your command, remove the Icon node /> -->
       <!-- Each button is a combination of the GUID and a different id -->
+      <!--[Item Context Menu] > "Enable entity code generation"-->
       <Button guid="XrmToolsCmdSetId" id="SetCustomToolEntityGeneratorCmdId" priority="0x0100" type="Button">
         <Parent guid="XrmToolsCmdSetId" id="XrmToolsContextMenuGroup" />
-        <Icon guid="ImageCatalogGuid" id="Type" />
+        <Icon guid="ImageCatalogGuid" id="Table" />
         <CommandFlag>IconIsMoniker</CommandFlag>
         <CommandFlag>DynamicVisibility</CommandFlag>
         <Strings>
-          <ButtonText>Set as entity definition</ButtonText>
+          <ButtonText>Entity code generation</ButtonText>
           <LocCanonicalName>.XrmTools.SetAsEntitiesFile</LocCanonicalName>
         </Strings>
       </Button>
-      <!--[Item Context Menu] > "Set as plugin definition..."-->
+      <!--[Item Context Menu] > "Enable plugin code generation"-->
       <Button guid="XrmToolsCmdSetId" id="SetCustomToolPluginGeneratorCmdId" priority="0x0100" type="Button">
         <Parent guid="XrmToolsCmdSetId" id="XrmToolsContextMenuGroup" />
-        <Icon guid="ImageCatalogGuid" id="Type" />
+        <Icon guid="ImageCatalogGuid" id="Part" />
         <CommandFlag>IconIsMoniker</CommandFlag>
         <CommandFlag>DynamicVisibility</CommandFlag>
         <Strings>
-          <ButtonText>Set as plugin definition</ButtonText>
-          <LocCanonicalName>.XrmTools.SetPluginDefinitionFile</LocCanonicalName>
+          <ButtonText>Plugin code generation</ButtonText>
+          <LocCanonicalName>.XrmTools.SetAsPluginFile</LocCanonicalName>
         </Strings>
       </Button>
       <!-- [Item Context Menu] > "Register plugin(s)"-->
       <Button guid="XrmToolsCmdSetId" id="RegisterPluginCmdId" priority="0x100" type="Button">
         <Parent guid="XrmToolsCmdSetId" id="XrmToolsContextMenuGroup" />
-        <Icon guid="ImageCatalogGuid" id="Type" />
+        <Icon guid="ImageCatalogGuid" id="PackageDeployment" />
         <CommandFlag>IconIsMoniker</CommandFlag>
         <CommandFlag>DynamicVisibility</CommandFlag>
         <Strings>
@@ -112,7 +113,7 @@
       </Button>
       <Button guid="XrmToolsCmdSetId" id="SetPluginGeneratorTemplateInSolutionCmdId" priority="0x100" type="Button">
         <Parent guid="XrmToolsCmdSetId" id="XrmToolsContextSubMenuGroup" />
-        <Icon guid="ImageCatalogGuid" id="Type" />
+        <Icon guid="ImageCatalogGuid" id="Template" />
         <CommandFlag>IconIsMoniker</CommandFlag>
         <CommandFlag>DynamicVisibility</CommandFlag>
         <Strings>
@@ -122,7 +123,7 @@
       </Button>
       <Button guid="XrmToolsCmdSetId" id="SetPluginGeneratorTemplateInProjectCmdId" priority="0x100" type="Button">
         <Parent guid="XrmToolsCmdSetId" id="XrmToolsContextSubMenuGroup" />
-        <Icon guid="ImageCatalogGuid" id="Type" />
+        <Icon guid="ImageCatalogGuid" id="Template" />
         <CommandFlag>IconIsMoniker</CommandFlag>
         <CommandFlag>DynamicVisibility</CommandFlag>
         <Strings>
@@ -132,7 +133,7 @@
       </Button>
       <Button guid="XrmToolsCmdSetId" id="SetEntityGeneratorTemplateInSolutionCmdId" priority="0x100" type="Button">
         <Parent guid="XrmToolsCmdSetId" id="XrmToolsContextSubMenuGroup" />
-        <Icon guid="ImageCatalogGuid" id="Type" />
+        <Icon guid="ImageCatalogGuid" id="Template" />
         <CommandFlag>IconIsMoniker</CommandFlag>
         <CommandFlag>DynamicVisibility</CommandFlag>
         <Strings>
@@ -142,7 +143,7 @@
       </Button>
       <Button guid="XrmToolsCmdSetId" id="SetEntityGeneratorTemplateInProjectCmdId" priority="0x100" type="Button">
         <Parent guid="XrmToolsCmdSetId" id="XrmToolsContextSubMenuGroup" />
-        <Icon guid="ImageCatalogGuid" id="Type" />
+        <Icon guid="ImageCatalogGuid" id="Template" />
         <CommandFlag>IconIsMoniker</CommandFlag>
         <CommandFlag>DynamicVisibility</CommandFlag>
         <Strings>
@@ -153,7 +154,7 @@
       <!--[Solution Context Menu] > "Set environment..."-->
       <Button guid="XrmToolsCmdSetId" id="SetEnvironmentCmdId" priority="0x0100" type="Button">
         <Parent guid="XrmToolsCmdSetId" id="XrmToolsSolutionContextMenuGroup" />
-        <Icon guid="ImageCatalogGuid" id="Type" />
+        <Icon guid="ImageCatalogGuid" id="Environment" />
         <CommandFlag>IconIsMoniker</CommandFlag>
         <CommandFlag>DynamicVisibility</CommandFlag>
         <Strings>
@@ -164,7 +165,7 @@
       <!--[Project Context Menu] > "Add" > "New plugin definition..."-->
       <Button guid="XrmToolsCmdSetId" id="NewPluginDefinitionCmdId" priority="0x0200" type="Button">
         <Parent guid="guidSHLMainMenu" id="IDG_VS_CTXT_PROJECT_ADD_ITEMS"/>
-        <Icon guid="ImageCatalogGuid" id="Type" />
+        <Icon guid="ImageCatalogGuid" id="Part" />
         <CommandFlag>IconIsMoniker</CommandFlag>
         <CommandFlag>DynamicVisibility</CommandFlag>
         <Strings>

@@ -47,7 +47,7 @@ public class EntityCodeGenerator : BaseCodeGeneratorWithSite
     internal IRepositoryFactory? RepositoryFactory { get; set; }
 
     [Import]
-    public IEnvironmentProvider? EnvironmentProvider { get; set; }
+    public IEnvironmentProvider EnvironmentProvider { get; set; }
 
     [Import]
     internal ILogger<EntityCodeGenerator> Logger {  get; set; }
