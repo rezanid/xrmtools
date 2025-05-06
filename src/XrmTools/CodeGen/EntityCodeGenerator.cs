@@ -38,8 +38,6 @@ public class EntityCodeGenerator : BaseCodeGeneratorWithSite
     public const string Name = "XrmTools Entity Generator";
     public const string Description = "Generates entity classes from metadata";
 
-    private bool disposed = false;
-
     [Import]
     public IXrmCodeGenerator? Generator { get; set; }
 
@@ -145,6 +143,11 @@ public class EntityCodeGenerator : BaseCodeGeneratorWithSite
             if (inputFile is not null && inputFile.FindParent(SolutionItemType.Project) is Project project && project.IsSdkStyle())
             {
                 var lastGenFileName = await inputFile.GetAttributeAsync("LastGenOutput");
+                if (string.IsNullOrWhiteSpace(lastGenFileName))
+                {
+                    lastGenFileName = Path.ChangeExtension(Path.GetFileName(inputFileName), ".Generated.cs");
+                    await inputFile.TrySetAttributeAsync(PhysicalFileAttribute.LastGenOutput, lastGenFileName);
+                }
                 var lastGenFilePath = Path.Combine(Path.GetDirectoryName(inputFileName), lastGenFileName);
                 File.WriteAllText(lastGenFilePath, "// SDK-Style Code Gen\r\n" + Generator.GenerateCode(inputModel));
             }

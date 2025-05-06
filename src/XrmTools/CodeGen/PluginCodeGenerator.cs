@@ -152,6 +152,11 @@ public class PluginCodeGenerator : BaseCodeGeneratorWithSite
             if (inputFile is not null && inputFile.FindParent(SolutionItemType.Project) is Project project && project.IsSdkStyle())
             {
                 var lastGenFileName = await inputFile.GetAttributeAsync("LastGenOutput");
+                if (string.IsNullOrWhiteSpace(lastGenFileName))
+                {
+                    lastGenFileName = Path.ChangeExtension(Path.GetFileName(inputFileName), ".Generated.cs");
+                    await inputFile.TrySetAttributeAsync(PhysicalFileAttribute.LastGenOutput, lastGenFileName);
+                }
                 var lastGenFilePath = Path.Combine(Path.GetDirectoryName(inputFileName), lastGenFileName);
                 File.WriteAllText(lastGenFilePath, "// SDK-Style Code Gen\r\n" + Generator.GenerateCode(inputModel));
             }
