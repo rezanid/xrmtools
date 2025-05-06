@@ -37,7 +37,8 @@
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <PropertyGroup>
-    <EnvironmentUrl>https://org8848d2a1.crm4.dynamics.com/</EnvironmentUrl>
+    <EnvironmentUrl>
+    </EnvironmentUrl>
     <ApplicationId>51f81489-12ee-4a9e-aaae-a2591f45987d</ApplicationId>
   </PropertyGroup>
   <PropertyGroup>
@@ -63,6 +64,7 @@
     <Compile Include="AccountCreatePlugin.cs">
       <Generator>Xrm Tools Plugin Code Generator</Generator>
       <LastGenOutput>AccountCreatePlugin.Generated.cs</LastGenOutput>
+      <IsXrmPlugin>True</IsXrmPlugin>
     </Compile>
     <Compile Include="AccountCreatePlugin.Generated.cs">
       <AutoGen>True</AutoGen>
@@ -71,12 +73,13 @@
     </Compile>
     <Compile Include="ContactCreatePlugin.cs">
       <Generator>Xrm Tools Plugin Code Generator</Generator>
-      <LastGenOutput>ContactCreatePlugin1.cs</LastGenOutput>
+      <LastGenOutput>ContactCreatePlugin.Generated.cs</LastGenOutput>
+      <IsXrmPlugin>True</IsXrmPlugin>
     </Compile>
-    <Compile Include="ContactCreatePlugin1.cs">
-      <DependentUpon>ContactCreatePlugin.cs</DependentUpon>
-      <DesignTime>True</DesignTime>
+    <Compile Include="ContactCreatePlugin.Generated.cs">
       <AutoGen>True</AutoGen>
+      <DesignTime>True</DesignTime>
+      <DependentUpon>ContactCreatePlugin.cs</DependentUpon>
     </Compile>
     <Compile Include="Entities.cs">
       <DependentUpon>Entities.yaml</DependentUpon>
@@ -94,12 +97,13 @@
     </Compile>
     <Compile Include="MyCustomApiPlugin.cs">
       <Generator>Xrm Tools Plugin Code Generator</Generator>
-      <LastGenOutput>MyCustomApiPlugin1.cs</LastGenOutput>
+      <LastGenOutput>MyCustomApiPlugin.Generated.cs</LastGenOutput>
+      <IsXrmPlugin>True</IsXrmPlugin>
     </Compile>
-    <Compile Include="MyCustomApiPlugin1.cs">
-      <DependentUpon>MyCustomApiPlugin.cs</DependentUpon>
-      <DesignTime>True</DesignTime>
+    <Compile Include="MyCustomApiPlugin.Generated.cs">
       <AutoGen>True</AutoGen>
+      <DesignTime>True</DesignTime>
+      <DependentUpon>MyCustomApiPlugin.cs</DependentUpon>
     </Compile>
     <Compile Include="Properties\AssemblyInfo.cs" />
     <None Include="CodeGenTemplates\BigInt.sbncs" />
@@ -131,6 +135,7 @@
     <None Include="CodeGenTemplates\Entity.sbncs" />
     <None Include="CodeGenTemplates\EntityName.sbncs" />
     <None Include="CodeGenTemplates\Images.sbncs" />
+    <None Include="CodeGenTemplates\InjectDepdendencies.sbncs" />
     <None Include="CodeGenTemplates\Integer.sbncs" />
     <None Include="CodeGenTemplates\Lookup.sbncs" />
     <None Include="CodeGenTemplates\Memo.sbncs" />
@@ -161,7 +166,7 @@
       <PrivateAssets>all</PrivateAssets>
     </PackageReference>
     <PackageReference Include="XrmTools.Meta.Attributes">
-      <Version>1.0.2</Version>
+      <Version>1.0.13</Version>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
       <PrivateAssets>all</PrivateAssets>
     </PackageReference>
