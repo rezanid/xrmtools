@@ -5,7 +5,7 @@
     <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
     <ImplicitUsings>disable</ImplicitUsings>
     <DevelopmentDependency>true</DevelopmentDependency>
-    <VersionPrefix>1.0.13</VersionPrefix>
+    <VersionPrefix>1.0.30</VersionPrefix>
     <Description>Attributes to be used by Xrm Tools for source generation, registration and other featurs in Visual Studio. This is a source only package with no assemblies included.</Description>
     <Authors>Reza Niroomand</Authors>
     <PackageIcon>XrmTools_256.png</PackageIcon>
@@ -19,7 +19,7 @@
   </PropertyGroup>
   <!-- Pack the source files  -->
   <ItemGroup>
-    <None Include="*.cs" PackagePath="/contentFiles/any/net462/" Pack="true" />
+    <None Include="*.cs" PackagePath="/contentFiles/any/net462/" Pack="true"/>
   </ItemGroup>
   <ItemGroup>
     <None Include="buildTransitive/XrmTools.Meta.Attributes.targets" PackagePath="/buildTransitive" Pack="true" />
