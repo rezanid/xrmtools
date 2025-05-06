@@ -196,7 +196,7 @@ internal class CSharpXrmMetaParser(
                                 Name = innerProperty.Name,
                                 UniqueName = innerProperty.Name,
                                 DisplayName = innerProperty.Name,
-                                Type = CustomApiFieldTypeMapping.TryGetValue(innerProperty.Type.ToDisplayString(SymbolDisplayFormat.CSharpShortErrorMessageFormat), out var fieldType) ? fieldType : innerProperty.Type.TypeKind == TypeKind.Enum ? WebApi.Types.CustomApiFieldType.Picklist : WebApi.Types.CustomApiFieldType.String,
+                                Type = CustomApiFieldTypeMapping.TryGetValue(innerProperty.Type.ToDisplayString(SymbolDisplayFormat.CSharpShortErrorMessageFormat).TrimEnd('?'), out var fieldType) ? fieldType : innerProperty.Type.TypeKind == TypeKind.Enum ? WebApi.Types.CustomApiFieldType.Picklist : WebApi.Types.CustomApiFieldType.String,
                                 TypeName = innerProperty.Type.Name,
                                 FullTypeName = innerProperty.Type.ToDisplayString(SymbolDisplayFormat.CSharpErrorMessageFormat),
                                 IsOptional = innerProperty.Type.NullableAnnotation == NullableAnnotation.Annotated
