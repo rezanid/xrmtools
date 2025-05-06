@@ -320,12 +320,12 @@ internal sealed class RegisterPluginCommand : BaseCommand<RegisterPluginCommand>
                 foreach (var parameter in customApi.RequestParameters)
                 {
                     var existingParameter = existingCustomApi?.RequestParameters.FirstOrDefault(p => p.UniqueName == parameter.UniqueName);
-                    parameter.Id = existingParameter?.Id ?? GuidFactory.DeterministicGuid(GuidFactory.Namespace.CustomApiInput, parameter.UniqueName!);
+                    parameter.Id = existingParameter?.Id ?? GuidFactory.DeterministicGuid(GuidFactory.Namespace.CustomApiInput, customApi.UniqueName + parameter.UniqueName!);
                 }
                 foreach (var parameter in customApi.ResponseProperties)
                 {
                     var existingParameter = existingCustomApi?.ResponseProperties.FirstOrDefault(p => p.UniqueName == parameter.UniqueName);
-                    parameter.Id = existingParameter?.Id ?? GuidFactory.DeterministicGuid(GuidFactory.Namespace.CustomApiOutput, parameter.UniqueName!);
+                    parameter.Id = existingParameter?.Id ?? GuidFactory.DeterministicGuid(GuidFactory.Namespace.CustomApiOutput, customApi.UniqueName + parameter.UniqueName!);
                 }
             }
         }
@@ -405,13 +405,13 @@ internal sealed class RegisterPluginCommand : BaseCommand<RegisterPluginCommand>
                 deleteRequests.Add(new DeleteRequest(PluginType.CreateReference(existingPlugin.Id!.Value)));
             }
             // Delete all existing custom APIs
-            if (existingPlugin.CustomApi != null)
-            {
-                foreach (var customApi in existingPlugin.CustomApi)
-                {
-                    deleteRequests.Add(new DeleteRequest(customApi.ToReference()));
-                }
-            }
+            //if (existingPlugin.CustomApi != null)
+            //{
+            //    foreach (var customApi in existingPlugin.CustomApi)
+            //    {
+            //        deleteRequests.Add(new DeleteRequest(customApi.ToReference()));
+            //    }
+            //}
         }
 
         //TODO: Let's not delete the package for now, we will see with more testing if we need to do this.
