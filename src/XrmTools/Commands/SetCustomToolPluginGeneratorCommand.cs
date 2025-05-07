@@ -49,6 +49,7 @@ internal sealed class SetCustomToolPluginGeneratorCommand : BaseCommand<SetCusto
             Command.Supported = true;
             Command.Visible = await IsVisibleAsync(item).ConfigureAwait(false);
             Command.Checked = await IsPluginFileAsync(item).ConfigureAwait(false);
+            Command.Text = Command.Checked ? "Disable Xrm Plugin Code Generation" : "Enable Xrm Plugin Code Generation";
         });
 
         static async Task<bool> IsVisibleAsync(SolutionItem? item)

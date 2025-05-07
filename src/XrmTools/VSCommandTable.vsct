@@ -22,6 +22,13 @@
 
   <Include href="KnownImageIds.vsct" />
 
+  <!--This header contains data for a custom image moniker-->
+  <!--
+  NOTE: The custom moniker data does not have to be defined in a separate file, it can also
+  be defined in this .vsct file.
+  -->
+  <Include href="CustomMonikers.vsct"/>
+
   <!--The Commands section is where commands, menus, and menu groups are defined.
       This section uses a Guid to identify the package that provides the command defined inside it. -->
   <Commands package="XrmToolsPackageId">
@@ -84,6 +91,7 @@
         <Icon guid="ImageCatalogGuid" id="Table" />
         <CommandFlag>IconIsMoniker</CommandFlag>
         <CommandFlag>DynamicVisibility</CommandFlag>
+        <CommandFlag>TextChanges</CommandFlag>
         <Strings>
           <ButtonText>Entity code generation</ButtonText>
           <LocCanonicalName>.XrmTools.SetAsEntitiesFile</LocCanonicalName>
@@ -95,6 +103,7 @@
         <Icon guid="ImageCatalogGuid" id="Part" />
         <CommandFlag>IconIsMoniker</CommandFlag>
         <CommandFlag>DynamicVisibility</CommandFlag>
+        <CommandFlag>TextChanges</CommandFlag>
         <Strings>
           <ButtonText>Plugin code generation</ButtonText>
           <LocCanonicalName>.XrmTools.SetAsPluginFile</LocCanonicalName>
@@ -103,8 +112,9 @@
       <!-- [Item Context Menu] > "Register plugin(s)"-->
       <Button guid="XrmToolsCmdSetId" id="RegisterPluginCmdId" priority="0x100" type="Button">
         <Parent guid="XrmToolsCmdSetId" id="XrmToolsContextMenuGroup" />
-        <Icon guid="ImageCatalogGuid" id="PackageDeployment" />
+        <Icon guid="ImageCatalogGuid" id="CheckIn" />
         <CommandFlag>IconIsMoniker</CommandFlag>
+        <!--<Icon guid="guidImages" id="ApplyToDataverse" />-->
         <CommandFlag>DynamicVisibility</CommandFlag>
         <Strings>
           <ButtonText>Register Plugin(s)</ButtonText>
@@ -236,5 +246,5 @@
       <IDSymbol name="XrmToolsContextSubMenu" value="0x1000"/>
       <IDSymbol name="XrmToolsContextSubMenuGroup" value="0x1010"/>
     </GuidSymbol>
-  </Symbols>
+  </Symbols> 
 </CommandTable>
