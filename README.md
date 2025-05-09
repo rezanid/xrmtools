@@ -112,24 +112,23 @@ You will get a similar experience when typing filtering attribute names. Look ho
 
 7. At this point your plugin code should look like the following.
 
-   ```csharp
-   using Microsoft.Xrm.Sdk;
-   using System;
-   using XrmTools.Meta.Attributes;
-   
-   namespace XrmGenTest;
-   
-   [Plugin]
-   [Step("Create", "contact", "firstname,lastname,description", Stages.PreOperation, ExecutionMode.Synchronous)]
-   public partial class ContactCreatePlugin : IPlugin
-   {
-       public void Execute(IServiceProvider serviceProvider)
-       {
-           throw new NotImplementedException();
-       }
-   }
-   
-   ```
+```csharp
+using Microsoft.Xrm.Sdk;
+using System;
+using XrmTools.Meta.Attributes;
+
+namespace XrmGenTest;
+
+[Plugin]
+[Step("Create", "contact", "firstname,lastname,description", Stages.PreOperation, ExecutionMode.Synchronous)]
+public partial class ContactCreatePlugin : IPlugin
+{
+    public void Execute(IServiceProvider serviceProvider)
+    {
+        throw new NotImplementedException();
+    }
+}   
+```
 
 In the above code I also implemented the IPlugin interface to make this a real plugin, but we will implement the actual code in the next section.
 
