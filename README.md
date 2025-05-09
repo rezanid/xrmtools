@@ -74,21 +74,21 @@ Xrm Tools enables you to define and write a plugin directly within code. There i
 8. Right-click on the project or anywhere under it and select Add > New > Class (or simply <kbd>Shift</kbd> + <kbd>Alt</kbd> + <kbd>C</kbd>). Name your class something that includes "Plugin" in the name.
 
 9. Make your class `partial` and add `Plugin` attribute to your class. This attribute informs Xrm Tools that this is a plugin.
-   ```csharp
-   [Plugin]
-   public partial class ContactCreatePlugin
-   {
-   }
-   ```
+```csharp
+[Plugin]
+public partial class ContactCreatePlugin
+{
+}
+```
 
 10. Next, we will add the `[Step]` attribute and that is where the magic starts happening! Try to add a Step attribute similar to the one below.
-   ```csharp
-   [Plugin]
-   [Step("Create", "contact", "firstname,lastname,description", Stages.PreOperation, ExecutionMode.Synchronous)]
-   public partial class ContactCreatePlugin
-   {
-   }
-   ```
+```csharp
+[Plugin]
+[Step("Create", "contact", "firstname,lastname,description", Stages.PreOperation, ExecutionMode.Synchronous)]
+public partial class ContactCreatePlugin
+{
+}
+```
    Noticed how the Intellisense helps you pick the right message or when you set the message, only the entities that support the message are displayed?
 
 <div style="overflow-x: auto; white-space: nowrap;">
