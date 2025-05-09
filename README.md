@@ -44,10 +44,10 @@ After you install Xrm Tools, the first thing you need to do is to connect to an 
    ```
    If you only give a URL, Xrm Tools will try to find your tenant ID by making a request and will try to use your currently authenticated user that is running Visual Studio if you have SSO with your tenant, otherwise it will display the standard Entra popup and asks you to login. 
    
-   > [!NOTE]
-   >
-   > Xrm Tools will never see or store your credentials.
-   > You can read more about the connection string syntax [here](https://github.com/rezanid/xrmtools/wiki/Providing-Connection-Strings).
+> [!NOTE]
+>
+> Xrm Tools will never see or store your credentials.
+> You can read more about the connection string syntax [here](https://github.com/rezanid/xrmtools/wiki/Providing-Connection-Strings).
 
 7. Set "Current Environment" to the environment that you just created.
 8. Click "Ok" button to save the settings.
