@@ -13,7 +13,7 @@ public class CustomApiRequestParameter : Entity<CustomApiRequestParameter>
     public string? Name { get; set; }
     public string? UniqueName { get; set; }
     public string? Description { get; set; }
-    public CustomApiFieldType? Type { get; set; }
+    public CustomApiFieldType Type { get; set; }
     public string? LogicalEntityName { get; set; }
     public bool IsOptional { get; set; } = false;
     [JsonPropertyName("customapiresponsepropertyid")]

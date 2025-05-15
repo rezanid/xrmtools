@@ -19,7 +19,7 @@ public class ODataQueryResponse<T> : ODataResponse
     /// </summary>
     [JsonProperty("value")]
     [JsonPropertyName("value")]
-    public List<T> Entities { get; set; } = [];
+    public List<T> Value { get; set; } = [];
 
     /// <summary>
     /// How many records returned. Only populated if '$count=true' is included in the request.queryUri
