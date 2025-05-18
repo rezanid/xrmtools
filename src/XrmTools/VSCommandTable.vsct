@@ -112,9 +112,8 @@
       <!-- [Item Context Menu] > "Register plugin(s)"-->
       <Button guid="XrmToolsCmdSetId" id="RegisterPluginCmdId" priority="0x100" type="Button">
         <Parent guid="XrmToolsCmdSetId" id="XrmToolsContextMenuGroup" />
-        <Icon guid="ImageCatalogGuid" id="CheckIn" />
+        <Icon guid="AssetsGuid" id="ApplyToDataverse" />
         <CommandFlag>IconIsMoniker</CommandFlag>
-        <!--<Icon guid="guidImages" id="ApplyToDataverse" />-->
         <CommandFlag>DynamicVisibility</CommandFlag>
         <Strings>
           <ButtonText>Register Plugin(s)</ButtonText>

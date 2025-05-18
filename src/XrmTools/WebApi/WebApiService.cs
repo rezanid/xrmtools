@@ -169,7 +169,7 @@ internal class WebApiService(
     /// </summary>
     /// <typeparam name="T">Type of the entity to serialize the result of the query.</typeparam>
     /// <param name="odataQuery">OData query.</param>
-    /// <returns>OData response that include deserialized list of records in <see cref="ODataQueryResponse{T}.Entities"/> property.</returns>
+    /// <returns>OData response that include deserialized list of records in <see cref="ODataQueryResponse{T}.Value"/> property.</returns>
     public async Task<ODataQueryResponse<T>> QueryAsync<T>(string odataQuery, CancellationToken cancellationToken = default) where T : Entity<T>
     {
         var request = new HttpRequestMessage(HttpMethod.Get, odataQuery);

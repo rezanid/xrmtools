@@ -191,16 +191,47 @@ internal class CSharpXrmMetaParser(
                         // we are only interested in properties.
                         if (member is IPropertySymbol innerProperty && innerProperty.DeclaredAccessibility is Accessibility.Public or Accessibility.Internal or Accessibility.ProtectedAndInternal)
                         {
+                            var requestParameterAttr = innerProperty.GetAttributes()
+                                .FirstOrDefault(x => x.AttributeClass?.ToDisplayString() == typeof(CustomApiRequestParameterAttribute).FullName);
+
                             var requestParameter = new WebApi.Entities.CustomApiRequestParameter()
                             {
                                 Name = innerProperty.Name,
                                 UniqueName = innerProperty.Name,
                                 DisplayName = innerProperty.Name,
-                                Type = CustomApiFieldTypeMapping.TryGetValue(innerProperty.Type.ToDisplayString(SymbolDisplayFormat.CSharpShortErrorMessageFormat).TrimEnd('?'), out var fieldType) ? fieldType : innerProperty.Type.TypeKind == TypeKind.Enum ? WebApi.Types.CustomApiFieldType.Picklist : WebApi.Types.CustomApiFieldType.String,
+                                Type = CustomApiFieldTypeMapping.TryGetValue(innerProperty.Type.ToDisplayString(SymbolDisplayFormat.CSharpShortErrorMessageFormat).TrimEnd('?'), out var fieldType)
+                                    ? fieldType 
+                                    : innerProperty.Type.TypeKind == TypeKind.Enum 
+                                        ? WebApi.Types.CustomApiFieldType.Picklist 
+                                        : WebApi.Types.CustomApiFieldType.String,
                                 TypeName = innerProperty.Type.Name,
                                 FullTypeName = innerProperty.Type.ToDisplayString(SymbolDisplayFormat.CSharpErrorMessageFormat),
                                 IsOptional = innerProperty.Type.NullableAnnotation == NullableAnnotation.Annotated
                             };
+
+                            // If the propety has an attribute, values from the attribute will override the default values.
+                            if (requestParameterAttr != null)
+                            {
+                                foreach (var namedArg in requestParameterAttr.NamedArguments)
+                                {
+                                    switch (namedArg.Key)
+                                    {
+                                        case nameof(CustomApiRequestParameterAttribute.IsOptional) when namedArg.Value.Value is bool isOptional:
+                                            requestParameter.IsOptional = requestParameter.IsOptional || isOptional;
+                                            break;
+                                        case nameof(CustomApiRequestParameterAttribute.UniqueName) when namedArg.Value.Value is string uniqueName:
+                                            requestParameter.UniqueName = uniqueName;
+                                            break;
+                                        case nameof(CustomApiRequestParameterAttribute.DisplayName) when namedArg.Value.Value is string displayName:
+                                            requestParameter.DisplayName = displayName;
+                                            break;
+                                        case nameof(CustomApiRequestParameterAttribute.Description) when namedArg.Value.Value is string description:
+                                            requestParameter.Description = description;
+                                            break;
+                                    }
+                                }
+                            }
+
                             customApi.RequestParameters.Add(requestParameter);
                         }
                     }
@@ -215,15 +246,43 @@ internal class CSharpXrmMetaParser(
                         // we are only interested in properties.
                         if (member is IPropertySymbol innerProperty && innerProperty.DeclaredAccessibility is Accessibility.Public or Accessibility.Internal or Accessibility.ProtectedAndInternal)
                         {
+                            var responsePropertyAttr = innerProperty.GetAttributes()
+                                .FirstOrDefault(x => x.AttributeClass?.ToDisplayString() == typeof(CustomApiResponsePropertyAttribute).FullName);
+
                             var responseProperty = new WebApi.Entities.CustomApiResponseProperty()
                             {
                                 Name = innerProperty.Name,
                                 UniqueName = innerProperty.Name,
                                 DisplayName = innerProperty.Name,
-                                Type = CustomApiFieldTypeMapping.TryGetValue(innerProperty.Type.ToDisplayString(SymbolDisplayFormat.CSharpShortErrorMessageFormat), out var fieldType) ? fieldType : innerProperty.Type.TypeKind == TypeKind.Enum ? WebApi.Types.CustomApiFieldType.Picklist : WebApi.Types.CustomApiFieldType.String,
+                                Type = CustomApiFieldTypeMapping.TryGetValue(innerProperty.Type.ToDisplayString(SymbolDisplayFormat.CSharpShortErrorMessageFormat), out var fieldType)
+                                    ? fieldType 
+                                    : innerProperty.Type.TypeKind == TypeKind.Enum 
+                                        ? WebApi.Types.CustomApiFieldType.Picklist 
+                                        : WebApi.Types.CustomApiFieldType.String,
                                 TypeName = innerProperty.Type.Name,
                                 FullTypeName = innerProperty.Type.ToDisplayString(SymbolDisplayFormat.CSharpErrorMessageFormat),
                             };
+
+                            // If the propety has an attribute, values from the attribute will override the default values.
+                            if (responsePropertyAttr != null)
+                            {
+                                foreach (var namedArg in responsePropertyAttr.NamedArguments)
+                                {
+                                    switch (namedArg.Key)
+                                    {
+                                        case nameof(CustomApiResponsePropertyAttribute.UniqueName) when namedArg.Value.Value is string uniqueName:
+                                            responseProperty.UniqueName = uniqueName;
+                                            break;
+                                        case nameof(CustomApiResponsePropertyAttribute.DisplayName) when namedArg.Value.Value is string displayName:
+                                            responseProperty.DisplayName = displayName;
+                                            break;
+                                        case nameof(CustomApiResponsePropertyAttribute.Description) when namedArg.Value.Value is string description:
+                                            responseProperty.Description = description;
+                                            break;
+                                    }
+                                }
+                            }
+
                             customApi.ResponseProperties.Add(responseProperty);
                         }
                     }

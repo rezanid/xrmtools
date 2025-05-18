@@ -15,10 +15,33 @@ namespace XrmTools.UI.Controls
             DependencyProperty.Register(nameof(Text), typeof(string), typeof(SyntaxHighlightingControl),
         new PropertyMetadata(string.Empty, OnTextChanged));
 
+        public static readonly DependencyProperty ContentTypeProperty =
+            DependencyProperty.Register(nameof(ContentType), typeof(string), typeof(SyntaxHighlightingControl),
+        new PropertyMetadata(string.Empty, OnContentTypeChanged));
+
+        public static readonly DependencyProperty TextBufferProperty =
+            DependencyProperty.Register(nameof(TextBuffer), typeof(ITextBuffer), typeof(SyntaxHighlightingControl),
+                new PropertyMetadata(null));
+
         public string Text
         {
             get => (string)GetValue(TextProperty);
             set => SetValue(TextProperty, value);
+        }
+
+        public string ContentType
+        {
+            get => (string)GetValue(ContentTypeProperty);
+            set => SetValue(ContentTypeProperty, value);
+        }
+
+        /// <summary>
+        /// TextBuffer property should be set in other to support syntax highlighting for languages like C#.
+        /// </summary>
+        public ITextBuffer TextBuffer
+        {
+            get => (ITextBuffer)GetValue(TextBufferProperty);
+            set => SetValue(TextBufferProperty, value);
         }
 
         [Import]
@@ -29,6 +52,9 @@ namespace XrmTools.UI.Controls
 
         [Import]
         internal IClassificationFormatMapService ClassificationFormatMapService { get; set; }
+
+        [Import]
+        internal IClassifierAggregatorService ClassifierAggregatorService { get; set; }
 
         [Import]
         internal IContentTypeRegistryService ContentTypeRegistryService { get; set; }
@@ -46,25 +72,17 @@ namespace XrmTools.UI.Controls
             var componentModel = (IComponentModel)Microsoft.VisualStudio.Shell.Package.GetGlobalService(typeof(SComponentModel));
             if (componentModel == null)
             {
-                EditorHost.Content = "Design view is not supported because MEF services not available in design mode.";
+                EditorHost.Content = "Design view is not supported because MEF services are not available in design mode.";
                 return;
             }
             componentModel.DefaultCompositionService.SatisfyImportsOnce(this);
-
-            var contentType = ContentTypeRegistryService.GetContentType("JSON");
-            var textBuffer = TextBufferFactoryService.CreateTextBuffer(contentType);
-            var textViewRoleSet = TextEditorFactoryService.CreateTextViewRoleSet("Interactive");
-            var textView = TextEditorFactoryService.CreateTextView(textBuffer, textViewRoleSet);
-            TextViewHost = TextEditorFactoryService.CreateTextViewHost(textView, false);
-
-            // Add the editor to the UI
-            EditorHost.Content = TextViewHost.HostControl;
         }
 
         private static void OnTextChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
         {
             if (d is SyntaxHighlightingControl control && e.NewValue is string newText)
             {
+                if (control.TextViewHost is null) control.ContentType = "JSON";
                 control.UpdateText(newText);
             }
         }
@@ -79,6 +97,27 @@ namespace XrmTools.UI.Controls
                     edit.Replace(0, textBuffer.CurrentSnapshot.Length, text ?? string.Empty);
                     edit.Apply();
                 }
+            }
+        }
+
+        private static void OnContentTypeChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
+        {
+            if (d is SyntaxHighlightingControl control && e.NewValue is string newContentType)
+            {
+                if (control.TextBuffer == null)
+                {
+                    var contentType = control.ContentTypeRegistryService.GetContentType(newContentType);
+                    control.TextBuffer = control.TextBufferFactoryService.CreateTextBuffer(contentType);
+                }
+                var textViewRoleSet = control.TextEditorFactoryService.CreateTextViewRoleSet(
+                    PredefinedTextViewRoles.Document,
+                    PredefinedTextViewRoles.ChangePreview,
+                    PredefinedTextViewRoles.Interactive
+                );
+                var textView = control.TextEditorFactoryService.CreateTextView(control.TextBuffer, textViewRoleSet);
+                control.TextViewHost = control.TextEditorFactoryService.CreateTextViewHost(textView, false);
+                control.EditorHost.Content = control.TextViewHost.HostControl;
+                control.UpdateText(control.Text);
             }
         }
     }

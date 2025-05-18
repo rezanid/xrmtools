@@ -13,7 +13,7 @@ namespace XrmTools
     /// </summary>
     internal sealed partial class PackageGuids
     {
-        public const string AssetsGuidString = "38d6d3e8-040f-4f10-8a3f-0b0aa00f43ce";
+        public const string AssetsGuidString = "b11584c1-89bd-47a3-b6a4-05b05dd5fc13";
         public static Guid AssetsGuid = new Guid(AssetsGuidString);
     }
 
@@ -22,7 +22,8 @@ namespace XrmTools
     /// </summary>
     internal sealed partial class PackageIds
     {
-        public const int ApplyToDataverse = 0x0001;
-        public const int Application = 0x0002;
+        public const int ApplyToDataverse = 0x000A;
+        public const int Dataverse = 0x0014;
+        public const int XrmTools = 0x001E;
     }
 }

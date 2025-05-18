@@ -54,7 +54,7 @@ internal class EntityMetadataRepository(XrmHttpClient client, IWebApiService ser
         if (response.IsSuccessStatusCode)
         {
             using var content = await response.Content.ReadAsStreamAsync().ConfigureAwait(false);
-            var typed = content.Deserialize<ODataQueryResponse<SdkMessageFilter>>().Entities;
+            var typed = content.Deserialize<ODataQueryResponse<SdkMessageFilter>>().Value;
             if (typed is not null && typed.Any())
             {
                 return typed.Select(e => e.PrimaryObjectTypeCode).Distinct();
@@ -97,9 +97,9 @@ internal class EntityMetadataRepository(XrmHttpClient client, IWebApiService ser
     {
         var response = await service.SendAsync(new(HttpMethod.Get, entityMessagesQuery.FormatWith(entityLogicalName)), cancellationToken).ConfigureAwait(false);
         var typed = await response.CastAsync<ODataQueryResponse<SdkMessage>>().ConfigureAwait(false);
-        if (typed is not null && typed.Entities is not null)
+        if (typed is not null && typed.Value is not null)
         {
-            return typed.Entities;
+            return typed.Value;
         }
         return [];
     }
