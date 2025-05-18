@@ -59,20 +59,20 @@ using System.IO;
     expression: "(Yaml | CSEntity) & CSharp & (SingleProj | MultiProj)",
     termNames: ["Yaml", "CSEntity", "CSharp", "SingleProj", "MultiProj"],
     termValues: [
-        "HierSingleSelectionName:.yaml$|.yml$", 
-        "HierSingleSelectionName:.*Entit.*\\.cs$",
-        "ActiveProjectCapability:CSharp", 
-        VSConstants.UICONTEXT.SolutionHasSingleProject_string, 
+        "HierSingleSelectionName:\\.yaml$|\\.yml$",
+        "HierSingleSelectionName:\\.cs$",
+        "ActiveProjectCapability:CSharp",
+        VSConstants.UICONTEXT.SolutionHasSingleProject_string,
         VSConstants.UICONTEXT.SolutionHasMultipleProjects_string])]
 [ProvideUIContextRule(PackageGuids.SetCustomToolPluginDefitionCmdUIRuleString,
     name: "UI Context Plugin Definition",
     expression: "(Json | CSPlugin) & CSharp & (SingleProj | MultiProj)",
     termNames: ["Json", "CSPlugin", "CSharp", "SingleProj", "MultiProj"],
     termValues: [
-        "HierSingleSelectionName:.def.json$",
-        "HierSingleSelectionName:.*Plugin.*\\.cs$",
-        "ActiveProjectCapability:CSharp", 
-        VSConstants.UICONTEXT.SolutionHasSingleProject_string, 
+        "HierSingleSelectionName:\\.def\\.json$",
+        "HierSingleSelectionName:\\.cs$",
+        "ActiveProjectCapability:CSharp",
+        VSConstants.UICONTEXT.SolutionHasSingleProject_string,
         VSConstants.UICONTEXT.SolutionHasMultipleProjects_string])]
 [ProvideUIContextRule(PackageGuids.SetPluginGeneratorTemplateCmdUIRuleString,
     name: "UI Context Plugin Generator Template",

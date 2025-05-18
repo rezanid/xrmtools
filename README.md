@@ -5,7 +5,6 @@ Xrm Tools is a Visual Studio extension that aims to make Power Platform developm
 
 * Define plugins entirely in code using attributes.
 * Intellisense for entities, attributes and more based on connected environment.
-
 * Attribute colorization within strings.
 * Traditional and packaged plugins.
 * Solution awareness.
@@ -18,15 +17,7 @@ Xrm Tools is a Visual Studio extension that aims to make Power Platform developm
 * Fully customizable code generation using liquid-like templates.
 * Support CSharp v12.0 via PolySharp.
 
-> [!NOTE]
->
-> Xrm Tools is not yet published to Visual Studio Gallery, but it will be very soon. Stay tuned!
-
-The code that you write with Xrm Tools is still standard C# following the best practices of Power Platform and your plugins are just standard plugins. You or other developers don't need to have Xrm Tools to build or deploy the assemblies. In other words Xrm Tools is there just to enhance your development experience.
-
-# How to install
-The best way to install Xrm Tool is through Visual Studio's native Extensions gallery. Once installed, you can start using it in your existing project or new ones. There is no custom magical template you need or any other nonesense. Just follow the best practices and your own or your team's style of development. XrmTools is good citizen in your Visual Studio because of a number of things it does not do which include:
-
+## Xrm Tools is a good citizin in Visual Studio
 * XrmTools does not need admin privileges and will not apply any system-wide change in your machine nor the configuration of your Visual Studio or projects. 
 * You can always remove the extension safely and completely when you don't need it.
 * XrmTools does not send any information from your machine unlike some other extensions.
@@ -53,10 +44,10 @@ After you install Xrm Tools, the first thing you need to do is to connect to an 
    ```
    If you only give a URL, Xrm Tools will try to find your tenant ID by making a request and will try to use your currently authenticated user that is running Visual Studio if you have SSO with your tenant, otherwise it will display the standard Entra popup and asks you to login. 
    
-   > [!NOTE]
-   >
-   > Xrm Tools will never see or store your credentials.
-   > You can read more about the connection string syntax [here](https://github.com/rezanid/xrmtools/wiki/Providing-Connection-Strings).
+> [!NOTE]
+>
+> Xrm Tools will never see or store your credentials.
+> You can read more about the connection string syntax [here](https://github.com/rezanid/xrmtools/wiki/Providing-Connection-Strings).
 
 7. Set "Current Environment" to the environment that you just created.
 8. Click "Ok" button to save the settings.
@@ -83,21 +74,21 @@ Xrm Tools enables you to define and write a plugin directly within code. There i
 8. Right-click on the project or anywhere under it and select Add > New > Class (or simply <kbd>Shift</kbd> + <kbd>Alt</kbd> + <kbd>C</kbd>). Name your class something that includes "Plugin" in the name.
 
 9. Make your class `partial` and add `Plugin` attribute to your class. This attribute informs Xrm Tools that this is a plugin.
-   ```csharp
-   [Plugin]
-   public partial class ContactCreatePlugin
-   {
-   }
-   ```
+```csharp
+[Plugin]
+public partial class ContactCreatePlugin
+{
+}
+```
 
 10. Next, we will add the `[Step]` attribute and that is where the magic starts happening! Try to add a Step attribute similar to the one below.
-   ```csharp
-   [Plugin]
-   [Step("Create", "contact", "firstname,lastname,description", Stages.PreOperation, ExecutionMode.Synchronous)]
-   public partial class ContactCreatePlugin
-   {
-   }
-   ```
+```csharp
+[Plugin]
+[Step("Create", "contact", "firstname,lastname,description", Stages.PreOperation, ExecutionMode.Synchronous)]
+public partial class ContactCreatePlugin
+{
+}
+```
    Noticed how the Intellisense helps you pick the right message or when you set the message, only the entities that support the message are displayed?
 
 <div style="overflow-x: auto; white-space: nowrap;">
@@ -121,24 +112,23 @@ You will get a similar experience when typing filtering attribute names. Look ho
 
 7. At this point your plugin code should look like the following.
 
-   ```csharp
-   using Microsoft.Xrm.Sdk;
-   using System;
-   using XrmTools.Meta.Attributes;
-   
-   namespace XrmGenTest;
-   
-   [Plugin]
-   [Step("Create", "contact", "firstname,lastname,description", Stages.PreOperation, ExecutionMode.Synchronous)]
-   public partial class ContactCreatePlugin : IPlugin
-   {
-       public void Execute(IServiceProvider serviceProvider)
-       {
-           throw new NotImplementedException();
-       }
-   }
-   
-   ```
+```csharp
+using Microsoft.Xrm.Sdk;
+using System;
+using XrmTools.Meta.Attributes;
+
+namespace XrmGenTest;
+
+[Plugin]
+[Step("Create", "contact", "firstname,lastname,description", Stages.PreOperation, ExecutionMode.Synchronous)]
+public partial class ContactCreatePlugin : IPlugin
+{
+    public void Execute(IServiceProvider serviceProvider)
+    {
+        throw new NotImplementedException();
+    }
+}   
+```
 
 In the above code I also implemented the IPlugin interface to make this a real plugin, but we will implement the actual code in the next section.
 
@@ -215,8 +205,7 @@ When running "Register plugin(s)" command either at project or file level, every
 
 XRM Tools enables you to define and implement Power Platform plugins and custom APIs entirely as code. The attributes in your source code are the [single source of truth](https://en.wikipedia.org/wiki/Single_source_of_truth). This means that if you have used previously registered your plugins using any other tool, **all plugin registrations** will be replaced by those defined in your source code.
 
-By brining plugin registrations to the code you are able to benefit from Git and the entire echosystem that you have around the code. You are able to review the code and trace the history of every change and the reason behind them. You team mate are able to just clone the code and know where to test (if you manage the environment at solution or project file level).
+By brining plugin registrations to the code you will benefit from Git and the entire echosystem that you have around the code. You are able to review the code and trace the history of every change and the reason behind them. You team mate are able to just clone the code and know where to test (if you manage the environment at solution or project file level).
 
 # Learn more
 To learn more about Xrm Tools extension for Visual Studio check the [wiki](https://github.com/rezanid/xrmtools/wiki)
-Now, every time you save your plugin file, another file with be generated that contains all the code you need. You can fully customize the generated code in future if you want. Let's explore what's been generated and how we can use it.

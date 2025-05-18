@@ -9,7 +9,7 @@ using XrmTools.Meta.Attributes;
 namespace XrmGenTest;
 
 [Plugin]
-[CustomApi("test_MyCustomApi", "My Custom API", "MyCustomApi")]
+[CustomApi("test_MyCustomApi", "My Custom API", )]
 public partial class MyCustomApiPlugin : IPlugin
 {
     public void Execute(IServiceProvider serviceProvider)

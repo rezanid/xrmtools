@@ -5,13 +5,15 @@ using System;
 using System.CodeDom.Compiler;
 using System.Collections.ObjectModel;
 using System.Runtime.Serialization;
-
 namespace XrmGenTest;
 
-[GeneratedCode("TemplatedCodeGenerator", "1.0.0.0")]
+[GeneratedCode("TemplatedCodeGenerator", "1.0.4.0")]
 public partial class ContactCreatePlugin
 {
-	[GeneratedCode("TemplatedCodeGenerator", "1.0.0.0")]
+    protected void InjectDependencies(IServiceProvider serviceProvider)
+    {
+    }
+	[GeneratedCode("TemplatedCodeGenerator", "1.0.4.0")]
 	[EntityLogicalName("contact")]
 	public class TargetContact : Entity
 	{

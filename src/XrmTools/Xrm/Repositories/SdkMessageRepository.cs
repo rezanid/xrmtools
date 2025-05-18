@@ -41,9 +41,9 @@ internal class SdkMessageRepository(XrmHttpClient client, IWebApiService service
         sb2.Remove(sb2.Length - 4, 4);
         var response = await service.GetAsync(sdkMessageQuery.FormatWith(sb1.ToString(), sb2.ToString()), cancellationToken).ConfigureAwait(false);
         var typed = await response.CastAsync<ODataQueryResponse<SdkMessage>>().ConfigureAwait(false);
-        if (typed is not null && typed.Entities is not null)
+        if (typed is not null && typed.Value is not null)
         {
-            return typed.Entities;
+            return typed.Value;
         }
         return [];
     }
@@ -54,7 +54,7 @@ internal class SdkMessageRepository(XrmHttpClient client, IWebApiService service
         if (response.IsSuccessStatusCode)
         {
             using var content = await response.Content.ReadAsStreamAsync().ConfigureAwait(false);
-            return content.Deserialize<ODataQueryResponse<SdkMessage>>().Entities;
+            return content.Deserialize<ODataQueryResponse<SdkMessage>>().Value;
 
         }
         return [];
@@ -64,9 +64,9 @@ internal class SdkMessageRepository(XrmHttpClient client, IWebApiService service
     {
         var response = await service.GetAsync(sdkMessageQueryAll, cancellationToken).ConfigureAwait(false);
         var typed = await response.CastAsync<ODataQueryResponse<SdkMessage>>().ConfigureAwait(false);
-        if (typed is not null && typed.Entities is not null)
+        if (typed is not null && typed.Value is not null)
         {
-            return typed.Entities;
+            return typed.Value;
         }
         return [];
     }

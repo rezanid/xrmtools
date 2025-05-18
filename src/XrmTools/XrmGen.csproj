@@ -71,6 +71,14 @@
     <Compile Include="Analyzers\PluginAssemblyInfo.cs" />
     <Compile Include="Analyzers\CSharpXrmMetaDataService.cs" />
     <Compile Include="Analyzers\CSharpXrmMetaParser.cs" />
+    <Compile Include="CodeRefactoringProviders\CustomApiRefactoringProvider.cs" />
+    <Compile Include="CodeRefactoringProviders\WebApiServiceHelper.cs" />
+    <Compile Include="CustomMonikers.cs">
+      <AutoGen>True</AutoGen>
+      <DesignTime>True</DesignTime>
+      <DependentUpon>CustomMonikers.vsct</DependentUpon>
+    </Compile>
+    <Compile Include="Helpers\PhysicalFileHelper.cs" />
     <Compile Include="Helpers\ReflectionHelper.cs" />
     <Compile Include="AuthenticationService.cs" />
     <Compile Include="Authenticators\ClientAppAuthenticator.cs" />
@@ -287,6 +295,10 @@
     <Compile Include="Logging\OutputLogger.cs" />
   </ItemGroup>
   <ItemGroup>
+    <VSCTCompile Include="CustomMonikers.vsct">
+      <Generator>VsctGenerator</Generator>
+      <LastGenOutput>CustomMonikers.cs</LastGenOutput>
+    </VSCTCompile>
     <Content Include="Microsoft.Bcl.TimeProvider\Microsoft.Bcl.TimeProvider.dll">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
       <IncludeInVSIX>true</IncludeInVSIX>
@@ -295,6 +307,12 @@
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
       <IncludeInVSIX>true</IncludeInVSIX>
     </Content>
+    <Content Include="CustomMonikers.imagemanifest">
+      <IncludeInVSIX>true</IncludeInVSIX>
+    </Content>
+    <Resource Include="Resources\ApplyToDataverse.png" />
+    <Resource Include="Resources\ApplyToDataverse.16.16.png" />
+    <Resource Include="Resources\ApplyToDataverse.32.32.png" />
     <Content Include="Resources\GettingStarted.html">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
       <IncludeInVSIX>true</IncludeInVSIX>
@@ -501,10 +519,13 @@
     </EmbeddedResource>
   </ItemGroup>
   <ItemGroup>
-    <Folder Include="Xrm\CompletionSample\" />
     <Folder Include="_Core\" />
   </ItemGroup>
   <ItemGroup>
+    <Page Include="Resources\Dataverse.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
     <Page Include="UI\AssemblySelectionDialog.xaml">
       <SubType>Designer</SubType>
       <Generator>XamlIntelliSenseFileGenerator</Generator>

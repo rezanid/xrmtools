@@ -40,10 +40,10 @@ internal static partial class Extensions
     }
 
     public static async Task<ODataQueryResponse<T>> RetrieveMultipleAsync<T>(
-    this IWebApiService service,
-    string queryUri,
-    int? maxPageSize = null,
-    bool includeAnnotations = false)
+        this IWebApiService service,
+        string queryUri,
+        int? maxPageSize = null,
+        bool includeAnnotations = false)
     {
         var request = new RetrieveMultipleRequest(
             queryUri: queryUri,

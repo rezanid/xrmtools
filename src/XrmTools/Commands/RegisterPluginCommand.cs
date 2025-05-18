@@ -142,7 +142,7 @@ internal sealed class RegisterPluginCommand : BaseCommand<RegisterPluginCommand>
         await VS.StatusBar.StartAnimationAsync(StatusAnimation.General);
 
         var requests = new List<HttpRequestMessage>();
-        
+
         try
         {
             var assemblyQuery = await WebApiService.RetrieveMultipleAsync<PluginAssembly>(
@@ -150,7 +150,7 @@ internal sealed class RegisterPluginCommand : BaseCommand<RegisterPluginCommand>
                 $"&$filter=name eq '{inputModel.Name}'" +
                 $"&$expand=PackageId($select=name),pluginassembly_plugintype($select=name,typename" +
                     $";$expand=plugintype_sdkmessageprocessingstep($select=name,stage),CustomAPIId($select=uniquename))");
-            var existingAssembly = assemblyQuery?.Entities?.SingleOrDefault();
+            var existingAssembly = assemblyQuery?.Value?.SingleOrDefault();
             if (existingAssembly is not null)
             {
                 inputModel.PluginAssemblyId = existingAssembly.Id;
@@ -254,7 +254,7 @@ internal sealed class RegisterPluginCommand : BaseCommand<RegisterPluginCommand>
                 $"&$filter=name eq '{inputModel.Name}'" +
                 $"&$expand=PackageId($select=name),pluginassembly_plugintype($select=name,typename" +
                     $";$expand=plugintype_sdkmessageprocessingstep($select=name,stage),CustomAPIId($select=uniquename))");
-            var existingAssembly = assemblyQuery?.Entities?.SingleOrDefault();
+            var existingAssembly = assemblyQuery?.Value?.SingleOrDefault();
             AssignIds(inputModel, existingAssembly);
 
             var builder = new UpsertRequestBuilder(inputModel, sdkMessages);
@@ -299,7 +299,7 @@ internal sealed class RegisterPluginCommand : BaseCommand<RegisterPluginCommand>
         {
             pluginAssembly.Package.Id = existingPluginAssembly?.Package?.Id ?? GuidFactory.DeterministicGuid(GuidFactory.Namespace.PluginPackage, pluginAssembly.Package.Name!);
         }
-        foreach(var pluginType in pluginAssembly.PluginTypes)
+        foreach (var pluginType in pluginAssembly.PluginTypes)
         {
             var existingPluginType = existingPluginAssembly?.PluginTypes.FirstOrDefault(p => p.TypeName!.Equals(pluginType.TypeName, StringComparison.OrdinalIgnoreCase));
             pluginType.Id = existingPluginType?.Id ?? GuidFactory.DeterministicGuid(GuidFactory.Namespace.PluginType, pluginType.TypeName!);
@@ -320,12 +320,12 @@ internal sealed class RegisterPluginCommand : BaseCommand<RegisterPluginCommand>
                 foreach (var parameter in customApi.RequestParameters)
                 {
                     var existingParameter = existingCustomApi?.RequestParameters.FirstOrDefault(p => p.UniqueName == parameter.UniqueName);
-                    parameter.Id = existingParameter?.Id ?? GuidFactory.DeterministicGuid(GuidFactory.Namespace.CustomApiInput, parameter.UniqueName!);
+                    parameter.Id = existingParameter?.Id ?? GuidFactory.DeterministicGuid(GuidFactory.Namespace.CustomApiInput, customApi.UniqueName + parameter.UniqueName!);
                 }
                 foreach (var parameter in customApi.ResponseProperties)
                 {
                     var existingParameter = existingCustomApi?.ResponseProperties.FirstOrDefault(p => p.UniqueName == parameter.UniqueName);
-                    parameter.Id = existingParameter?.Id ?? GuidFactory.DeterministicGuid(GuidFactory.Namespace.CustomApiOutput, parameter.UniqueName!);
+                    parameter.Id = existingParameter?.Id ?? GuidFactory.DeterministicGuid(GuidFactory.Namespace.CustomApiOutput, customApi.UniqueName + parameter.UniqueName!);
                 }
             }
         }
@@ -365,7 +365,7 @@ internal sealed class RegisterPluginCommand : BaseCommand<RegisterPluginCommand>
             Command.Visible = await IsVisibleAsync(item).ConfigureAwait(false);
         });
 
-        async Task<bool> IsVisibleAsync(SolutionItem? item)
+        static async Task<bool> IsVisibleAsync(SolutionItem? item)
         {
             if (item is null)
                 return false;
@@ -374,19 +374,9 @@ internal sealed class RegisterPluginCommand : BaseCommand<RegisterPluginCommand>
                 return true;
 
             if (item.Type == SolutionItemType.PhysicalFile && item is PhysicalFile file)
-                return await IsXrmPluginFileAsync(file).ConfigureAwait(false);
+                return await file.IsXrmPluginFileAsync().ConfigureAwait(false);
 
             return false;
-        }
-
-        async Task<bool> IsXrmPluginFileAsync(PhysicalFile file)
-        {
-            var generator = await file.GetAttributeAsync("Generator").ConfigureAwait(false);
-            if (generator != PluginCodeGenerator.Name)
-                return false;
-
-            var pluginAttr = await file.GetAttributeAsync("IsXrmPlugin").ConfigureAwait(false);
-            return bool.TryParse(pluginAttr, out var isXrmPlugin) && isXrmPlugin;
         }
     }
 
@@ -415,13 +405,13 @@ internal sealed class RegisterPluginCommand : BaseCommand<RegisterPluginCommand>
                 deleteRequests.Add(new DeleteRequest(PluginType.CreateReference(existingPlugin.Id!.Value)));
             }
             // Delete all existing custom APIs
-            if (existingPlugin.CustomApi != null)
-            {
-                foreach (var customApi in existingPlugin.CustomApi)
-                {
-                    deleteRequests.Add(new DeleteRequest(customApi.ToReference()));
-                }
-            }
+            //if (existingPlugin.CustomApi != null)
+            //{
+            //    foreach (var customApi in existingPlugin.CustomApi)
+            //    {
+            //        deleteRequests.Add(new DeleteRequest(customApi.ToReference()));
+            //    }
+            //}
         }
 
         //TODO: Let's not delete the package for now, we will see with more testing if we need to do this.

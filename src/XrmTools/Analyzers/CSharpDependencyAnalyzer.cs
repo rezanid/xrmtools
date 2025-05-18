@@ -190,7 +190,9 @@ public class CSharpDependencyAnalyzer : ICSharpDependencyAnalyzer
                     !member.IsWriteOnly && 
                     member.Type.TypeKind is TypeKind.Class or TypeKind.Interface &&
                     member.Type.SpecialType != SpecialType.System_String &&
-                    !result.ContainsKey(member.Type))
+                    !result.ContainsKey(member.Type) &&
+                    member.GetAttributes().Any(attr => attr.AttributeClass?.ToDisplayString() == typeof(DependencyProviderAttribute).FullName)
+                    )
                 {
                     result[member.Type] = member.Name;
                 }

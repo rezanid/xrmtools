@@ -29,7 +29,7 @@ internal class GeneralOptions : BaseOptionModel<GeneralOptions>
     public DataverseEnvironmentList Environments { get; set; } = [];
 
     [Category("Power Platform Environments")]
-    [DisplayName("Current environment kept in")]
+    [DisplayName("Current Environment Scope")]
     [Description("Where to remember your selected environment")]
     [DefaultValue(SettingsStorageTypes.Options)]
     [TypeConverter(typeof(EnumDescriptionConverter))]
