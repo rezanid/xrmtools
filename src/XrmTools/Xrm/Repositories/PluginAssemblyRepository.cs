@@ -20,9 +20,9 @@ internal class PluginAssemblyRepository(XrmHttpClient client, IWebApiService ser
     {
         var response = await service.GetAsync("pluginassemblies?$select=pluginassemblyid,name,publickeytoken,solutionid,version,isolationmode,sourcetype", cancellationToken).ConfigureAwait(false);
         var typed = await response.CastAsync<ODataQueryResponse<PluginAssemblyConfig>>().ConfigureAwait(false);
-        if (typed is not null && typed.Entities is not null)
+        if (typed is not null && typed.Value is not null)
         {
-            return typed.Entities;
+            return typed.Value;
         }
         return [];
     }

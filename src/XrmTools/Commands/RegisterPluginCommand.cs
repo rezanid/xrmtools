@@ -150,7 +150,7 @@ internal sealed class RegisterPluginCommand : BaseCommand<RegisterPluginCommand>
                 $"&$filter=name eq '{inputModel.Name}'" +
                 $"&$expand=PackageId($select=name),pluginassembly_plugintype($select=name,typename" +
                     $";$expand=plugintype_sdkmessageprocessingstep($select=name,stage),CustomAPIId($select=uniquename))");
-            var existingAssembly = assemblyQuery?.Entities?.SingleOrDefault();
+            var existingAssembly = assemblyQuery?.Value?.SingleOrDefault();
             if (existingAssembly is not null)
             {
                 inputModel.PluginAssemblyId = existingAssembly.Id;
@@ -254,7 +254,7 @@ internal sealed class RegisterPluginCommand : BaseCommand<RegisterPluginCommand>
                 $"&$filter=name eq '{inputModel.Name}'" +
                 $"&$expand=PackageId($select=name),pluginassembly_plugintype($select=name,typename" +
                     $";$expand=plugintype_sdkmessageprocessingstep($select=name,stage),CustomAPIId($select=uniquename))");
-            var existingAssembly = assemblyQuery?.Entities?.SingleOrDefault();
+            var existingAssembly = assemblyQuery?.Value?.SingleOrDefault();
             AssignIds(inputModel, existingAssembly);
 
             var builder = new UpsertRequestBuilder(inputModel, sdkMessages);

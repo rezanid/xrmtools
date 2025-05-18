@@ -5,7 +5,6 @@ using System;
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
-using XrmTools.Core.Helpers;
 using XrmTools.Http;
 using XrmTools.Logging.Compatibility;
 using XrmTools.Meta.Model;
@@ -31,9 +30,9 @@ internal class PluginTypeRepository(XrmHttpClient client, IWebApiService service
     {
         var response = await service.GetAsync(plugintypeQuery.FormatWith(pluginassemblyid), cancellationToken).ConfigureAwait(false);
         var typed = await response.CastAsync<ODataQueryResponse<PluginTypeConfig>>().ConfigureAwait(false);
-        if (typed is not null && typed.Entities is not null)
+        if (typed is not null && typed.Value is not null)
         {
-            return typed.Entities;
+            return typed.Value;
         }
         return [];
     }
