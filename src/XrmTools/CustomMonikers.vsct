@@ -12,9 +12,10 @@
 -->
 <CommandTable xmlns="http://schemas.microsoft.com/VisualStudio/2005-10-18/CommandTable">
   <Symbols>
-    <GuidSymbol name="AssetsGuid" value="{38d6d3e8-040f-4f10-8a3f-0b0aa00f43ce}">
-      <IDSymbol name="ApplyToDataverse" value="1" />
-      <IDSymbol name="Application" value="2" />
+    <GuidSymbol name="AssetsGuid" value="{b11584c1-89bd-47a3-b6a4-05b05dd5fc13}">
+      <IDSymbol name="ApplyToDataverse" value="10" />
+      <IDSymbol name="Dataverse" value="20"/>
+      <IDSymbol name="XrmTools" value="30"/>
     </GuidSymbol>
   </Symbols>
 </CommandTable>
