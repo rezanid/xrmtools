@@ -1,7 +1,6 @@
 ﻿using Microsoft.Xrm.Sdk;
 using System;
 using XrmTools.Meta.Attributes;
-using XrmTools.Meta.Model;
 
 namespace XrmGenTest;
 

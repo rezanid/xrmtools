@@ -405,13 +405,13 @@ internal sealed class RegisterPluginCommand : BaseCommand<RegisterPluginCommand>
                 deleteRequests.Add(new DeleteRequest(PluginType.CreateReference(existingPlugin.Id!.Value)));
             }
             // Delete all existing custom APIs
-            //if (existingPlugin.CustomApi != null)
-            //{
-            //    foreach (var customApi in existingPlugin.CustomApi)
-            //    {
-            //        deleteRequests.Add(new DeleteRequest(customApi.ToReference()));
-            //    }
-            //}
+            if (existingPlugin.CustomApi != null)
+            {
+                foreach (var customApi in existingPlugin.CustomApi)
+                {
+                    deleteRequests.Add(new DeleteRequest(customApi.ToReference()));
+                }
+            }
         }
 
         //TODO: Let's not delete the package for now, we will see with more testing if we need to do this.

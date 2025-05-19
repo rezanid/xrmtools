@@ -5,13 +5,15 @@ using System;
 using System.CodeDom.Compiler;
 using System.Collections.ObjectModel;
 using System.Runtime.Serialization;
-
 namespace XrmGenTest;
 
-[GeneratedCode("TemplatedPluginCodeGenerator", "1.0.0.0")]
+[GeneratedCode("TemplatedCodeGenerator", "1.0.5.0")]
 public partial class LeadCreatePlugin
 {
-	[GeneratedCode("TemplatedPluginCodeGenerator", "1.0.0.0")]
+    protected void InjectDependencies(IServiceProvider serviceProvider)
+    {
+    }
+	[GeneratedCode("TemplatedCodeGenerator", "1.0.5.0")]
 	[EntityLogicalName("annotation")]
 	public class TargetNote : Entity
 	{
@@ -63,15 +65,16 @@ public partial class LeadCreatePlugin
         Target = EntityOrDefault<TargetNote>(executionContext.InputParameters, "Target");
     }
 
-	private static T EntityOrDefault<T>(DataCollection<string, object> keyValues, string key) where T : Entity
+	protected static T EntityOrDefault<T>(DataCollection<string, object> keyValues, string key) where T : Entity
     {
         if (keyValues is null) return default;
         return keyValues.TryGetValue(key, out var obj) ? obj is Entity entity ? entity.ToEntity<T>() : default : default;
     }
 
-    private static T EntityOrDefault<T>(DataCollection<string, Entity> keyValues, string key) where T : Entity
+    protected static T EntityOrDefault<T>(DataCollection<string, Entity> keyValues, string key) where T : Entity
     {
         if (keyValues is null) return default;
         return keyValues.TryGetValue(key, out var entity) ? entity?.ToEntity<T>() : default;
     }
+
 }

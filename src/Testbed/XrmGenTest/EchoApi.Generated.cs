@@ -7,8 +7,8 @@ using System.Collections.ObjectModel;
 using System.Runtime.Serialization;
 namespace XrmGenTest;
 
-[GeneratedCode("TemplatedCodeGenerator", "1.0.4.0")]
-public partial class MyCustomApiPlugin
+[GeneratedCode("TemplatedCodeGenerator", "1.0.5.0")]
+public partial class EchoApi
 {
     protected void InjectDependencies(IServiceProvider serviceProvider)
     {
@@ -26,7 +26,7 @@ public partial class MyCustomApiPlugin
         return keyValues.TryGetValue(key, out var entity) ? entity?.ToEntity<T>() : default;
     }
 
-    protected static MyCustomApiPlugin.Request GetRequest(IExecutionContext context)
+    protected static EchoApi.Request GetRequest(IExecutionContext context)
         => new()
         {
             BooleanParameter = context.InputParameters.TryGetValue("BooleanParameter", out var BooleanParameter) && Convert.ToBoolean(BooleanParameter),
@@ -39,13 +39,13 @@ public partial class MyCustomApiPlugin
             IntegerParameter = context.InputParameters.TryGetValue("IntegerParameter", out var IntegerParameter) ? Convert.ToInt32(IntegerParameter) : default,
             MoneyParameter = context.InputParameters.TryGetValue("MoneyParameter", out var MoneyParameter) ? (Money)MoneyParameter : default,
             PicklistParameter = context.InputParameters.TryGetValue("PicklistParameter", out var PicklistParameter) ? (OptionSetValue)PicklistParameter : default,
-            EnumParameter = context.InputParameters.TryGetValue("EnumParameter", out var EnumParameter) ? Convert.ToBindingTypes(EnumParameter) : default,
+            EnumParameter = context.InputParameters.TryGetValue("EnumParameter", out var EnumParameter) ? (XrmGenTest.TestEnum)((OptionSetValue)EnumParameter).Value : default,
             StringParameter = context.InputParameters.TryGetValue("StringParameter", out var StringParameter) ? Convert.ToString(StringParameter) : default,
             StringArrayParameter = context.InputParameters.TryGetValue("StringArrayParameter", out var StringArrayParameter) ? (string[])StringArrayParameter : default,
             GuidParameter = context.InputParameters.TryGetValue("GuidParameter", out var GuidParameter) ? (Guid)GuidParameter : default,
         };
     
-    protected static void SetResponse(IExecutionContext context, MyCustomApiPlugin.Response response)
+    protected static void SetResponse(IExecutionContext context, EchoApi.Response response)
     {
         if (response.BooleanParameter is Boolean booleanValue) context.OutputParameters["BooleanParameter"] = booleanValue;
         if (response.DateTimeParameter is DateTime datetimeValue) context.OutputParameters["DateTimeParameter"] = datetimeValue;
@@ -57,7 +57,7 @@ public partial class MyCustomApiPlugin
         if (response.IntegerParameter is Int32 int32Value) context.OutputParameters["IntegerParameter"] = int32Value;
         if (response.MoneyParameter is Money moneyValue) context.OutputParameters["MoneyParameter"] = moneyValue;
         if (response.PicklistParameter is Microsoft.Xrm.Sdk.OptionSetValue optionsetvalueValue) context.OutputParameters["PicklistParameter"] = optionsetvalueValue;
-        if (response.EnumParameter is BindingTypes bindingtypesValue) context.OutputParameters["EnumParameter"] = bindingtypesValue;
+        if (response.EnumParameter is XrmGenTest.TestEnum testenumValue) context.OutputParameters["EnumParameter"] = new OptionSetValue((int)testenumValue);
         if (response.StringParameter is String stringValue) context.OutputParameters["StringParameter"] = stringValue;
         if (response.StringArrayParameter is string[] stringArrayValue) context.OutputParameters["StringArrayParameter"] = stringArrayValue;
         if (response.GuidParameter is Guid guidValue) context.OutputParameters["GuidParameter"] = guidValue;

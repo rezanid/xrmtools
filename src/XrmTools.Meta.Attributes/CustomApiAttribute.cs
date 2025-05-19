@@ -10,7 +10,7 @@
     {
         public string DisplayName { get; set; }
         public string Name { get; set; }
-        public string UniqueName { get; set; }
+        public string UniqueName { get; }
         public string Description { get; set; }
         public ProcessingStepTypes StepType { get; set; } = ProcessingStepTypes.SyncAndAsync;
         public BindingTypes BindingType { get; set; } = BindingTypes.Global;
