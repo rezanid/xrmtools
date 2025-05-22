@@ -81,6 +81,7 @@
       <DesignTime>True</DesignTime>
       <DependentUpon>ContactCreatePlugin.cs</DependentUpon>
     </Compile>
+    <Compile Include="EchoApiRetrofit.cs" />
     <Compile Include="Entities.cs">
       <DependentUpon>Entities.yaml</DependentUpon>
       <DesignTime>True</DesignTime>
@@ -88,22 +89,22 @@
     </Compile>
     <Compile Include="LeadCreatePlugin.cs">
       <Generator>Xrm Tools Plugin Code Generator</Generator>
-      <LastGenOutput>LeadCreatePlugin1.cs</LastGenOutput>
+      <LastGenOutput>LeadCreatePlugin.Generated.cs</LastGenOutput>
     </Compile>
-    <Compile Include="LeadCreatePlugin1.cs">
-      <DependentUpon>LeadCreatePlugin.cs</DependentUpon>
-      <DesignTime>True</DesignTime>
-      <AutoGen>True</AutoGen>
-    </Compile>
-    <Compile Include="MyCustomApiPlugin.cs">
+    <Compile Include="EchoApi.cs">
       <Generator>Xrm Tools Plugin Code Generator</Generator>
-      <LastGenOutput>MyCustomApiPlugin.Generated.cs</LastGenOutput>
+      <LastGenOutput>EchoApi.Generated.cs</LastGenOutput>
       <IsXrmPlugin>True</IsXrmPlugin>
     </Compile>
-    <Compile Include="MyCustomApiPlugin.Generated.cs">
+    <Compile Include="EchoApi.Generated.cs">
       <AutoGen>True</AutoGen>
       <DesignTime>True</DesignTime>
-      <DependentUpon>MyCustomApiPlugin.cs</DependentUpon>
+      <DependentUpon>EchoApi.cs</DependentUpon>
+    </Compile>
+    <Compile Include="LeadCreatePlugin.Generated.cs">
+      <AutoGen>True</AutoGen>
+      <DesignTime>True</DesignTime>
+      <DependentUpon>LeadCreatePlugin.cs</DependentUpon>
     </Compile>
     <Compile Include="Properties\AssemblyInfo.cs" />
     <None Include="CodeGenTemplates\BigInt.sbncs" />
@@ -166,7 +167,7 @@
       <PrivateAssets>all</PrivateAssets>
     </PackageReference>
     <PackageReference Include="XrmTools.Meta.Attributes">
-      <Version>1.0.13</Version>
+      <Version>1.0.34</Version>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
       <PrivateAssets>all</PrivateAssets>
     </PackageReference>
