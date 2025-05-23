@@ -15,13 +15,14 @@ using Microsoft.CodeAnalysis.CSharp;
 using XrmTools.WebApi.Entities;
 using System.Collections.Generic;
 using CustomApiFieldType = WebApi.Types.CustomApiFieldType;
-using Microsoft.Crm.Sdk.Messages;
 
 [ExportCodeRefactoringProvider(LanguageNames.CSharp, Name = nameof(CustomApiRefactoringProvider)), Shared]
 public class CustomApiRefactoringProvider : CodeRefactoringProvider
 {
     [Import]
     internal IWebApiService WebApiService { get; set; } = null!;
+
+    public bool IsNullableEnabled { get; set; }
 
     public override async Task ComputeRefactoringsAsync(CodeRefactoringContext context)
     {
@@ -48,6 +49,8 @@ public class CustomApiRefactoringProvider : CodeRefactoringProvider
 
         var customApiName = semanticModel.GetConstantValue(firstArgument.Expression).Value as string;
         if (string.IsNullOrWhiteSpace(customApiName)) return;
+
+        IsNullableEnabled = semanticModel.GetNullableContext(classNode.SpanStart).AnnotationsEnabled();
 
         // Register basic action
         var basicAction = CodeAction.Create(
@@ -90,14 +93,11 @@ public class CustomApiRefactoringProvider : CodeRefactoringProvider
         var customApi = await WebApiService.GetCustomApiDefinitionAsync(customApiName);
         if (customApi == null) return document;
 
-        var semanticModel = await document.GetSemanticModelAsync(cancellationToken);
-        var nullableEnabled = semanticModel.GetNullableContext(classNode.SpanStart).AnnotationsEnabled();
-
         var editor = await DocumentEditor.CreateAsync(document, cancellationToken);
 
         UpdateAttribute(editor, classNode, attributeNode, customApi);
-        editor.AddMember(classNode, GenerateRequestClass(classNode.Identifier.Text, customApi.RequestParameters, nullableEnabled));
-        editor.AddMember(classNode, GenerateResponseClass(classNode.Identifier.Text, customApi.ResponseProperties, nullableEnabled));
+        editor.AddMember(classNode, GenerateRequestClass(classNode.Identifier.Text, customApi.RequestParameters));
+        editor.AddMember(classNode, GenerateResponseClass(classNode.Identifier.Text, customApi.ResponseProperties));
 
         return editor.GetChangedDocument();
     }
@@ -116,19 +116,21 @@ public class CustomApiRefactoringProvider : CodeRefactoringProvider
         editor.ReplaceNode(attributeNode, updatedAttributeSyntax);
     }
 
-    private ClassDeclarationSyntax GenerateRequestClass(string className, IEnumerable<CustomApiRequestParameter> parameters, bool nullableEnabled)
-    {
-        return SyntaxFactory.ClassDeclaration($"{className}Request")
+    private ClassDeclarationSyntax GenerateRequestClass(string className, IEnumerable<CustomApiRequestParameter> parameters)
+        => SyntaxFactory.ClassDeclaration($"{className}Request")
             .AddModifiers(SyntaxFactory.Token(SyntaxKind.PublicKeyword))
-            .AddMembers(parameters.Select(p => GenerateProperty(p.UniqueName!, p.Type, p.IsOptional, p.DisplayName, p.Description, nullableEnabled, "CustomApiRequestParameter", true)).ToArray());
-    }
+            .AddMembers([.. parameters.Select(GenerateProperty)]);
 
-    private ClassDeclarationSyntax GenerateResponseClass(string className, IEnumerable<CustomApiResponseProperty> properties, bool nullableEnabled)
-    {
-        return SyntaxFactory.ClassDeclaration($"{className}Response")
-            .AddModifiers(SyntaxFactory.Token(SyntaxKind.PublicKeyword))
-            .AddMembers(properties.Select(p => GenerateProperty(p.UniqueName!, p.Type, true, p.DisplayName, p.Description, nullableEnabled, "CustomApiResponseProperty", false)).ToArray());
-    }
+    private ClassDeclarationSyntax GenerateResponseClass(string className, IEnumerable<CustomApiResponseProperty> properties)
+        => SyntaxFactory.ClassDeclaration($"{className}Response")
+        .AddModifiers(SyntaxFactory.Token(SyntaxKind.PublicKeyword))
+        .AddMembers([.. properties.Select(GenerateProperty)]);
+
+    private PropertyDeclarationSyntax GenerateProperty(
+        CustomApiRequestParameter parameter) => GenerateProperty(parameter.UniqueName!, parameter.Type, parameter.IsOptional, parameter.DisplayName, parameter.Description, nameof(CustomApiRequestParameter), true);
+
+    private PropertyDeclarationSyntax GenerateProperty(
+        CustomApiResponseProperty property) => GenerateProperty(property.UniqueName!, property.Type, true, property.DisplayName, property.Description, nameof(CustomApiResponseProperty), false);
 
     private PropertyDeclarationSyntax GenerateProperty(
         string originalName,
@@ -136,12 +138,11 @@ public class CustomApiRefactoringProvider : CodeRefactoringProvider
         bool isOptional,
         string? displayName,
         string? description,
-        bool nullableEnabled,
         string attributeType,
         bool canHaveIsOptional)
     {
         var propertyName = char.IsLower(originalName[0]) ? char.ToUpper(originalName[0]) + originalName.Substring(1) : originalName;
-        var propertyType = MapType(type, nullableEnabled && isOptional);
+        var propertyType = MapType(type, IsNullableEnabled && isOptional);
 
         var propertyDeclaration = SyntaxFactory.PropertyDeclaration(SyntaxFactory.ParseTypeName(propertyType), propertyName)
             .AddModifiers(SyntaxFactory.Token(SyntaxKind.PublicKeyword))
@@ -159,7 +160,7 @@ public class CustomApiRefactoringProvider : CodeRefactoringProvider
                 SyntaxFactory.LiteralExpression(SyntaxKind.StringLiteralExpression, SyntaxFactory.Literal(originalName))));
         }
 
-        if (canHaveIsOptional && isOptional && !nullableEnabled)
+        if (canHaveIsOptional && isOptional && !IsNullableEnabled)
         {
             attributeArguments.Add(SyntaxFactory.AttributeArgument(SyntaxFactory.NameEquals("IsOptional"), null,
                 SyntaxFactory.LiteralExpression(SyntaxKind.TrueLiteralExpression)));
