@@ -29,20 +29,20 @@ public partial class EchoApi
     protected static EchoApi.Request GetRequest(IExecutionContext context)
         => new()
         {
-            BooleanParameter = context.InputParameters.TryGetValue("BooleanParameter", out var BooleanParameter) && Convert.ToBoolean(BooleanParameter),
-            DateTimeParameter = context.InputParameters.TryGetValue("DateTimeParameter", out var DateTimeParameter) ? Convert.ToDateTime(DateTimeParameter) : default,
-            DecimalParameter = context.InputParameters.TryGetValue("DecimalParameter", out var DecimalParameter) ? Convert.ToDecimal(DecimalParameter) : default,
-            EntityParameter = context.InputParameters.TryGetValue("EntityParameter", out var EntityParameter) ? (Entity)EntityParameter : default,
-            EntityCollectionParameter = context.InputParameters.TryGetValue("EntityCollectionParameter", out var EntityCollectionParameter) ? (EntityCollection)EntityCollectionParameter : default,
-            EntityReferenceParameter = context.InputParameters.TryGetValue("EntityReferenceParameter", out var EntityReferenceParameter) ? (EntityReference)EntityReferenceParameter : default,
-            FloatParameter = context.InputParameters.TryGetValue("FloatParameter", out var FloatParameter) ? Convert.ToSingle(FloatParameter) : default,
-            IntegerParameter = context.InputParameters.TryGetValue("IntegerParameter", out var IntegerParameter) ? Convert.ToInt32(IntegerParameter) : default,
-            MoneyParameter = context.InputParameters.TryGetValue("MoneyParameter", out var MoneyParameter) ? (Money)MoneyParameter : default,
-            PicklistParameter = context.InputParameters.TryGetValue("PicklistParameter", out var PicklistParameter) ? (OptionSetValue)PicklistParameter : default,
-            EnumParameter = context.InputParameters.TryGetValue("EnumParameter", out var EnumParameter) ? (XrmGenTest.TestEnum)((OptionSetValue)EnumParameter).Value : default,
-            StringParameter = context.InputParameters.TryGetValue("StringParameter", out var StringParameter) ? Convert.ToString(StringParameter) : default,
-            StringArrayParameter = context.InputParameters.TryGetValue("StringArrayParameter", out var StringArrayParameter) ? (string[])StringArrayParameter : default,
-            GuidParameter = context.InputParameters.TryGetValue("GuidParameter", out var GuidParameter) ? (Guid)GuidParameter : default,
+            BooleanParameter = context.InputParameters.TryGetValue("BooleanParameter", out bool? BooleanParameter) ? BooleanParameter : default,
+            DateTimeParameter = context.InputParameters.TryGetValue("DateTimeParameter", out System.DateTime DateTimeParameter) ? DateTimeParameter : default,
+            DecimalParameter = context.InputParameters.TryGetValue("DecimalParameter", out decimal DecimalParameter) ? DecimalParameter : default,
+            EntityParameter = context.InputParameters.TryGetValue("EntityParameter", out Microsoft.Xrm.Sdk.Entity EntityParameter) ? EntityParameter : default,
+            EntityCollectionParameter = context.InputParameters.TryGetValue("EntityCollectionParameter", out Microsoft.Xrm.Sdk.EntityCollection? EntityCollectionParameter) ? EntityCollectionParameter : default,
+            EntityReferenceParameter = context.InputParameters.TryGetValue("EntityReferenceParameter", out Microsoft.Xrm.Sdk.EntityReference EntityReferenceParameter) ? EntityReferenceParameter : default,
+            FloatParameter = context.InputParameters.TryGetValue("FloatParameter", out float FloatParameter) ? FloatParameter : default,
+            IntegerParameter = context.InputParameters.TryGetValue("IntegerParameter", out int IntegerParameter) ? IntegerParameter : default,
+            MoneyParameter = context.InputParameters.TryGetValue("MoneyParameter", out Microsoft.Xrm.Sdk.Money MoneyParameter) ? MoneyParameter : default,
+            PicklistParameter = context.InputParameters.TryGetValue("PicklistParameter", out OptionSetValue PicklistParameter) ? PicklistParameter : default,
+            EnumParameter = context.InputParameters.TryGetValue("EnumParameter", out OptionSetValue EnumParameter) ? (XrmGenTest.TestEnum)EnumParameter.Value : default,
+            StringParameter = context.InputParameters.TryGetValue("StringParameter", out string StringParameter) ? StringParameter : default,
+            StringArrayParameter = context.InputParameters.TryGetValue("StringArrayParameter", out string[] StringArrayParameter) ? StringArrayParameter : default,
+            GuidParameter = context.InputParameters.TryGetValue("GuidParameter", out System.Guid GuidParameter) ? GuidParameter : default,
         };
     
     protected static void SetResponse(IExecutionContext context, EchoApi.Response response)

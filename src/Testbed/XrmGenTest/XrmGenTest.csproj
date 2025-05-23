@@ -71,6 +71,10 @@
       <DesignTime>True</DesignTime>
       <DependentUpon>AccountCreatePlugin.cs</DependentUpon>
     </Compile>
+    <Compile Include="Client\Candidate1\CustomRequest.cs" />
+    <Compile Include="Client\Candidate1\CustomResponse.cs" />
+    <Compile Include="Client\Candidate1\IOrganizationServiceExtensions.cs" />
+    <Compile Include="Client\OrganizationServiceExtensions.cs" />
     <Compile Include="ContactCreatePlugin.cs">
       <Generator>Xrm Tools Plugin Code Generator</Generator>
       <LastGenOutput>ContactCreatePlugin.Generated.cs</LastGenOutput>
@@ -167,11 +171,12 @@
       <PrivateAssets>all</PrivateAssets>
     </PackageReference>
     <PackageReference Include="XrmTools.Meta.Attributes">
-      <Version>1.0.34</Version>
+      <Version>1.0.38</Version>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
       <PrivateAssets>all</PrivateAssets>
     </PackageReference>
   </ItemGroup>
+  <ItemGroup />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <ProjectExtensions />
 </Project>

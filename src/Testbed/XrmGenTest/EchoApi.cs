@@ -1,4 +1,5 @@
-﻿using Microsoft.Xrm.Sdk;
+﻿#nullable enable
+using Microsoft.Xrm.Sdk;
 using System;
 using XrmTools.Meta.Attributes;
 
@@ -18,7 +19,7 @@ public partial class EchoApi : IPlugin
 
         SetResponse(context, new Response
         {
-            BooleanParameter = request.BooleanParameter,
+            BooleanParameter = request.BooleanParameter.Value,
             DateTimeParameter = request.DateTimeParameter,
             DecimalParameter = request.DecimalParameter,
             EntityParameter = request.EntityParameter,
@@ -39,11 +40,11 @@ public partial class EchoApi : IPlugin
     [CustomApiRequest]
     public class Request
     {
-        public bool BooleanParameter { get; set; }
+        public bool? BooleanParameter { get; set; }
         public DateTime DateTimeParameter { get; set; }
         public decimal DecimalParameter { get; set; }
         public Entity EntityParameter { get; set; }
-        public EntityCollection EntityCollectionParameter { get; set; }
+        public EntityCollection? EntityCollectionParameter { get; set; }
         public EntityReference EntityReferenceParameter { get; set; }
         public float FloatParameter { get; set; }
         public int IntegerParameter { get; set; }
