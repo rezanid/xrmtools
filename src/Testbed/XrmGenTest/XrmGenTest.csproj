@@ -71,10 +71,8 @@
       <DesignTime>True</DesignTime>
       <DependentUpon>AccountCreatePlugin.cs</DependentUpon>
     </Compile>
-    <Compile Include="Client\Candidate1\CustomRequest.cs" />
-    <Compile Include="Client\Candidate1\CustomResponse.cs" />
-    <Compile Include="Client\Candidate1\IOrganizationServiceExtensions.cs" />
-    <Compile Include="Client\OrganizationServiceExtensions.cs" />
+    <Compile Include="TypedSdkMessages\EchoRequest.cs" />
+    <Compile Include="TypedSdkMessages\EchoResponse.cs" />
     <Compile Include="ContactCreatePlugin.cs">
       <Generator>Xrm Tools Plugin Code Generator</Generator>
       <LastGenOutput>ContactCreatePlugin.Generated.cs</LastGenOutput>
