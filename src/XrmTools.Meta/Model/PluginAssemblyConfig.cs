@@ -13,7 +13,7 @@ using XrmTools.Meta.Attributes.Serialization;
 using XrmTools.Meta.Serialization;
 using XrmTools.Meta.Attributes;
 
-public interface IPluginAssemblyConfig : IPluginAssemblyEntity
+internal interface IPluginAssemblyConfig : IPluginAssemblyEntity
 {
     WebApi.Entities.Solution? Solution { get; set; }
     ICollection<EntityConfig> Entities { get; set; }
@@ -22,7 +22,7 @@ public interface IPluginAssemblyConfig : IPluginAssemblyEntity
     string? FilePath { get; set; }
 }
 
-public interface IPluginAssemblyEntity
+internal interface IPluginAssemblyEntity
 {
     IsolationModes? IsolationMode { get; set; }
     Guid? PluginAssemblyId { get; set; }
@@ -35,7 +35,7 @@ public interface IPluginAssemblyEntity
 }
 
 [EntityLogicalName(EntityLogicalName)]
-public class PluginAssemblyConfig : TypedEntity<PluginAssemblyConfig>, IPluginAssemblyConfig, INotifyPropertyChanged
+internal class PluginAssemblyConfig : TypedEntity<PluginAssemblyConfig>, IPluginAssemblyConfig, INotifyPropertyChanged
 {
     public const string EntityLogicalName = "pluginassembly";
     public const string EntitySetName = "pluginassemblies";

@@ -2,7 +2,6 @@
 namespace XrmTools.Xrm.Model;
 using Microsoft.Xrm.Sdk;
 using Microsoft.Xrm.Sdk.Client;
-using Microsoft.Xrm.Sdk.Metadata;
 using Microsoft.Xrm.Sdk.Query;
 using Newtonsoft.Json;
 using System;
@@ -10,7 +9,7 @@ using System.Collections.Generic;
 using System.Linq.Expressions;
 using System.Text.Json.Serialization;
 using XrmTools.Meta.Attributes;
-using XrmTools.Meta.Model;
+using XrmTools.WebApi.Entities;
 
 public interface IMessageProcessingStepEntity
 {
@@ -36,17 +35,17 @@ public interface IMessageProcessingStepEntity
     bool? CanBeBypassed { get; set;}
 }
 
-public interface IMessageProcessingStepConfig : IMessageProcessingStepEntity
+internal interface IMessageProcessingStepConfig : IMessageProcessingStepEntity
 {
     ICollection<PluginStepImageConfig> Images { get; set; }
-    EntityMetadata? PrimaryEntityDefinition { get; set; }
+    Microsoft.Xrm.Sdk.Metadata.EntityMetadata? PrimaryEntityDefinition { get; set; }
     string? StageName { get; }
     object? ActionDefinition { get; set; }
     SdkMessage? Message { get; set; } 
 }
 
 [EntityLogicalName(EntityLogicalName)]
-public class PluginStepConfig : TypedEntity<PluginStepConfig>, IMessageProcessingStepConfig
+internal class PluginStepConfig : TypedEntity<PluginStepConfig>, IMessageProcessingStepConfig
 {
     //Fields not present in the entity:
     // - PrimaryEntityName
@@ -66,7 +65,7 @@ public class PluginStepConfig : TypedEntity<PluginStepConfig>, IMessageProcessin
     /// Contains the metadata for the primary entity. Attributes are filtered to only include the attributes 
     /// that are used in the message processing step.
     /// </summary>
-    public EntityMetadata? PrimaryEntityDefinition { get; set; }
+    public Microsoft.Xrm.Sdk.Metadata.EntityMetadata? PrimaryEntityDefinition { get; set; }
     [JsonProperty("sdkmessageprocessingstepid_sdkmessageprocessingstepimage", Order = 1)]
     [JsonPropertyOrder(1)]
     public ICollection<PluginStepImageConfig> Images { get; set; } = [];

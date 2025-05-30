@@ -1,23 +1,21 @@
-﻿namespace XrmTools.WebApi.Entities;
+﻿#nullable enable
+namespace XrmTools.WebApi.Entities;
 
-#nullable enable
-public record EntityMetadata(string LogicalName, string EntitySetName);
-//public class EntityMetadata
-//{
-//    public string LogicalName { get; set; } = string.Empty;
-//    public string EntitySetName { get; set; } = string.Empty;
-//    public string? DisplayName { get; set; }
-//    public string? Description { get; set; }
-//    public bool IsCustomEntity { get; set; }
-//    public bool IsIntersect { get; set; }
-//    public bool IsValidForAdvancedFind { get; set; }
-//    public bool IsValidForQueue { get; set; }
-//    public bool IsValidForFormAssistant { get; set; }
+using XrmTools.WebApi.Entities.Attributes;
 
-//    public EntityMetadata(string logicalName, string sntitySetName)
-//    {
-//        LogicalName = logicalName;
-//        EntitySetName = sntitySetName;
-//    }
-//}
+[EntityMetadata("EntityMetadata", "EntityDefinitions")]
+public class EntityMetadata(string LogicalName, string EntitySetName)
+{
+    public int? ActivityTypeMask { get; set; }
+    public string LogicalName { get; set; } = LogicalName;
+    public string EntitySetName { get; set; } = EntitySetName;
+    public string? DisplayName { get; set; }
+    public string? Description { get; set; }
+    public bool IsCustomEntity { get; set; }
+    public bool IsIntersect { get; set; }
+    public bool IsValidForAdvancedFind { get; set; }
+    public bool IsValidForQueue { get; set; }
+    public bool IsValidForFormAssistant { get; set; }
+    //public AttributeMetadata[] Attributes { get; set; } = [];
+}
 #nullable restore

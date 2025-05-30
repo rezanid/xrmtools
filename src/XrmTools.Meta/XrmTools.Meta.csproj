@@ -19,6 +19,10 @@
     <PackageReadmeFile>README.md</PackageReadmeFile>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Remove="Model\SdkMessage.cs" />
+    <Compile Remove="Model\SdkMessageFilter.cs" />
+  </ItemGroup>
+  <ItemGroup>
     <Compile Include="..\xrmtools.core\system\runtime\compilerservices\Index.cs">
       <Link>System\Runtime\CompilerServices\Index.cs</Link>
     </Compile>
@@ -48,7 +52,7 @@
       <PrivateAssets>all</PrivateAssets>
     </PackageReference>
     <PackageReference Include="System.Data.DataSetExtensions" Version="4.5.0" />
-    <PackageReference Include="XrmTools.Meta.Attributes" Version="1.0.38">
+    <PackageReference Include="XrmTools.Meta.Attributes" Version="1.0.41">
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageReference>

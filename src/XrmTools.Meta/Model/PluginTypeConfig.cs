@@ -21,7 +21,7 @@ public interface IPluginTypeEntity
     string? WorkflowActivityGroupName { get; set; }
 }
 
-public interface IPluginTypeConfig : IPluginTypeEntity
+internal interface IPluginTypeConfig : IPluginTypeEntity
 {
     string? Namespace { get; set; }
     string? BaseTypeName { get; set; }
@@ -30,7 +30,7 @@ public interface IPluginTypeConfig : IPluginTypeEntity
 }
 
 [EntityLogicalName(EntityLogicalName)]
-public class PluginTypeConfig : TypedEntity<PluginTypeConfig>, IPluginTypeConfig
+internal class PluginTypeConfig : TypedEntity<PluginTypeConfig>, IPluginTypeConfig
 {
     public const string EntityLogicalName = "plugintype";
     public override string GetEntitySetName() => "plugintypes";
