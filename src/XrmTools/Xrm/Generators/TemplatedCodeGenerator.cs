@@ -13,7 +13,7 @@ using System.ComponentModel.DataAnnotations;
 
 [Export(typeof(IXrmCodeGenerator))]
 [method:ImportingConstructor]
-public class TemplatedCodeGenerator(IValidationService validationService) : IXrmCodeGenerator
+internal class TemplatedCodeGenerator(IValidationService validationService) : IXrmCodeGenerator
 {
     public XrmCodeGenConfig? Config { set; get; }
 

@@ -128,7 +128,7 @@ internal class XrmPluginDefinitionCompletionSource(
     {
         var entityMetadataRepository = await repositoryFactory.CreateRepositoryAsync<ISdkMessageRepository>();
         if (entityMetadataRepository == null) return CompletionContext.Empty;
-        var messages = await entityMetadataRepository.GetAsync(cancellationToken).ConfigureAwait(false);
+        var messages = await entityMetadataRepository.GetCustomProcessingStepAllowedAsync(cancellationToken).ConfigureAwait(false);
         return new CompletionContext([.. messages.Select(message => new CompletionItem(message.Name, this))]);
     }
 

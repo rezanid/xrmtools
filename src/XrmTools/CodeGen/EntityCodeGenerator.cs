@@ -33,7 +33,7 @@ using System.ComponentModel.DataAnnotations;
 using Community.VisualStudio.Toolkit;
 using XrmTools.Analyzers;
 
-public class EntityCodeGenerator : BaseCodeGeneratorWithSite
+internal class EntityCodeGenerator : BaseCodeGeneratorWithSite
 {
     public const string Name = "XrmTools Entity Generator";
     public const string Description = "Generates entity classes from metadata";

@@ -12,7 +12,7 @@ using XrmTools.Core.Repositories;
 using XrmTools.Xrm;
 using XrmTools.Xrm.Model;
 
-public class AssemblySelectionViewModel : ViewModelBase
+internal class AssemblySelectionViewModel : ViewModelBase
 {
     private readonly IPluginAssemblyRepository _assemblyRepository;
     private readonly IPluginTypeRepository _typeRepository;

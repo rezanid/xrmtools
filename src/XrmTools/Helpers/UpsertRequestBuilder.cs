@@ -12,7 +12,7 @@ using XrmTools.WebApi.Entities;
 using XrmTools.Meta.Attributes;
 
 //TODO: Make this class IDisposable and dispose requests.
-public class UpsertRequestBuilder(
+internal class UpsertRequestBuilder(
     PluginAssemblyConfig config,
     //string base64Assembly,
     Dictionary<string, SdkMessage> sdkMessages)

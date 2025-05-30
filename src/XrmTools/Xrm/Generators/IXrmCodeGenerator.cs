@@ -7,7 +7,7 @@ using XrmTools.Xrm.Model;
 
 [Guid(PackageGuids.guidXrmPluginCodeGeneratorString)]
 [ComVisible(true)]
-public interface IXrmCodeGenerator
+internal interface IXrmCodeGenerator
 {
     public XrmCodeGenConfig? Config { get; set; }
     ValidationResult IsValid(PluginAssemblyConfig plugin);
