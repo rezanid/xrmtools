@@ -293,8 +293,6 @@
     <Compile Include="Xrm\Repositories\SdkMessageRepository.cs" />
     <Compile Include="Xrm\Repositories\SystemRepository.cs" />
     <Compile Include="Xrm\Repositories\XrmRepository.cs" />
-    <Compile Include="Xrm\WebApiSchemaProvider.cs" />
-    <Compile Include="Xrm\XrmMetadataSource.cs" />
     <Compile Include="Logging\OutputLogger.cs" />
   </ItemGroup>
   <ItemGroup>

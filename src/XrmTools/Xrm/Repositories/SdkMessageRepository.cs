@@ -131,7 +131,7 @@ internal class SdkMessageRepository(XrmHttpClient client, IWebApiService service
         return [];
     }
 
-    //TODO: Needs pagination support, because server will paginate with 11 records per page by default.
+    //TODO: Might need pagination support.
     public async Task<IEnumerable<SdkMessage>> GetVisibleWithoutDescendantsAsync(CancellationToken cancellationToken)
     {
         var response = await service.GetAsync(SdkMessageQueryVisible_NoDescendants, cancellationToken).ConfigureAwait(false);
