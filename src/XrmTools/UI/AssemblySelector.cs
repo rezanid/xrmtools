@@ -8,7 +8,7 @@ using XrmTools.Logging.Compatibility;
 using XrmTools.Xrm.Model;
 using XrmTools.Xrm.Repositories;
 
-public interface IAssemblySelector
+internal interface IAssemblySelector
 {
     Task<(PluginAssemblyConfig? config, string? filename)> ChooseAssemblyAsync();
 }

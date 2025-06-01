@@ -10,7 +10,7 @@ using XrmTools.Xrm.Model;
 [Export(typeof(IValidator))]
 [Validator(Category = Categories.CodeGeneration)]
 [method: ImportingConstructor]
-public class CodeGenPluginAssemblyValidator(Logging.Compatibility.ILogger<CodeGenPluginAssemblyValidator> logger) : ValidatorBase<PluginAssemblyConfig>
+internal class CodeGenPluginAssemblyValidator(Logging.Compatibility.ILogger<CodeGenPluginAssemblyValidator> logger) : ValidatorBase<PluginAssemblyConfig>
 {
     private readonly Logging.Compatibility.ILogger<CodeGenPluginAssemblyValidator> Logger = logger ?? throw new ArgumentNullException(nameof(logger));
 

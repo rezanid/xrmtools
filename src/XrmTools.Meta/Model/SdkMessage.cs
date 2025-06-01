@@ -4,29 +4,51 @@ using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
 using System.Text.Json.Serialization;
+using XrmTools.WebApi.Entities;
+using XrmTools.WebApi.Entities.Attributes;
 
-public record SdkMessage(
-    [property: JsonProperty("name"), JsonPropertyName("name")]
-        string Name,
-    [property: JsonProperty("isprivate"), JsonPropertyName("isprivate")]
-        bool IsPrivate,
-    [property: JsonProperty("executeprivilegename"), JsonPropertyName("executeprivilegename")]
-        string ExecutePrivilegeName,
-    [property: JsonProperty("isvalidforexecuteasync"), JsonPropertyName("isvalidforexecuteasync")]
-        bool? IsValidForExecuteAsync,
-    [property: JsonProperty("autotransact"), JsonPropertyName("autotransact")]
-        bool AutoTransact,
-    [property: JsonProperty("introducedversion"), JsonPropertyName("introducedversion")]
-        string IntroducedVersion,
-    [property: JsonProperty("customizationleve"), JsonPropertyName("customizationlevel")]
-        int? CustomizationLevel,
-    [property: JsonProperty("availability"), JsonPropertyName("availability")]
-        int? Availability,
-    [property: JsonProperty("sdkmessageid"), JsonPropertyName("sdkmessageid")]
-        Guid Id,
-    [property: JsonProperty("sdkmessageid_sdkmessagefilter"), JsonPropertyName("sdkmessageid_sdkmessagefilter")]
-        SdkMessageFilter[] Filters)
+[EntityMetadata("sdkmessage", "sdkmessages")]
+public class SdkMessage : Component<SdkMessage>
 {
+    [JsonProperty("sdkmessageid"), JsonPropertyName("sdkmessageid")]
+    public override Guid? Id { get; set; }
+
+    [JsonProperty("name"), JsonPropertyName("name")]
+    public required string Name { get; set; }
+
+    [JsonProperty("isprivate"), JsonPropertyName("isprivate")]
+    public bool IsPrivate { get; set; }
+
+    [JsonProperty("executeprivilegename"), JsonPropertyName("executeprivilegename")]
+    public string? ExecutePrivilegeName { get; set; }
+
+    [JsonProperty("workflowenabled"), JsonPropertyName("workflowenabled")]
+    public bool? WorkflowSdkStepEnabled { get; set; }
+
+    [JsonProperty("isvalidforexecuteasync"), JsonPropertyName("isvalidforexecuteasync")]
+    public bool? IsValidForExecuteAsync { get; set; }
+
+    [JsonProperty("autotransact"), JsonPropertyName("autotransact")]
+    public bool AutoTransact { get; set; }
+
+    [JsonProperty("introducedversion"), JsonPropertyName("introducedversion")]
+    public string? IntroducedVersion { get; set; }
+
+    [JsonProperty("customizationleve"), JsonPropertyName("customizationlevel")]
+    public int? CustomizationLevel { get; set; }
+
+    [JsonProperty("availability"), JsonPropertyName("availability")]
+    public int? Availability { get; set; }
+
+    [JsonProperty("categoryname"), JsonPropertyName("categoryname")]
+    public string? CategoryName { get; set; }
+
+    [JsonProperty("sdkmessageid_sdkmessagefilter"), JsonPropertyName("sdkmessageid_sdkmessagefilter")]
+    public SdkMessageFilter[] Filters { get; set; } = [];
+
+    [JsonProperty("message_sdkmessagepair"), JsonPropertyName("message_sdkmessagepair")]
+    public List<SdkMessagePair> Pairs { get; set; } = [];
+
     private static readonly IReadOnlyDictionary<string, ImageMessagePropertyName[]> ImageMessageProperties =
         new Dictionary<string, ImageMessagePropertyName[]>(StringComparer.OrdinalIgnoreCase)
         {

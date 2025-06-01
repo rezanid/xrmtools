@@ -14,7 +14,7 @@ using XrmTools.Logging.Compatibility;
 using System.ComponentModel.Composition;
 using XrmTools.WebApi;
 
-public interface IXrmMetaDataService
+internal interface IXrmMetaDataService
 {
     /// <summary>
     /// Parses the input file and returns the PluginAssemblyConfig plus the PluginTypeConfigs and EntityConfigs that are found in the document.

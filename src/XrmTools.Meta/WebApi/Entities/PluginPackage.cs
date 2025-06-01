@@ -15,5 +15,6 @@ public class PluginPackage : Component<PluginPackage>
     [JsonPropertyName("pluginpackageid")]
     [JsonProperty("pluginpackageid")]
     public override Guid? Id { get; set; }
+    public string? Version { get; set; }
 }
 #nullable restore

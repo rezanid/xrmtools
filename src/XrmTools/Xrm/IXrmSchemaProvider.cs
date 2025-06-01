@@ -6,7 +6,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using XrmTools.Xrm.Model;
 
-public interface IXrmSchemaProvider : IDisposable
+internal interface IXrmSchemaProvider : IDisposable
 {
     DataverseEnvironment Environment { get; }
     bool IsReady { get; }

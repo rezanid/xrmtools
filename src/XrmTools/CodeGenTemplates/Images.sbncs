@@ -46,7 +46,7 @@ public class {{base_class_name}} : Entity
 		}
 	}
 
-	{{~for attribute in step.primary_entity_definition.attributes | array.filter @supported_attribute~}}
+	{{~for attribute in image.message_property_definition.attributes | array.filter @supported_attribute~}}
 	{{~description = attribute.description?.localized_labels[0]?.label~}}
 	/// <summary>
 	{{~if description != null && description.length > 0~}}

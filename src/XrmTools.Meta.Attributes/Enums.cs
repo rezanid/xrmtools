@@ -15,31 +15,32 @@
         Inactive = 1
     }
 
+    /// <summary>
+    /// Read more about the stages of a plugin execution pipeline at https://learn.microsoft.com/en-us/power-apps/developer/data-platform/event-framework#event-execution-pipeline
+    /// </summary>
     public enum Stages
     {
         /// <summary>
-        /// pre-validation (not in transaction).
+        /// This provides an opportunity to include logic to cancel the operation before the database transaction.
         /// </summary>
         PreValidation = 10,
         /// <summary>
-        /// pre-operation (in transaction, ownerid cannot be changed).
+        /// Occurs before the main system operation and within the database transaction. (ownerid cannot be changed).
         /// </summary>
         PreOperation = 20,
-        //
-        // Summary:
-        //     
         /// <summary>
-        /// Main operation (in transaction, only used in Custom APIs).
+        /// Main operation (custom API and Custom virtual table data providers).
         /// </summary>
         MainOperation = 30,
         /// <summary>
-        /// post-operation (operation executed, but still in transaction).
+        /// Occurs after the main system operation and within the database transaction. Use this stage to modify any properties of the message before it is returned to the caller.
+        /// Avoid applying changes to an entity included in the message because this will trigger a new Update event.
         /// </summary>
         PostOperation = 40,
         /// <summary>
         /// post-operation, deprecated.
         /// </summary>
-        [Obsolete("Deprecated according to Microsoft.", true)]
+        [Obsolete("Not in use anymore according to Microsoft.", true)]
         DepecratedPostOperation = 50
     }
 

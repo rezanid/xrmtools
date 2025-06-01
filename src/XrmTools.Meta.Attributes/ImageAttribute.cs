@@ -32,7 +32,7 @@
         public string Attributes { get; set; }
         public string Description { get; set; }
 
-        ImageAttribute(ImageTypes imageType)
+        public ImageAttribute(ImageTypes imageType)
         {
             ImageType = imageType;
             Name = imageType.ToString();

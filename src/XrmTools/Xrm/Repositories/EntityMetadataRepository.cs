@@ -16,6 +16,8 @@ using XrmTools.Logging.Compatibility;
 using XrmTools.Meta.Model;
 using XrmTools.Serialization;
 using XrmTools.WebApi;
+using XrmTools.WebApi.Entities;
+using EntityMetadata = Microsoft.Xrm.Sdk.Metadata.EntityMetadata;
 
 internal interface IEntityMetadataRepository : IXrmRepository
 {

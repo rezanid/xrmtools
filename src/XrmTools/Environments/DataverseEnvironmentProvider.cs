@@ -49,7 +49,7 @@ internal class DataverseEnvironmentProvider : IEnvironmentProvider
 
     public async Task SetActiveEnvironmentAsync(DataverseEnvironment environment)
     {
-        if (!environment.IsValid) return;
+        if (environment?.IsValid != true) return;
 
         var options = await GeneralOptions.GetLiveInstanceAsync();
         switch (options.CurrentEnvironmentStorage)

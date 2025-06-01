@@ -344,7 +344,7 @@ internal sealed class RegisterPluginCommand : BaseCommand<RegisterPluginCommand>
         Logger.LogTrace($"Fetching SDK Messages for entities: {string.Join(", ", stepEntities)}");
 
         var messageRepo = await RepositoryFactory.CreateRepositoryAsync<ISdkMessageRepository>();
-        var messages = await messageRepo.GetAsync(stepEntities!, cancellationToken);
+        var messages = await messageRepo.GetForEntitiesAsync(stepEntities!, cancellationToken);
 
         return messages.ToDictionary(m => m.Name, m => m);
     }
