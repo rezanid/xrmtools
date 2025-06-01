@@ -324,6 +324,22 @@ internal class CSharpXrmMetaParser(
         => ReflectionHelper.SetPropertiesFromAttribute(new PluginStepConfig(), attributeData);
 
     private PluginStepImageConfig CreatePluginImageConfig(AttributeData attributeData)
-        => ReflectionHelper.SetPropertiesFromAttribute(new PluginStepImageConfig(), attributeData);
+    {
+        var imageConfig = ReflectionHelper.SetPropertiesFromAttribute(new PluginStepImageConfig(), attributeData);
+
+        // TODO: This extra code is because ImageAttribute.Attributes name does not match ImageConfig.ImageAttribute property, so
+        // ReflectionHelper.SetPropertiesFromAttribute is not able to set it automatically. In future when we completely mode to
+        // Web API, this code can be removed and the method becomes just one line.
+        if (attributeData.ConstructorArguments.Length > 1)
+        {
+            var attributes = attributeData.ConstructorArguments[1].Value;
+            imageConfig.ImageAttributes = attributeData.ConstructorArguments[1].Value as string;
+            return imageConfig;
+        }
+
+        imageConfig.ImageAttributes = attributeData.NamedArguments.FirstOrDefault(a => a.Key == "Attributes").Value.Value as string;
+
+        return imageConfig;
+    }
 }
 #nullable restore

@@ -24,7 +24,7 @@ public abstract class PluginBase : IPlugin
 
 [Plugin]
 [Step("Create", "account", "accountnumber,accountcategorycode,accountclassificationcode", Stages.PostOperation, ExecutionMode.Synchronous)]
-[Image(ImageTypes.PostImage, "accountnumber")]
+[Image(ImageTypes.PostImage, "accountnumber,accountcategorycode,address1_freighttermscode,accountid,address1_addresstypecode")]
 public partial class AccountCreatePlugin : PluginBase, IPlugin
 {
     public void ExecuteLocal(IServiceProvider serviceProvider)
