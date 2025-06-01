@@ -55,13 +55,14 @@ internal class XrmStringClassifier(IClassificationTypeRegistryService registry) 
         var text = span.GetText();
 
         // Regular expression to match the Step attribute with three arguments
-        var match = Regex.Match(text, @"\[(?:Image|Step)\(.+?,.+?,\s*""([^""]+)""");
+        var match = Regex.Match(text, @"\[(?:Image)\(.+?,\s*""([^""]+)""|\[(?:Step)\(.+?,.+?,\s*""([^""]+)""");
 
         if (match.Success && match.Groups.Count > 1)
         {
             // Extract the third argument, which is the comma-delimited field list
-            var fieldList = match.Groups[1].Value;
-            var start = match.Groups[1].Index;
+            var group = match.Groups[0].Value.StartsWith("[Image") ? match.Groups[1] : match.Groups[2];
+            var fieldList = group.Value;
+            var start = group.Index;
 
             // Split the fields by comma and apply highlighting to each field
             var fields = fieldList.Split(',');
