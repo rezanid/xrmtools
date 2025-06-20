@@ -8,6 +8,7 @@ using XrmTools.Settings;
 using Microsoft.VisualStudio.Shell;
 using XrmTools.Environments;
 using System;
+using System.Collections.Generic;
 
 internal class DataverseEnvironmentProvider : IEnvironmentProvider
 {
@@ -81,6 +82,12 @@ internal class DataverseEnvironmentProvider : IEnvironmentProvider
                 break;
         }
         EnvironmentChanged?.Invoke(environment);
+    }
+
+    public async Task<IList<DataverseEnvironment>> GetAvailableEnvironmentsAsync() 
+    {
+        var options = await GeneralOptions.GetLiveInstanceAsync();
+        return options?.Environments ?? [];
     }
 
     private DataverseEnvironment? GetEnvironmentFromSolution()
