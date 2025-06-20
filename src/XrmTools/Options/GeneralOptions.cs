@@ -44,7 +44,7 @@ internal class GeneralOptions : BaseOptionModel<GeneralOptions>
 
     [Category("Advanced")]
     [DisplayName("Proxy")]
-    [Description("Use a proxy server for all requests. This is useful for debugging.")]
+    [Description("Use a proxy server for all communications with Power Platform. Requires restarting Visual Studio.")]
     [DefaultValue("")]
     public string Proxy { get; set; } = string.Empty;
 
