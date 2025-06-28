@@ -132,7 +132,7 @@ internal class XrmPluginDefinitionCompletionSource(
             };
         }
 
-        if (!IsImageAttribute(attributeSyntax, semanticModel))
+        if (IsCustomApiOrRequestOrResponseProxyAttribute(attributeSyntax, semanticModel) && argumentIndex == 0)
         {
             return await GetMessageCompletionsWhenVisibleAsync(cancellationToken).ConfigureAwait(false);
         }
@@ -313,11 +313,11 @@ internal class XrmPluginDefinitionCompletionSource(
         return symbol?.ContainingType.Name == nameof(EntityAttribute);
     }
 
-    private bool IsRequestOrResponseProxyAttribute(AttributeSyntax attributeSyntax, SemanticModel semanticModel)
+    private bool IsCustomApiOrRequestOrResponseProxyAttribute(AttributeSyntax attributeSyntax, SemanticModel semanticModel)
     {
         var symbolInfo = semanticModel.GetSymbolInfo(attributeSyntax);
         var symbol = (symbolInfo.Symbol ?? symbolInfo.CandidateSymbols.FirstOrDefault()) as IMethodSymbol;
-        return symbol?.ContainingType.Name is "RequestProxyAttribute" or "ResponseProxyAttribute";
+        return symbol?.ContainingType.Name is "CustomApiAttribute" or "RequestProxyAttribute" or "ResponseProxyAttribute";
     }
 
     private bool IsSupportedAttribute(AttributeMetadata attribute) => attribute.IsValidForRead.HasValue && attribute.IsValidForRead.Value && attribute.AttributeOf is null;

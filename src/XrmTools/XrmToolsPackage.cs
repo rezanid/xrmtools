@@ -6,6 +6,9 @@ using EnvDTE;
 using EnvDTE80;
 using Microsoft;
 using Microsoft.VisualStudio;
+using Microsoft.VisualStudio.CommandBars;
+using Microsoft.VisualStudio.ComponentModelHost;
+using Microsoft.VisualStudio.Imaging;
 using Microsoft.VisualStudio.Shell;
 using Microsoft.VisualStudio.Shell.Interop;
 using Microsoft.VisualStudio.TaskStatusCenter;
@@ -13,20 +16,21 @@ using Microsoft.VisualStudio.TextTemplating.VSHost;
 using Microsoft.VisualStudio.Threading;
 using System;
 using System.ComponentModel.Composition;
+using System.IO;
 using System.Linq;
+using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Threading;
+using XrmTools.Commands;
+using XrmTools.Environments;
 using XrmTools.Helpers;
 using XrmTools.Logging;
 using XrmTools.Options;
 using XrmTools.Settings;
-using XrmTools.Xrm.Generators;
 using XrmTools.Tokens;
+using XrmTools.UI;
+using XrmTools.Xrm.Generators;
 using Task = System.Threading.Tasks.Task;
-using XrmTools.Commands;
-using XrmTools.Environments;
-using System.Reflection;
-using System.IO;
 
 /// <summary>
 /// This is the class that implements the package exposed by this assembly.
@@ -177,41 +181,84 @@ public sealed partial class XrmToolsPackage : ToolkitPackage
         await SetCustomToolPluginGeneratorCommand.InitializeAsync(this);
         await RegisterPluginCommand.InitializeAsync(this);
         await SelectEnvironmentCommand.InitializeAsync(this);
+        // The following two commands contirbute to the dropdown combo box for selecting environments.
+        await ManageEnvironmentsCommand.InitializeAsync(this);
+        await ManageEnvironmentsGetListCommand.InitializeAsync(this);
 
-        // When initialized asynchronously, the current thread may be a background thread at this point.
-        // Do any initialization that requires the UI thread after switching to the UI thread.
-        //await ApplyEntityGeneratorCommand.InitializeAsync(this);
-        //await SetXrmPluginGeneratorCommand.InitializeAsync(this);
-        //await GenerateRegistrationFileCommand.InitializeAsync(this);
+        VS.Events.SolutionEvents.OnAfterOpenSolution += OnAfterOpenSolution;
 
-        //ProjectHelpers.ParentPackage = this;
-
-        // This is for when extension is loaded before the solution is opened.
-        // Usually happens when user opens Visual Studio with a solution already loaded.
-        Dte.Events.SolutionEvents.Opened += () =>
+        var options = await GeneralOptions.GetLiveInstanceAsync();
+        if (options?.IsFirstRun == true)
         {
-            ThreadHelper.JoinableTaskFactory.WithPriority(VsTaskRunContext.UIThreadIdlePriority).Run(async () =>
-            {
-                await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync(alwaysYield: true);
-                StartBackgroundOperations();
-            });
-        };
-        // This is for when extension is loaded after the solution is already open.
-        // Usually happens when user opens Visual Studio and then opens a solution.
+            CommandBars commandBars = (CommandBars)Dte.CommandBars;
+            CommandBar myBar = commandBars[Vsix.Name];
+            myBar.Visible = true;
+            options.IsFirstRun = false;
+            await options.SaveAsync();
+        }
 
         //TODO: In one article, the following call is at the begining of the method:
         // https://learn.microsoft.com/en-us/visualstudio/extensibility/how-to-provide-an-asynchronous-visual-studio-service?view=vs-2022
         await base.InitializeAsync(cancellationToken, progress);
     }
 
+    private void OnAfterOpenSolution(Community.VisualStudio.Toolkit.Solution? solution)
+    {
+        ThreadHelper.JoinableTaskFactory.Run(async () =>
+        {
+            // Currently no background operations are required. This is a placeholder for future use.
+            // StartBackgroundOperations();
+
+            var environmentUrl = SettingsProvider.SolutionSettings.EnvironmentUrl()?.Trim();
+            if (string.IsNullOrWhiteSpace(environmentUrl)) return;
+            var environments = await EnvironmentProvider.GetAvailableEnvironmentsAsync();
+            var environment = environments
+                .FirstOrDefault(e => e.IsValid && e.Url.Equals(environmentUrl, StringComparison.OrdinalIgnoreCase));
+            // If the environment is not found, we will prompt the user to add it.
+            if (environment is null)
+            {
+                var model = new InfoBarModel([
+                    new InfoBarTextSpan($"New environment found in the {solution?.Name} solution, would you like to add it to your list? "),
+                    new InfoBarHyperlink("Add Environment")],
+                    KnownMonikers.Environment,
+                    true);
+
+                var infoBar = await VS.InfoBar.CreateAsync(model);
+                if (infoBar is null)
+                {
+                    return;
+                }
+                infoBar.ActionItemClicked += (sender, args) =>
+                {
+                    try
+                    {
+                        ThreadHelper.JoinableTaskFactory.Run(async () =>
+                        {
+                            await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync();
+                            if (await GetServiceAsync(typeof(SComponentModel)) is not IComponentModel componentModel)
+                            {
+                                return;
+                            }
+                            var envEditor = componentModel.GetService<IEnvironmentEditor>();
+                            if (envEditor is not null)
+                            {
+                                var result = await envEditor.EditEnvironmentsAsync(new DataverseEnvironment { ConnectionString = environmentUrl});
+                                if (result)
+                                {
+                                    infoBar.Close();
+                                }
+                            }
+                        });
+                    }
+                    catch { }
+                };
+                await infoBar.TryShowInfoBarUIAsync();
+            }
+        });
+    }
+
     private async Task InitializeMefServicesAsync()
     {
-        //TODO: Temporary remove to test.
-        //AddService(
-        //    typeof(IXrmPluginCodeGenerator),
-        //    async (container, cancellationToken, type) =>
-        //        await Task.FromResult(new TemplatedPluginCodeGenerator())
-        //    , promote: true);
         AddService(
             typeof(ISettingsProvider),
             async (container, cancellationToken, type) =>
@@ -228,13 +275,6 @@ public sealed partial class XrmToolsPackage : ToolkitPackage
 
     private void StartBackgroundOperations()
     {
-        //var envs = GetProjectsDataverseEnvironments()
-        //    .Where(s => !string.IsNullOrWhiteSpace(s.EnvironmentUrl)
-        //                && Uri.IsWellFormedUriString(s.EnvironmentUrl, UriKind.Absolute))
-        //    // The following grouping is to avoid having multiple environments with the same URL.
-        //    .GroupBy(s => s.EnvironmentUrl)
-        //    .Select(g => g.First())
-        //    .ToList();
         var taskCenter = GetService(typeof(SVsTaskStatusCenterService)) as IVsTaskStatusCenterService;
         Assumes.Present(taskCenter);
         var options = default(TaskHandlerOptions);

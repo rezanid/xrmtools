@@ -76,6 +76,7 @@
     <Compile Include="CodeRefactoringProviders\CustomApiRefactoringProvider.cs" />
     <Compile Include="CodeRefactoringProviders\TypeNameParser.cs" />
     <Compile Include="CodeRefactoringProviders\WebApiServiceHelper.cs" />
+    <Compile Include="Commands\ManageEnvironmentsCommand.cs" />
     <Compile Include="CustomMonikers.cs">
       <AutoGen>True</AutoGen>
       <DesignTime>True</DesignTime>
@@ -123,6 +124,12 @@
     <Compile Include="Settings\SettingsProvider.cs" />
     <Compile Include="Settings\SolutionSettings.cs" />
     <Compile Include="Settings\XrmSettingKeys.cs" />
+    <Compile Include="UI\EnvironmentEditor.cs" />
+    <Compile Include="UI\EnvironmentEditorDialog.xaml.cs">
+      <DependentUpon>EnvironmentEditorDialog.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="UI\EnvironmentEditorViewModel.cs" />
+    <Compile Include="UI\EnvironmentModel.cs" />
     <Compile Include="UI\EnvironmentSelector.cs" />
     <Compile Include="UI\AssemblySelector.cs" />
     <Compile Include="UI\EnvironmentSelectorDialog.xaml.cs">
@@ -530,6 +537,10 @@
     <Page Include="UI\AssemblySelectionDialog.xaml">
       <SubType>Designer</SubType>
       <Generator>XamlIntelliSenseFileGenerator</Generator>
+    </Page>
+    <Page Include="UI\EnvironmentEditorDialog.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
     </Page>
     <Page Include="UI\EnvironmentSelectorDialog.xaml">
       <SubType>Designer</SubType>

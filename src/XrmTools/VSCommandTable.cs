@@ -63,7 +63,11 @@ namespace XrmTools
         public const int SetEntityGeneratorTemplateInSolutionCmdId = 0x0820;
         public const int SetEntityGeneratorTemplateInProjectCmdId = 0x0830;
         public const int SetEnvironmentCmdId = 0x0500;
+        public const int ManageEnvironmentCmdId = 0x0510;
+        public const int ManageEnvironmenGetListCmdId = 0x0511;
         public const int RegisterPluginCmdId = 0x0910;
+        public const int XrmToolsToolbar = 0x2000;
+        public const int XrmToolsToolbarGroup = 0x2010;
         public const int XrmToolsContextSubMenu = 0x1000;
         public const int XrmToolsContextSubMenuGroup = 0x1010;
     }

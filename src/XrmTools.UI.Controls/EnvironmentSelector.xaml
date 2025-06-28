@@ -62,9 +62,9 @@
             </TextBlock.Style>
         </TextBlock>
         <StackPanel Orientation="Horizontal" Grid.Row="3" Grid.Column="0" Grid.ColumnSpan="2" HorizontalAlignment="Right">
-            <Button Content="Cancel" MinWidth="100" Margin="5" IsCancel="True" Command="{Binding Path=CancelCommand}" />
-            <Button Content="Test" MinWidth="100" Margin="5" Command="{Binding Path=TestCommand}" CommandParameter="{Binding Path=Environment}" IsEnabled="{Binding Path=Environment.IsValid}"/>
-            <Button Content="Select" MinWidth="100" Margin="5" IsDefault="True" Command="{Binding Path=SelectCommand}" />
+            <Button Content="Cancel" MinWidth="75" Margin="5" IsCancel="True" Command="{Binding Path=CancelCommand}" />
+            <Button Content="Test" MinWidth="75" Margin="5" Command="{Binding Path=TestCommand}" CommandParameter="{Binding Path=Environment}" IsEnabled="{Binding Path=Environment.IsValid}"/>
+            <Button Content="Select" MinWidth="75" Margin="5" IsDefault="True" Command="{Binding Path=SelectCommand}" />
         </StackPanel>
     </Grid>
 </UserControl>
