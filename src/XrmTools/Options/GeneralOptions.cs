@@ -48,6 +48,9 @@ internal class GeneralOptions : BaseOptionModel<GeneralOptions>
     [DefaultValue("")]
     public string Proxy { get; set; } = string.Empty;
 
+    [Browsable(false)]
+    public bool IsFirstRun { get; set; } = true;
+
     public override void Save()
     {
         // Ensure that the list is not null
