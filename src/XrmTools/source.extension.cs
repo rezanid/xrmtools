@@ -15,6 +15,6 @@ namespace XrmTools
         public const string Version = "1.1.0";
         public const string Author = "Reza Niroomand";
         public const string Tags = "Power Platform, Dataverse, Power Apps, XRM, Code Generator";
-        public const bool IsPreview = true;
+        public const bool IsPreview = false;
     }
 }
