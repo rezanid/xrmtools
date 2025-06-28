@@ -13,9 +13,13 @@ using Microsoft.VisualStudio.TextTemplating.VSHost;
 using Microsoft.VisualStudio.Threading;
 using System;
 using System.ComponentModel.Composition;
+using System.IO;
 using System.Linq;
+using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Threading;
+using XrmTools.Commands;
+using XrmTools.Environments;
 using XrmTools.Helpers;
 using XrmTools.Logging;
 using XrmTools.Options;
@@ -177,6 +181,9 @@ public sealed partial class XrmToolsPackage : ToolkitPackage
         await SetCustomToolPluginGeneratorCommand.InitializeAsync(this);
         await RegisterPluginCommand.InitializeAsync(this);
         await SelectEnvironmentCommand.InitializeAsync(this);
+        // The following two commands contirbute to the dropdown combo box for selecting environments.
+        await ManageEnvironmentsCommand.InitializeAsync(this);
+        await ManageEnvironmentsGetListCommand.InitializeAsync(this);
 
         // When initialized asynchronously, the current thread may be a background thread at this point.
         // Do any initialization that requires the UI thread after switching to the UI thread.

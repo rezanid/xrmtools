@@ -19,11 +19,7 @@ internal class DataverseEnvironmentProvider : IEnvironmentProvider
     [ImportingConstructor]
     public DataverseEnvironmentProvider([Import] ISettingsProvider settingsProvider)
     {
-        this.settingsProvider = settingsProvider; 
-        GeneralOptions.Saved += (options) =>
-        {
-            ThreadHelper.JoinableTaskFactory.Run(async () => await SetActiveEnvironmentAsync(options.CurrentEnvironment));
-        };
+        this.settingsProvider = settingsProvider;
     }
 
     public async Task<DataverseEnvironment?> GetActiveEnvironmentAsync()
