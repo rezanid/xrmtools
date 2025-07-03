@@ -7,13 +7,13 @@ using System.Collections.ObjectModel;
 using System.Runtime.Serialization;
 namespace XrmGenTest;
 
-[GeneratedCode("TemplatedCodeGenerator", "1.0.5.0")]
+[GeneratedCode("TemplatedCodeGenerator", "1.1.0.0")]
 public partial class AccountCreatePlugin
 {
     protected void InjectDependencies(IServiceProvider serviceProvider)
     {
     }
-	[GeneratedCode("TemplatedCodeGenerator", "1.0.5.0")]
+	[GeneratedCode("TemplatedCodeGenerator", "1.1.0.0")]
 	[EntityLogicalName("account")]
 	public class TargetAccount : Entity
 	{
@@ -89,7 +89,7 @@ public partial class AccountCreatePlugin
 			set => this["accountnumber"] = value;
 		}
 	}
-	[GeneratedCode("TemplatedCodeGenerator", "1.0.5.0")]
+	[GeneratedCode("TemplatedCodeGenerator", "1.1.0.0")]
 	[EntityLogicalName("account")]
 	public class PostImageAccount : Entity
 	{
