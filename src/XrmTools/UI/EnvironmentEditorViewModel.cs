@@ -76,11 +76,11 @@ internal class EnvironmentEditorViewModel : ViewModelBase
         var options = await GeneralOptions.GetLiveInstanceAsync();
         ActiveEnvironmentScopeName = options.CurrentEnvironmentStorage switch
         {
-            SettingsStorageTypes.Solution => "Solution",
-            SettingsStorageTypes.Project => "Project",
-            SettingsStorageTypes.SolutionUser => "Solution (User)",
+            SettingsStorageTypes.Solution => "Solution (.sln) file",
+            SettingsStorageTypes.Project => "Project (.csproj) file",
+            SettingsStorageTypes.SolutionUser => "Solution User Options (.suo) file",
             SettingsStorageTypes.ProjectUser => "Project (User)",
-            _ => "Options",
+            _ => "Global (Visual Studio options)",
         };
 
         var environments = await _environmentProvider.GetAvailableEnvironmentsAsync();
