@@ -7,7 +7,7 @@ end~}}
 public {{enum_name}}? {{prop_name}}
 {
 	{{~if attribute.is_valid_for_read~}}
-	get => TryGetAttributeValue("{{attribute.logical_name}}", out OptionSetValue opt) && opt == null ? null : ({{enum_name}})opt.Value;
+	get => TryGetAttributeValue("{{attribute.logical_name}}", out OptionSetValue opt) && opt == null ? null : ({{enum_name}}?)opt.Value;
 	{{~end~}}
 	{{~if !force_readonly && (attribute.is_valid_for_create || attribute.is_valid_for_update)~}}
 	set => this["{{attribute.logical_name}}"] = value == null ? null : new OptionSetValue((int)value);

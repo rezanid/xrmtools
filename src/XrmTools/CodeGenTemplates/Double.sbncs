@@ -5,7 +5,7 @@ end~}}
 public double? {{prop_name}}
 {
 	{{~if attribute.is_valid_for_read~}}
-	get => TryGetAttributeValue("{{attribute.logical_name}}", out double value) ? value : null;
+	get => TryGetAttributeValue("{{attribute.logical_name}}", out double? value) ? value : null;
 	{{~end~}}
 	{{~if !force_readonly && (attribute.is_valid_for_create || attribute.is_valid_for_update)~}}
 	set => this["{{attribute.logical_name}}"] = value;

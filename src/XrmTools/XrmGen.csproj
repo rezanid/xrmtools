@@ -124,6 +124,11 @@
     <Compile Include="Settings\SettingsProvider.cs" />
     <Compile Include="Settings\SolutionSettings.cs" />
     <Compile Include="Settings\XrmSettingKeys.cs" />
+    <Compile Include="source.extension.cs">
+      <AutoGen>True</AutoGen>
+      <DesignTime>True</DesignTime>
+      <DependentUpon>source.extension.vsixmanifest</DependentUpon>
+    </Compile>
     <Compile Include="UI\EnvironmentEditor.cs" />
     <Compile Include="UI\EnvironmentEditorDialog.xaml.cs">
       <DependentUpon>EnvironmentEditorDialog.xaml</DependentUpon>
@@ -276,11 +281,6 @@
     <Compile Include="Xrm\CodeCompletion\XrmPluginDefCompletionSource.cs" />
     <Compile Include="Xrm\Constants.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="source.extension.cs">
-      <AutoGen>True</AutoGen>
-      <DesignTime>True</DesignTime>
-      <DependentUpon>source.extension.vsixmanifest</DependentUpon>
-    </Compile>
     <Compile Include="VSCommandTable.cs">
       <AutoGen>True</AutoGen>
       <DesignTime>True</DesignTime>
@@ -412,6 +412,11 @@
     <Content Include="CodeGenTemplates\InjectDependencies.sbncs">
       <IncludeInVSIX>true</IncludeInVSIX>
     </Content>
+    <Content Include="CodeGenTemplates\Entity.cs12.sbncs" />
+    <None Include="CodeGenTemplates\Images.cs12.sbncs" />
+    <None Include="CodeGenTemplates\Plugin.cs12.sbncs" />
+    <None Include="CodeGenTemplates\Target.cs12.sbncs" />
+    <None Include="PrepareImageManifest.targets" />
     <None Include="Samples\AHRMBeOne_Plugin_Request.def.json" />
     <None Include="Samples\EntityConfigExample1.yaml" />
     <Content Include="Schemas\pluginregistration-schema.json">
@@ -579,6 +584,7 @@
       <UserProperties samples_4ahrmbeone_3plugin_3request_1def_1json__JsonSchema="..\schemas\pluginregistration-schema.json" />
     </VisualStudio>
   </ProjectExtensions>
+  <Import Project="PrepareImageManifest.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.
   <Target Name="BeforeBuild">

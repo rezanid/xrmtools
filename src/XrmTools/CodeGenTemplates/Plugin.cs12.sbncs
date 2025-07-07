@@ -7,15 +7,13 @@ using Microsoft.Xrm.Sdk.Client;
 using Microsoft.Xrm.Sdk.Extensions;
 using System;
 using System.CodeDom.Compiler;
-using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Globalization;
 using System.Runtime.Serialization;
 
 {{-first_plugin_type = model.plugin_types | array.first~}}
 
-namespace {{ first_plugin_type?.namespace ?? config.default_namespace }}
-{
+namespace {{ first_plugin_type?.namespace ?? config.default_namespace }};
 
 {{~for plugintype in model.plugin_types~}}
 {{codegen_attribute}}
@@ -25,9 +23,9 @@ public partial class {{plugintype.type_name | last_segment }}
     {{~include 'InjectDependencies.sbncs'~}}
 
 {{~for step in plugintype.steps~}}
-	{{include 'Target.sbncs'}}
+	{{include 'Target.cs12.sbncs'}}
 	{{~if step.images~}}
-	{{include 'Images.sbncs'~}}
+	{{include 'Images.cs12.sbncs'~}}
 	{{~end~}}
 
 	{{~target_type_name='Target' + (step.primary_entity_definition.display_name.localized_labels[0].label | tokenize)~}}
@@ -111,4 +109,3 @@ public partial class {{plugintype.type_name | last_segment }}
 {{~end~}}
 }
 {{~end~}}
-}
