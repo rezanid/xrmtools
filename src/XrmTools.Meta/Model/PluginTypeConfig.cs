@@ -98,6 +98,7 @@ internal class PluginTypeConfig : TypedEntity<PluginTypeConfig>, IPluginTypeConf
 
     public string? BaseTypeName { get; set; }
     public string? BaseTypeNamespace { get; set; }
+    public List<string> BaseTypeMethodNames { get; set; } = [];
 
     public Dependency? DependencyGraph { get; set; }
 
