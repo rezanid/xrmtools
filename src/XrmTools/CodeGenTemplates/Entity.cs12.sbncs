@@ -36,7 +36,7 @@ public partial class {{base_class_name}} : Entity
 		{{~for attribute in entity_definition.attributes | array.filter @supported_attribute~}}
 			public const string {{attribute.schema_name}} = "{{attribute.logical_name}}";
 			{{~if attribute.attribute_type == 'Lookup' || attribute.attribute_type == 'Customer'~}}
-			public static readonly ReadOnlyCollection<string> {{attribute.schema_name}}Targets = new ReadOnlyCollection<string>(new List<string> { {{attribute.targets | array.join ',' @quote}} });
+			public static readonly ReadOnlyCollection<string> {{attribute.schema_name}}Targets = new ([{{attribute.targets | array.join ',' @quote}}]);
 			{{~end~}}
 		{{~end~}}
 		}
