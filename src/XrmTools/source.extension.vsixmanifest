@@ -1,32 +1,32 @@
 <?xml version="1.0" encoding="utf-8"?>
 <PackageManifest Version="2.0.0" xmlns="http://schemas.microsoft.com/developer/vsx-schema/2011" xmlns:d="http://schemas.microsoft.com/developer/vsx-schema-design/2011">
-    <Metadata>
-        <Identity Id="XrmTools.eba3cd26-ffad-444f-b4ef-771d430bacef" Version="1.1.2" Language="en-US" Publisher="Reza Niroomand" />
-        <DisplayName>Xrm Tools</DisplayName>
-        <Description xml:space="preserve">Xrm Tools is a Visual Studio extension that aims to make Power Platform development feel native within Visual Studio. You will get Intellisense support for your Plugins, generate boiler plate code, typed entities and more right from within Visual Studio. You have full control over code generation using Scriban templates.</Description>
-        <MoreInfo>https://github.com/rezanid/xrmtools</MoreInfo>
-        <GettingStartedGuide>Resources\GettingStarted.html</GettingStartedGuide>
-        <Icon>Resources\XrmTools_256.png</Icon>
-        <PreviewImage>Resources\Write-Plugin.gif</PreviewImage>
-        <Tags>Power Platform, Dataverse, Power Apps, XRM, Code Generator</Tags>
-    </Metadata>
-    <Installation>
-        <InstallationTarget Id="Microsoft.VisualStudio.Community" Version="[17.0,18.0)">
-            <ProductArchitecture>amd64</ProductArchitecture>
-        </InstallationTarget>
-        <InstallationTarget Version="[17.0,18.0)" Id="Microsoft.VisualStudio.Community">
-            <ProductArchitecture>arm64</ProductArchitecture>
-        </InstallationTarget>
-    </Installation>
-    <Dependencies>
-        <Dependency Id="Microsoft.Framework.NDP" DisplayName="Microsoft .NET Framework" d:Source="Manual" Version="[4.8,)" />
-    </Dependencies>
-    <Prerequisites>
-        <Prerequisite Id="Microsoft.VisualStudio.Component.CoreEditor" Version="[17.0,18.0)" DisplayName="Visual Studio core editor" />
-    </Prerequisites>
-    <Assets>
-        <Asset Type="Microsoft.VisualStudio.VsPackage" d:Source="Project" d:ProjectName="%CurrentProject%" Path="|%CurrentProject%;PkgdefProjectOutputGroup|" />
-        <Asset Type="Microsoft.VisualStudio.MefComponent" d:Source="Project" d:ProjectName="%CurrentProject%" Path="|%CurrentProject%|" />
-        <Asset Type="Microsoft.VisualStudio.MefComponent" d:Source="Project" d:ProjectName="XrmTools.Core" Path="|XrmTools.Core|" />
-    </Assets>
+	<Metadata>
+		<Identity Id="XrmTools.eba3cd26-ffad-444f-b4ef-771d430bacef" Version="1.1.3" Language="en-US" Publisher="Reza Niroomand" />
+		<DisplayName>Xrm Tools</DisplayName>
+		<Description xml:space="preserve">Xrm Tools is a Visual Studio extension that aims to make Power Platform development feel native within Visual Studio. You will get Intellisense support for your Plugins, generate boiler plate code, typed entities and more right from within Visual Studio. You have full control over code generation using Scriban templates.</Description>
+		<MoreInfo>https://github.com/rezanid/xrmtools</MoreInfo>
+		<GettingStartedGuide>Resources\GettingStarted.html</GettingStartedGuide>
+		<Icon>Resources\XrmTools_256.png</Icon>
+		<PreviewImage>Resources\Write-Plugin.gif</PreviewImage>
+		<Tags>Power Platform, Dataverse, Power Apps, XRM, Code Generator</Tags>
+	</Metadata>
+	<Installation>
+		<InstallationTarget Id="Microsoft.VisualStudio.Community" Version="[17.0,18.0)">
+			<ProductArchitecture>amd64</ProductArchitecture>
+		</InstallationTarget>
+		<InstallationTarget Version="[17.0,18.0)" Id="Microsoft.VisualStudio.Community">
+			<ProductArchitecture>arm64</ProductArchitecture>
+		</InstallationTarget>
+	</Installation>
+	<Dependencies>
+		<Dependency Id="Microsoft.Framework.NDP" DisplayName="Microsoft .NET Framework" d:Source="Manual" Version="[4.8,)" />
+	</Dependencies>
+	<Prerequisites>
+		<Prerequisite Id="Microsoft.VisualStudio.Component.CoreEditor" Version="[17.0,18.0)" DisplayName="Visual Studio core editor" />
+	</Prerequisites>
+	<Assets>
+		<Asset Type="Microsoft.VisualStudio.VsPackage" d:Source="Project" d:ProjectName="%CurrentProject%" Path="|%CurrentProject%;PkgdefProjectOutputGroup|" />
+		<Asset Type="Microsoft.VisualStudio.MefComponent" d:Source="Project" d:ProjectName="%CurrentProject%" Path="|%CurrentProject%|" />
+		<Asset Type="Microsoft.VisualStudio.MefComponent" d:Source="Project" d:ProjectName="XrmTools.Core" Path="|XrmTools.Core|" />
+	</Assets>
 </PackageManifest>
