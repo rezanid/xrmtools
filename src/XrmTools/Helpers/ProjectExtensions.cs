@@ -64,8 +64,7 @@ public static class ProjectExtensions
         if (storage is null) return null;
         var packageOutputDir = GetBuildProperty(storage, BuildProperties.PackageOutputPath);
         var packageName = GetBuildProperty(storage, BuildProperties.PackageId);
-        var packageVersion = GetBuildProperty(storage, BuildProperties.PackageVersion);
-        if (packageVersion?.Count(c => c.Equals('.')) > 2) packageVersion = packageVersion[..packageVersion.LastIndexOf('.')];
+        var packageVersion = GetBuildProperty(storage, BuildProperties.PackageVersion).TrimSuffix(".0");
         return Path.Combine(Path.GetDirectoryName(project.FullPath), packageOutputDir, $"{packageName}.{packageVersion}.nupkg");
     }
 
