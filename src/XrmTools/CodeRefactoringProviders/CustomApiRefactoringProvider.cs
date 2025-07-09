@@ -119,22 +119,37 @@ public class CustomApiRefactoringProvider : CodeRefactoringProvider
     private ClassDeclarationSyntax GenerateRequestClass(string className, IEnumerable<CustomApiRequestParameter> parameters)
         => SyntaxFactory.ClassDeclaration($"{className}Request")
             .AddModifiers(SyntaxFactory.Token(SyntaxKind.PublicKeyword))
+            .AddAttributeLists(
+                SyntaxFactory.AttributeList(
+                    SyntaxFactory.SingletonSeparatedList(
+                        SyntaxFactory.Attribute(SyntaxFactory.IdentifierName(nameof(CustomApiRequestAttribute)))
+                    )
+                )
+            )
             .AddMembers([.. parameters.Select(GenerateProperty)]);
 
     private ClassDeclarationSyntax GenerateResponseClass(string className, IEnumerable<CustomApiResponseProperty> properties)
         => SyntaxFactory.ClassDeclaration($"{className}Response")
         .AddModifiers(SyntaxFactory.Token(SyntaxKind.PublicKeyword))
+        .AddAttributeLists(
+            SyntaxFactory.AttributeList(
+                SyntaxFactory.SingletonSeparatedList(
+                    SyntaxFactory.Attribute(SyntaxFactory.IdentifierName(nameof(CustomApiResponseAttribute)))
+                )
+            )
+        )
         .AddMembers([.. properties.Select(GenerateProperty)]);
 
     private PropertyDeclarationSyntax GenerateProperty(
-        CustomApiRequestParameter parameter) => GenerateProperty(parameter.UniqueName!, parameter.Type, parameter.IsOptional, parameter.DisplayName, parameter.Description, nameof(CustomApiRequestParameter), true);
+        CustomApiRequestParameter parameter) => GenerateProperty(parameter.UniqueName!, parameter.Type, parameter.LogicalEntityName, parameter.IsOptional, parameter.DisplayName, parameter.Description, nameof(CustomApiRequestParameter), true);
 
     private PropertyDeclarationSyntax GenerateProperty(
-        CustomApiResponseProperty property) => GenerateProperty(property.UniqueName!, property.Type, true, property.DisplayName, property.Description, nameof(CustomApiResponseProperty), false);
+        CustomApiResponseProperty property) => GenerateProperty(property.UniqueName!, property.Type, property.LogicalEntityName, true, property.DisplayName, property.Description, nameof(CustomApiResponseProperty), false);
 
     private PropertyDeclarationSyntax GenerateProperty(
         string originalName,
         CustomApiFieldType type,
+        string? entityLogicalName,
         bool isOptional,
         string? displayName,
         string? description,
@@ -164,6 +179,12 @@ public class CustomApiRefactoringProvider : CodeRefactoringProvider
         {
             attributeArguments.Add(SyntaxFactory.AttributeArgument(SyntaxFactory.NameEquals("IsOptional"), null,
                 SyntaxFactory.LiteralExpression(SyntaxKind.TrueLiteralExpression)));
+        }
+
+        if (!string.IsNullOrWhiteSpace(entityLogicalName))
+        {
+            attributeArguments.Add(SyntaxFactory.AttributeArgument(SyntaxFactory.NameEquals("LogicalEntityName"), null,
+                SyntaxFactory.LiteralExpression(SyntaxKind.StringLiteralExpression, SyntaxFactory.Literal(entityLogicalName!))));
         }
 
         if (!string.IsNullOrWhiteSpace(displayName) && displayName != propertyName)

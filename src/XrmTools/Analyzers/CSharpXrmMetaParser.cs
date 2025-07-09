@@ -204,7 +204,7 @@ internal class CSharpXrmMetaParser(
                                     : innerProperty.Type.TypeKind == TypeKind.Enum 
                                         ? WebApi.Types.CustomApiFieldType.Picklist 
                                         : WebApi.Types.CustomApiFieldType.String,
-                                TypeName = innerProperty.Type.Name,
+                                TypeName = innerProperty.Type.ToDisplayString(SymbolDisplayFormat.MinimallyQualifiedFormat),
                                 FullTypeName = innerProperty.Type.ToDisplayString(SymbolDisplayFormat.CSharpErrorMessageFormat),
                                 IsOptional = innerProperty.Type.NullableAnnotation == NullableAnnotation.Annotated
                             };
@@ -227,6 +227,9 @@ internal class CSharpXrmMetaParser(
                                             break;
                                         case nameof(CustomApiRequestParameterAttribute.Description) when namedArg.Value.Value is string description:
                                             requestParameter.Description = description;
+                                            break;
+                                        case nameof(CustomApiRequestParameterAttribute.LogicalEntityName) when namedArg.Value.Value is string logicalEntityName:
+                                            requestParameter.LogicalEntityName = logicalEntityName;
                                             break;
                                     }
                                 }
@@ -259,7 +262,7 @@ internal class CSharpXrmMetaParser(
                                     : innerProperty.Type.TypeKind == TypeKind.Enum 
                                         ? WebApi.Types.CustomApiFieldType.Picklist 
                                         : WebApi.Types.CustomApiFieldType.String,
-                                TypeName = innerProperty.Type.Name,
+                                TypeName = innerProperty.Type.ToDisplayString(SymbolDisplayFormat.MinimallyQualifiedFormat),
                                 FullTypeName = innerProperty.Type.ToDisplayString(SymbolDisplayFormat.CSharpErrorMessageFormat),
                             };
 
@@ -278,6 +281,9 @@ internal class CSharpXrmMetaParser(
                                             break;
                                         case nameof(CustomApiResponsePropertyAttribute.Description) when namedArg.Value.Value is string description:
                                             responseProperty.Description = description;
+                                            break;
+                                        case nameof(CustomApiResponsePropertyAttribute.LogicalEntityName) when namedArg.Value.Value is string logicalEntityName:
+                                            responseProperty.LogicalEntityName = logicalEntityName;
                                             break;
                                     }
                                 }

@@ -209,6 +209,7 @@ internal class CSharpXrmMetaDataService(
             if (pluginType != null)
             {
                 result.Add(pluginType);
+                pluginType.IsNullableEnabled = semanticModel.GetNullableContext(classDeclaration.SpanStart).AnnotationsEnabled();
             }
         }
 
