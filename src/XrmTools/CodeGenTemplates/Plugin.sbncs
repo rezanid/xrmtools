@@ -2,6 +2,10 @@
 {{~func logical; ret ($0?.is_logical == true); end~}}
 {{~func supported_attribute; ret ($0?.attribute_type != 'EntityName'); end~}}
 {{~quote(text) = '"' + text + '"'~}}
+{{-first_plugin_type = model.plugin_types | array.first~}}
+{{~if first_plugin_type.is_nullable_enabled ~}}
+#nullable enable
+{{~end~}}
 using Microsoft.Xrm.Sdk;
 using Microsoft.Xrm.Sdk.Client;
 using Microsoft.Xrm.Sdk.Extensions;
@@ -11,8 +15,6 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Globalization;
 using System.Runtime.Serialization;
-
-{{-first_plugin_type = model.plugin_types | array.first~}}
 
 namespace {{ first_plugin_type?.namespace ?? config.default_namespace }}
 {
@@ -59,13 +61,13 @@ public partial class {{plugintype.type_name | last_segment }}
     }
 {{~end~}}
 
-	protected static T EntityOrDefault<T>(DataCollection<string, object> keyValues, string key) where T : Entity
+	protected static T{{plugintype.is_nullable_enabled ? "?" : ""}} EntityOrDefault<T>(DataCollection<string, object> keyValues, string key) where T : Entity
     {
         if (keyValues is null) return default;
         return keyValues.TryGetValue(key, out var obj) ? obj is Entity entity ? entity.ToEntity<T>() : default : default;
     }
 
-    protected static T EntityOrDefault<T>(DataCollection<string, Entity> keyValues, string key) where T : Entity
+    protected static T{{plugintype.is_nullable_enabled ? "?" : ""}} EntityOrDefault<T>(DataCollection<string, Entity> keyValues, string key) where T : Entity
     {
         if (keyValues is null) return default;
         return keyValues.TryGetValue(key, out var entity) ? entity?.ToEntity<T>() : default;
@@ -78,15 +80,17 @@ public partial class {{plugintype.type_name | last_segment }}
         {
             {{~for param in plugintype.custom_api.request_parameters~}}
             {{~case param.type~}}
-            {{~when 'Boolean', 'DateTime', 'Decimal', 'Float', 'Integer', 'String'~}}
-            {{param.name}} = context.InputParameters.TryGetValue("{{param.name}}", out {{param.full_type_name}} {{param.name}}) ? {{param.name}} : default,
+            {{~when 'Boolean', 'DateTime', 'Decimal', 'Float', 'Integer'~}}
+            {{param.name}} = context.InputParameters.TryGetValue("{{param.name}}", out {{param.full_type_name}} {{param.name | string.downcase}}) ? {{param.name | string.downcase}} : default,
+            {{~when 'String'~}}
+            {{param.name}} = context.InputParameters.TryGetValue("{{param.name}}", out {{plugintype.is_nullable_enabled ? param.full_type_name : param.full_type_name | string.replace_first "?" "" true}} {{param.name | string.downcase}}) ? {{param.name | string.downcase}} : string.Empty,
             {{~when 'StringArray'~}}
-            {{param.name}} = context.InputParameters.TryGetValue("{{param.name}}", out string[] {{param.name}}) ? {{param.name}} : default,
+            {{param.name}} = context.InputParameters.TryGetValue("{{param.name}}", out string[] {{param.name | string.downcase}}) ? {{param.name | string.downcase}} : default,
             {{~when 'Picklist'~}}
-            {{~converter = param.type_name == 'OptionSetValue' ? param.name : '(' + param.full_type_name + ')' + param.name + '.Value' ~}}
-            {{param.name}} = context.InputParameters.TryGetValue("{{param.name}}", out OptionSetValue {{param.name}}) ? {{converter}} : default,
+            {{~converter = param.type_name == 'OptionSetValue' ? (param.name | string.downcase) : '(' + param.full_type_name + ')' + (param.name | string.downcase) + '.Value' ~}}
+            {{param.name}} = context.InputParameters.TryGetValue("{{param.name}}", out OptionSetValue {{param.name | string.downcase}}) ? {{converter}} : default,
             {{~else~}}
-            {{param.name}} = context.InputParameters.TryGetValue("{{param.name}}", out {{param.full_type_name}} {{param.name}}) ? {{param.name}} : default,
+            {{param.name}} = context.InputParameters.TryGetValue("{{param.name}}", out {{plugintype.is_nullable_enabled ? param.full_type_name : param.full_type_name | string.replace_first "?" "" true}} {{param.name | string.downcase}}) ? {{param.name | string.downcase}} : default,
             {{~end~}}
             {{~end~}}
         };
@@ -98,12 +102,12 @@ public partial class {{plugintype.type_name | last_segment }}
         {{~for param in plugintype.custom_api.response_properties~}}
         {{~case param.type~}}
         {{~when 'Picklist'~}}
-        {{~converter = param.type_name == 'OptionSetValue' ? (param.type_name | string.downcase) + 'Value' : 'new OptionSetValue((int)' + (param.type_name | string.downcase) + 'Value)' ~}}
-        if (response.{{param.name}} is {{param.full_type_name}} {{param.type_name | string.downcase}}Value) context.OutputParameters["{{param.name}}"] = {{converter}};
+        {{~converter = param.type_name == 'OptionSetValue' ? (param.name | string.downcase) + 'Value' : 'new OptionSetValue((int)' + (param.name | string.downcase) + 'Value)' ~}}
+        if (response.{{param.name}} is {{param.full_type_name}} {{param.name | string.downcase}}Value) context.OutputParameters["{{param.name}}"] = {{converter}};
         {{~when 'StringArray'~}}
-        if (response.{{param.name}} is {{param.full_type_name}} stringArrayValue) context.OutputParameters["{{param.name}}"] = stringArrayValue;
+        if (response.{{param.name}} is {{param.type_name | string.replace_first "?" "" true}} {{param.name | string.downcase}}Value) context.OutputParameters["{{param.name}}"] = {{param.name | string.downcase}}Value;
         {{~else~}}
-        if (response.{{param.name}} is {{param.type_name}} {{param.type_name | string.downcase}}Value) context.OutputParameters["{{param.name}}"] = {{param.type_name | string.downcase}}Value;
+        if (response.{{param.name}} is {{param.type_name | string.replace_first "?" "" true}} {{param.name | string.downcase}}Value) context.OutputParameters["{{param.name}}"] = {{param.name | string.downcase}}Value;
         {{~end~}}
         {{~end~}}
     }
@@ -112,3 +116,4 @@ public partial class {{plugintype.type_name | last_segment }}
 }
 {{~end~}}
 }
+{{~if first_plugin_type.is_nullable_enabled ~}}#nullable restore{{~end~}}
