@@ -2,6 +2,7 @@
 namespace XrmTools.Analyzers;
 
 using Microsoft.CodeAnalysis;
+using Microsoft.VisualStudio.Language.Prediction;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel.Composition;
@@ -49,6 +50,7 @@ internal class CSharpXrmMetaParser(
         IAssemblySymbol assemblySymbol = compilation.Assembly;
         AttributeData? assemblyAttribute = null;
         AttributeData? solutionAttribute = null;
+        AttributeData? codeGenPrefixAttribute = null;
         //List<EntityConfig> entityConfigs = [];
         foreach (var attr in assemblySymbol.GetAttributes())
         {
@@ -59,6 +61,10 @@ internal class CSharpXrmMetaParser(
             else if (attr.AttributeClass?.ToDisplayString() == typeof(SolutionAttribute).FullName)
             {
                 solutionAttribute = attr;
+            }
+            else if (attr.AttributeClass?.ToDisplayString() == typeof(CodeGenReplacePrefixesAttribute).FullName)
+            {
+                codeGenPrefixAttribute = attr;
             }
             else
             {
@@ -81,6 +87,11 @@ internal class CSharpXrmMetaParser(
         {
             var solution = ReflectionHelper.SetPropertiesFromAttribute(new WebApi.Entities.Solution(), solutionAttribute);
             pluginAssemblyConfig.Solution = solution;
+        }
+
+        if (codeGenPrefixAttribute != null)
+        {
+            pluginAssemblyConfig.ReplacePrefixes.SetPropertiesFromAttribute(codeGenPrefixAttribute);
         }
 
         if (assemblyAttribute == null) return pluginAssemblyConfig;

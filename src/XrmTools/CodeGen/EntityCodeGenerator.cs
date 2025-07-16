@@ -204,9 +204,9 @@ internal class EntityCodeGenerator : BaseCodeGeneratorWithSite
     private void AddEntityMetadataToEntityConfig(IPluginAssemblyConfig config) 
         => config.EntityDefinitions = [.. config.Entities
             .Where(c => !string.IsNullOrWhiteSpace(c.LogicalName))
-            .Select(e => GetEntityMetadata(e.LogicalName!, e.AttributeNames?.Split(',') ?? [], config.RemovePrefixes))];
+            .Select(e => GetEntityMetadata(e.LogicalName!, e.AttributeNames?.Split(',') ?? [], config.ReplacePrefixes))];
 
-    private EntityMetadata GetEntityMetadata(string logicalName, IEnumerable<string> attributeNames, IEnumerable<string> prefixesToRemove)
+    private EntityMetadata GetEntityMetadata(string logicalName, IEnumerable<string> attributeNames, CodeGenReplacePrefixConfig prefixReplacement)
     {
         var entityMetadataRepo = ThreadHelper.JoinableTaskFactory.Run(async () => await RepositoryFactory.CreateRepositoryAsync<IEntityMetadataRepository>());
         if (entityMetadataRepo is null) return null;
@@ -223,8 +223,8 @@ internal class EntityCodeGenerator : BaseCodeGeneratorWithSite
         //    entityDefinition.Attributes.Where(a => a.AttributeType != AttributeTypeCode.EntityName && a.IsLogical != true).ToArray() :
         //    entityDefinition.Attributes.Where(a => a.AttributeType != AttributeTypeCode.EntityName && attributes.Contains(a.LogicalName)).ToArray();
 
-        FormatSchemNames(filteredAttributes ?? entityDefinition.Attributes, prefixesToRemove);
-        FormatSchemaName(entityDefinition, prefixesToRemove);
+        FormatAttributeSchemNames(filteredAttributes ?? entityDefinition.Attributes, prefixReplacement);
+        FormatEntitySchemaName(entityDefinition, prefixReplacement);
 
         // The cloning is done because we don't want to modify the object in the cache.
         // In future when we load from local storage this might not be required.
@@ -238,14 +238,19 @@ internal class EntityCodeGenerator : BaseCodeGeneratorWithSite
         return entityDefinition;
     }
 
-    private static void FormatSchemaName(EntityMetadata entityDefinition, IEnumerable<string> prefixesToRemove)
+    private static void FormatEntitySchemaName(EntityMetadata entityDefinition, CodeGenReplacePrefixConfig prefixReplacement)
     {
         // Remove prefixes.
-        foreach (var prefix in prefixesToRemove)
+        foreach (var prefix in prefixReplacement.PrefixList)
         {
             if (entityDefinition.SchemaName.StartsWith(prefix, StringComparison.OrdinalIgnoreCase))
             {
                 entityDefinition.SchemaName = entityDefinition.SchemaName[prefix.Length..];
+                if (!string.IsNullOrWhiteSpace(prefixReplacement.ReplaceWith))
+                {
+                    entityDefinition.SchemaName = prefixReplacement.ReplaceWith + entityDefinition.SchemaName;
+                }
+                break;
             }
         }
         // Capitalize first letter.
@@ -255,16 +260,22 @@ internal class EntityCodeGenerator : BaseCodeGeneratorWithSite
         }
     }
 
-    private static void FormatSchemNames(IEnumerable<AttributeMetadata> attributes, IEnumerable<string> prefixesToRemove)
+    private static void FormatAttributeSchemNames(IEnumerable<AttributeMetadata> attributes, CodeGenReplacePrefixConfig prefixReplacement)
     {
+        var prefixList = prefixReplacement.Prefixes.SplitAndTrim(',') ?? [];
         foreach (var attribute in attributes)
         {
             // Remove prefixes.
-            foreach (var prefix in prefixesToRemove)
+            foreach (var prefix in prefixList)
             {
                 if (attribute.SchemaName.StartsWith(prefix, StringComparison.OrdinalIgnoreCase))
                 {
                     attribute.SchemaName = attribute.SchemaName[prefix.Length..];
+                    if (!string.IsNullOrWhiteSpace(prefixReplacement.ReplaceWith))
+                    {
+                        attribute.SchemaName = prefixReplacement.ReplaceWith + attribute.SchemaName;
+                    }
+                    break;
                 }
             }
             // Capitalize first letter.

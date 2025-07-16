@@ -221,7 +221,7 @@ public class PluginCodeGenerator : BaseCodeGeneratorWithSite
         return null;
     }
 
-    private EntityMetadata? GetEntityMetadata(string logicalName, IEnumerable<string> attributeNames, IEnumerable<string> prefixesToRemove)
+    private EntityMetadata? GetEntityMetadata(string logicalName, IEnumerable<string> attributeNames, CodeGenReplacePrefixConfig prefixReplacement)
     {
         var entityMetadataRepo = ThreadHelper.JoinableTaskFactory.Run(async () => await RepositoryFactory.CreateRepositoryAsync<IEntityMetadataRepository>());
         if (entityMetadataRepo is null) return null;
@@ -238,8 +238,8 @@ public class PluginCodeGenerator : BaseCodeGeneratorWithSite
         //    entityDefinition.Attributes.Where(a => a.AttributeType != AttributeTypeCode.EntityName && a.IsLogical != true).ToArray() :
         //    entityDefinition.Attributes.Where(a => a.AttributeType != AttributeTypeCode.EntityName && attributes.Contains(a.LogicalName)).ToArray();
 
-        FormatSchemNames(filteredAttributes ?? entityDefinition.Attributes, prefixesToRemove);
-        FormatSchemaName(entityDefinition, prefixesToRemove);
+        FormatAttributeSchemaNames(filteredAttributes ?? entityDefinition.Attributes, prefixReplacement);
+        FormatEntitySchemaName(entityDefinition, prefixReplacement);
 
         // The cloning is done because we don't want to modify the object in the cache.
         // In future when we load from local storage this might not be required.
@@ -253,14 +253,19 @@ public class PluginCodeGenerator : BaseCodeGeneratorWithSite
         return entityDefinition;
     }
 
-    private static void FormatSchemaName(EntityMetadata entityDefinition, IEnumerable<string> prefixesToRemove)
+    private static void FormatEntitySchemaName(EntityMetadata entityDefinition, CodeGenReplacePrefixConfig prefixReplacement)
     {
         // Remove prefixes.
-        foreach (var prefix in prefixesToRemove)
+        foreach (var prefix in prefixReplacement.PrefixList)
         {
             if (entityDefinition.SchemaName.StartsWith(prefix, StringComparison.OrdinalIgnoreCase))
             {
                 entityDefinition.SchemaName = entityDefinition.SchemaName[prefix.Length..];
+                if (!string.IsNullOrWhiteSpace(prefixReplacement.ReplaceWith))
+                {
+                    entityDefinition.SchemaName = prefixReplacement.ReplaceWith + entityDefinition.SchemaName;
+                }
+                break;
             }
         }
         // Capitalize first letter.
@@ -270,16 +275,21 @@ public class PluginCodeGenerator : BaseCodeGeneratorWithSite
         }
     }
 
-    private static void FormatSchemNames(IEnumerable<AttributeMetadata> attributes, IEnumerable<string> prefixesToRemove)
+    private static void FormatAttributeSchemaNames(IEnumerable<AttributeMetadata> attributes, CodeGenReplacePrefixConfig prefixReplacement)
     {
         foreach (var attribute in attributes)
         {
             // Remove prefixes.
-            foreach (var prefix in prefixesToRemove)
+            foreach (var prefix in prefixReplacement.PrefixList)
             {
                 if (attribute.SchemaName.StartsWith(prefix, StringComparison.OrdinalIgnoreCase))
                 {
                     attribute.SchemaName = attribute.SchemaName[prefix.Length..];
+                    if (!string.IsNullOrWhiteSpace(prefixReplacement.ReplaceWith))
+                    {
+                        attribute.SchemaName = prefixReplacement.ReplaceWith + attribute.SchemaName;
+                    }
+                    break;
                 }
             }
             // Capitalize first letter.
@@ -332,7 +342,7 @@ public class PluginCodeGenerator : BaseCodeGeneratorWithSite
                 // We have some attributes already, so we add the new ones too.
                 entitiesAndAttributes[step.PrimaryEntityName!].UnionWith(filteringAttributes);
             }
-            var entityDefinition = GetEntityMetadata(step.PrimaryEntityName!, filteringAttributes, config.RemovePrefixes);
+            var entityDefinition = GetEntityMetadata(step.PrimaryEntityName!, filteringAttributes, config.ReplacePrefixes);
             step.PrimaryEntityDefinition = entityDefinition;
             //if (entityDefinition is not null && !entityDefinitions.ContainsKey(entityDefinition.LogicalName))
             //{
@@ -355,7 +365,7 @@ public class PluginCodeGenerator : BaseCodeGeneratorWithSite
                 {
                     entitiesAndAttributes[step.PrimaryEntityName!].UnionWith(imageAttributes);
                 }
-                entityDefinition = GetEntityMetadata(step.PrimaryEntityName!, imageAttributes, config.RemovePrefixes);
+                entityDefinition = GetEntityMetadata(step.PrimaryEntityName!, imageAttributes, config.ReplacePrefixes);
                 image.MessagePropertyDefinition = entityDefinition;
                 //if (entityDefinition is not null && !entityDefinitions.ContainsKey(entityDefinition.LogicalName))
                 //{
@@ -370,13 +380,13 @@ public class PluginCodeGenerator : BaseCodeGeneratorWithSite
             //var entityDefinition = GetEntityMetadata(entity.Key, entity.Value, config.RemovePrefixesCollection);
             //var attributesUsedInPluginDefinitions = entityDefinition.Attributes.Where(a => entity.Value.Contains(a.LogicalName)).ToArray();
             //typeof(EntityMetadata).GetProperty("Attributes").SetValue(entityDefinition, attributesUsedInPluginDefinitions);
-            entityDefinitions[entityEntry.Key] = GetEntityMetadata(entityEntry.Key, entityEntry.Value, config.RemovePrefixes)!;
+            entityDefinitions[entityEntry.Key] = GetEntityMetadata(entityEntry.Key, entityEntry.Value, config.ReplacePrefixes)!;
         }
         foreach (var entityConfig in config.Entities)
         {
             if (!string.IsNullOrEmpty(entityConfig.LogicalName))
             {
-                entityDefinitions[entityConfig.LogicalName!] = GetEntityMetadata(entityConfig.LogicalName!, entityConfig.AttributeNames?.SplitAndTrim(',') ?? [], config.RemovePrefixes)!;
+                entityDefinitions[entityConfig.LogicalName!] = GetEntityMetadata(entityConfig.LogicalName!, entityConfig.AttributeNames?.SplitAndTrim(',') ?? [], config.ReplacePrefixes)!;
             }
         }
         config.EntityDefinitions = entityDefinitions.Values;

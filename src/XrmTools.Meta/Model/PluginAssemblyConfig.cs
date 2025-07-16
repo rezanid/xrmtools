@@ -10,7 +10,6 @@ using System.ComponentModel;
 using System.Runtime.Serialization;
 using System.Text.Json.Serialization;
 using XrmTools.Meta.Attributes.Serialization;
-using XrmTools.Meta.Serialization;
 using XrmTools.Meta.Attributes;
 
 internal interface IPluginAssemblyConfig : IPluginAssemblyEntity
@@ -18,7 +17,7 @@ internal interface IPluginAssemblyConfig : IPluginAssemblyEntity
     WebApi.Entities.Solution? Solution { get; set; }
     ICollection<EntityConfig> Entities { get; set; }
     ICollection<EntityMetadata>? EntityDefinitions { get; set; }
-    List<string> RemovePrefixes { get; set; }
+    CodeGenReplacePrefixConfig ReplacePrefixes { get; set; }
     string? FilePath { get; set; }
 }
 
@@ -59,8 +58,7 @@ internal class PluginAssemblyConfig : TypedEntity<PluginAssemblyConfig>, IPlugin
 
     [JsonPropertyOrder(2)]
     [JsonProperty(Order = 1)]
-    [Newtonsoft.Json.JsonConverter(typeof(CommaDelimitedStringConverter))]
-    public List<string> RemovePrefixes { get; set; } = [];
+    public CodeGenReplacePrefixConfig ReplacePrefixes { get; set; } = new();
 
     [IgnoreDataMember]
     public string? FilePath { get; set; }
