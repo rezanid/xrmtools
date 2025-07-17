@@ -135,7 +135,7 @@
                      Text="{Binding SelectedEnvironment.ClientSecret, UpdateSourceTrigger=PropertyChanged}"
                      Watermark="Client Secret"
                      Visibility="{Binding SelectedEnvironment.IsClientAuth, Converter={StaticResource BooleanToVisibilityConverter}}"/>
-                <Label Content="Certificate Thumbprint:" Grid.Row="10" Grid.Column="0" Margin="0,5,5,5"
+                <Label Content="Thumbprint:" Grid.Row="10" Grid.Column="0" Margin="0,5,5,5"
                    Visibility="{Binding SelectedEnvironment.IsCertificateAuth, Converter={StaticResource BooleanToVisibilityConverter}}"/>
                 <p:WatermarkedTextBox Grid.Column="1" Grid.Row="10" Margin="0,0,0,1"
                      Text="{Binding SelectedEnvironment.CertificateThumbprint, UpdateSourceTrigger=PropertyChanged}"
