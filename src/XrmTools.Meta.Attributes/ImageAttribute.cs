@@ -39,6 +39,8 @@
             EntityAlias = imageType.ToString();
         }
         public ImageAttribute(ImageTypes imageType, string attributes) : this(imageType)
-            => Attributes = attributes;
+        {
+            Attributes = attributes;
+        }
     }
 }

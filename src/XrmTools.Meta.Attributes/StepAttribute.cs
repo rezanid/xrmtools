@@ -35,10 +35,14 @@
         }
 
         public StepAttribute(string messageName, string primaryEntityName, Stages stage, ExecutionMode mode) : this(messageName, stage, mode)
-            => PrimaryEntityName = primaryEntityName;
+        {
+            PrimaryEntityName = primaryEntityName;
+        }
 
         public StepAttribute(string messageName, string primaryEntityName, string filteringAttributes, Stages stage, ExecutionMode mode)
             : this(messageName, primaryEntityName, stage, mode)
-            => FilteringAttributes = filteringAttributes;
+        { 
+            FilteringAttributes = filteringAttributes;
+        }
     }
 }

@@ -75,7 +75,7 @@ internal static class StringHelper
                         result.Add(word);
                     }
                 }
-                // Skip the comma
+                // Skip the separator
                 start = i + 1;
             }
         }
