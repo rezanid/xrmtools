@@ -7,6 +7,16 @@ using System.Reflection;
 
 public static class ReflectionHelper
 {
+    /// <summary>
+    /// Sets the properties of the specified instance based on the provided attribute data.
+    /// </summary>
+    /// <remarks>This method uses reflection to match attribute constructor arguments and named arguments to
+    /// the properties of the instance. Only public, writable properties are set. The method handles conversion for
+    /// array, enum, and Guid types, as well as other compatible types.</remarks>
+    /// <typeparam name="T">The type of the instance, which must be a class with a parameterless constructor.</typeparam>
+    /// <param name="instance">The instance whose properties are to be set.</param>
+    /// <param name="attributeData">The attribute data containing the values to set on the instance properties.</param>
+    /// <returns>The instance with its properties set according to the attribute data.</returns>
     public static T SetPropertiesFromAttribute<T>(this T instance, AttributeData attributeData) where T : class, new()
     {
         if (attributeData.AttributeConstructor == null || attributeData.AttributeConstructor.Parameters.Length == 0)

@@ -16,4 +16,20 @@ internal static class WebApiServiceHelper
             .ConfigureAwait(false);
         return response?.Value?.FirstOrDefault();
     }
+
+    public static async Task<PluginType> GetPluginDefinitionAsync(this IWebApiService webApi, string pluginTypeName)
+    {
+        var odataQuery =
+        $"{PluginType.Metadata.EntitySetName}?" +
+        $"$filter=typename eq '{pluginTypeName}'" +
+        "&$select=plugintypeid,name,typename,friendlyname,description,workflowactivitygroupname&" +
+        "$expand=plugintype_sdkmessageprocessingstep(" +
+            "$select=sdkmessageprocessingstepid,name,stage,asyncautodelete,description,filteringattributes,invocationsource,mode,rank,sdkmessageid,statecode,supporteddeployment;" +
+            "$expand=sdkmessageprocessingstepid_sdkmessageprocessingstepimage(" +
+                "$select=sdkmessageprocessingstepimageid,name,imagetype,messagepropertyname,attributes,entityalias)," +
+            "sdkmessagefilterid($select=primaryobjecttypecode)," +
+            "sdkmessageid($select=name))";
+        var response = await webApi.RetrieveMultipleAsync<PluginType>(odataQuery, 2);
+        return response?.Value?.FirstOrDefault();
+    }
 }

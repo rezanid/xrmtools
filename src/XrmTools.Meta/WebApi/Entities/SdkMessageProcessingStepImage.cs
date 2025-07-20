@@ -16,7 +16,7 @@ internal class SdkMessageProcessingStepImage : Component<SdkMessageProcessingSte
     public int? ImageType { get; set; }
     public int? VersionNumber { get; set; }
     public string? IntroducedVersion { get; set; }
-    public string? EntitySlias { get; set; }
+    public string? EntityAlias { get; set; }
     public string? Description { get; set; }
     public string? MessagePropertyName { get; set; }
     public string? RelatedAttributeName { get; set; }

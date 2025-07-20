@@ -19,7 +19,6 @@ using XrmTools.Environments;
 using XrmTools.Helpers;
 using XrmTools.Logging.Compatibility;
 using XrmTools.Meta.Attributes;
-using XrmTools.Meta.Model;
 using XrmTools.Resources;
 using XrmTools.WebApi;
 using XrmTools.WebApi.Batch;
