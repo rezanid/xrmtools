@@ -71,6 +71,7 @@
     <Compile Include="Analyzers\PluginAssemblyInfo.cs" />
     <Compile Include="Analyzers\CSharpXrmMetaDataService.cs" />
     <Compile Include="Analyzers\CSharpXrmMetaParser.cs" />
+    <Compile Include="CodeRefactoringProviders\PluginRefactoringProvider.cs" />
     <Compile Include="CodeRefactoringProviders\PropertyGenerator.cs" />
     <Compile Include="CodeRefactoringProviders\SdkMessageRefactoringProvider.cs" />
     <Compile Include="CodeRefactoringProviders\CustomApiRefactoringProvider.cs" />

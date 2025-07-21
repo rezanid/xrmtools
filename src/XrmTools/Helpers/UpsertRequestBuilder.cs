@@ -7,7 +7,6 @@ using XrmTools.Xrm.Model;
 using XrmTools.WebApi;
 using Newtonsoft.Json.Linq;
 using System.Linq;
-using XrmTools.Meta.Model;
 using XrmTools.WebApi.Entities;
 using XrmTools.Meta.Attributes;
 
@@ -70,7 +69,7 @@ internal class UpsertRequestBuilder(
                     step.Message = message;
                 }
 
-                _requests.Add(UpsertPluginStepRequestFor(pluginType, step));
+                _requests.Add(UpsertPluginStepRequestFor(step, pluginType));
 
                 foreach (var image in step.Images)
                 {
@@ -108,7 +107,7 @@ internal class UpsertRequestBuilder(
                     step.Message = message;
                 }
 
-                _requests.Add(UpsertPluginStepRequestFor(pluginType, step));
+                _requests.Add(UpsertPluginStepRequestFor(step, pluginType));
 
                 foreach (var image in step.Images)
                 {
@@ -151,7 +150,7 @@ internal class UpsertRequestBuilder(
     }
 
     private HttpRequestMessage UpsertPluginStepRequestFor(
-        PluginTypeConfig parentPlugin, PluginStepConfig pluginStepConfig)
+        PluginStepConfig pluginStepConfig, PluginTypeConfig parentPlugin)
     {
         var pluginStep = new JObject
         {

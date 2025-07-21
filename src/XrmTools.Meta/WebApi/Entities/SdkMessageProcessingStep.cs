@@ -37,5 +37,9 @@ internal class SdkMessageProcessingStep : Component<SdkMessageProcessingStep>
     public ManagedBooleanProperty? IsHidden { get; set; }
     [JsonPropertyName("sdkmessageprocessingstepid_sdkmessageprocessingstepimage")]
     public List<SdkMessageProcessingStepImage> Images { get; set; } = [];
+    [JsonPropertyName("sdkmessagefilterid")]
+    public SdkMessageFilter? SdkMessageFilter { get; set; }
+    [JsonPropertyName("sdkmessageid")]
+    public SdkMessage? SdkMessage { get; set; }
 }
 #nullable restore

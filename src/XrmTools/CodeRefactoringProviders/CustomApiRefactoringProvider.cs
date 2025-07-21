@@ -105,7 +105,7 @@ public class CustomApiRefactoringProvider : CodeRefactoringProvider
     private void UpdateAttribute(DocumentEditor editor, ClassDeclarationSyntax classNode, AttributeSyntax attributeNode, CustomApi customApi)
     {
         var updatedAttributeSyntax = SyntaxFactory.Attribute(
-            SyntaxFactory.IdentifierName(nameof(CustomApiAttribute)),
+            SyntaxFactory.IdentifierName(nameof(CustomApiAttribute)[..^9]),
             SyntaxFactory.AttributeArgumentList(
                 SyntaxFactory.SeparatedList(
                     new[] { SyntaxFactory.AttributeArgument(SyntaxFactory.LiteralExpression(SyntaxKind.StringLiteralExpression, SyntaxFactory.Literal(customApi.UniqueName))) }
@@ -122,7 +122,7 @@ public class CustomApiRefactoringProvider : CodeRefactoringProvider
             .AddAttributeLists(
                 SyntaxFactory.AttributeList(
                     SyntaxFactory.SingletonSeparatedList(
-                        SyntaxFactory.Attribute(SyntaxFactory.IdentifierName(nameof(CustomApiRequestAttribute)))
+                        SyntaxFactory.Attribute(SyntaxFactory.IdentifierName(nameof(CustomApiRequestAttribute)[..^9]))
                     )
                 )
             )
@@ -134,7 +134,7 @@ public class CustomApiRefactoringProvider : CodeRefactoringProvider
         .AddAttributeLists(
             SyntaxFactory.AttributeList(
                 SyntaxFactory.SingletonSeparatedList(
-                    SyntaxFactory.Attribute(SyntaxFactory.IdentifierName(nameof(CustomApiResponseAttribute)))
+                    SyntaxFactory.Attribute(SyntaxFactory.IdentifierName(nameof(CustomApiResponseAttribute)[..^9]))
                 )
             )
         )
