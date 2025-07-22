@@ -12,7 +12,6 @@ using XrmTools.Helpers;
 using XrmTools.Xrm.Model;
 using XrmTools.Logging.Compatibility;
 using System.ComponentModel.Composition;
-using XrmTools.WebApi;
 
 internal interface IXrmMetaDataService
 {
@@ -35,13 +34,8 @@ internal interface IXrmMetaDataService
 
 [Export(typeof(IXrmMetaDataService))]
 [method: ImportingConstructor]
-internal class CSharpXrmMetaDataService(
-    ILogger<CSharpXrmMetaDataService> logger, 
-    ICSharpXrmMetaParser parser,
-    IWebApiService webApi) : IXrmMetaDataService
+internal class CSharpXrmMetaDataService(ICSharpXrmMetaParser parser) : IXrmMetaDataService
 {
-    private readonly ILogger<CSharpXrmMetaDataService> Logger = logger ?? throw new ArgumentNullException(nameof(logger));
-
     private readonly ICSharpXrmMetaParser AttributeParser = parser ?? throw new ArgumentNullException(nameof(parser));
 
     public async Task<PluginAssemblyConfig?> ParsePluginsAsync(string filePath, CancellationToken cancellationToken = default)
@@ -134,12 +128,12 @@ internal class CSharpXrmMetaDataService(
             var config = await ParseConfigFromProjectAsync(project, cancellationToken).ConfigureAwait(false);
             if (config == null) return null;
 
+            var compilation = await project.GetCompilationAsync(cancellationToken).ConfigureAwait(false);
+            if (compilation == null) return null;
+            
             var processedSymbols = new HashSet<string>();
             var semanticModelCache = new Dictionary<DocumentId, SemanticModel>();
-
             var allPluginTypes = new List<PluginTypeConfig>();
-
-            var compilation = await project.GetCompilationAsync(cancellationToken).ConfigureAwait(false);
 
             foreach (var document in project.Documents.Where(d => d.SourceCodeKind == SourceCodeKind.Regular))
             {
@@ -177,15 +171,13 @@ internal class CSharpXrmMetaDataService(
         Dictionary<DocumentId, SemanticModel> semanticModelCache,
         CancellationToken cancellationToken)
     {
-        var result = new List<PluginTypeConfig>();
-
         var syntaxTree = await document.GetSyntaxTreeAsync(cancellationToken).ConfigureAwait(false);
-        if (syntaxTree == null) return result;
+        if (syntaxTree == null) return [];
 
         if (!semanticModelCache.TryGetValue(document.Id, out var semanticModel))
         {
             semanticModel = await document.GetSemanticModelAsync(cancellationToken).ConfigureAwait(false);
-            if (semanticModel == null) return result;
+            if (semanticModel == null) return [];
 
             semanticModelCache[document.Id] = semanticModel;
         }
@@ -194,6 +186,8 @@ internal class CSharpXrmMetaDataService(
         //var usingDirectives = root.DescendantNodes().OfType<UsingDirectiveSyntax>()
         //    .Select(u => u.ToString());
         var classDeclarations = root.DescendantNodes().OfType<ClassDeclarationSyntax>();
+
+        var result = new List<PluginTypeConfig>();
 
         foreach (var classDeclaration in classDeclarations)
         {

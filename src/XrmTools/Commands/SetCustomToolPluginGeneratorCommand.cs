@@ -98,6 +98,11 @@ internal sealed class SetCustomToolPluginGeneratorCommand : BaseCommand<SetCusto
                 Path.GetFileNameWithoutExtension(file.FullPath)) + ".Generated.cs";
             if (!File.Exists(genFilePath)) await FileHelper.AddItemAsync(genFilePath, "", file);
             var genFile = await PhysicalFile.FromFileAsync(genFilePath);
+            if (genFile is null)
+            {
+                Debug.WriteLine($"Failed to create generated file for {file.FullPath}");
+                return;
+            }
             await genFile.TrySetAttributeAsync(PhysicalFileAttribute.AutoGen, true);
             await genFile.TrySetAttributeAsync(PhysicalFileAttribute.DesignTime, true);
             await genFile.TrySetAttributeAsync(PhysicalFileAttribute.DependentUpon, Path.GetFileName(file.FullPath));
@@ -123,14 +128,14 @@ internal sealed class SetCustomToolPluginGeneratorCommand : BaseCommand<SetCusto
                 if ((await PhysicalFile.FromFileAsync(genFilePath)) is PhysicalFile genFile)
                 await genFile.TryRemoveAsync();
             }
-            await file.TrySetAttributeAsync(PhysicalFileAttribute.LastGenOutput, null);
-            await file.TrySetAttributeAsync(PhysicalFileAttribute.Generator, null);
+            await file.TrySetAttributeAsync(PhysicalFileAttribute.LastGenOutput, string.Empty);
+            await file.TrySetAttributeAsync(PhysicalFileAttribute.Generator, string.Empty);
         }
         else
         {
-            await file.TrySetAttributeAsync(PhysicalFileAttribute.CustomTool, null);
+            await file.TrySetAttributeAsync(PhysicalFileAttribute.CustomTool, string.Empty);
         }
-        await file.TrySetAttributeAsync("IsXrmPlugin", null);
+        await file.TrySetAttributeAsync("IsXrmPlugin", string.Empty);
     }
 }
 #nullable restore
