@@ -16,6 +16,7 @@ By installing this nuget packge, you will be able to use attributes to decorate 
 - `DependencyAttribute`: Decorate a property as a dependency so that code generator can generate code to inject this dependency.
 - `DependencyConstructor`: Decorate a constructor method as depdency so that code generator can generate code to inject this dependency.
 - `EntityAttribute`: Assembly scoped attribute that instructs the code generator to generate a typed entity with the given attributes.
+- `CodeGenReplacePrefixesAttribute`: Assembly scoped attribute that instructs the code generator to replace the prefixes of the entity names with the given values. This is useful when you want to use a different prefix for your entities in the generated code.
 
 Let's look at some examples:
 

@@ -10,7 +10,6 @@ using System.Threading;
 using System.Threading.Tasks;
 using XrmTools.Helpers;
 using XrmTools.Xrm.Model;
-using XrmTools.Logging.Compatibility;
 using System.ComponentModel.Composition;
 
 internal interface IXrmMetaDataService

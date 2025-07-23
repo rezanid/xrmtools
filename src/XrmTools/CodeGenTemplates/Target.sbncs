@@ -1,7 +1,6 @@
-{{~base_class_name = 'Target' + (step.primary_entity_definition.display_name.localized_labels[0].label | tokenize)~}}
 {{codegen_attribute}}
 [EntityLogicalName("{{step.primary_entity_definition.logical_name}}")]
-public class {{base_class_name}} : Entity
+public class {{target_type_name}} : Entity
 {
 	public static class Meta
 	{

@@ -36,6 +36,7 @@ public class AsyncTimer(Func<CancellationToken, Task> callback, TimeProvider? ti
         internalTimer = null;
     }
 
+    [System.Diagnostics.CodeAnalysis.SuppressMessage("Usage", "VSTHRD100:Avoid async void methods", Justification = "Event Handler")]
     private async void OnTimerElapsed(object? state)
     {
         if (isRunning) return;

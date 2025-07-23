@@ -53,7 +53,6 @@
   <ItemGroup>
     <Compile Include="AsyncDictionary.cs" />
     <Compile Include="AsyncTimer.cs" />
-    <Compile Include="Authentication\AuthenticationHelper.cs" />
     <Compile Include="Authentication\AuthenticationParameters.cs" />
     <Compile Include="Authentication\ClientApplicationExtensions.cs" />
     <Compile Include="Authentication\IAuthenticationService.cs" />
