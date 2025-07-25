@@ -9,7 +9,7 @@ using XrmTools.Meta.Attributes;
 using XrmTools.WebApi.Entities.Attributes;
 
 [EntityMetadata("sdkmessageprocessingstep", "sdkmessageprocessingsteps")]
-internal class SdkMessageProcessingStep : Component<SdkMessageProcessingStep>
+public class SdkMessageProcessingStep : Component<SdkMessageProcessingStep>
 {
     [JsonPropertyName("sdkmessageprocessingstepid")]
     [JsonProperty("sdkmessageprocessingstepid")]

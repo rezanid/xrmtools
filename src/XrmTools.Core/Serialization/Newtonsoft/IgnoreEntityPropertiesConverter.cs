@@ -26,7 +26,11 @@ public class IgnoreEntityPropertiesConverter<T> : JsonConverter<T> where T : Ent
 
             if (reader.TokenType == JsonTokenType.PropertyName)
             {
-                string propertyName = reader.GetString();
+                string? propertyName = reader.GetString();
+                if (string.IsNullOrEmpty(propertyName))
+                {
+                    throw new JsonException("Property name cannot be null or empty.");
+                }
                 reader.Read();
 
                 // Get the property in the derived class (TypedEntity<T>)

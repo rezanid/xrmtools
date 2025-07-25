@@ -6,7 +6,7 @@ using System.Text.Json.Serialization;
 using XrmTools.WebApi.Entities.Attributes;
 
 [EntityMetadata("sdkmessageresponsefield", "sdkmessageresponsefields")]
-internal class SdkMessageResponseField : Component<SdkMessageResponseField>
+public class SdkMessageResponseField : Component<SdkMessageResponseField>
 {
     [JsonPropertyName("sdkmessageresponsefieldid")]
     [JsonProperty("sdkmessageresponsefieldid")]

@@ -3,7 +3,7 @@
 using System.Collections.Generic;
 using XrmTools.Meta.Helpers;
 
-internal class CodeGenReplacePrefixConfig
+public class CodeGenReplacePrefixConfig
 {
     private string prefixes = "";
     private List<string> prefixList = [];

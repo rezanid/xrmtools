@@ -2,15 +2,11 @@
 
 using Newtonsoft.Json;
 using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
 using System.Text.Json.Serialization;
-using System.Threading.Tasks;
 using XrmTools.WebApi.Entities.Attributes;
 
 [EntityMetadata("sdkmessagerequestfield", "sdkmessagerequestfields")]
-internal class SdkMessageRequestField : Component<SdkMessageRequestField>
+public class SdkMessageRequestField : Component<SdkMessageRequestField>
 {
     [JsonPropertyName("sdkmessagerequestfieldid")]
     [JsonProperty("sdkmessagerequestfieldid")]

@@ -9,11 +9,13 @@ using XrmTools.Logging.Compatibility;
 
 public class AsyncLoggingValidator<T>(IAsyncValidator<T> inner, ILogger logger) : LoggingValidatorBase<T>(logger), IAsyncValidator<T>
 {
+    private readonly IAsyncValidator<T> inner = inner;
+
     public Type TargetType => inner.TargetType;
 
     public async Task<ValidationResult> ValidateAsync(T instance, CancellationToken cancellationToken = default)
     {
-        logger.LogDebug($"Validating {typeof(T).Name} asynchronously...");
+        Logger.LogDebug($"Validating {typeof(T).Name} asynchronously...");
         var result = await inner.ValidateAsync(instance, cancellationToken);
         LogResult(result);
         return result;

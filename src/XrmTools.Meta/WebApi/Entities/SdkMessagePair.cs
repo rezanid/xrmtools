@@ -7,7 +7,7 @@ using System.Text.Json.Serialization;
 using XrmTools.WebApi.Entities.Attributes;
 
 [EntityMetadata("sdkmessagepair", "sdkmessagepairs")]
-internal class SdkMessagePair : Component<SdkMessagePair>
+public class SdkMessagePair : Component<SdkMessagePair>
 {
     [JsonPropertyName("sdkmessagepairid")]
     [JsonProperty("sdkmessagepairid")]

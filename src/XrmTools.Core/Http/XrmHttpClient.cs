@@ -7,7 +7,7 @@ using System.Net.Http.Headers;
 using System.Threading.Tasks;
 using System.Threading;
 
-internal class XrmHttpClient(HttpMessageHandler handler, Action disposeCallback) : HttpMessageInvoker(handler, false), IDisposable
+public class XrmHttpClient(HttpMessageHandler handler, Action disposeCallback) : HttpMessageInvoker(handler, false), IDisposable
 {
     private bool disposedValue;
     private readonly Action disposeCallback = disposeCallback;
