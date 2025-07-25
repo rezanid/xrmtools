@@ -8,6 +8,7 @@ using System.Linq;
 using System.Security.Cryptography.X509Certificates;
 using System.Threading;
 using System.Threading.Tasks;
+using System.Diagnostics;
 
 internal abstract class DelegatingAuthenticator : IAuthenticator
 {
@@ -37,6 +38,7 @@ internal abstract class DelegatingAuthenticator : IAuthenticator
         }
         catch (MsalUiRequiredException ex)
         {
+            Debug.WriteLine($"Silent authentication requires UI: {ex.Message}");
             try
             {
                 await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync();
