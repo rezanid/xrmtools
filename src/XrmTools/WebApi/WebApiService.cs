@@ -15,7 +15,7 @@ using XrmTools.Logging.Compatibility;
 using XrmTools.Meta.Model;
 using XrmTools.WebApi.Entities;
 
-internal interface IWebApiService
+public interface IWebApiService
 {
     Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken);
     Task<HttpResponseMessage> GetAsync(string uri, CancellationToken cancellationToken);
@@ -25,7 +25,7 @@ internal interface IWebApiService
 
 [Export(typeof(IWebApiService))]
 [method: ImportingConstructor]
-internal class WebApiService(
+public class WebApiService(
     IXrmHttpClientFactory httpClientFactory, IEnvironmentProvider environmentProvider, ILogger<WebApiService> logger) : IWebApiService
 {
     private bool _disposedValue;

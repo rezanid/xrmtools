@@ -21,7 +21,7 @@ using XrmTools.Environments;
 internal sealed class SelectEnvironmentCommand : BaseCommand<SelectEnvironmentCommand>
 {
     [Import]
-    public ILogger<NewPluginDefinitionFileCommand> Logger {  get; set; }
+    public ILogger<SelectEnvironmentCommand> Logger {  get; set; }
     [Import]
     public IEnvironmentSelector EnvironmentSelector { get; set; }
     [Import]

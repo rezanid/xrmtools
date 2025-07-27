@@ -266,7 +266,6 @@
     <Compile Include="Helpers\IVsHierarchyExtensions.cs" />
     <Compile Include="Helpers\EntityMetadataExtensions.cs" />
     <Compile Include="Helpers\StringBuilderExtensions.cs" />
-    <Compile Include="Commands\NewPluginDefinitionFileCommand.cs" />
     <Compile Include="UI\Converters\ObjectToJsonConverter.cs" />
     <Compile Include="UI\ViewModelBase.cs" />
     <Compile Include="Xrm\Extensions\EntityExtensions.cs" />
@@ -418,12 +417,6 @@
     <None Include="CodeGenTemplates\Plugin.cs12.sbncs" />
     <None Include="CodeGenTemplates\Target.cs12.sbncs" />
     <None Include="PrepareImageManifest.targets" />
-    <None Include="Samples\AHRMBeOne_Plugin_Request.def.json" />
-    <None Include="Samples\EntityConfigExample1.yaml" />
-    <Content Include="Schemas\pluginregistration-schema.json">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-      <IncludeInVSIX>true</IncludeInVSIX>
-    </Content>
     <None Include="source.extension.vsixmanifest">
       <SubType>Designer</SubType>
       <Generator>VsixManifestGenerator</Generator>
@@ -447,13 +440,10 @@
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="Community.VisualStudio.Toolkit.17">
-      <Version>17.0.527</Version>
+      <Version>17.0.533</Version>
     </PackageReference>
     <PackageReference Include="CommunityToolkit.Mvvm">
-      <Version>8.3.2</Version>
-    </PackageReference>
-    <PackageReference Include="HandyControl">
-      <Version>3.5.1</Version>
+      <Version>8.4.0</Version>
     </PackageReference>
     <PackageReference Include="Humanizer.Core">
       <Version>2.14.1</Version>
@@ -465,7 +455,7 @@
       <Version>8.0.0</Version>
     </PackageReference>
     <PackageReference Include="Microsoft.CodeAnalysis.CSharp">
-      <Version>4.11.0</Version>
+      <Version>4.14.0</Version>
     </PackageReference>
     <PackageReference Include="Microsoft.Extensions.Http">
       <Version>8.0.0</Version>
@@ -473,22 +463,19 @@
     <PackageReference Include="Microsoft.Extensions.Http.Resilience">
       <Version>8.10.0</Version>
     </PackageReference>
-    <PackageReference Include="Microsoft.Identity.Client.Extensions.Msal">
-      <Version>4.66.2</Version>
-    </PackageReference>
     <PackageReference Include="Microsoft.VisualStudio.CoreUtility">
-      <Version>17.12.215</Version>
+      <Version>17.14.249</Version>
     </PackageReference>
     <PackageReference Include="Microsoft.VisualStudio.Language.Intellisense">
-      <Version>17.12.215</Version>
+      <Version>17.14.249</Version>
     </PackageReference>
     <PackageReference Include="Microsoft.VisualStudio.LanguageServices">
-      <Version>4.11.0</Version>
+      <Version>4.14.0</Version>
     </PackageReference>
-    <PackageReference Include="Microsoft.VisualStudio.SDK" Version="17.12.40392" ExcludeAssets="runtime">
+    <PackageReference Include="Microsoft.VisualStudio.SDK" Version="17.14.40265" ExcludeAssets="runtime">
       <IncludeAssets>compile; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageReference>
-    <PackageReference Include="Microsoft.VSSDK.BuildTools" Version="17.12.2069">
+    <PackageReference Include="Microsoft.VSSDK.BuildTools" Version="17.14.2094">
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
       <PrivateAssets>all</PrivateAssets>
     </PackageReference>
@@ -507,7 +494,7 @@
       <PrivateAssets>all</PrivateAssets>
     </PackageReference>
     <PackageReference Include="Scriban">
-      <Version>6.1.0</Version>
+      <Version>6.2.1</Version>
     </PackageReference>
     <PackageReference Include="StrongNamer">
       <Version>0.2.5</Version>
@@ -516,7 +503,7 @@
       <Version>8.0.0</Version>
     </PackageReference>
     <PackageReference Include="System.Runtime.Caching">
-      <Version>8.0.0</Version>
+      <Version>8.0.1</Version>
     </PackageReference>
     <PackageReference Include="YamlDotNet" Version="16.3.0" />
   </ItemGroup>
@@ -535,6 +522,7 @@
     </EmbeddedResource>
   </ItemGroup>
   <ItemGroup>
+    <Folder Include="Schemas\" />
     <Folder Include="_Core\" />
   </ItemGroup>
   <ItemGroup>
@@ -577,11 +565,7 @@
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <Import Project="$(VSToolsPath)\VSSDK\Microsoft.VsSDK.targets" Condition="'$(VSToolsPath)' != ''" />
   <Import Project="PrepareImageManifest.targets" />
-  <ProjectExtensions>
-    <VisualStudio>
-      <UserProperties samples_4ahrmbeone_3plugin_3request_1def_1json__JsonSchema="..\schemas\pluginregistration-schema.json" />
-    </VisualStudio>
-  </ProjectExtensions>
+  <ProjectExtensions />
   <Import Project="PrepareImageManifest.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.

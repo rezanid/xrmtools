@@ -22,9 +22,6 @@ namespace XrmTools
         public const string SetCustomToolPluginDefitionCmdUIRuleString = "ee3324f2-0e72-4af6-bcba-ac3af05df4e8";
         public static Guid SetCustomToolPluginDefitionCmdUIRule = new Guid(SetCustomToolPluginDefitionCmdUIRuleString);
 
-        public const string NewPluginDefinitionCmdUIRuleString = "87765b0d-0ab7-4812-9668-a2d621957cf9";
-        public static Guid NewPluginDefinitionCmdUIRule = new Guid(NewPluginDefinitionCmdUIRuleString);
-
         public const string SetPluginGeneratorTemplateCmdUIRuleString = "be4c5f8f-c72b-4442-9b9c-d2b5f7f2b9a0";
         public static Guid SetPluginGeneratorTemplateCmdUIRule = new Guid(SetPluginGeneratorTemplateCmdUIRuleString);
 
@@ -55,7 +52,6 @@ namespace XrmTools
         public const int XrmToolsProjectContextMenuGroup = 0x0600;
         public const int XrmToolsSolutionContextMenuGroup = 0x0700;
         public const int XrmToolsContextMenuGroup = 0x0100;
-        public const int NewPluginDefinitionCmdId = 0x0200;
         public const int SetCustomToolPluginGeneratorCmdId = 0x0300;
         public const int SetCustomToolEntityGeneratorCmdId = 0x0310;
         public const int SetPluginGeneratorTemplateInSolutionCmdId = 0x0800;

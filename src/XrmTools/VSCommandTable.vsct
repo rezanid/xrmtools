@@ -198,7 +198,7 @@
         </Strings>
       </Button>
       <!--[Project Context Menu] > "Add" > "New plugin definition..."-->
-      <Button guid="XrmToolsCmdSetId" id="NewPluginDefinitionCmdId" priority="0x0200" type="Button">
+      <!--<Button guid="XrmToolsCmdSetId" id="NewPluginDefinitionCmdId" priority="0x0200" type="Button">
         <Parent guid="guidSHLMainMenu" id="IDG_VS_CTXT_PROJECT_ADD_ITEMS"/>
         <Icon guid="ImageCatalogGuid" id="Part" />
         <CommandFlag>IconIsMoniker</CommandFlag>
@@ -207,7 +207,7 @@
           <ButtonText>New plugin definition...</ButtonText>
           <LocCanonicalName>.XrmTools.NewPluginDefinition</LocCanonicalName>
         </Strings>
-      </Button>
+      </Button>-->
     </Buttons>
   </Commands>
   
@@ -217,9 +217,9 @@
     <CommandPlacement guid="XrmToolsCmdSetId" id="RegisterPluginCmdId" priority="0x0200">
       <Parent guid="XrmToolsCmdSetId" id="XrmToolsProjectContextMenuGroup"/>
     </CommandPlacement>
-    <CommandPlacement guid="XrmToolsCmdSetId" id="NewPluginDefinitionCmdId" priority="0x0200">
+    <!--<CommandPlacement guid="XrmToolsCmdSetId" id="NewPluginDefinitionCmdId" priority="0x0200">
       <Parent guid="guidSHLMainMenu" id="IDG_VS_CTXT_SLNFLDR_ADD_ITEM"/>
-    </CommandPlacement>
+    </CommandPlacement>-->
     <!--Project Context Menu > "Set environment..."-->
     <CommandPlacement guid="XrmToolsCmdSetId" id="SetEnvironmentCmdId" priority="0x0200">
       <Parent guid="XrmToolsCmdSetId" id="XrmToolsProjectContextMenuGroup"/>
@@ -238,7 +238,7 @@
     <VisibilityItem guid="XrmToolsCmdSetId" id="SetPluginGeneratorTemplateInProjectCmdId" context="SetPluginGeneratorTemplateCmdUIRule" />
     <VisibilityItem guid="XrmToolsCmdSetId" id="SetEntityGeneratorTemplateInSolutionCmdId" context="SetPluginGeneratorTemplateCmdUIRule" />
     <VisibilityItem guid="XrmToolsCmdSetId" id="SetEntityGeneratorTemplateInProjectCmdId" context="SetPluginGeneratorTemplateCmdUIRule" />
-    <VisibilityItem guid="XrmToolsCmdSetId" id="NewPluginDefinitionCmdId" context="NewPluginDefinitionCmdUIRule" />
+    <!--<VisibilityItem guid="XrmToolsCmdSetId" id="NewPluginDefinitionCmdId" context="NewPluginDefinitionCmdUIRule" />-->
   </VisibilityConstraints>
 
   <Symbols>
@@ -248,7 +248,7 @@
     <!-- Visibility Rules -->
     <GuidSymbol name="SetCustomToolEntitiesCmdUIRule" value="{6b9f081c-67ed-43f3-8434-237387ae4f5d}" />
     <GuidSymbol name="SetCustomToolPluginDefitionCmdUIRule" value="{ee3324f2-0e72-4af6-bcba-ac3af05df4e8}" />
-    <GuidSymbol name="NewPluginDefinitionCmdUIRule" value="{87765b0d-0ab7-4812-9668-a2d621957cf9}" />
+    <!--<GuidSymbol name="NewPluginDefinitionCmdUIRule" value="{87765b0d-0ab7-4812-9668-a2d621957cf9}" />-->
     <GuidSymbol name="SetPluginGeneratorTemplateCmdUIRule" value="{be4c5f8f-c72b-4442-9b9c-d2b5f7f2b9a0}" />
                       
     <!-- MEF Services-->
@@ -263,7 +263,7 @@
       <IDSymbol name="XrmToolsProjectContextMenuGroup" value="0x0600" />
       <IDSymbol name="XrmToolsSolutionContextMenuGroup" value="0x0700" />
       <IDSymbol name="XrmToolsContextMenuGroup" value="0x0100" />
-      <IDSymbol name="NewPluginDefinitionCmdId" value="0x0200" />
+      <!--<IDSymbol name="NewPluginDefinitionCmdId" value="0x0200" />-->
       <IDSymbol name="SetCustomToolPluginGeneratorCmdId" value="0x0300" />
       <IDSymbol name="SetCustomToolEntityGeneratorCmdId" value="0x0310" />
       <IDSymbol name="SetPluginGeneratorTemplateInSolutionCmdId" value="0x0800"/>

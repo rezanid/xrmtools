@@ -110,10 +110,10 @@ public sealed partial class XrmToolsPackage : IVsPersistSolutionProps
         {
             return VSConstants.S_OK;
         }
-        if (GeneralOptions.Instance.CurrentEnvironmentStorage != SettingsStorageTypes.Solution)
-        {
-            return VSConstants.S_OK;
-        }
+        //if (GeneralOptions.Instance.CurrentEnvironmentStorage != SettingsStorageTypes.Solution)
+        //{
+        //    return VSConstants.S_OK;
+        //}
         ThreadHelper.ThrowIfNotOnUIThread();
         if (pszKey == SolutionPersistanceKey)
         {

@@ -8,7 +8,7 @@ using System.Text.Json.Serialization;
 using XrmTools.WebApi.Entities.Attributes;
 
 [EntityMetadata("plugintype", "plugintypes")]
-internal class PluginType : Component<PluginType>
+public class PluginType : Component<PluginType>
 {
     public int? Minor { get; set; }
     public object? CustomWorkflowActivityInfo { get; set; }

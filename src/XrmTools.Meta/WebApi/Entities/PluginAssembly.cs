@@ -8,7 +8,7 @@ using System.Text.Json.Serialization;
 using XrmTools.WebApi.Entities.Attributes;
 
 [EntityMetadata("pluginassembly", "pluginassemblies")]
-internal class PluginAssembly : Component<PluginAssembly>
+public class PluginAssembly : Component<PluginAssembly>
 {
 
     [JsonPropertyName("pluginassemblyid")]

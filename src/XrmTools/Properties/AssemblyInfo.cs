@@ -41,10 +41,27 @@ using XrmTools;
 //    AssemblyName = @"XrmTools",
 //    CodeBase = @"$PackageFolder$\XrmTools.dll")]
 
-//[assembly: ProvideCodeBase(
-//    AssemblyName = @"XrmTools.Core",
-//    CodeBase = @"$PackageFolder$\XrmTools.Core.dll")]
+[assembly: ProvideCodeBase(
+    AssemblyName = @"XrmTools.Core",
+    CodeBase = @"$PackageFolder$\XrmTools.Core.dll")]
 
-//[assembly: ProvideCodeBase(
-//    AssemblyName = @"XrmTools.Meta",
-//    CodeBase = @"$PackageFolder$\XrmTools.Meta.dll")]
+[assembly: ProvideCodeBase(
+    AssemblyName = @"XrmTools.Meta",
+    CodeBase = @"$PackageFolder$\XrmTools.Meta.dll")]
+
+
+[assembly: ProvideCodeBase(
+    AssemblyName = @"XrmTools.UI.Controls",
+    CodeBase = @"$PackageFolder$\XrmTools.UI.Controls.dll")]
+
+[assembly: ProvideCodeBase(
+    AssemblyName = @"Microsoft.Bcl.TimeProvider",
+    CodeBase = @"$PackageFolder$\Microsoft.Bcl.TimeProvider.dll")]
+
+[assembly: ProvideCodeBase(
+    AssemblyName = @"Microsoft.Identity.Client",
+    CodeBase = @"$PackageFolder$\Microsoft.Identity.Client.dll")]
+
+[assembly: ProvideCodeBase(
+    AssemblyName = @"Microsoft.Identity.Client.Extensions.Msal",
+    CodeBase = @"$PackageFolder$\Microsoft.Identity.Client.Extensions.Msal.dll")]

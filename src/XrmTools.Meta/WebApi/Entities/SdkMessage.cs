@@ -7,7 +7,7 @@ using System.Text.Json.Serialization;
 using XrmTools.WebApi.Entities.Attributes;
 
 [EntityMetadata("sdkmessage", "sdkmessages")]
-internal class SdkMessage : Component<SdkMessage>
+public class SdkMessage : Component<SdkMessage>
 {
     [JsonProperty("sdkmessageid"), JsonPropertyName("sdkmessageid")]
     public override Guid? Id { get; set; }
@@ -71,14 +71,14 @@ internal class SdkMessage : Component<SdkMessage>
             ["OnExternalUpdated"] = []
         };
 
-    internal IReadOnlyList<ImageMessagePropertyName> MessagePropertyNames =>
+    public IReadOnlyList<ImageMessagePropertyName> MessagePropertyNames =>
         ImageMessageProperties.TryGetValue(Name, out var messageNames)
         ? messageNames
         : [];
 
-    internal bool IsFilteringAttributesSupported => Name is "Create" or "Update" or "CreateMultiple" or "CreateMultiple" or "OnExternalUpdated";
+    public bool IsFilteringAttributesSupported => Name is "Create" or "Update" or "CreateMultiple" or "CreateMultiple" or "OnExternalUpdated";
 }
 
-internal record ImageMessagePropertyName(
+public record ImageMessagePropertyName(
     string Name, string ShortDescription, string? Description = null);
 #nullable restore

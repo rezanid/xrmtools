@@ -2,7 +2,7 @@
 
 using System;
 
-internal class WhoAmIResponse : ODataResponse
+public class WhoAmIResponse : ODataResponse
 {
     public Guid BusinessUnitId { get; set; }
     public Guid UserId { get; set; }

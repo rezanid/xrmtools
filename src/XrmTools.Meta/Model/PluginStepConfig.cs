@@ -35,7 +35,7 @@ public interface IMessageProcessingStepEntity
     bool? CanBeBypassed { get; set;}
 }
 
-internal interface IMessageProcessingStepConfig : IMessageProcessingStepEntity
+public interface IMessageProcessingStepConfig : IMessageProcessingStepEntity
 {
     ICollection<PluginStepImageConfig> Images { get; set; }
     Microsoft.Xrm.Sdk.Metadata.EntityMetadata? PrimaryEntityDefinition { get; set; }
@@ -45,7 +45,7 @@ internal interface IMessageProcessingStepConfig : IMessageProcessingStepEntity
 }
 
 [EntityLogicalName(EntityLogicalName)]
-internal class PluginStepConfig : TypedEntity<PluginStepConfig>, IMessageProcessingStepConfig
+public class PluginStepConfig : TypedEntity<PluginStepConfig>, IMessageProcessingStepConfig
 {
     //Fields not present in the entity:
     // - PrimaryEntityName

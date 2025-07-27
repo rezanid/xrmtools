@@ -7,7 +7,7 @@ using System.Text.Json.Serialization;
 using XrmTools.WebApi.Entities.Attributes;
 
 [EntityMetadata("sdkmessageprocessingstepimage", "sdkmessageprocessingstepimages")]
-internal class SdkMessageProcessingStepImage : Component<SdkMessageProcessingStepImage>
+public class SdkMessageProcessingStepImage : Component<SdkMessageProcessingStepImage>
 {
     [JsonPropertyName("sdkmessageprocessingstepimageid")]
     [JsonProperty("sdkmessageprocessingstepimageid")]
