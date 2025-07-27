@@ -87,14 +87,14 @@ using Task = System.Threading.Tasks.Task;
         "ActiveProjectCapability:CSharp", 
         VSConstants.UICONTEXT.SolutionHasSingleProject_string, 
         VSConstants.UICONTEXT.SolutionHasMultipleProjects_string])]
-[ProvideUIContextRule(PackageGuids.NewPluginDefinitionCmdUIRuleString,
-    name: "UI Context NewPluginConfigCommand",
-    expression: "CSharp & (SingleProj | MultiProj)",
-    termNames: ["CSharp", "SingleProj", "MultiProj"],
-    termValues: [
-        "ActiveProjectCapability:CSharp",
-        VSConstants.UICONTEXT.SolutionHasSingleProject_string,
-        VSConstants.UICONTEXT.SolutionHasMultipleProjects_string])]
+//[ProvideUIContextRule(PackageGuids.NewPluginDefinitionCmdUIRuleString,
+//    name: "UI Context NewPluginConfigCommand",
+//    expression: "CSharp & (SingleProj | MultiProj)",
+//    termNames: ["CSharp", "SingleProj", "MultiProj"],
+//    termValues: [
+//        "ActiveProjectCapability:CSharp",
+//        VSConstants.UICONTEXT.SolutionHasSingleProject_string,
+//        VSConstants.UICONTEXT.SolutionHasMultipleProjects_string])]
 [ProvideService(typeof(IXrmCodeGenerator), IsAsyncQueryable = true, IsCacheable = true, IsFreeThreaded = true)]
 [ProvideService(typeof(IEnvironmentProvider), IsAsyncQueryable = true, IsCacheable = true, IsFreeThreaded = true)]
 [ProvideService(typeof(ISettingsProvider), IsAsyncQueryable = true, IsCacheable = true, IsFreeThreaded = true)]
@@ -172,7 +172,7 @@ public sealed partial class XrmToolsPackage : ToolkitPackage
 
         await InitializeMefServicesAsync();
 
-        await NewPluginDefinitionFileCommand.InitializeAsync(this);
+        //await NewPluginDefinitionFileCommand.InitializeAsync(this);
         await SetPluginGeneratorTemplateInProjectCommand.InitializeAsync(this);
         await SetPluginGeneratorTemplateInSolutionCommand.InitializeAsync(this);
         await SetEntityGeneratorTemplateInProjectCommand.InitializeAsync(this);
