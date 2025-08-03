@@ -4,7 +4,7 @@ using System;
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
-using XrmTools.Xrm.Model;
+using XrmTools.Meta.Model.Configuration;
 
 internal interface IXrmSchemaProvider : IDisposable
 {

@@ -142,96 +142,7 @@
       <DependentUpon>EnvironmentSelectorDialog.xaml</DependentUpon>
     </Compile>
     <Compile Include="UI\EnvironmentSelectorViewModel.cs" />
-    <Compile Include="WebApi\Batch\BatchRequest.cs" />
-    <Compile Include="WebApi\Batch\BatchResponse.cs" />
-    <Compile Include="WebApi\Batch\ChangeSet.cs" />
     <Compile Include="WebApi\Extensions.cs" />
-    <Compile Include="WebApi\Messages\AddPrivilegesRoleRequest.cs" />
-    <Compile Include="WebApi\Messages\AssociateRequest.cs" />
-    <Compile Include="WebApi\Messages\BulkDeleteRequest.cs" />
-    <Compile Include="WebApi\Messages\BulkDeleteResponse.cs" />
-    <Compile Include="WebApi\Messages\CommitAnnotationBlocksUploadRequest.cs" />
-    <Compile Include="WebApi\Messages\CommitAnnotationBlocksUploadResponse.cs" />
-    <Compile Include="WebApi\Messages\CommitAttachmentBlocksUploadRequest.cs" />
-    <Compile Include="WebApi\Messages\CommitAttachmentBlocksUploadResponse.cs" />
-    <Compile Include="WebApi\Messages\CommitFileBlocksUploadRequest.cs" />
-    <Compile Include="WebApi\Messages\CommitFileBlocksUploadResponse.cs" />
-    <Compile Include="WebApi\Messages\CreateMultipleRequest.cs" />
-    <Compile Include="WebApi\Messages\CreateMultipleResponse.cs" />
-    <Compile Include="WebApi\Messages\CreateRequest.cs" />
-    <Compile Include="WebApi\Messages\CreateResponse.cs" />
-    <Compile Include="WebApi\Messages\CreateRetrieveRequest.cs" />
-    <Compile Include="WebApi\Messages\CreateRetrieveResponse.cs" />
-    <Compile Include="WebApi\Messages\DeleteColumnValueRequest.cs" />
-    <Compile Include="WebApi\Messages\DeleteFileRequest.cs" />
-    <Compile Include="WebApi\Messages\DeleteMultipleRequest.cs" />
-    <Compile Include="WebApi\Messages\DeleteRequest.cs" />
-    <Compile Include="WebApi\Messages\DisassociateRequest.cs" />
-    <Compile Include="WebApi\Messages\DownloadAnnotationFileRequest.cs" />
-    <Compile Include="WebApi\Messages\DownloadAnnotationFileResponse.cs" />
-    <Compile Include="WebApi\Messages\DownloadAttachmentFileRequest.cs" />
-    <Compile Include="WebApi\Messages\DownloadAttachmentFileResponse.cs" />
-    <Compile Include="WebApi\Messages\DownloadBlockRequest.cs" />
-    <Compile Include="WebApi\Messages\DownloadBlockResponse.cs" />
-    <Compile Include="WebApi\Messages\DownloadFileChunkRequest.cs" />
-    <Compile Include="WebApi\Messages\DownloadFileChunkResponse.cs" />
-    <Compile Include="WebApi\Messages\DownloadFileRequest.cs" />
-    <Compile Include="WebApi\Messages\DownloadFileResponse.cs" />
-    <Compile Include="WebApi\Messages\ExecuteCosmosSqlQueryRequest.cs" />
-    <Compile Include="WebApi\Messages\ExecuteCosmosSqlQueryResponse.cs" />
-    <Compile Include="WebApi\Messages\ExportSolutionRequest.cs" />
-    <Compile Include="WebApi\Messages\ExportSolutionResponse.cs" />
-    <Compile Include="WebApi\Messages\FetchXMLRequest.cs" />
-    <Compile Include="WebApi\Messages\FetchXMLResponse.cs" />
-    <Compile Include="WebApi\Messages\FormatAddressRequest.cs" />
-    <Compile Include="WebApi\Messages\FormatAddressResponse.cs" />
-    <Compile Include="WebApi\Messages\GetCollectionCountRequest.cs" />
-    <Compile Include="WebApi\Messages\GetCollectionCountResponse.cs" />
-    <Compile Include="WebApi\Messages\GetColumnValueRequest.cs" />
-    <Compile Include="WebApi\Messages\GetColumnValueResponse.cs" />
-    <Compile Include="WebApi\Messages\GrantAccessRequest.cs" />
-    <Compile Include="WebApi\Messages\ImportSolutionRequest.cs" />
-    <Compile Include="WebApi\Messages\InitializeAnnotationBlocksDownloadRequest.cs" />
-    <Compile Include="WebApi\Messages\InitializeAnnotationBlocksDownloadResponse.cs" />
-    <Compile Include="WebApi\Messages\InitializeAnnotationBlocksUploadRequest.cs" />
-    <Compile Include="WebApi\Messages\InitializeAnnotationBlocksUploadResponse.cs" />
-    <Compile Include="WebApi\Messages\InitializeAttachmentBlocksDownloadRequest.cs" />
-    <Compile Include="WebApi\Messages\InitializeAttachmentBlocksDownloadResponse.cs" />
-    <Compile Include="WebApi\Messages\InitializeAttachmentBlocksUploadRequest.cs" />
-    <Compile Include="WebApi\Messages\InitializeAttachmentBlocksUploadResponse.cs" />
-    <Compile Include="WebApi\Messages\InitializeChunkedFileUploadRequest.cs" />
-    <Compile Include="WebApi\Messages\InitializeChunkedFileUploadResponse.cs" />
-    <Compile Include="WebApi\Messages\InitializeFileBlocksDownloadRequest.cs" />
-    <Compile Include="WebApi\Messages\InitializeFileBlocksDownloadResponse.cs" />
-    <Compile Include="WebApi\Messages\InitializeFileBlocksUploadRequest.cs" />
-    <Compile Include="WebApi\Messages\InitializeFileBlocksUploadResponse.cs" />
-    <Compile Include="WebApi\Messages\InitializeFromRequest.cs" />
-    <Compile Include="WebApi\Messages\InitializeFromResponse.cs" />
-    <Compile Include="WebApi\Messages\ModifyAccessRequest.cs" />
-    <Compile Include="WebApi\Messages\RetrieveCurrentOrganizationRequest.cs" />
-    <Compile Include="WebApi\Messages\RetrieveCurrentOrganizationResponse.cs" />
-    <Compile Include="WebApi\Messages\RetrieveMultipleRequest.cs" />
-    <Compile Include="WebApi\Messages\RetrieveMultipleResponse.cs" />
-    <Compile Include="WebApi\Messages\RetrievePrincipalAccessRequest.cs" />
-    <Compile Include="WebApi\Messages\RetrievePrincipalAccessResponse.cs" />
-    <Compile Include="WebApi\Messages\RetrieveRequest.cs" />
-    <Compile Include="WebApi\Messages\RetrieveResponse.cs" />
-    <Compile Include="WebApi\Messages\RetrieveSharedPrincipalsAndAccess.cs" />
-    <Compile Include="WebApi\Messages\RetrieveSharedPrincipalsAndAccessResponse.cs" />
-    <Compile Include="WebApi\Messages\RetrieveTotalRecordCountRequest.cs" />
-    <Compile Include="WebApi\Messages\RetrieveTotalRecordCountResponse.cs" />
-    <Compile Include="WebApi\Messages\RevokeAccessRequest .cs" />
-    <Compile Include="WebApi\Messages\SetColumnValueRequest.cs" />
-    <Compile Include="WebApi\Messages\UpdateMultipleRequest.cs" />
-    <Compile Include="WebApi\Messages\UpdateRequest.cs" />
-    <Compile Include="WebApi\Messages\UploadBlockRequest.cs" />
-    <Compile Include="WebApi\Messages\UploadFileChunkRequest.cs" />
-    <Compile Include="WebApi\Messages\UploadFileRequest.cs" />
-    <Compile Include="WebApi\Messages\UpsertMultipleRequest.cs" />
-    <Compile Include="WebApi\Messages\UpsertRequest.cs" />
-    <Compile Include="WebApi\Messages\UpsertResponse.cs" />
-    <Compile Include="WebApi\Messages\WhoAmIRequest.cs" />
-    <Compile Include="WebApi\Messages\WhoAmIResponse.cs" />
     <Compile Include="WebApi\Methods\Create.cs" />
     <Compile Include="WebApi\Methods\CreateRetrieve.cs" />
     <Compile Include="WebApi\Methods\Delete.cs" />
@@ -458,7 +369,7 @@
       <Version>4.14.0</Version>
     </PackageReference>
     <PackageReference Include="Microsoft.Extensions.Http">
-      <Version>8.0.0</Version>
+      <Version>8.0.1</Version>
     </PackageReference>
     <PackageReference Include="Microsoft.Extensions.Http.Resilience">
       <Version>8.10.0</Version>
@@ -504,6 +415,9 @@
     </PackageReference>
     <PackageReference Include="System.Runtime.Caching">
       <Version>8.0.1</Version>
+    </PackageReference>
+    <PackageReference Include="System.Text.Json">
+      <Version>8.0.6</Version>
     </PackageReference>
     <PackageReference Include="YamlDotNet" Version="16.3.0" />
   </ItemGroup>
@@ -557,6 +471,12 @@
     <ProjectReference Include="..\XrmTools.UI.Controls\XrmTools.UI.Controls.csproj">
       <Project>{179df0ac-6f44-4656-8332-034d3c594ed1}</Project>
       <Name>XrmTools.UI.Controls</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\XrmTools.WebApi\XrmTools.WebApi.csproj">
+      <Project>{17d36ac9-15d5-4a4e-99fd-1df17a0ba610}</Project>
+      <Name>XrmTools.WebApi</Name>
+      <IncludeOutputGroupsInVSIX>BuiltProjectOutputGroup%3bBuiltProjectOutputGroupDependencies%3bGetCopyToOutputDirectoryItems%3bSatelliteDllsProjectOutputGroup%3b</IncludeOutputGroupsInVSIX>
+      <IncludeOutputGroupsInVSIXLocalOnly>DebugSymbolsProjectOutputGroup%3b</IncludeOutputGroupsInVSIXLocalOnly>
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>

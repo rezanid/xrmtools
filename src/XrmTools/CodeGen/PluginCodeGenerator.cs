@@ -7,7 +7,6 @@ using Microsoft.VisualStudio.ComponentModelHost;
 using Microsoft.VisualStudio.Shell;
 using Microsoft.VisualStudio.Shell.Interop;
 using Microsoft.VisualStudio.TextTemplating.VSHost;
-using Microsoft.Xrm.Sdk.Metadata;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel.Composition;
@@ -24,11 +23,13 @@ using XrmTools.Core.Repositories;
 using XrmTools.Environments;
 using XrmTools.Helpers;
 using XrmTools.Logging.Compatibility;
+using XrmTools.Meta.Model;
+using XrmTools.Meta.Model.Configuration;
 using XrmTools.Options;
 using XrmTools.Resources;
 using XrmTools.Settings;
+using XrmTools.WebApi.Entities;
 using XrmTools.Xrm.Generators;
-using XrmTools.Xrm.Model;
 using XrmTools.Xrm.Repositories;
 using static XrmTools.Helpers.ProjectExtensions;
 
@@ -350,7 +351,7 @@ public class PluginCodeGenerator : BaseCodeGeneratorWithSite
             //}
             foreach (var image in step.Images)
             {
-                var imageAttributes = image.ImageAttributes?.Split(',') ?? [];
+                var imageAttributes = image.Attributes?.Split(',') ?? [];
                 if (!entitiesAndAttributes.ContainsKey(step.PrimaryEntityName!))
                 {
                     entitiesAndAttributes[step.PrimaryEntityName!] = [.. imageAttributes];

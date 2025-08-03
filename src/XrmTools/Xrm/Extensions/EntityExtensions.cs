@@ -5,7 +5,6 @@ using Microsoft.Xrm.Sdk;
 using System;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
-using XrmTools.Xrm.Model;
 
 internal static class EntityExtensions
 {

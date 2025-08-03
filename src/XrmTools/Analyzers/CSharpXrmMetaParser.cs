@@ -2,15 +2,14 @@
 namespace XrmTools.Analyzers;
 
 using Microsoft.CodeAnalysis;
-using Microsoft.VisualStudio.Language.Prediction;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel.Composition;
 using System.Linq;
 using XrmTools.Helpers;
 using XrmTools.Meta.Attributes;
-using XrmTools.Meta.Model;
-using XrmTools.Xrm.Model;
+using XrmTools.Meta.Model.Configuration;
+using XrmTools.Model.Configuration;
 
 internal interface ICSharpXrmMetaParser
 {
@@ -26,7 +25,7 @@ internal interface ICSharpXrmMetaParser
 [method: ImportingConstructor]
 internal class CSharpXrmMetaParser(
     ICSharpDependencyAnalyzer dependencyAnalyzer,
-    IDependencyPreparation dependencyPreparation) : ICSharpXrmMetaParser
+    Meta.Model.IDependencyPreparation dependencyPreparation) : ICSharpXrmMetaParser
 {
     private static readonly Dictionary<string, WebApi.Types.CustomApiFieldType> CustomApiFieldTypeMapping = new()
     {
@@ -353,11 +352,11 @@ internal class CSharpXrmMetaParser(
         if (attributeData.ConstructorArguments.Length > 1)
         {
             //var attributes = attributeData.ConstructorArguments[1].Value;
-            imageConfig.ImageAttributes = attributeData.ConstructorArguments[1].Value as string;
+            imageConfig.Attributes = attributeData.ConstructorArguments[1].Value as string;
             return imageConfig;
         }
 
-        imageConfig.ImageAttributes = attributeData.NamedArguments.FirstOrDefault(a => a.Key == "Attributes").Value.Value as string;
+        imageConfig.Attributes = attributeData.NamedArguments.FirstOrDefault(a => a.Key == "Attributes").Value.Value as string;
 
         return imageConfig;
     }

@@ -12,7 +12,7 @@ internal class PolymorphicContractResolver : DefaultContractResolver
     {
         var property = base.CreateProperty(member, memberSerialization);
 
-        if (IsPolymorphicType(property.PropertyType))
+        if (IsPolymorphicKnownType(property.PropertyType))
         {
             property.Converter = new KnownTypeConverter(property.PropertyType);
         }
@@ -20,7 +20,7 @@ internal class PolymorphicContractResolver : DefaultContractResolver
         return property;
     }
 
-    private bool IsPolymorphicType(Type type) => type.IsArray ?
+    private bool IsPolymorphicKnownType(Type type) => type.IsArray ?
         type.GetElementType().GetCustomAttributes<KnownTypeAttribute>(true).Any(attr => attr.Type != type) :
         type.GetCustomAttributes<KnownTypeAttribute>(true).Any(attr => attr.Type != type);
 }

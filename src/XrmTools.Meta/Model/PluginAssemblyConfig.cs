@@ -11,6 +11,8 @@ using System.Runtime.Serialization;
 using System.Text.Json.Serialization;
 using XrmTools.Meta.Attributes.Serialization;
 using XrmTools.Meta.Attributes;
+using XrmTools.Meta.Model;
+using XrmTools.Meta.Model.Configuration;
 
 public interface IPluginAssemblyConfig : IPluginAssemblyEntity
 {
@@ -144,11 +146,5 @@ public class PluginAssemblyConfig : TypedEntity<PluginAssemblyConfig>, IPluginAs
 
     public PluginAssemblyConfig() : base(EntityLogicalName) { }
     public PluginAssemblyConfig(string filePath) : base(EntityLogicalName) => FilePath = filePath;
-}
-
-public class EntityConfig
-{
-    public string? LogicalName { get; set; }
-    public string? AttributeNames { get; set; }
 }
 #nullable restore

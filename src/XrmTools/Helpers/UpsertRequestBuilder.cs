@@ -3,12 +3,13 @@ namespace XrmTools.Helpers;
 using System.Collections.Generic;
 using System.Net.Http;
 using XrmTools.WebApi.Messages;
-using XrmTools.Xrm.Model;
 using XrmTools.WebApi;
 using Newtonsoft.Json.Linq;
 using System.Linq;
 using XrmTools.WebApi.Entities;
 using XrmTools.Meta.Attributes;
+using XrmTools.Meta.Model.Configuration;
+using XrmTools.Model.Configuration;
 
 //TODO: Make this class IDisposable and dispose requests.
 internal class UpsertRequestBuilder(
@@ -39,7 +40,7 @@ internal class UpsertRequestBuilder(
     public UpsertRequestBuilder WithAssembly()
     {
         _requests.Add(new UpsertRequest(
-            new EntityReference(_config.GetEntitySetName(), _config.PluginAssemblyId),
+            new EntityReference(PluginAssemblyConfig.Metadata.EntitySetName, _config.Id),
             new JObject
             {
                 ["name"] = _config.Name,
@@ -137,14 +138,14 @@ internal class UpsertRequestBuilder(
 
     private HttpRequestMessage UpsertPluginTypeRequestFor(PluginTypeConfig pluginType)
     {
-        return new UpsertRequest(new EntityReference(pluginType.GetEntitySetName(), pluginType.Id),
+        return new UpsertRequest(new EntityReference(PluginTypeConfig.Metadata.EntitySetName, pluginType.Id),
             new JObject
             {
                 ["name"] = pluginType.Name,
                 ["friendlyname"] = pluginType.FriendlyName,
                 ["description"] = pluginType.Description,
                 ["typename"] = pluginType.TypeName,
-                ["pluginassemblyid@odata.bind"] = $"{_config.GetEntitySetName()}({_config.Id})"
+                ["pluginassemblyid@odata.bind"] = $"{PluginAssemblyConfig.Metadata.EntitySetName}({_config.Id})"
             },
             solutionUniqueName: _config.Solution?.UniqueName);
     }
@@ -175,7 +176,7 @@ internal class UpsertRequestBuilder(
             }
         }
         return new UpsertRequest(new EntityReference(
-            pluginStepConfig.GetEntitySetName(), pluginStepConfig.Id),
+            PluginStepConfig.Metadata.EntitySetName, pluginStepConfig.Id),
         //return new CreateRequest(pluginStepConfig.GetEntitySetName(),
             pluginStep,
             solutionUniqueName: _config.Solution?.UniqueName);
@@ -183,12 +184,12 @@ internal class UpsertRequestBuilder(
 
     private HttpRequestMessage UpsertPluginImageRequestFor(PluginStepConfig parentStep, PluginStepImageConfig pluginImage)
         => new UpsertRequest(new EntityReference(
-            pluginImage.GetEntitySetName(),
+            PluginStepImageConfig.Metadata.EntitySetName,
             pluginImage.Id),
         new JObject
         {
             ["name"] = pluginImage.Name,
-            ["attributes"] = pluginImage.ImageAttributes,
+            ["attributes"] = pluginImage.Attributes,
             ["entityalias"] = pluginImage.EntityAlias,
             ["messagepropertyname"] = parentStep.Message?.MessagePropertyNames.FirstOrDefault().Name,
             ["imagetype"] = (int?)pluginImage.ImageType,
@@ -212,7 +213,7 @@ internal class UpsertRequestBuilder(
                 ["boundentitylogicalname"] = customApi.BoundEntityLogicalName,
                 ["isprivate"] = customApi.IsPrivate,
                 ["allowedcustomprocessingsteptype"] = (int?)customApi.StepType,
-                ["PluginTypeId@odata.bind"] = PluginType.CreateReference(parentPlugin.Id).Path
+                ["PluginTypeId@odata.bind"] = PluginType.CreateReference(parentPlugin.Id!.Value).Path
             },
             solutionUniqueName: _config.Solution?.UniqueName);
 

@@ -6,7 +6,6 @@ using Microsoft.VisualStudio.ComponentModelHost;
 using Microsoft.VisualStudio.Shell;
 using Microsoft.VisualStudio.Shell.Interop;
 using Microsoft.VisualStudio.TextTemplating.VSHost;
-using Microsoft.Xrm.Sdk.Metadata;
 using System;
 using System.ComponentModel.Composition;
 using System.Linq;
@@ -26,12 +25,13 @@ using System.Collections.Generic;
 using XrmTools.Helpers;
 using System.IO;
 using System.Threading.Tasks;
-using XrmTools.Xrm.Model;
 using XrmTools.Core.Helpers;
 using XrmTools.Options;
 using System.ComponentModel.DataAnnotations;
 using Community.VisualStudio.Toolkit;
 using XrmTools.Analyzers;
+using XrmTools.Meta.Model.Configuration;
+using XrmTools.WebApi.Entities;
 
 internal class EntityCodeGenerator : BaseCodeGeneratorWithSite
 {
@@ -201,14 +201,14 @@ internal class EntityCodeGenerator : BaseCodeGeneratorWithSite
         return string.Empty;
     }
 
-    private void AddEntityMetadataToEntityConfig(IPluginAssemblyConfig config) 
+    private void AddEntityMetadataToEntityConfig(PluginAssemblyConfig config) 
         => config.EntityDefinitions = [.. config.Entities
             .Where(c => !string.IsNullOrWhiteSpace(c.LogicalName))
             .Select(e => GetEntityMetadata(e.LogicalName!, e.AttributeNames?.Split(',') ?? [], config.ReplacePrefixes))];
 
-    private EntityMetadata GetEntityMetadata(string logicalName, IEnumerable<string> attributeNames, CodeGenReplacePrefixConfig prefixReplacement)
+    private EntityMetadata GetEntityMetadata(string logicalName, IEnumerable<string> attributeNames, Meta.Model.CodeGenReplacePrefixConfig prefixReplacement)
     {
-        var entityMetadataRepo = ThreadHelper.JoinableTaskFactory.Run(async () => await RepositoryFactory.CreateRepositoryAsync<IEntityMetadataRepository>());
+        var entityMetadataRepo = ThreadHelper.JoinableTaskFactory.Run(RepositoryFactory.CreateRepositoryAsync<IEntityMetadataRepository>);
         if (entityMetadataRepo is null) return null;
         using var cts = new CancellationTokenSource(120000);
         var entityDefinition = ThreadHelper.JoinableTaskFactory.Run(async () => await entityMetadataRepo.GetAsync(logicalName, cts.Token));
@@ -238,7 +238,7 @@ internal class EntityCodeGenerator : BaseCodeGeneratorWithSite
         return entityDefinition;
     }
 
-    private static void FormatEntitySchemaName(EntityMetadata entityDefinition, CodeGenReplacePrefixConfig prefixReplacement)
+    private static void FormatEntitySchemaName(EntityMetadata entityDefinition, Meta.Model.CodeGenReplacePrefixConfig prefixReplacement)
     {
         // Remove prefixes.
         foreach (var prefix in prefixReplacement.PrefixList)
@@ -260,7 +260,7 @@ internal class EntityCodeGenerator : BaseCodeGeneratorWithSite
         }
     }
 
-    private static void FormatAttributeSchemNames(IEnumerable<AttributeMetadata> attributes, CodeGenReplacePrefixConfig prefixReplacement)
+    private static void FormatAttributeSchemNames(IEnumerable<AttributeMetadata> attributes, Meta.Model.CodeGenReplacePrefixConfig prefixReplacement)
     {
         var prefixList = prefixReplacement.Prefixes.SplitAndTrim(',') ?? [];
         foreach (var attribute in attributes)

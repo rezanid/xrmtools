@@ -74,34 +74,6 @@ internal class KnownTypeConverter : JsonConverter
         foreach (var property in properties)
         {
             CacheKnownTypesAndFactories(property.PropertyType);
-            //// Check if property has KnownTypeAttribute and cache
-            //foreach (var attribute in property.PropertyType.GetCustomAttributes<KnownTypeAttribute>(false))
-            //{
-            //    if (attribute.Type != null && !AllKnownTypes.ContainsKey(attribute.Type.Name))
-            //    {
-            //        AllKnownTypes.TryAdd(attribute.Type.Name, attribute.Type);
-            //        AllKnownTypeFactories.TryAdd(type, Expression.Lambda<Func<object>>(Expression.New(type)).Compile());
-            //    }
-            //}
-
-            //// If the property is a collection, handle the element type
-            //if (typeof(System.Collections.IEnumerable).IsAssignableFrom(property.PropertyType) &&
-            //    property.PropertyType.IsGenericType)
-            //{
-            //    var elementType = property.PropertyType.GetGenericArguments()[0];
-            //    CacheKnownTypesAndFactories(elementType);
-            //}
-            //// If the property is an array, handle the element type
-            //else if (property.PropertyType.IsArray)
-            //{
-            //    var elementType = property.PropertyType.GetElementType();
-            //    CacheKnownTypesAndFactories(elementType);
-            //}
-            //// For complex property types, recurse into them
-            //else if (!property.PropertyType.IsPrimitive && property.PropertyType != typeof(string))
-            //{
-            //    CacheKnownTypesAndFactories(property.PropertyType);
-            //}
         }
     }
 

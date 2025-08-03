@@ -9,8 +9,8 @@ using System.Windows.Data;
 using System.Windows.Input;
 using XrmTools.Core.Helpers;
 using XrmTools.Core.Repositories;
+using XrmTools.Meta.Model.Configuration;
 using XrmTools.Xrm;
-using XrmTools.Xrm.Model;
 
 internal class AssemblySelectionViewModel : ViewModelBase
 {
@@ -127,8 +127,8 @@ internal class AssemblySelectionViewModel : ViewModelBase
             using CancellationTokenSource cancellationTokenSource = new(10000);
             var pluginTypes = 
                 _typeRepository != null ?
-                await _typeRepository.GetAsync(SelectedAssembly.Id, cancellationTokenSource.Token) :
-                await _schemaProvider.GetPluginTypesAsync(SelectedAssembly.Id, cancellationTokenSource.Token);
+                await _typeRepository.GetAsync(SelectedAssembly.Id.Value, cancellationTokenSource.Token) :
+                await _schemaProvider.GetPluginTypesAsync(SelectedAssembly.Id.Value, cancellationTokenSource.Token);
             SelectedAssembly.PluginTypes = new ObservableCollection<PluginTypeConfig>(pluginTypes);
             Serialize(SelectedAssembly);
             IsLoading = false;

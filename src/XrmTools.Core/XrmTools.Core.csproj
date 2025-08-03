@@ -41,6 +41,7 @@
   <ItemGroup>
     <Reference Include="System" />
     <Reference Include="System.ComponentModel.Composition" />
+    <Reference Include="System.ComponentModel.DataAnnotations" />
     <Reference Include="System.Core" />
     <Reference Include="System.IO.Compression" />
     <Reference Include="System.Xml.Linq" />
@@ -90,6 +91,7 @@
     <Compile Include="Serialization\Newtonsoft\KnownTypeConverter.cs" />
     <Compile Include="Serialization\Newtonsoft\PolymorphicContractResolver.cs" />
     <Compile Include="Serialization\SystemText\JsonCommaDelimitedStringConverter.cs" />
+    <Compile Include="Serialization\SystemText\PolymorphicJsonConverter.cs" />
     <Compile Include="Serialization\SystemText\TypedEntityConverter.cs" />
     <Compile Include="Serialization\SystemText\TypedEntityConverter_T.cs" />
     <Compile Include="SettingsStorageTypes.cs" />
@@ -126,7 +128,7 @@
       <Version>9.0.2.59</Version>
     </PackageReference>
     <PackageReference Include="Microsoft.Extensions.Http">
-      <Version>8.0.0</Version>
+      <Version>8.0.1</Version>
     </PackageReference>
     <PackageReference Include="Microsoft.Extensions.Http.Resilience">
       <Version>8.10.0</Version>
@@ -184,6 +186,10 @@
     <ProjectReference Include="..\XrmTools.Meta\XrmTools.Meta.csproj">
       <Project>{838257e1-7f69-8823-ad8a-b1a9aff47b81}</Project>
       <Name>XrmTools.Meta</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\XrmTools.WebApi\XrmTools.WebApi.csproj">
+      <Project>{17d36ac9-15d5-4a4e-99fd-1df17a0ba610}</Project>
+      <Name>XrmTools.WebApi</Name>
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>

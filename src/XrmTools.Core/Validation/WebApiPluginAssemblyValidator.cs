@@ -4,7 +4,7 @@ namespace XrmTools.Validation;
 using System;
 using System.ComponentModel.Composition;
 using System.ComponentModel.DataAnnotations;
-using XrmTools.Xrm.Model;
+using XrmTools.Meta.Model.Configuration;
 
 [Export(typeof(IValidator))]
 [Validator(Category = Categories.WebApi)]

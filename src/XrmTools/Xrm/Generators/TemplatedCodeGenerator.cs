@@ -6,10 +6,10 @@ using System;
 using System.ComponentModel.Composition;
 using System.IO;
 using System.Text;
-using XrmTools.Xrm.Model;
 using Scriban.Runtime;
 using XrmTools.Validation;
 using System.ComponentModel.DataAnnotations;
+using XrmTools.Meta.Model.Configuration;
 
 [Export(typeof(IXrmCodeGenerator))]
 [method:ImportingConstructor]

@@ -5,18 +5,17 @@ using System;
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
-using XrmTools.Http;
 using XrmTools.Logging.Compatibility;
 using XrmTools.Meta.Model;
+using XrmTools.Meta.Model.Configuration;
 using XrmTools.WebApi;
-using XrmTools.Xrm.Model;
 
 internal interface IPluginTypeRepository : IXrmRepository
 {
     Task<IEnumerable<PluginTypeConfig>> GetAsync(Guid pluginassemblyid, CancellationToken cancellationToken);
 }
 
-internal class PluginTypeRepository(XrmHttpClient client, IWebApiService service, ILogger logger) : XrmRepository(client, service), IPluginTypeRepository
+internal class PluginTypeRepository(IWebApiService service, ILogger logger) : XrmRepository(service), IPluginTypeRepository
 {
     private const string plugintypeQuery = "plugintypes?" +
         "$filter=_pluginassemblyid_value eq '{0}'" +

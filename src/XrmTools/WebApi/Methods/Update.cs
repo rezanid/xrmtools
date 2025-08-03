@@ -18,7 +18,7 @@ internal static partial class Extensions
     /// <param name="partitionId">The partition key to use.</param>
     /// <param name="eTag">The current ETag value to compare.</param>
     /// <returns></returns>
-    public static async Task Update(
+    public static async Task UpdateAsync(
         this WebApiService service, 
         EntityReference entityReference, 
         JObject record, 
