@@ -58,7 +58,7 @@ public class XrmHttpClientFactoryTests
         _environmentProviderMock.Setup(x => x.GetActiveEnvironmentAsync()).ReturnsAsync(environment);
 
         // Act
-        Func<Task> act = async () => await _factory.CreateHttpClientAsync(environment);
+        Func<Task> act = async () => await _factory.CreateClientAsync(environment);
 
         // Assert
         await act.Should().ThrowAsync<InvalidOperationException>().WithMessage("Environment 'Test' connection string is empty.");
@@ -75,7 +75,7 @@ public class XrmHttpClientFactoryTests
         _authenticationServiceMock.Setup(x => x.AuthenticateAsync(It.IsAny<AuthenticationParameters>(), It.IsAny<Action<string>>(), It.IsAny<CancellationToken>())).ReturnsAsync(authResult);
 
         // Act
-        var client = await _factory.CreateHttpClientAsync(environment);
+        var client = await _factory.CreateClientAsync(environment);
 
         // Assert
         client.Should().NotBeNull();
@@ -96,7 +96,7 @@ public class XrmHttpClientFactoryTests
             .SetValue(_factory, new ConcurrentDictionary<string, AuthenticationResult> { [environment.ConnectionString] = validToken });
 
         // Act
-        var client = await _factory.CreateHttpClientAsync(environment);
+        var client = await _factory.CreateClientAsync(environment);
 
         // Assert
         client.Should().NotBeNull();
@@ -119,7 +119,7 @@ public class XrmHttpClientFactoryTests
         _authenticationServiceMock.Setup(x => x.AuthenticateAsync(It.IsAny<AuthenticationParameters>(), It.IsAny<Action<string>>(), It.IsAny<CancellationToken>())).ReturnsAsync(newToken);
 
         // Act
-        var client = await _factory.CreateHttpClientAsync(environment);
+        var client = await _factory.CreateClientAsync(environment);
 
         // Assert
         client.Should().NotBeNull();
