@@ -1,6 +1,6 @@
 {{~func non_logical; ret ($0?.is_logical != true); end~}}
 {{~func logical; ret ($0?.is_logical == true); end~}}
-{{~func supported_attribute; ret ($0?.attribute_type != 'EntityName' && !$0?.is_primary_id); end~}}
+{{~func supported_attribute; ret ($0 && !$0?.is_primary_id && $0.attribute_type != 'EntityName') && ($0.is_valid_for_create || $0.is_valid_for_update || $0.is_valid_for_read); end~}}
 {{~quote(text) = '"' + text + '"'~}}
 using Microsoft.Xrm.Sdk;
 using Microsoft.Xrm.Sdk.Client;

@@ -1,6 +1,6 @@
 {{~func non_logical; ret ($0?.is_logical != true); end~}}
 {{~func logical; ret ($0?.is_logical == true); end~}}
-{{~func supported_attribute; ret ($0?.attribute_type != 'EntityName'); end~}}
+{{~func supported_attribute; ret ($0 && !$0?.is_primary_id $0.attribute_type != 'EntityName') && ($0.is_valid_for_create || $0.is_valid_for_update || $0.is_valid_for_read); end~}}
 {{~quote(text) = '"' + text + '"'~}}
 {{-first_plugin_type = model.plugin_types | array.first~}}
 {{~if first_plugin_type.is_nullable_enabled ~}}
@@ -24,7 +24,7 @@ namespace {{ first_plugin_type?.namespace ?? config.default_namespace }}
     public partial class {{plugintype.type_name | last_segment }}
     {
         {{~dependencies = plugintype.dependency_graph?.dependencies~}}
-        {{~include 'InjectDependencies.sbncs'}}
+        {{include 'InjectDependencies.sbncs'}}
 
     {{~for step in plugintype.steps~}}
 	    {{~target_type_name = (plugintype.steps | array.size > 1 ? step.message_name : '') + 'Target' + (step.primary_entity_definition.display_name.localized_labels[0].label | tokenize)~}}
@@ -81,7 +81,7 @@ namespace {{ first_plugin_type?.namespace ?? config.default_namespace }}
     {{~if plugintype.custom_api ~}}
     {{~if plugintype.custom_api.request_parameters.size > 0~}}
         protected static {{plugintype.custom_api.request_type_name}} GetRequest(IExecutionContext context)
-            => new()
+            => new {{plugintype.custom_api.request_type_name}}
             {
                 {{~for param in plugintype.custom_api.request_parameters~}}
                 {{~case param.type~}}

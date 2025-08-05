@@ -76,3 +76,7 @@ using XrmTools;
 [assembly: ProvideCodeBase(
     AssemblyName = @"Microsoft.Xrm.Sdk",
     CodeBase = @"$PackageFolder$\Microsoft.Xrm.Sdk.dll")]
+
+[assembly: ProvideCodeBase(
+    AssemblyName = @"System.Net.Http.Formatting",
+    CodeBase = @"$PackageFolder$\System.Net.Http.Formatting.dll")]
