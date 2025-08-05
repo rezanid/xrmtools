@@ -323,10 +323,6 @@
     <Content Include="CodeGenTemplates\InjectDependencies.sbncs">
       <IncludeInVSIX>true</IncludeInVSIX>
     </Content>
-    <Content Include="CodeGenTemplates\Entity.cs12.sbncs" />
-    <None Include="CodeGenTemplates\Images.cs12.sbncs" />
-    <None Include="CodeGenTemplates\Plugin.cs12.sbncs" />
-    <None Include="CodeGenTemplates\Target.cs12.sbncs" />
     <None Include="PrepareImageManifest.targets" />
     <None Include="source.extension.vsixmanifest">
       <SubType>Designer</SubType>

@@ -10,6 +10,7 @@ using XrmTools.Core.Helpers;
 
 public static partial class Extensions
 {
+    //TODO: Using reflection to copy properties is not the best way to do this. Make sure we switch to CastAsync<T> for all responses.
     /// <summary>
     /// Converts HttpResponseMessage to derived type
     /// </summary>

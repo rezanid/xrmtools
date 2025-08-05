@@ -121,7 +121,7 @@ public class WebApiService(
         if (oDataError != null && oDataError.Error != null)
         {
 
-            var exception = new ServiceException(oDataError.Error.Message)
+            var exception = oDataError.Error.Message is string msg ? new ServiceException(msg) : new ServiceException()
             {
                 ODataError = oDataError,
                 Content = content,
@@ -137,7 +137,7 @@ public class WebApiService(
             {
                 var oDataException = JsonSerializer.Deserialize<ODataException>(content);
 
-                ServiceException otherException = new(oDataException.Message)
+                ServiceException otherException = oDataException?.Message is string msg ? new(msg) : new()
                 {
                     Content = content,
                     ReasonPhrase = response.ReasonPhrase,
@@ -172,8 +172,7 @@ public class WebApiService(
     /// <returns>OData response that include deserialized list of records in <see cref="ODataQueryResponse{T}.Value"/> property.</returns>
     public async Task<ODataQueryResponse<T>> QueryAsync<T>(string odataQuery, CancellationToken cancellationToken = default) where T : Entity<T>
     {
-        var request = new HttpRequestMessage(HttpMethod.Get, odataQuery);
-        var response = await SendAsync(request, cancellationToken).ConfigureAwait(false);
+        var response = await GetAsync(odataQuery, cancellationToken).ConfigureAwait(false);
         return await response.CastAsync<ODataQueryResponse<T>>().ConfigureAwait(false);
     }
 
