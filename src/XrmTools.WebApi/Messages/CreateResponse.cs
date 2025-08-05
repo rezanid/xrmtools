@@ -18,18 +18,9 @@ public sealed class CreateResponse : HttpResponseMessage
     /// </summary>
     public EntityReference? EntityReference
     {
-        get
-        {
-            if (Headers != null &&
-                Headers.Contains("OData-EntityId") &&
-                Headers.GetValues("OData-EntityId") != null)
-            {
-                return new EntityReference(Headers.GetValues("OData-EntityId").FirstOrDefault());
-            }
-            else
-            {
-                return null;
-            }
-        }
+        get =>
+            Headers.TryGetValues("OData-EntityId", out var values) ?
+            new(uri: values.FirstOrDefault()) :
+            null;
     }
 }

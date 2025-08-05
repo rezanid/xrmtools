@@ -98,7 +98,7 @@ internal class SdkMessageRepository(IWebApiService service, ILogger logger) : Xr
 
     public async Task<IEnumerable<SdkMessage>> GetForEntityAsync(string entityLogicalName, CancellationToken cancellationToken)
     {
-        var response = await client.GetAsync(string.Format(sdkMessageQuerySingle, entityLogicalName), cancellationToken);
+        var response = await service.GetAsync(string.Format(sdkMessageQuerySingle, entityLogicalName), cancellationToken);
         if (response.IsSuccessStatusCode)
         {
             using var content = await response.Content.ReadAsStreamAsync().ConfigureAwait(false);

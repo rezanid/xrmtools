@@ -1,5 +1,4 @@
-﻿#nullable enable
-namespace XrmTools.WebApi.Messages;
+﻿namespace XrmTools.WebApi.Messages;
 
 using System.Linq;
 using System.Net.Http;
@@ -17,6 +16,11 @@ public sealed class UpsertResponse : HttpResponseMessage
     /// <summary>
     /// A reference to the record.
     /// </summary>
-    public EntityReference? EntityReference => new(uri: Headers.GetValues("OData-EntityId").FirstOrDefault());
+    public EntityReference? EntityReference
+    {
+        get =>
+            Headers.TryGetValues("OData-EntityId", out var values) ?
+            new(uri: values.FirstOrDefault()) :
+            null;
+    }
 }
-#nullable restore

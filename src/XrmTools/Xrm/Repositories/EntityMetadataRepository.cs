@@ -22,8 +22,6 @@ internal interface IEntityMetadataRepository : IXrmRepository
     /// <summary>
     /// Get all the entities metadata.
     /// </summary>
-    /// <param name="cancellationToken">The cancellation token.</param>
-    /// <returns></returns>
     Task<IEnumerable<EntityMetadata>> GetAsync(CancellationToken cancellationToken);
     Task<IEnumerable<EntityMetadata>> GetByMessageNameAsync(string messageName, CancellationToken cancellationToken);
     Task<EntityMetadata> GetAsync(string entityLogicalName, CancellationToken cancellationToken);

@@ -1,7 +1,7 @@
 ﻿namespace XrmTools.WebApi.Types;
 
+using Newtonsoft.Json;
 using Newtonsoft.Json.Converters;
-using System.Text.Json.Serialization;
 
 [JsonConverter(typeof(StringEnumConverter))]
 public enum CustomApiFieldType
