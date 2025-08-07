@@ -8,19 +8,8 @@
     <SignAssembly>true</SignAssembly>
   </PropertyGroup>
   <PropertyGroup>
-    <AssemblyOriginatorKeyFile>..\key.snk</AssemblyOriginatorKeyFile>
+    <AssemblyOriginatorKeyFile>..\..\key.snk</AssemblyOriginatorKeyFile>
   </PropertyGroup>
-  <ItemGroup>
-    <Compile Include="..\xrmtools.core\system\runtime\compilerservices\Index.cs">
-      <Link>System\Runtime\CompilerServices\Index.cs</Link>
-    </Compile>
-    <Compile Include="..\xrmtools.core\system\runtime\compilerservices\Range.cs">
-      <Link>System\Runtime\CompilerServices\Range.cs</Link>
-    </Compile>
-    <Compile Include="..\xrmtools.core\system\runtime\compilerservices\RuntimeHelpers.cs">
-      <Link>System\Runtime\CompilerServices\RuntimeHelpers.cs</Link>
-    </Compile>
-  </ItemGroup>
   <ItemGroup>
     <PackageReference Include="FluentAssertions">
       <Version>8.5.0</Version>
@@ -42,9 +31,9 @@
     </PackageReference>
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\XrmTools.Core\XrmTools.Core.csproj" />
+    <Folder Include="Properties\" />
   </ItemGroup>
   <ItemGroup>
-    <Folder Include="Properties\" />
+    <ProjectReference Include="..\..\XrmTools.Core\XrmTools.Core.csproj" />
   </ItemGroup>
 </Project>
