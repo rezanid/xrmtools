@@ -3,14 +3,15 @@
     using System;
 
     /// <summary>
-    /// Generates a Custom API for a plugin. If no name has been given, name of the type will be used.
+    /// Apply this attribute to an assembly to specify the target solution for plugin registration generated from the project.
+    /// Provide the unique name of the solution, and optionally a friendly name (if different) and a description.
     /// </summary>
     [AttributeUsage(AttributeTargets.Assembly | AttributeTargets.Class, AllowMultiple = false, Inherited = false)]
     public class SolutionAttribute : Attribute
     {
         public string UniqueName { get; set; }
-        public string FriendlyName { get; set; }
-        public string Description { get; set; }
+        public string FriendlyName { get; set; } = string.Empty;
+        public string Description { get; set; } = string.Empty;
 
         public SolutionAttribute(string uniqueName)
         {

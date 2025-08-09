@@ -8,14 +8,14 @@
     [AttributeUsage(AttributeTargets.Class, AllowMultiple = false, Inherited = false)]
     public class CustomApiAttribute : Attribute
     {
-        public string DisplayName { get; set; }
-        public string Name { get; set; }
+        public string DisplayName { get; set; } = string.Empty;
+        public string Name { get; set; } = string.Empty;
         public string UniqueName { get; }
-        public string Description { get; set; }
+        public string Description { get; set; } = string.Empty;
         public ProcessingStepTypes StepType { get; set; } = ProcessingStepTypes.SyncAndAsync;
         public BindingTypes BindingType { get; set; } = BindingTypes.Global;
-        public string BoundEntityLogicalName { get; set; }
-        public string ExecutePrivilegeName { get; set; }
+        public string BoundEntityLogicalName { get; set; } = string.Empty;
+        public string ExecutePrivilegeName { get; set; } = string.Empty;
         public bool IsFunction { get; set; } = false;
         public bool IsPrivate { get; set; } = false;
         public CustomApiAttribute(string uniqueName)

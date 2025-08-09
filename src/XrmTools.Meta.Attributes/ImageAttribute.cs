@@ -2,16 +2,17 @@
 {
     using System;
 
-    // Any change in the constructors of this class requires a change in PluginAttributeExtractor.
     /// <summary>
     /// Adds image to a plugin step of a plugin type. This attribute should only be applied after a <see cref="StepAttribute" /> to the class.
+    /// <summary>
+    /// Defines an image for a plugin step, specifying the image type, attributes, and other image configuration.
+    /// This attribute should only be applied after a <see cref="StepAttribute" /> to the class.
+    /// Use this to add pre-image, post-image, or both to a plugin step for capturing entity data before or after the operation.
     /// </summary>
-    /// <param name="type">Defines if this is a pre-image, post-image or both.</param>
-    /// <param name="messagePropertyName">Defines which property of the message is captured by this image.</param>
     [AttributeUsage(AttributeTargets.Class, AllowMultiple = true, Inherited = true)]
     public class ImageAttribute : Attribute
     {
-        public Guid Id { get; set; }
+        public string Id { get; set; } = string.Empty;
         /// <summary>
         /// Type of image requested.
         /// </summary>
@@ -19,18 +20,18 @@
         /// <summary>
         /// Name of the property on the Request message. E.g. "Target".
         /// </summary>
-        public string MessagePropertyName { get; set; }
+        public string MessagePropertyName { get; set; } = string.Empty;
 
         /// <summary>
         /// Name of SdkMessage processing step image.
         /// </summary>
-        public string Name { get; set; }
+        public string Name { get; set; } = string.Empty;
         /// <summary>
         /// Key name used to access the pre-image or post-image property bags in a step
         /// </summary>
-        public string EntityAlias { get; set; }
-        public string Attributes { get; set; }
-        public string Description { get; set; }
+        public string EntityAlias { get; set; } = string.Empty;
+        public string Attributes { get; set; } = string.Empty;
+        public string Description { get; set; } = string.Empty;
 
         public ImageAttribute(ImageTypes imageType)
         {
