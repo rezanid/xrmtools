@@ -1,6 +1,6 @@
 {{~func non_logical; ret ($0?.is_logical != true); end~}}
 {{~func logical; ret ($0?.is_logical == true); end~}}
-{{~func supported_attribute; ret ($0 && !$0?.is_primary_id $0.attribute_type != 'EntityName') && ($0.is_valid_for_create || $0.is_valid_for_update || $0.is_valid_for_read); end~}}
+{{~func supported_attribute; ret ($0 && !$0?.is_primary_id && $0.attribute_type != 'EntityName') && ($0.is_valid_for_create || $0.is_valid_for_update || $0.is_valid_for_read); end~}}
 {{~quote(text) = '"' + text + '"'~}}
 {{-first_plugin_type = model.plugin_types | array.first~}}
 {{~if first_plugin_type.is_nullable_enabled ~}}
@@ -24,10 +24,10 @@ namespace {{ first_plugin_type?.namespace ?? config.default_namespace }}
     public partial class {{plugintype.type_name | last_segment }}
     {
         {{~dependencies = plugintype.dependency_graph?.dependencies~}}
-        {{include 'InjectDependencies.sbncs'}}
+        {{include 'InjectDependencies.sbncs'~}}
 
     {{~for step in plugintype.steps~}}
-	    {{~target_type_name = (plugintype.steps | array.size > 1 ? step.message_name : '') + 'Target' + (step.primary_entity_definition.display_name.localized_labels[0].label | tokenize)~}}
+	    {{~target_type_name = (plugintype.steps | array.size > 1 ? step.message_name : '') + 'Target' + (step.primary_entity_definition.display_name | get_label 1033 | tokenize)~}}
         {{~target_name = (plugintype.steps | array.size > 1 ? step.message_name : '') + 'Target'~}}
 	    {{include 'Target.sbncs' target_type_name}}
 	    {{~if step.images~}}
@@ -36,7 +36,7 @@ namespace {{ first_plugin_type?.namespace ?? config.default_namespace }}
 	    public {{target_type_name}} {{target_name}} { get; set; }
 
 	    {{~for image in step.images~}}
-	    public {{plugintype.steps | array.size > 1 ? step.message_name : ''}}{{image.name}}{{step.primary_entity_definition.display_name.localized_labels[0].label | tokenize}} {{image.name}} { get; set; }
+	    public {{plugintype.steps | array.size > 1 ? step.message_name : ''}}{{image.name}}{{step.primary_entity_definition.display_name | get_label 1033 | tokenize}} {{image.name}} { get; set; }
 	    {{~end~}}
     {{~end~}}
 
@@ -57,11 +57,11 @@ namespace {{ first_plugin_type?.namespace ?? config.default_namespace }}
             }
             var executionContext = serviceProvider.Get<IPluginExecutionContext7>();
             {{~for step in plugintype.steps~}}
-	        {{~target_type_name = (plugintype.steps | array.size > 1 ? step.message_name : '') + 'Target' + (step.primary_entity_definition.display_name.localized_labels[0].label | tokenize)~}}
+	        {{~target_type_name = (plugintype.steps | array.size > 1 ? step.message_name : '') + 'Target' + (step.primary_entity_definition.display_name | get_label 1033 | tokenize)~}}
             {{~target_name = (plugintype.steps | array.size > 1 ? step.message_name : '') + 'Target'~}}
             {{target_name}} = EntityOrDefault<{{target_type_name}}>(executionContext.InputParameters, "Target");
 	        {{~for image in step.images~}}
-            {{image.name}} = EntityOrDefault<{{plugintype.steps | array.size > 1 ? step.message_name : ''}}{{image.name}}{{step.primary_entity_definition.display_name.localized_labels[0].label | tokenize}}>(executionContext.PreEntityImages, "{{image.name}}");
+            {{image.name}} = EntityOrDefault<{{plugintype.steps | array.size > 1 ? step.message_name : ''}}{{image.name}}{{step.primary_entity_definition.display_name | get_label 1033 | tokenize}}>(executionContext.PreEntityImages, "{{image.name}}");
 	        {{~end~}}
 	    {{~end~}}
         }

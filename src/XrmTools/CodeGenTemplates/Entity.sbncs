@@ -16,7 +16,7 @@ using System.Runtime.Serialization;
 namespace {{ first_plugin_type?.namespace ?? config.default_namespace }}
 {
 {{~for entity_definition in model.entity_definitions~}}
-{{~base_class_name = entity_definition.display_name.localized_labels[0].label | tokenize~}}
+{{~base_class_name = entity_definition.display_name | get_label 1033 | tokenize~}}
 	{{codegen_attribute}}
 	[EntityLogicalName("{{entity_definition.logical_name}}")]
 	[global::System.Diagnostics.CodeAnalysis.ExcludeFromCodeCoverage]
@@ -38,24 +38,44 @@ namespace {{ first_plugin_type?.namespace ?? config.default_namespace }}
 				public static readonly ReadOnlyCollection<string> {{attribute.schema_name}}Targets = new ReadOnlyCollection<string>(new List<string> { {{attribute.targets | array.join ',' @quote}} });
 				{{~end~}}
 			{{~end~}}
+
+			{{~if entity_definition.attributes.size < 32~}}
+				public string this[string logicalName] => logicalName switch
+				{
+				{{~for attribute in entity_definition.attributes | array.filter @supported_attribute~}}
+					"{{attribute.schema_name}}" => "{{attribute.logical_name}}",
+				{{~end~}}
+					_ => throw new ArgumentException($"Invalid attribute logical name: {logicalName}", nameof(logicalName))
+				};
+			{{~else~}}
+				private static readonly Dictionary<string, string> _fieldMap = new()
+				{
+					{{~for attribute in entity_definition.attributes | array.filter @supported_attribute~}}
+					["{{attribute.schema_name}}"] = "{{attribute.logical_name}}",
+					{{~end~}}
+				};
+				public string this[string logicalName] => _fieldMap.TryGetValue(logicalName, out var fieldName) 
+					? fieldName 
+					: throw new ArgumentException($"Invalid attribute logical name: {logicalName}", nameof(logicalName));
+			{{~end~}}
 			}
 
 			public partial class Choices
 			{
 			{{~for attribute_meta in entity_definition.attributes | filter_enum_attributes~}}
 			{{~if attribute_meta.option_set != null~}}
-			{{~if (attribute_meta.option_set.description.localized_labels | array.first)?.label~}}
+			{{~if (attribute_meta.option_set.description.localized_labels | get_label 1033)~}}
 				/// <summary>
-				/// {{attribute_meta.option_set.description.localized_labels[0].label}}
+				/// {{attribute_meta.option_set.description | get_label 1033}}
 				/// </summary>
 			{{~end~}}
 				[DataContract]
-				{{~enum_name = attribute_meta.option_set.display_name.localized_labels[0].label | tokenize~}}
+				{{~enum_name = attribute_meta.option_set.display_name | get_label 1033 | tokenize~}}
 				public enum {{enum_name}}
 				{
 				{{~for option_meta in attribute_meta.option_set.options~}}
 					[EnumMember]
-					{{option_meta.label.localized_labels[0].label | tokenize}} = {{option_meta.value}},
+					{{option_meta.label | get_label 1033 | tokenize}} = {{option_meta.value}},
 				{{~end~}}
 				}
 			{{~end~}}
