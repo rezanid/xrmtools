@@ -175,7 +175,12 @@ internal sealed class RegisterPluginCommand : BaseCommand<RegisterPluginCommand>
         try
         {
             environment = await EnvironmentProvider.GetActiveEnvironmentAsync();
-            if (environment == null)
+            var errMessage = environment is null ?
+                "No active environment found. Please connect to an environment and try again." :
+                environment.BaseServiceUrl is null ?
+                "Active environment has no valid URL. Please check the environment and try again" :
+                null;
+            if (errMessage is not null)
             {
                 await VS.StatusBar.EndAnimationAsync(StatusAnimation.General);
                 await VS.StatusBar.ShowMessageAsync("Plugin registration failed.");
@@ -196,7 +201,7 @@ internal sealed class RegisterPluginCommand : BaseCommand<RegisterPluginCommand>
                     .Build();
 
                 requests.AddRange(upserts);
-                batch = new BatchRequest(environment.BaseServiceUrl)
+                batch = new BatchRequest(environment!.BaseServiceUrl!)
                 {
                     ChangeSets = [new(requests)]
                 };
@@ -208,7 +213,7 @@ internal sealed class RegisterPluginCommand : BaseCommand<RegisterPluginCommand>
                     .Build();
 
                 requests.AddRange(upserts);
-                batch = new BatchRequest(environment.BaseServiceUrl)
+                batch = new BatchRequest(environment!.BaseServiceUrl!)
                 {
                     ChangeSets = [new(requests)]
                 };
@@ -258,7 +263,7 @@ internal sealed class RegisterPluginCommand : BaseCommand<RegisterPluginCommand>
 
             var builder = new UpsertRequestBuilder(inputModel, sdkMessages);
             var upserts = builder.WithStepsAndCustomApis().Build();
-            batch = new BatchRequest(environment.BaseServiceUrl)
+            batch = new BatchRequest(environment!.BaseServiceUrl!)
             {
                 ChangeSets = [new(upserts)]
             };
@@ -319,12 +324,12 @@ internal sealed class RegisterPluginCommand : BaseCommand<RegisterPluginCommand>
                 foreach (var parameter in customApi.RequestParameters)
                 {
                     var existingParameter = existingCustomApi?.RequestParameters.FirstOrDefault(p => p.UniqueName == parameter.UniqueName);
-                    parameter.Id = existingParameter?.Id ?? GuidFactory.DeterministicGuid(GuidFactory.Namespace.CustomApiInput, customApi.UniqueName + parameter.UniqueName!);
+                    parameter.Id = existingParameter?.Id ?? GuidFactory.DeterministicGuid(GuidFactory.Namespace.CustomApiRequestParameter, customApi.UniqueName + parameter.UniqueName!);
                 }
                 foreach (var parameter in customApi.ResponseProperties)
                 {
                     var existingParameter = existingCustomApi?.ResponseProperties.FirstOrDefault(p => p.UniqueName == parameter.UniqueName);
-                    parameter.Id = existingParameter?.Id ?? GuidFactory.DeterministicGuid(GuidFactory.Namespace.CustomApiOutput, customApi.UniqueName + parameter.UniqueName!);
+                    parameter.Id = existingParameter?.Id ?? GuidFactory.DeterministicGuid(GuidFactory.Namespace.CustomApiResponseProperty, customApi.UniqueName + parameter.UniqueName!);
                 }
             }
         }

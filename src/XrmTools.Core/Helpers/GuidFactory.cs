@@ -15,8 +15,8 @@ internal static class GuidFactory
         Step = 3,
         Image = 4,
         CustomApi = 5,
-        CustomApiInput = 6,
-        CustomApiOutput = 7
+        CustomApiRequestParameter = 6,
+        CustomApiResponseProperty = 7
     }
     private static readonly Guid Namespace_PluginPackage = Guid.Parse("22222222-2222-2222-2222-222222222222");
     private static readonly Guid Namespace_PluginAssembly = Guid.Parse("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa");
@@ -46,8 +46,8 @@ internal static class GuidFactory
             Namespace.Step => Namespace_Step,
             Namespace.Image => Namespace_Image,
             Namespace.CustomApi => Namespace_CustommApi,
-            Namespace.CustomApiInput => Namespace_CustommApiInput,
-            Namespace.CustomApiOutput => Namespace_CustommApiOutput,
+            Namespace.CustomApiRequestParameter => Namespace_CustommApiInput,
+            Namespace.CustomApiResponseProperty => Namespace_CustommApiOutput,
             _ => throw new ArgumentOutOfRangeException(nameof(@namespace))
         }, name);
 
