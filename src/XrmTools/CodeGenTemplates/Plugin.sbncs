@@ -1,6 +1,6 @@
 {{~func non_logical; ret ($0?.is_logical != true); end~}}
 {{~func logical; ret ($0?.is_logical == true); end~}}
-{{~func supported_attribute; ret ($0?.attribute_type != 'EntityName'); end~}}
+{{~func supported_attribute; ret ($0 && !$0?.is_primary_id && $0.attribute_type != 'EntityName') && ($0.is_valid_for_create || $0.is_valid_for_update || $0.is_valid_for_read); end~}}
 {{~quote(text) = '"' + text + '"'~}}
 {{-first_plugin_type = model.plugin_types | array.first~}}
 {{~if first_plugin_type.is_nullable_enabled ~}}
@@ -24,10 +24,10 @@ namespace {{ first_plugin_type?.namespace ?? config.default_namespace }}
     public partial class {{plugintype.type_name | last_segment }}
     {
         {{~dependencies = plugintype.dependency_graph?.dependencies~}}
-        {{~include 'InjectDependencies.sbncs'}}
+        {{include 'InjectDependencies.sbncs'~}}
 
     {{~for step in plugintype.steps~}}
-	    {{~target_type_name = (plugintype.steps | array.size > 1 ? step.message_name : '') + 'Target' + (step.primary_entity_definition.display_name.localized_labels[0].label | tokenize)~}}
+	    {{~target_type_name = (plugintype.steps | array.size > 1 ? step.message_name : '') + 'Target' + (step.primary_entity_definition.display_name | get_label 1033 | tokenize)~}}
         {{~target_name = (plugintype.steps | array.size > 1 ? step.message_name : '') + 'Target'~}}
 	    {{include 'Target.sbncs' target_type_name}}
 	    {{~if step.images~}}
@@ -36,7 +36,7 @@ namespace {{ first_plugin_type?.namespace ?? config.default_namespace }}
 	    public {{target_type_name}} {{target_name}} { get; set; }
 
 	    {{~for image in step.images~}}
-	    public {{plugintype.steps | array.size > 1 ? step.message_name : ''}}{{image.name}}{{step.primary_entity_definition.display_name.localized_labels[0].label | tokenize}} {{image.name}} { get; set; }
+	    public {{plugintype.steps | array.size > 1 ? step.message_name : ''}}{{image.name}}{{step.primary_entity_definition.display_name | get_label 1033 | tokenize}} {{image.name}} { get; set; }
 	    {{~end~}}
     {{~end~}}
 
@@ -57,11 +57,11 @@ namespace {{ first_plugin_type?.namespace ?? config.default_namespace }}
             }
             var executionContext = serviceProvider.Get<IPluginExecutionContext7>();
             {{~for step in plugintype.steps~}}
-	        {{~target_type_name = (plugintype.steps | array.size > 1 ? step.message_name : '') + 'Target' + (step.primary_entity_definition.display_name.localized_labels[0].label | tokenize)~}}
+	        {{~target_type_name = (plugintype.steps | array.size > 1 ? step.message_name : '') + 'Target' + (step.primary_entity_definition.display_name | get_label 1033 | tokenize)~}}
             {{~target_name = (plugintype.steps | array.size > 1 ? step.message_name : '') + 'Target'~}}
             {{target_name}} = EntityOrDefault<{{target_type_name}}>(executionContext.InputParameters, "Target");
 	        {{~for image in step.images~}}
-            {{image.name}} = EntityOrDefault<{{plugintype.steps | array.size > 1 ? step.message_name : ''}}{{image.name}}{{step.primary_entity_definition.display_name.localized_labels[0].label | tokenize}}>(executionContext.PreEntityImages, "{{image.name}}");
+            {{image.name}} = EntityOrDefault<{{plugintype.steps | array.size > 1 ? step.message_name : ''}}{{image.name}}{{step.primary_entity_definition.display_name | get_label 1033 | tokenize}}>(executionContext.PreEntityImages, "{{image.name}}");
 	        {{~end~}}
 	    {{~end~}}
         }
@@ -81,24 +81,30 @@ namespace {{ first_plugin_type?.namespace ?? config.default_namespace }}
     {{~if plugintype.custom_api ~}}
     {{~if plugintype.custom_api.request_parameters.size > 0~}}
         protected static {{plugintype.custom_api.request_type_name}} GetRequest(IExecutionContext context)
-            => new()
+        {
+            var request = new {{plugintype.custom_api.request_type_name}}();
+            {{~for param in plugintype.custom_api.request_parameters~}}
+            {{~case param.type~}}
+            {{~when 'Boolean', 'DateTime', 'Decimal', 'Float', 'Integer'~}}
+            request.{{param.name}} = context.InputParameters.TryGetValue("{{param.name}}", out {{param.full_type_name}} {{param.name | string.downcase}}) ? {{param.name | string.downcase}} : default;
+            {{~when 'String'~}}
+            request.{{param.name}} = context.InputParameters.TryGetValue("{{param.name}}", out {{plugintype.is_nullable_enabled ? param.full_type_name : param.full_type_name | string.replace_first "?" "" true}} {{param.name | string.downcase}}) ? {{param.name | string.downcase}} : string.Empty;
+            {{~when 'StringArray'~}}
+            request.{{param.name}} = context.InputParameters.TryGetValue("{{param.name}}", out string[] {{param.name | string.downcase}}) ? {{param.name | string.downcase}} : default;
+            {{~when 'Picklist'~}}
+            {{~converter = param.type_name == 'OptionSetValue' ? (param.name | string.downcase) : '(' + param.full_type_name + ')' + (param.name | string.downcase) + '.Value' ~}}
+            request.{{param.name}} = context.InputParameters.TryGetValue("{{param.name}}", out OptionSetValue {{param.name | string.downcase}}) ? {{converter}} : default;
+            {{~when 'EntityCollection'~}}
+            if (context.InputParameters.TryGetValue("{{param.name}}", out {{plugintype.is_nullable_enabled ? "EntityCollection?" : "EntityCollection"}} {{param.name | string.downcase}}))
             {
-                {{~for param in plugintype.custom_api.request_parameters~}}
-                {{~case param.type~}}
-                {{~when 'Boolean', 'DateTime', 'Decimal', 'Float', 'Integer'~}}
-                {{param.name}} = context.InputParameters.TryGetValue("{{param.name}}", out {{param.full_type_name}} {{param.name | string.downcase}}) ? {{param.name | string.downcase}} : default,
-                {{~when 'String'~}}
-                {{param.name}} = context.InputParameters.TryGetValue("{{param.name}}", out {{plugintype.is_nullable_enabled ? param.full_type_name : param.full_type_name | string.replace_first "?" "" true}} {{param.name | string.downcase}}) ? {{param.name | string.downcase}} : string.Empty,
-                {{~when 'StringArray'~}}
-                {{param.name}} = context.InputParameters.TryGetValue("{{param.name}}", out string[] {{param.name | string.downcase}}) ? {{param.name | string.downcase}} : default,
-                {{~when 'Picklist'~}}
-                {{~converter = param.type_name == 'OptionSetValue' ? (param.name | string.downcase) : '(' + param.full_type_name + ')' + (param.name | string.downcase) + '.Value' ~}}
-                {{param.name}} = context.InputParameters.TryGetValue("{{param.name}}", out OptionSetValue {{param.name | string.downcase}}) ? {{converter}} : default,
-                {{~else~}}
-                {{param.name}} = context.InputParameters.TryGetValue("{{param.name}}", out {{plugintype.is_nullable_enabled ? param.full_type_name : param.full_type_name | string.replace_first "?" "" true}} {{param.name | string.downcase}}) ? {{param.name | string.downcase}} : default,
-                {{~end~}}
-                {{~end~}}
-            };
+                request.{{param.name}} = {{param.name | string.downcase}} ?? request.{{param.name}};
+            }
+            {{~else~}}
+            request.{{param.name}} = context.InputParameters.TryGetValue("{{param.name}}", out {{plugintype.is_nullable_enabled ? param.full_type_name : param.full_type_name | string.replace_first "?" "" true}} {{param.name | string.downcase}}) ? {{param.name | string.downcase}} : default;
+            {{~end~}}
+            {{~end~}}
+            return request;
+        }
     {{~end~}}
     {{~if plugintype.custom_api.response_properties.size > 0~}}
 

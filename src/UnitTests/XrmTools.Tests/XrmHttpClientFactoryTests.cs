@@ -58,7 +58,7 @@ public class XrmHttpClientFactoryTests
         _environmentProviderMock.Setup(x => x.GetActiveEnvironmentAsync()).ReturnsAsync(environment);
 
         // Act
-        Func<Task> act = async () => await _factory.CreateHttpClientAsync(environment);
+        Func<Task> act = async () => await _factory.CreateClientAsync(environment);
 
         // Assert
         await act.Should().ThrowAsync<InvalidOperationException>().WithMessage("Environment 'Test' connection string is empty.");
@@ -72,10 +72,10 @@ public class XrmHttpClientFactoryTests
         _environmentProviderMock.Setup(x => x.GetActiveEnvironmentAsync()).ReturnsAsync(environment);
 
         var authResult = CreateFakeAuthenticationResult();
-        _authenticationServiceMock.Setup(x => x.AuthenticateAsync(It.IsAny<AuthenticationParameters>(), It.IsAny<Action<string>>(), It.IsAny<CancellationToken>())).ReturnsAsync(authResult);
+        _authenticationServiceMock.Setup(x => x.AuthenticateAsync(It.IsAny<DataverseEnvironment>(), It.IsAny<Action<string>>(), It.IsAny<CancellationToken>())).ReturnsAsync(authResult);
 
         // Act
-        var client = await _factory.CreateHttpClientAsync(environment);
+        var client = await _factory.CreateClientAsync(environment);
 
         // Assert
         client.Should().NotBeNull();
@@ -96,12 +96,12 @@ public class XrmHttpClientFactoryTests
             .SetValue(_factory, new ConcurrentDictionary<string, AuthenticationResult> { [environment.ConnectionString] = validToken });
 
         // Act
-        var client = await _factory.CreateHttpClientAsync(environment);
+        var client = await _factory.CreateClientAsync(environment);
 
         // Assert
         client.Should().NotBeNull();
         client.DefaultRequestHeaders.Authorization.Parameter.Should().Be(validToken.AccessToken);
-        _authenticationServiceMock.Verify(x => x.AuthenticateAsync(It.IsAny<AuthenticationParameters>(), It.IsAny<Action<string>>(), It.IsAny<CancellationToken>()), Times.Never);
+        _authenticationServiceMock.Verify(x => x.AuthenticateAsync(It.IsAny<DataverseEnvironment>(), It.IsAny<Action<string>>(), It.IsAny<CancellationToken>()), Times.Never);
     }
 
     [Fact]
@@ -116,10 +116,10 @@ public class XrmHttpClientFactoryTests
             .SetValue(_factory, new ConcurrentDictionary<string, AuthenticationResult> { [environment.ConnectionString] = expiredToken });
 
         var newToken = CreateFakeAuthenticationResult();
-        _authenticationServiceMock.Setup(x => x.AuthenticateAsync(It.IsAny<AuthenticationParameters>(), It.IsAny<Action<string>>(), It.IsAny<CancellationToken>())).ReturnsAsync(newToken);
+        _authenticationServiceMock.Setup(x => x.AuthenticateAsync(It.IsAny<DataverseEnvironment>(), It.IsAny<Action<string>>(), It.IsAny<CancellationToken>())).ReturnsAsync(newToken);
 
         // Act
-        var client = await _factory.CreateHttpClientAsync(environment);
+        var client = await _factory.CreateClientAsync(environment);
 
         // Assert
         client.Should().NotBeNull();

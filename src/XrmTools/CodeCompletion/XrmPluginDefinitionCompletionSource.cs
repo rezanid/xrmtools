@@ -20,8 +20,9 @@ using XrmTools.Core.Helpers;
 using Microsoft.VisualStudio.Core.Imaging;
 using Microsoft.VisualStudio.Text.Adornments;
 using System.Collections.Immutable;
-using Microsoft.Xrm.Sdk.Metadata;
 using XrmTools.Xrm;
+using XrmTools.WebApi.Entities;
+using XrmTools.WebApi.Types;
 
 internal class XrmPluginDefinitionCompletionSource(
     IOutputLoggerService logger, IRepositoryFactory repositoryFactory, VisualStudioWorkspace workspace) : IAsyncCompletionSource
@@ -372,13 +373,32 @@ internal class XrmPluginDefinitionCompletionSource(
     {
         var text = literal.Token.Text;
         var index = triggerLocation.Position - literal.SpanStart;
+
+        if (index < 0) index = 0;
+        if (index > text.Length) index = text.Length;
+
         var start = index - 1;
         var end = index;
         var length = text.Length;
+
         var terminators = new List<char>(['\"', ' ', ',']);
-        while (!terminators.Contains(text[start]) && start != 0) --start;
-        while (!terminators.Contains(text[end]) && end != length) ++end;
-        if (terminators.Contains(text[start]) && start < length && index != start) ++start;
-        return text[start..end];
+
+        // Move start backward while within bounds and not a terminator
+        while (start > 0 && !terminators.Contains(text[start]))
+            start--;
+
+        // If we stopped at a terminator and haven't gone past index, move forward
+        if (terminators.Contains(text[start]) && start < length - 1)
+            start++;
+
+        // Move end forward while within bounds and not a terminator
+        while (end < length && !terminators.Contains(text[end]))
+            end++;
+
+        // Ensure valid slicing
+        if (start >= end || start >= length)
+            return string.Empty;
+
+        return text.Substring(start, end - start);
     }
 }

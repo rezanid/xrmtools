@@ -114,7 +114,7 @@ public class PluginRefactoringProvider : CodeRefactoringProvider
         foreach (var step in pluginType.Steps)
         {
             // Get metadata for constructor selection
-            var messageName = step.SdkMessage?.Name ?? step.Name ?? "";
+            var messageName = step.Message?.Name ?? step.Name ?? "";
             var primaryEntityName = step.SdkMessageFilter?.PrimaryObjectTypeCode;
             var filteringAttributes = step.FilteringAttributes;
             var stage = step.Stage ?? Stages.PreOperation; // Default to PreOperation if null

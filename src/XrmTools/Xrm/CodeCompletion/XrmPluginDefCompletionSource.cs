@@ -5,7 +5,6 @@ using Microsoft.VisualStudio.Shell;
 using Microsoft.VisualStudio.Text;
 using Microsoft.VisualStudio.Text.Adornments;
 using Microsoft.VisualStudio.Text.Operations;
-using Microsoft.Xrm.Sdk.Metadata;
 using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.Immutable;
@@ -17,6 +16,8 @@ using System.Threading.Tasks;
 using XrmTools.Core.Repositories;
 using XrmTools.Helpers;
 using XrmTools.Logging;
+using XrmTools.WebApi.Entities;
+using XrmTools.WebApi.Types;
 using XrmTools.Xrm.Extensions;
 using XrmTools.Xrm.Repositories;
 

@@ -16,7 +16,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using XrmTools.Xrm.Repositories;
 using XrmTools.Logging.Compatibility;
-using XrmTools.Meta.Model;
+using XrmTools.WebApi.Messages;
 
 internal class EnvironmentSelectorViewModel : ViewModelBase
 {

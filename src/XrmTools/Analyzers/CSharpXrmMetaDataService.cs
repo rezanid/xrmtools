@@ -9,8 +9,8 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using XrmTools.Helpers;
-using XrmTools.Xrm.Model;
 using System.ComponentModel.Composition;
+using XrmTools.Meta.Model.Configuration;
 
 internal interface IXrmMetaDataService
 {

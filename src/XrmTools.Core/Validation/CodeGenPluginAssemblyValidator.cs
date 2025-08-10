@@ -5,12 +5,12 @@ using System;
 using System.ComponentModel.Composition;
 using System.ComponentModel.DataAnnotations;
 using System.Linq;
-using XrmTools.Xrm.Model;
+using XrmTools.Meta.Model.Configuration;
 
 [Export(typeof(IValidator))]
 [Validator(Category = Categories.CodeGeneration)]
 [method: ImportingConstructor]
-internal class CodeGenPluginAssemblyValidator(Logging.Compatibility.ILogger<CodeGenPluginAssemblyValidator> logger) : ValidatorBase<PluginAssemblyConfig>
+internal class CodeGenPluginAssemblyValidator(Logging.Compatibility.ILogger<CodeGenPluginAssemblyValidator>? logger) : ValidatorBase<PluginAssemblyConfig>
 {
     private readonly Logging.Compatibility.ILogger<CodeGenPluginAssemblyValidator> Logger = logger ?? throw new ArgumentNullException(nameof(logger));
 

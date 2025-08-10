@@ -1,4 +1,4 @@
-﻿namespace XrmTools.Xrm.Model;
+﻿namespace XrmTools.Meta.Model;
 
 using System.Collections.Generic;
 using XrmTools.Meta.Helpers;

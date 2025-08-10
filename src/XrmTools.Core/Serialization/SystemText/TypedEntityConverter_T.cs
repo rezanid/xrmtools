@@ -1,13 +1,11 @@
 ﻿#nullable enable
 namespace XrmTools.Core.Serialization;
 
-using XrmTools.Xrm.Model;
 using System;
 using System.Linq;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using System.Reflection;
-using Microsoft.Xrm.Sdk;
 
 public class TypedEntityConverter<T> : JsonConverter<T> where T : Entity, ITypedEntity, new()
 {

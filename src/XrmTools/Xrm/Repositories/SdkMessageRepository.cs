@@ -10,7 +10,6 @@ using System.Threading.Tasks;
 using XrmTools.Core;
 using XrmTools.Core.Helpers;
 using XrmTools.Core.Repositories;
-using XrmTools.Http;
 using XrmTools.Logging.Compatibility;
 using XrmTools.Meta.Model;
 using XrmTools.WebApi;
@@ -26,7 +25,7 @@ internal interface ISdkMessageRepository : IXrmRepository
     Task<IEnumerable<SdkMessage>> GetVisibleWithoutDescendantsAsync(CancellationToken cancellationToken);
 }
 
-internal class SdkMessageRepository(XrmHttpClient client, IWebApiService service, ILogger logger) : XrmRepository(client, service), ISdkMessageRepository
+internal class SdkMessageRepository(IWebApiService service, ILogger logger) : XrmRepository(service), ISdkMessageRepository
 {
     private const string sdkMessageQueryForEntities = "sdkmessages?$filter=sdkmessageid_sdkmessagefilter/any(n:({0}) and n/iscustomprocessingstepallowed eq true)&$expand=sdkmessageid_sdkmessagefilter($filter=({1}) and iscustomprocessingstepallowed eq true)";
     private const string sdkMessageQuerySingle = "sdkmessages?$filter=sdkmessageid_sdkmessagefilter/any(n:n/primaryobjecttypecode eq '{0}' and n/iscustomprocessingstepallowed eq true)&$expand=sdkmessageid_sdkmessagefilter($filter=primaryobjecttypecode eq '{0}' and iscustomprocessingstepallowed eq true)";
@@ -99,7 +98,7 @@ internal class SdkMessageRepository(XrmHttpClient client, IWebApiService service
 
     public async Task<IEnumerable<SdkMessage>> GetForEntityAsync(string entityLogicalName, CancellationToken cancellationToken)
     {
-        var response = await client.GetAsync(string.Format(sdkMessageQuerySingle, entityLogicalName), cancellationToken);
+        var response = await service.GetAsync(string.Format(sdkMessageQuerySingle, entityLogicalName), cancellationToken);
         if (response.IsSuccessStatusCode)
         {
             using var content = await response.Content.ReadAsStreamAsync().ConfigureAwait(false);

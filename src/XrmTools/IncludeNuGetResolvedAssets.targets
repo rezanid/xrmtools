@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Since Visual Studio's VSIX build still doesn't support including dlls from <PackageReference /> entries,
+       we have the following workaround to manually include a certain hand-picked list.
+-->
+<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+
+  <PropertyGroup>
+    <!-- Target runs as part of the VSIX packaging -->
+    <GetVsixSourceItemsDependsOn>
+      $(GetVsixSourceItemsDependsOn);
+      IncludeNuGetResolvedAssets
+    </GetVsixSourceItemsDependsOn>
+  </PropertyGroup>
+
+  <Target Name="IncludeNuGetResolvedAssets"
+          DependsOnTargets="ResolveNuGetPackageAssets"
+          AfterTargets="GetVsixSourceItems">
+
+    <!-- List of NuGet packages to include -->
+    <ItemGroup>
+      <PackagesToInclude Include="System.Text.Json" />
+      <PackagesToInclude Include="Microsoft.Bcl.AsyncInterfaces" />
+    </ItemGroup>
+
+    <!-- Add the filtered DLLs to the VSIX -->
+    <ItemGroup>
+      <VSIXCopyLocalReferenceSourceItem
+          Include="@(ReferenceCopyLocalPaths)"
+          Condition="
+            '@(PackagesToInclude)' != '' AND
+            $([System.Text.RegularExpressions.Regex]::IsMatch('%(ReferenceCopyLocalPaths.NuGetPackageId)', '^(' + $([System.String]::Join('|', @(PackagesToInclude))) + ')$')) AND
+            '%(Extension)' == '.dll'" />
+    </ItemGroup>
+
+  </Target>
+
+</Project>

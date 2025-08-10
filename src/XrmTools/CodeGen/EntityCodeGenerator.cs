@@ -1,37 +1,39 @@
 ﻿#nullable enable
 namespace XrmTools;
 
+using Community.VisualStudio.Toolkit;
 using Microsoft.VisualStudio;
 using Microsoft.VisualStudio.ComponentModelHost;
 using Microsoft.VisualStudio.Shell;
 using Microsoft.VisualStudio.Shell.Interop;
 using Microsoft.VisualStudio.TextTemplating.VSHost;
-using Microsoft.Xrm.Sdk.Metadata;
+using Newtonsoft.Json;
 using System;
+using System.Collections.Generic;
 using System.ComponentModel.Composition;
+using System.ComponentModel.DataAnnotations;
+using System.Diagnostics.CodeAnalysis;
+using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading;
+using System.Threading.Tasks;
+using XrmTools.Analyzers;
+using XrmTools.Core.Helpers;
+using XrmTools.Core.Repositories;
+using XrmTools.Environments;
+using XrmTools.Helpers;
+using XrmTools.Logging.Compatibility;
+using XrmTools.Meta.Model.Configuration;
+using XrmTools.Options;
+using XrmTools.Resources;
+using XrmTools.Serialization;
+using XrmTools.Settings;
+using XrmTools.WebApi.Entities;
 using XrmTools.Xrm.Generators;
+using XrmTools.Xrm.Repositories;
 using YamlDotNet.Serialization;
 using YamlDotNet.Serialization.NamingConventions;
-using System.Diagnostics.CodeAnalysis;
-using XrmTools.Resources;
-using XrmTools.Logging.Compatibility;
-using XrmTools.Environments;
-using XrmTools.Xrm.Repositories;
-using XrmTools.Core.Repositories;
-using XrmTools.Settings;
-using System.Collections.Generic;
-using XrmTools.Helpers;
-using System.IO;
-using System.Threading.Tasks;
-using XrmTools.Xrm.Model;
-using XrmTools.Core.Helpers;
-using XrmTools.Options;
-using System.ComponentModel.DataAnnotations;
-using Community.VisualStudio.Toolkit;
-using XrmTools.Analyzers;
 
 internal class EntityCodeGenerator : BaseCodeGeneratorWithSite
 {
@@ -129,7 +131,10 @@ internal class EntityCodeGenerator : BaseCodeGeneratorWithSite
             {
                 // We use Newtonsoft for serialization because it supports polymorphic types
                 // Probably through old serialization attributes set on Xrm.Sdk types.
-                var serializedConfig = inputModel.SerializeJson(useNewtonsoft: true);
+                var serializedConfig = JsonConvert.SerializeObject(inputModel, new JsonSerializerSettings
+                {
+                    ContractResolver = new PolymorphicContractResolver()
+                });
                 File.WriteAllText(Path.ChangeExtension(inputFileName, ".model.json"), serializedConfig);
             }
 
@@ -201,14 +206,14 @@ internal class EntityCodeGenerator : BaseCodeGeneratorWithSite
         return string.Empty;
     }
 
-    private void AddEntityMetadataToEntityConfig(IPluginAssemblyConfig config) 
+    private void AddEntityMetadataToEntityConfig(PluginAssemblyConfig config) 
         => config.EntityDefinitions = [.. config.Entities
             .Where(c => !string.IsNullOrWhiteSpace(c.LogicalName))
             .Select(e => GetEntityMetadata(e.LogicalName!, e.AttributeNames?.Split(',') ?? [], config.ReplacePrefixes))];
 
-    private EntityMetadata GetEntityMetadata(string logicalName, IEnumerable<string> attributeNames, CodeGenReplacePrefixConfig prefixReplacement)
+    private EntityMetadata GetEntityMetadata(string logicalName, IEnumerable<string> attributeNames, Meta.Model.CodeGenReplacePrefixConfig prefixReplacement)
     {
-        var entityMetadataRepo = ThreadHelper.JoinableTaskFactory.Run(async () => await RepositoryFactory.CreateRepositoryAsync<IEntityMetadataRepository>());
+        var entityMetadataRepo = ThreadHelper.JoinableTaskFactory.Run(RepositoryFactory.CreateRepositoryAsync<IEntityMetadataRepository>);
         if (entityMetadataRepo is null) return null;
         using var cts = new CancellationTokenSource(120000);
         var entityDefinition = ThreadHelper.JoinableTaskFactory.Run(async () => await entityMetadataRepo.GetAsync(logicalName, cts.Token));
@@ -238,7 +243,7 @@ internal class EntityCodeGenerator : BaseCodeGeneratorWithSite
         return entityDefinition;
     }
 
-    private static void FormatEntitySchemaName(EntityMetadata entityDefinition, CodeGenReplacePrefixConfig prefixReplacement)
+    private static void FormatEntitySchemaName(EntityMetadata entityDefinition, Meta.Model.CodeGenReplacePrefixConfig prefixReplacement)
     {
         // Remove prefixes.
         foreach (var prefix in prefixReplacement.PrefixList)
@@ -260,7 +265,7 @@ internal class EntityCodeGenerator : BaseCodeGeneratorWithSite
         }
     }
 
-    private static void FormatAttributeSchemNames(IEnumerable<AttributeMetadata> attributes, CodeGenReplacePrefixConfig prefixReplacement)
+    private static void FormatAttributeSchemNames(IEnumerable<AttributeMetadata> attributes, Meta.Model.CodeGenReplacePrefixConfig prefixReplacement)
     {
         var prefixList = prefixReplacement.Prefixes.SplitAndTrim(',') ?? [];
         foreach (var attribute in attributes)

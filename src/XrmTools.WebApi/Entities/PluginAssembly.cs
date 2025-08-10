@@ -1,0 +1,46 @@
+﻿#nullable enable
+namespace XrmTools.WebApi.Entities;
+
+using Newtonsoft.Json;
+using System;
+using System.Collections.Generic;
+using System.Text.Json.Serialization;
+using XrmTools.Meta.Attributes;
+using XrmTools.WebApi.Entities.Attributes;
+using XrmTools.WebApi.Types;
+
+[EntityMetadata("pluginassembly", "pluginassemblies")]
+public class PluginAssembly : Component<PluginAssembly>
+{
+
+    [JsonPropertyName("pluginassemblyid")]
+    [JsonProperty("pluginassemblyid")]
+    public override Guid? Id { get; set; }
+    public int? Minor { get; set; }
+    public string? Path { get; set; }
+    public bool? IsPasswordSet { get; set; }
+    public string? Culture { get; set; }
+    public string? Username { get; set; }
+    public SourceTypes? SourceType { get; set; }
+    public int? Authtype { get; set; }
+    public string? PublicKeyToken { get; set; }
+    public string? IntroducedVersion { get; set; }
+    public string? Version { get; set; }
+    public int? Major { get; set; }
+    public IsolationModes? IsolationMode { get; set; }
+    public string? Password { get; set; }
+    public string? Content { get; set; }
+    public string? Name { get; set; }
+    public string? Url { get; set; }
+    public int? VersionNumber { get; set; }
+    public string? Description { get; set; }
+    public string? SourceHash { get; set; }
+    public ManagedBooleanProperty? IsCustomizable { get; set; }
+    public ManagedBooleanProperty? IsHidden { get; set; }
+    [JsonPropertyOrder(2)]
+    [JsonPropertyName("pluginassembly_plugintype")]
+    public ICollection<PluginType> PluginTypes { get; set; } = [];
+    [JsonPropertyName("PackageId")]
+    public PluginPackage? Package { get; set; }
+}
+#nullable restore

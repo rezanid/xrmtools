@@ -78,13 +78,13 @@ end -}}
 {{for dep in dependencies 
     gather_locals(dep) 
 end ~}}
-    protected void InjectDependencies(IServiceProvider serviceProvider)
-    {
-    {{~ for local in localDeps ~}}
-        var {{ varName(local.short_type_name) }} = {{ instantiate_new(local) }};
-    {{~ end ~}}
-    {{~ if localDeps.size > 0 && dependencies.size > 0 ~}}{{ "\r\n" }}{{~ end ~}}
-    {{~ for dep in dependencies ~}}
-        this.{{ dep.property_name }} = {{ instantiate(dep) }};
-    {{~ end ~}}
-    }
+protected void InjectDependencies(IServiceProvider serviceProvider)
+{
+{{~ for local in localDeps ~}}
+    var {{ varName(local.short_type_name) }} = {{ instantiate_new(local) }};
+{{~ end ~}}
+{{~ if localDeps.size > 0 && dependencies.size > 0 ~}}{{ "\r\n" }}{{~ end ~}}
+{{~ for dep in dependencies ~}}
+    this.{{ dep.property_name }} = {{ instantiate(dep) }};
+{{~ end ~}}
+}

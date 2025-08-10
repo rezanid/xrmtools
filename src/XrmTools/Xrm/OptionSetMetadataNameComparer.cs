@@ -1,6 +1,6 @@
 ﻿#nullable enable
-using Microsoft.Xrm.Sdk.Metadata;
 using System.Collections.Generic;
+using XrmTools.WebApi.Entities;
 
 namespace XrmTools;
 

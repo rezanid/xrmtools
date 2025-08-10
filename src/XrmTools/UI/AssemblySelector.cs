@@ -5,7 +5,7 @@ using System.ComponentModel.Composition;
 using System.Threading.Tasks;
 using XrmTools.Core.Repositories;
 using XrmTools.Logging.Compatibility;
-using XrmTools.Xrm.Model;
+using XrmTools.Meta.Model.Configuration;
 using XrmTools.Xrm.Repositories;
 
 internal interface IAssemblySelector

@@ -19,6 +19,7 @@ using XrmTools.Environments;
 using XrmTools.Helpers;
 using XrmTools.Logging.Compatibility;
 using XrmTools.Meta.Attributes;
+using XrmTools.Meta.Model.Configuration;
 using XrmTools.Resources;
 using XrmTools.WebApi;
 using XrmTools.WebApi.Batch;
@@ -26,7 +27,6 @@ using XrmTools.WebApi.Entities;
 using XrmTools.WebApi.Messages;
 using XrmTools.WebApi.Methods;
 using XrmTools.Xrm;
-using XrmTools.Xrm.Model;
 using XrmTools.Xrm.Repositories;
 using static XrmTools.Helpers.ProjectExtensions;
 using Task = System.Threading.Tasks.Task;
@@ -152,7 +152,7 @@ internal sealed class RegisterPluginCommand : BaseCommand<RegisterPluginCommand>
             var existingAssembly = assemblyQuery?.Value?.SingleOrDefault();
             if (existingAssembly is not null)
             {
-                inputModel.PluginAssemblyId = existingAssembly.Id;
+                inputModel.Id = existingAssembly.Id;
                 Logger.LogInformation($"Found existing assembly ({existingAssembly.Id}).");
                 requests.AddRange(GenerateDeleteRequestsForCleanup(
                     newAssembly: inputModel, existingAssembly: existingAssembly, skipPlugins: true));
@@ -175,7 +175,12 @@ internal sealed class RegisterPluginCommand : BaseCommand<RegisterPluginCommand>
         try
         {
             environment = await EnvironmentProvider.GetActiveEnvironmentAsync();
-            if (environment == null)
+            var errMessage = environment is null ?
+                "No active environment found. Please connect to an environment and try again." :
+                environment.BaseServiceUrl is null ?
+                "Active environment has no valid URL. Please check the environment and try again" :
+                null;
+            if (errMessage is not null)
             {
                 await VS.StatusBar.EndAnimationAsync(StatusAnimation.General);
                 await VS.StatusBar.ShowMessageAsync("Plugin registration failed.");
@@ -196,7 +201,7 @@ internal sealed class RegisterPluginCommand : BaseCommand<RegisterPluginCommand>
                     .Build();
 
                 requests.AddRange(upserts);
-                batch = new BatchRequest(environment.BaseServiceUrl)
+                batch = new BatchRequest(environment!.BaseServiceUrl!)
                 {
                     ChangeSets = [new(requests)]
                 };
@@ -208,7 +213,7 @@ internal sealed class RegisterPluginCommand : BaseCommand<RegisterPluginCommand>
                     .Build();
 
                 requests.AddRange(upserts);
-                batch = new BatchRequest(environment.BaseServiceUrl)
+                batch = new BatchRequest(environment!.BaseServiceUrl!)
                 {
                     ChangeSets = [new(requests)]
                 };
@@ -258,7 +263,7 @@ internal sealed class RegisterPluginCommand : BaseCommand<RegisterPluginCommand>
 
             var builder = new UpsertRequestBuilder(inputModel, sdkMessages);
             var upserts = builder.WithStepsAndCustomApis().Build();
-            batch = new BatchRequest(environment.BaseServiceUrl)
+            batch = new BatchRequest(environment!.BaseServiceUrl!)
             {
                 ChangeSets = [new(upserts)]
             };
@@ -293,7 +298,7 @@ internal sealed class RegisterPluginCommand : BaseCommand<RegisterPluginCommand>
 
     private void AssignIds(PluginAssemblyConfig pluginAssembly, PluginAssembly? existingPluginAssembly)
     {
-        pluginAssembly.PluginAssemblyId = existingPluginAssembly?.Id ?? GuidFactory.DeterministicGuid(GuidFactory.Namespace.PluginAssembly, pluginAssembly.Name!);
+        pluginAssembly.Id = existingPluginAssembly?.Id ?? GuidFactory.DeterministicGuid(GuidFactory.Namespace.PluginAssembly, pluginAssembly.Name!);
         if (pluginAssembly.Package is not null)
         {
             pluginAssembly.Package.Id = existingPluginAssembly?.Package?.Id ?? GuidFactory.DeterministicGuid(GuidFactory.Namespace.PluginPackage, pluginAssembly.Package.Name!);
@@ -319,12 +324,12 @@ internal sealed class RegisterPluginCommand : BaseCommand<RegisterPluginCommand>
                 foreach (var parameter in customApi.RequestParameters)
                 {
                     var existingParameter = existingCustomApi?.RequestParameters.FirstOrDefault(p => p.UniqueName == parameter.UniqueName);
-                    parameter.Id = existingParameter?.Id ?? GuidFactory.DeterministicGuid(GuidFactory.Namespace.CustomApiInput, customApi.UniqueName + parameter.UniqueName!);
+                    parameter.Id = existingParameter?.Id ?? GuidFactory.DeterministicGuid(GuidFactory.Namespace.CustomApiRequestParameter, customApi.UniqueName + parameter.UniqueName!);
                 }
                 foreach (var parameter in customApi.ResponseProperties)
                 {
                     var existingParameter = existingCustomApi?.ResponseProperties.FirstOrDefault(p => p.UniqueName == parameter.UniqueName);
-                    parameter.Id = existingParameter?.Id ?? GuidFactory.DeterministicGuid(GuidFactory.Namespace.CustomApiOutput, customApi.UniqueName + parameter.UniqueName!);
+                    parameter.Id = existingParameter?.Id ?? GuidFactory.DeterministicGuid(GuidFactory.Namespace.CustomApiResponseProperty, customApi.UniqueName + parameter.UniqueName!);
                 }
             }
         }
@@ -351,9 +356,18 @@ internal sealed class RegisterPluginCommand : BaseCommand<RegisterPluginCommand>
     protected override async Task InitializeCompletedAsync()
     {
         //Command.Supported = false;
-        var componentModel = await Package.GetServiceAsync<SComponentModel, IComponentModel>().ConfigureAwait(false);
-        componentModel?.DefaultCompositionService.SatisfyImportsOnce(this);
-        EnsureDependencies();
+        try
+        {
+            var componentModel = await Package.GetServiceAsync<SComponentModel, IComponentModel>().ConfigureAwait(false);
+            componentModel?.DefaultCompositionService.SatisfyImportsOnce(this);
+            EnsureDependencies();
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "An error occurred while initializing the RegisterPluginCommand.");
+            await VS.MessageBox.ShowErrorAsync(Vsix.Name, "An error occurred while initializing the RegisterPluginCommand. " + ex.Message);
+            return;
+        }
     }
 
     protected override void BeforeQueryStatus(EventArgs e)

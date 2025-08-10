@@ -4,12 +4,10 @@ using System;
 using System.Runtime.Caching;
 using System.Threading;
 using System.Threading.Tasks;
-using XrmTools.Http;
 using XrmTools.WebApi;
 
-internal class XrmRepository(XrmHttpClient client, IWebApiService service) : IDisposable, IAsyncDisposable
+internal class XrmRepository(IWebApiService service) : IDisposable, IAsyncDisposable
 {
-    protected readonly XrmHttpClient client = client;
     protected readonly IWebApiService service = service;
     private readonly MemoryCache cache = MemoryCache.Default;
     private readonly TimeSpan cacheExpiration = TimeSpan.FromMinutes(30);
@@ -52,7 +50,7 @@ internal class XrmRepository(XrmHttpClient client, IWebApiService service) : IDi
     {
         if (!disposedValue && disposing)
         {
-            if (client is IDisposable disposable)
+            if (service is IDisposable disposable)
             {
                 disposable.Dispose();
             }
@@ -62,11 +60,11 @@ internal class XrmRepository(XrmHttpClient client, IWebApiService service) : IDi
 
     protected virtual async ValueTask DisposeAsyncCore()
     {
-        if (client is IAsyncDisposable asyncDisposable)
+        if (service is IAsyncDisposable asyncDisposable)
         {
             await asyncDisposable.DisposeAsync().ConfigureAwait(false);
         }
-        else if (client is IDisposable disposable)
+        else if (service is IDisposable disposable)
         {
             disposable.Dispose();
         }

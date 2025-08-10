@@ -53,12 +53,6 @@ public class PluginTypeConfig : TypedEntity<PluginTypeConfig>, IPluginTypeConfig
         }
     }
 
-    [AttributeLogicalName("pluginassemblyid")]
-    public EntityReference? PluginAssemblyId
-    {
-        get => TryGetAttributeValue("pluginassemblyid", out EntityReference value) ? value : null;
-        set => this["pluginassemblyid"] = value;
-    }
     [AttributeLogicalName("name")]
     public string? Name
     {

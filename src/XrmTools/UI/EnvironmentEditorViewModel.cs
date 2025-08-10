@@ -151,7 +151,7 @@ internal class EnvironmentEditorViewModel : ViewModelBase
             TestResult = string.Format(Strings.EnvironmentConnectionStringError, SelectedEnvironment.Name);
             return;
         }
-        Meta.Model.WhoAmIResponse? response = null;
+        WhoAmIResponse? response = null;
         try
         {
             var environment = new DataverseEnvironment
@@ -166,7 +166,7 @@ internal class EnvironmentEditorViewModel : ViewModelBase
                 TestResult = string.Format(Strings.EnvironmentConnectionError, SelectedEnvironment.Name);
                 return;
             }
-            response = await httpResponse!.CastAsync<Meta.Model.WhoAmIResponse>();
+            response = await httpResponse!.CastAsync<WhoAmIResponse>();
         }
         catch (Exception ex)
         {
@@ -185,7 +185,7 @@ internal class EnvironmentEditorViewModel : ViewModelBase
     {
         if (!IsValidEnvironment(environment))
         {
-            VS.MessageBox.ShowError("Set Environment in " + ActiveEnvironmentScopeName, "The environment needs to have a valid URL.");
+            VS.MessageBox.ShowError($"Set Environment in {ActiveEnvironmentScopeName} The environment needs to have a valid URL.");
             return;
         }
         foreach (var env in Environments)

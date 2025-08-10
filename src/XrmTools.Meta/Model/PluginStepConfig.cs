@@ -15,7 +15,7 @@ public interface IMessageProcessingStepEntity
 {
     Guid? PluginStepId { get; set; }
     Guid? SdkMessageId { get; set; }
-    bool AsyncAutoDelete { get; set; }
+    bool? AsyncAutoDelete { get; set; }
     string? Description { get; set; }
     string? FilteringAttributes { get; set; }
     int? InvocationSource { get; set; }
@@ -31,7 +31,6 @@ public interface IMessageProcessingStepEntity
     SupportedDeployments? SupportedDeployment { get; set; }
     EntityReference? ImpersonatingUserId { get; set; }
     public string? ImpersonatingUserFullname { get; set; }
-    string? WorkflowActivityGroupName { get; set; }
     bool? CanBeBypassed { get; set;}
 }
 
@@ -104,17 +103,11 @@ public class PluginStepConfig : TypedEntity<PluginStepConfig>, IMessageProcessin
         get => TryGetAttributeValue("name", out string value) ? value : null;
         set => this["name"] = value;
     }
-    [AttributeLogicalName("workflowactivitygroupname")]
-    public string? WorkflowActivityGroupName
-    {
-        get => TryGetAttributeValue("workflowactivitygroupname", out string value) ? value : null;
-        set => this["workflowactivitygroupname"] = value;
-    }
     /// <summary>
     /// Required, Boolean
     /// </summary>
     [AttributeLogicalName("asyncautodelete")]
-    public bool AsyncAutoDelete
+    public bool? AsyncAutoDelete
     {
         get => TryGetAttributeValue(FilteringAttributes, out bool value) && value;
         set => this["asyncautodelete"] = value;
@@ -147,23 +140,18 @@ public class PluginStepConfig : TypedEntity<PluginStepConfig>, IMessageProcessin
         set => this["mode"] = value == null ? null : new OptionSetValue((int)value);
     }
 
-    [AttributeLogicalName("executionorder")]
     public int? ExecutionOrder 
     { 
-        get => TryGetAttributeValue("executionorder", out int value) ? value : null;
-        set => this["executionorder"] = value;
+        get => TryGetAttributeValue("rank", out int value) ? value : null;
+        set => this["rank"] = value;
     }
     //[AttributeLogicalName("primaryentityname")]
     public string? PrimaryEntityName { get; set; }
-    //{
-    //    get => TryGetAttributeValue("primaryentityname", out string value) ? value : null;
-    //    set => this["primaryentityname"] = value;
-    //}
     /// <summary>
     /// Required, Integer
     /// </summary>
     [AttributeLogicalName("rank")]
-    public int? Rank 
+    public int? Rank
     { 
         get => TryGetAttributeValue("rank", out int value) ? value : null;
         set => this["rank"] = value;
