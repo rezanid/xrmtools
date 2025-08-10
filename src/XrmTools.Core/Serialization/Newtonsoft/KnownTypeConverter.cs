@@ -141,35 +141,7 @@ internal class KnownTypeConverter : JsonConverter
             else
             {
                 CacheKnownTypesAndFactories(elementType);
-                throw new InvalidOperationException("We should not be here!");
-            }
-        }
-
-        return array;
-    }
-
-    private object ReadJsonArrayOld(JsonReader reader, Type objectType, JsonSerializer serializer)
-    {
-        var knownTypes = objectType.GetCustomAttributes<KnownTypeAttribute>(false).ToList();
-        var jarray = JArray.Load(reader);
-
-        var array = Array.CreateInstance(objectType, jarray.Count);
-        var index = 0;
-        foreach (var item in jarray)
-        {
-            var typeAnnotation = item["@odata.type"]?.ToString().TrimStart('#');
-
-            if (string.IsNullOrEmpty(typeAnnotation))
-            {
-                array.SetValue(item.ToObject(objectType), index++);
-            }
-            else
-            {
-                //var type = knownTypes.FirstOrDefault(attr => typeAnnotation.EndsWith(attr.Type.Name));
-                var type = FirstKnownTypeAttribute(knownTypes, typeAnnotation);
-                var obj = Activator.CreateInstance(type.Type);
-                serializer.Populate(item.CreateReader(), obj);
-                array.SetValue(obj, index++);
+                throw new InvalidOperationException("Precaching has failed!");
             }
         }
 

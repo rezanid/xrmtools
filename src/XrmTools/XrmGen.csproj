@@ -158,7 +158,6 @@
     <Compile Include="WebApi\ODataError.cs" />
     <Compile Include="WebApi\ODataException.cs" />
     <Compile Include="WebApi\ServiceException.cs" />
-    <Compile Include="WebApi\TypedEntityHelper.cs" />
     <Compile Include="WebApi\WebApiService.cs" />
     <Compile Include="XrmHttpClientFactory.cs" />
     <Compile Include="XrmToolsPackage.SolutionProperties.cs" />
@@ -177,11 +176,7 @@
     <Compile Include="Helpers\IVsHierarchyExtensions.cs" />
     <Compile Include="Helpers\EntityMetadataExtensions.cs" />
     <Compile Include="Helpers\StringBuilderExtensions.cs" />
-    <Compile Include="UI\Converters\ObjectToJsonConverter.cs" />
     <Compile Include="UI\ViewModelBase.cs" />
-    <Compile Include="Xrm\Extensions\EntityExtensions.cs" />
-    <Compile Include="Xrm\Extensions\LinkEntityExtensions.cs" />
-    <Compile Include="Xrm\Extensions\QueryExpressionExtensions.cs" />
     <Compile Include="Xrm\Generators\FileTemplateLoader.cs" />
     <Compile Include="Xrm\Generators\XrmCodeGenConfig.cs" />
     <Compile Include="Xrm\Generators\IXrmCodeGenerator.cs" />

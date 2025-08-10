@@ -138,7 +138,7 @@ internal class AssemblySelectionViewModel : ViewModelBase
     private void Serialize(object input)
     {
         if (input is null) { return; }
-        GeneratedCode = StringHelper.SerializeJson(input);
+        GeneratedCode = "JSON Serialization not supported anymore. In future C# code preview will be displated.";// StringHelper.SerializeJson(input);
     }
 
     private bool CanSelectAssembly() => SelectedAssembly != null;

@@ -4,7 +4,6 @@ namespace XrmTools.Core.Serialization;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Serialization;
 using System.Reflection;
-using Microsoft.Xrm.Sdk;
 
 public class IgnoreEntityPropertiesResolver : DefaultContractResolver
 {

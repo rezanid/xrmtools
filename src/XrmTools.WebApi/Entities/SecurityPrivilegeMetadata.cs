@@ -19,7 +19,7 @@ public sealed class SecurityPrivilegeMetadata
 
     public bool CanBeRecordFilter { get; set; }
 
-    public string Name { get; set; }
+    public string? Name { get; set; }
 
     public Guid PrivilegeId { get; set; }
 

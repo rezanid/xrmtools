@@ -1,5 +1,4 @@
-﻿#nullable enable
-namespace XrmTools.WebApi.Methods;
+﻿namespace XrmTools.WebApi.Methods;
 using System;
 using System.Threading.Tasks;
 using XrmTools.WebApi.Messages;
@@ -36,4 +35,3 @@ internal static partial class Extensions
         }
     }
 }
-#nullable restore

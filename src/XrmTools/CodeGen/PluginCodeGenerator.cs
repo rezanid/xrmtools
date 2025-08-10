@@ -7,6 +7,7 @@ using Microsoft.VisualStudio.ComponentModelHost;
 using Microsoft.VisualStudio.Shell;
 using Microsoft.VisualStudio.Shell.Interop;
 using Microsoft.VisualStudio.TextTemplating.VSHost;
+using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel.Composition;
@@ -27,6 +28,7 @@ using XrmTools.Meta.Model;
 using XrmTools.Meta.Model.Configuration;
 using XrmTools.Options;
 using XrmTools.Resources;
+using XrmTools.Serialization;
 using XrmTools.Settings;
 using XrmTools.WebApi.Entities;
 using XrmTools.Xrm.Generators;
@@ -139,7 +141,11 @@ public class PluginCodeGenerator : BaseCodeGeneratorWithSite
             {
                 // We use Newtonsoft for serialization because it supports polymorphic types
                 // Probably through old serialization attributes set on Xrm.Sdk types.
-                var serializedConfig = inputModel.SerializeJson(useNewtonsoft: true);
+                //var serializedConfig =  inputModel.SerializeJson(useNewtonsoft: true);
+                var serializedConfig = JsonConvert.SerializeObject(inputModel, new JsonSerializerSettings
+                {
+                    ContractResolver = new PolymorphicContractResolver()
+                });
                 File.WriteAllText(Path.ChangeExtension(inputFileName, ".model.json"), serializedConfig);
             }
 
@@ -172,25 +178,25 @@ public class PluginCodeGenerator : BaseCodeGeneratorWithSite
         {
             return await XrmMetaDataService.ParsePluginsAsync(inputFileName);
         }
-        else if (".json".Equals(Path.GetExtension(inputFileName), StringComparison.OrdinalIgnoreCase))
-        {
-            return ParseJsonInputFile(inputFileName, inputFileContent);
-        }
+        //else if (".json".Equals(Path.GetExtension(inputFileName), StringComparison.OrdinalIgnoreCase))
+        //{
+        //    return ParseJsonInputFile(inputFileName, inputFileContent);
+        //}
         return null;
     }
 
-    private PluginAssemblyConfig? ParseJsonInputFile(string inputFileName, string inputFileContent)
-    {
-        try
-        {
-            return inputFileContent.DeserializeJson<PluginAssemblyConfig>();
-        }
-        catch (Exception ex)
-        {
-            Logger.LogError(ex, Strings.PluginGenerator_DeserializationError, inputFileName);
-        }
-        return null;
-    }
+    //private PluginAssemblyConfig? ParseJsonInputFile(string inputFileName, string inputFileContent)
+    //{
+    //    try
+    //    {
+    //        return inputFileContent.DeserializeJson<PluginAssemblyConfig>();
+    //    }
+    //    catch (Exception ex)
+    //    {
+    //        Logger.LogError(ex, Strings.PluginGenerator_DeserializationError, inputFileName);
+    //    }
+    //    return null;
+    //}
 
     private string? GetTemplateFilePath(PluginAssemblyConfig config)
     {

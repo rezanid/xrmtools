@@ -5,7 +5,6 @@ using System.Runtime.CompilerServices;
 using System.Text.Json.Serialization;
 using XrmTools.Meta.Model;
 using XrmTools.WebApi.Entities;
-using XrmTools.Xrm.Model;
 
 public sealed class PluginAssemblyConfig : PluginAssembly//, IPluginAssemblyConfig, INotifyPropertyChanged
 {

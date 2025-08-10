@@ -1,10 +1,10 @@
 ﻿namespace XrmTools.Xrm;
-using Microsoft.Xrm.Sdk.Metadata;
 using System;
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 using XrmTools.Meta.Model.Configuration;
+using XrmTools.WebApi.Entities;
 
 internal interface IXrmSchemaProvider : IDisposable
 {

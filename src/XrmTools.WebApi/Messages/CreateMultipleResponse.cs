@@ -1,33 +1,14 @@
-﻿#nullable enable
-namespace XrmTools.WebApi.Messages;
+﻿namespace XrmTools.WebApi.Messages;
 
-using Newtonsoft.Json.Linq;
 using System;
-using System.Net.Http;
-
-
-// This class must be instantiated by either:
-// - The Service.SendAsync<T> method
-// - The HttpResponseMessage.As<T> extension in Extensions.cs
 
 /// <summary>
 /// Contains the response from the CreateMultipleRequest
 /// </summary>
-public class CreateMultipleResponse : HttpResponseMessage
+public class CreateMultipleResponse
 {
-
-    //Provides JObject for property getters
-    private JObject _jObject
-    {
-        get
-        {
-            return JObject.Parse(Content.ReadAsStringAsync().GetAwaiter().GetResult());
-        }
-    }
-
     /// <summary>
     /// The ID values of the created records
     /// </summary>
-    public Guid[] Ids => _jObject[nameof(Ids)].ToObject<Guid[]>();
+    public Guid[] Ids { get; set; }
 }
-#nullable restore

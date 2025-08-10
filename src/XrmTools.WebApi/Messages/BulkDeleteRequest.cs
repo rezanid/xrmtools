@@ -1,5 +1,4 @@
-﻿#nullable enable
-namespace XrmTools.WebApi.Messages;
+﻿namespace XrmTools.WebApi.Messages;
 
 using Newtonsoft.Json.Linq;
 using System;
@@ -9,6 +8,16 @@ using XrmTools.WebApi.Types;
 
 public class BulkDeleteRequest : HttpRequestMessage
 {
+    private List<QueryExpression>? _querySet;
+    private string? _jobName;
+    private bool? _sendEmailNotification;
+    private List<JObject>? _toRecipients;
+    private List<JObject>? _cCRecipients;
+    private string? _recurrencePattern;
+    private DateTimeOffset? _startDateTime;
+    private Guid? _sourceImportId;
+    private bool? _runNow;
+
     public BulkDeleteRequest()
     {
         Method = HttpMethod.Post;
@@ -17,20 +26,10 @@ public class BulkDeleteRequest : HttpRequestMessage
             uriKind: UriKind.Relative);
     }
 
-    private List<QueryExpression>? _querySet;
-    private string? _jobName;
-    private bool? _sendEmailNotification;
-    private List<JObject>? _toRecipients;
-    private List<JObject>? _cCRecipients;
-    private string _recurrencePattern;
-    private DateTimeOffset? _startDateTime;
-    private Guid? _sourceImportId;
-    private bool? _runNow;
-
 
     public List<QueryExpression>? QuerySet
     {
-        get { return _querySet; }
+        get => _querySet;
         set
         {
             _querySet = value;
@@ -39,7 +38,7 @@ public class BulkDeleteRequest : HttpRequestMessage
     }
     public string? JobName
     {
-        get { return _jobName; }
+        get => _jobName;
         set
         {
             _jobName = value;
@@ -48,7 +47,7 @@ public class BulkDeleteRequest : HttpRequestMessage
     }
     public bool? SendEmailNotification
     {
-        get { return _sendEmailNotification; }
+        get => _sendEmailNotification;
         set
         {
             _sendEmailNotification = value;
@@ -57,7 +56,7 @@ public class BulkDeleteRequest : HttpRequestMessage
     }
     public List<JObject>? ToRecipients
     {
-        get { return _toRecipients; }
+        get => _toRecipients;
         set
         {
             _toRecipients = value;
@@ -66,16 +65,16 @@ public class BulkDeleteRequest : HttpRequestMessage
     }
     public List<JObject>? CCRecipients
     {
-        get { return _cCRecipients; }
+        get => _cCRecipients;
         set
         {
             _cCRecipients = value;
             SetContent();
         }
     }
-    public string? RecurrencePattern
+    public required string RecurrencePattern
     {
-        get { return _recurrencePattern; }
+        get => _recurrencePattern ?? string.Empty;
         set
         {
             _recurrencePattern = value;
@@ -84,7 +83,7 @@ public class BulkDeleteRequest : HttpRequestMessage
     }
     public DateTimeOffset? StartDateTime
     {
-        get { return _startDateTime; }
+        get => _startDateTime;
         set
         {
             _startDateTime = value;
@@ -93,7 +92,7 @@ public class BulkDeleteRequest : HttpRequestMessage
     }
     public Guid? SourceImportId
     {
-        get { return _sourceImportId; }
+        get => _sourceImportId;
         set
         {
             _sourceImportId = value;
@@ -102,7 +101,7 @@ public class BulkDeleteRequest : HttpRequestMessage
     }
     public bool? RunNow
     {
-        get { return _runNow; }
+        get => _runNow;
         set
         {
             _runNow = value;
@@ -112,7 +111,7 @@ public class BulkDeleteRequest : HttpRequestMessage
 
     private void SetContent()
     {
-        JObject _content = new();
+        JObject _content = [];
 
         if (_querySet != null)
         {
@@ -165,4 +164,3 @@ public class BulkDeleteRequest : HttpRequestMessage
 
     }
 }
-#nullable restore

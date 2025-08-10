@@ -1,43 +1,19 @@
-﻿#nullable enable
-namespace XrmTools.WebApi.Messages;
+﻿namespace XrmTools.WebApi.Messages;
 
-using Newtonsoft.Json.Linq;
 using System;
-using System.Net.Http;
-
-// This class must be instantiated by either:
-// - The Service.SendAsync<T> method
-// - The HttpResponseMessage.As<T> extension in Extensions.cs
 
 /// <summary>
 /// Contains the data from the CommitFileBlocksUploadRequest
 /// </summary>
-public sealed class CommitFileBlocksUploadResponse : HttpResponseMessage
+public sealed class CommitFileBlocksUploadResponse
 {
-
-    // Cache the async content
-    private string? _content;
-
-    // Provides JObject for property getters
-    private JObject content
-    {
-        get
-        {
-            _content ??= Content.ReadAsStringAsync().GetAwaiter().GetResult();
-
-            return JObject.Parse(_content);
-        }
-    }
-
     /// <summary>
     /// The unique identifier of the stored File.
     /// </summary>
-    public Guid FileId => (Guid)content.GetValue(nameof(FileId));
+    public Guid FileId { get; set; }
 
     /// <summary>
     /// The size of the stored File in bytes.
     /// </summary>
-    public int FileSizeInBytes => (int)content.GetValue(nameof(FileSizeInBytes));
-
+    public int FileSizeInBytes { get; set; }
 }
-#nullable restore

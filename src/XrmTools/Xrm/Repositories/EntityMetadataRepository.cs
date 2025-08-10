@@ -41,7 +41,7 @@ internal class EntityMetadataRepository(IWebApiService service, ILogger logger) 
     private const string entityRelationshipsQuery = "EntityDefinitions(LogicalName='{0}')?$select=MetadataId&$expand=ManyToOneRelationships,OneToManyRelationships,ManyToManyRelationships";
     private const string sdkMessageEntityNamesQuery = "sdkmessagefilters?$filter=sdkmessageid/name eq '{0}'&$select=primaryobjecttypecode";
 
-    private static readonly JsonSerializerSettings serializerSetting = new()
+    private static readonly JsonSerializerSettings SerializerSetting = new()
     {
         ContractResolver = new PolymorphicContractResolver()
     };
@@ -119,7 +119,7 @@ internal class EntityMetadataRepository(IWebApiService service, ILogger logger) 
         {
             ContractResolver = new PolymorphicContractResolver(),
         };
-        return JsonConvert.DeserializeObject<EntityMetadata>(jobj.GetValue("EntityMetadata").ToString(), serializerSetting);
+        return JsonConvert.DeserializeObject<EntityMetadata>(jobj.GetValue("EntityMetadata").ToString(), SerializerSetting);
     }
 
     /// <summary>
@@ -142,7 +142,7 @@ internal class EntityMetadataRepository(IWebApiService service, ILogger logger) 
             {
                 ContractResolver = new PolymorphicContractResolver(),
             };
-            return JsonConvert.DeserializeObject<EntityMetadata>(jobj.GetValue("EntityMetadata").ToString(), serializerSetting);
+            return JsonConvert.DeserializeObject<EntityMetadata>(jobj.GetValue("EntityMetadata").ToString(), SerializerSetting);
         }
         return null;
     }

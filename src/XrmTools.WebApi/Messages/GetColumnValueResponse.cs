@@ -1,7 +1,5 @@
-﻿#nullable enable
-namespace XrmTools.WebApi.Messages;
+﻿namespace XrmTools.WebApi.Messages;
 
-using Newtonsoft.Json.Linq;
 using System;
 using System.Net.Http;
 using System.Text.Json;
@@ -16,7 +14,7 @@ using System.Text.Json;
 /// <typeparam name="T"></typeparam>
 public sealed class GetColumnValueResponse<T> : HttpResponseMessage
 {
-    string _content;
+    string? _content;
 
     private JsonDocument _jsonDocument
     {
@@ -33,4 +31,3 @@ public sealed class GetColumnValueResponse<T> : HttpResponseMessage
     /// </summary>
     public T Value => (T)Convert.ChangeType(_jsonDocument.RootElement.GetProperty("value").GetString(), typeof(T));
 }
-#nullable restore

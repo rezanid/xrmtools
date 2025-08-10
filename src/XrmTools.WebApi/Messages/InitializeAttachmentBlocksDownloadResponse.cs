@@ -1,49 +1,24 @@
-﻿#nullable enable
-namespace XrmTools.WebApi.Messages;
-
-using Newtonsoft.Json.Linq;
-using System.Net.Http;
+﻿namespace XrmTools.WebApi.Messages;
 
 /// <summary>
 /// Contains the data from the InitializeAttachmentBlocksDownloadRequest
 /// </summary>
-/// <remarks>
-/// This class must be instantiated by either:
-/// - The Service.SendAsync<T> method
-/// - The HttpResponseMessage.As<T> extension in Extensions.cs
-///</remarks>
-public sealed class InitializeAttachmentBlocksDownloadResponse : HttpResponseMessage
+public sealed class InitializeAttachmentBlocksDownloadResponse
 {
-
-    // Cache the async content
-    private string? _content;
-
-    // Provides JObject for property getters
-    private JObject JObject
-    {
-        get
-        {
-            _content ??= Content.ReadAsStringAsync().GetAwaiter().GetResult();
-
-            return JObject.Parse(_content);
-        }
-    }
-
     /// <summary>
     /// A token that uniquely identifies a sequence of related data blocks.
     /// </summary>
-    public string FileContinuationToken => (string)JObject.GetValue(nameof(FileContinuationToken));
+    public string? FileContinuationToken { get; set; }
 
     /// <summary>
     /// The size of the data file in bytes.
     /// </summary>
-    public int FileSizeInBytes => (int)JObject.GetValue(nameof(FileSizeInBytes));
+    public int FileSizeInBytes { get; set; }
 
 
     /// <summary>
     /// The name of the stored file.
     /// </summary>
-    public string FileName => (string)JObject.GetValue(nameof(FileName));
+    public string? FileName { get; set; }
 
 }
-#nullable restore
