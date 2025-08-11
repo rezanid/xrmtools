@@ -6,27 +6,43 @@ using System.Threading;
 using System.Threading.Tasks;
 using XrmTools.WebApi;
 
-internal class XrmRepository(IWebApiService service) : IDisposable, IAsyncDisposable
+internal class XrmRepository : IDisposable, IAsyncDisposable
 {
-    protected readonly IWebApiService service = service;
+    protected readonly IWebApiService service;
     private readonly MemoryCache cache = MemoryCache.Default;
-    private readonly TimeSpan cacheExpiration = TimeSpan.FromMinutes(30);
-
+    private readonly ICacheConfiguration cacheConfiguration;
     private bool disposedValue;
+
+    public XrmRepository(IWebApiService service)
+        : this(service, new CacheConfiguration())
+    {
+    }
+
+    public XrmRepository(IWebApiService service, ICacheConfiguration cacheConfiguration)
+    {
+        this.service = service;
+        this.cacheConfiguration = cacheConfiguration;
+    }
 
     protected async Task<T> GetOrCreateCacheItemAsync<T>(string cacheKey, Func<Task<T>> fetchFunction, CancellationToken cancellationToken)
     {
         if (cache.Contains(cacheKey))
         {
-            return (T)cache.Get(cacheKey);
+            var cachedItem = (T)cache.Get(cacheKey);
+
+            // For sliding expiration, update the cache item to reset the expiry
+            if (cacheConfiguration.UseSlidingExpiration)
+            {
+                var policy = CreateCacheItemPolicy();
+                cache.Set(cacheKey, cachedItem, policy);
+            }
+
+            return cachedItem;
         }
 
-        var data = await fetchFunction();
-        CacheItemPolicy policy = new CacheItemPolicy
-        {
-            AbsoluteExpiration = DateTimeOffset.Now.Add(cacheExpiration)
-        };
-        cache.Add(cacheKey, data, policy);
+        var data = await fetchFunction().ConfigureAwait(false);
+        var cachePolicy = CreateCacheItemPolicy();
+        cache.Add(cacheKey, data, cachePolicy);
         return data;
     }
 
@@ -34,16 +50,38 @@ internal class XrmRepository(IWebApiService service) : IDisposable, IAsyncDispos
     {
         if (cache.Contains(cacheKey))
         {
-            return (T)cache.Get(cacheKey);
+            var cachedItem = (T)cache.Get(cacheKey);
+
+            // For sliding expiration, update the cache item to reset the expiry
+            if (cacheConfiguration.UseSlidingExpiration)
+            {
+                var policy = CreateCacheItemPolicy();
+                cache.Set(cacheKey, cachedItem, policy);
+            }
+
+            return cachedItem;
         }
 
         var data = fetchFunction();
-        CacheItemPolicy policy = new CacheItemPolicy
-        {
-            AbsoluteExpiration = DateTimeOffset.Now.Add(cacheExpiration)
-        };
-        cache.Add(cacheKey, data, policy);
+        var cachePolicy = CreateCacheItemPolicy();
+        cache.Add(cacheKey, data, cachePolicy);
         return data;
+    }
+
+    private CacheItemPolicy CreateCacheItemPolicy()
+    {
+        var policy = new CacheItemPolicy();
+
+        if (cacheConfiguration.UseSlidingExpiration)
+        {
+            policy.SlidingExpiration = cacheConfiguration.CacheExpiration;
+        }
+        else
+        {
+            policy.AbsoluteExpiration = DateTimeOffset.Now.Add(cacheConfiguration.CacheExpiration);
+        }
+
+        return policy;
     }
 
     private void Dispose(bool disposing)

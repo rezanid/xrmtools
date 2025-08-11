@@ -33,7 +33,7 @@ public class SdkMessageProcessingStep : Component<SdkMessageProcessingStep>
     public bool? CanBeBypassed { get; set; }
     public string? IntroducedVersion { get; set; }
     public int? VersionNumber { get; set; }
-    public bool? AsyncAutoDelete { get; set; }
+    public bool AsyncAutoDelete { get; set; } = false;
     /// <summary>
     /// Execution order of the step in the pipeline. Lower numbers are executed first.
     /// </summary>
