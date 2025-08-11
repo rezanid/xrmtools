@@ -11,7 +11,6 @@ using XrmTools.Core;
 using XrmTools.Core.Helpers;
 using XrmTools.Core.Repositories;
 using XrmTools.Logging.Compatibility;
-using XrmTools.Meta.Model;
 using XrmTools.WebApi;
 using XrmTools.WebApi.Entities;
 
@@ -25,11 +24,11 @@ internal interface ISdkMessageRepository : IXrmRepository
     Task<IEnumerable<SdkMessage>> GetVisibleWithoutDescendantsAsync(CancellationToken cancellationToken);
 }
 
-internal class SdkMessageRepository(IWebApiService service, ILogger logger) : XrmRepository(service), ISdkMessageRepository
+internal class SdkMessageRepository : XrmRepository, ISdkMessageRepository
 {
     private const string sdkMessageQueryForEntities = "sdkmessages?$filter=sdkmessageid_sdkmessagefilter/any(n:({0}) and n/iscustomprocessingstepallowed eq true)&$expand=sdkmessageid_sdkmessagefilter($filter=({1}) and iscustomprocessingstepallowed eq true)";
     private const string sdkMessageQuerySingle = "sdkmessages?$filter=sdkmessageid_sdkmessagefilter/any(n:n/primaryobjecttypecode eq '{0}' and n/iscustomprocessingstepallowed eq true)&$expand=sdkmessageid_sdkmessagefilter($filter=primaryobjecttypecode eq '{0}' and iscustomprocessingstepallowed eq true)";
-    private const string sdkMessageQueryForPlugins = "sdkmessages?$filter=sdkmessageid_sdkmessagefilter/any(n:n/iscustomprocessingstepallowed eq true)&$expand=sdkmessageid_sdkmessagefilter($filter=iscustomprocessingstepallowed eq true)";
+    private const string sdkMessageQueryForPlugins = "sdkmessages?$select=name&$filter=sdkmessageid_sdkmessagefilter/any(n:n/iscustomprocessingstepallowed eq true)&$expand=sdkmessageid_sdkmessagefilter($filter=iscustomprocessingstepallowed eq true)";
     private const string SdkMessageQueryVisible_NoDescendants = "sdkmessages?" +
         "$filter=message_sdkmessagepair/any(p:p/endpoint eq '2011/Organization.svc') and " +
             "sdkmessageid_sdkmessagefilter/any(f:f/isvisible eq true)" +
@@ -76,82 +75,116 @@ internal class SdkMessageRepository(IWebApiService service, ILogger logger) : Xr
         ")," +
         "sdkmessageid_sdkmessagefilter($select=isvisible)" +
         "&$select=name,isprivate,sdkmessageid,customizationlevel";
+
+    public SdkMessageRepository(IWebApiService service, ILogger logger) 
+        : base(service, new SlidingCacheConfiguration())
+    {
+    }
+
     public async Task<IEnumerable<SdkMessage>> GetForEntitiesAsync(string[] entityLogicalNames, CancellationToken cancellationToken)
     {
-        var sb1 = new StringBuilder();
-        var sb2 = new StringBuilder();
-        foreach (var name in entityLogicalNames)
+        var cacheKey = $"SdkMessages_ForEntities_{string.Join(",", entityLogicalNames.OrderBy(x => x))}";
+        
+        return await GetOrCreateCacheItemAsync(cacheKey, async () =>
         {
-            sb1.Append($"n/primaryobjecttypecode eq '{name}' or ");
-            sb2.Append($"primaryobjecttypecode eq '{name}' or ");
-        }
-        sb1.Remove(sb1.Length - 4, 4);
-        sb2.Remove(sb2.Length - 4, 4);
-        var response = await service.GetAsync(sdkMessageQueryForEntities.FormatWith(sb1.ToString(), sb2.ToString()), cancellationToken).ConfigureAwait(false);
-        var typed = await response.CastAsync<ODataQueryResponse<SdkMessage>>().ConfigureAwait(false);
-        if (typed is not null && typed.Value is not null)
-        {
-            return typed.Value;
-        }
-        return [];
+            var sb1 = new StringBuilder();
+            var sb2 = new StringBuilder();
+            foreach (var name in entityLogicalNames)
+            {
+                sb1.Append($"n/primaryobjecttypecode eq '{name}' or ");
+                sb2.Append($"primaryobjecttypecode eq '{name}' or ");
+            }
+            sb1.Remove(sb1.Length - 4, 4);
+            sb2.Remove(sb2.Length - 4, 4);
+            
+            var response = await service.GetAsync(sdkMessageQueryForEntities.FormatWith(sb1.ToString(), sb2.ToString()), cancellationToken).ConfigureAwait(false);
+            var typed = await response.CastAsync<ODataQueryResponse<SdkMessage>>().ConfigureAwait(false);
+            if (typed is not null && typed.Value is not null)
+            {
+                return typed.Value;
+            }
+            return Enumerable.Empty<SdkMessage>();
+        }, cancellationToken).ConfigureAwait(false);
     }
 
     public async Task<IEnumerable<SdkMessage>> GetForEntityAsync(string entityLogicalName, CancellationToken cancellationToken)
     {
-        var response = await service.GetAsync(string.Format(sdkMessageQuerySingle, entityLogicalName), cancellationToken);
-        if (response.IsSuccessStatusCode)
+        var cacheKey = $"SdkMessages_ForEntity_{entityLogicalName}";
+        
+        return await GetOrCreateCacheItemAsync(cacheKey, async () =>
         {
-            using var content = await response.Content.ReadAsStreamAsync().ConfigureAwait(false);
-            return content.Deserialize<ODataQueryResponse<SdkMessage>>().Value;
-
-        }
-        return [];
+            var response = await service.GetAsync(string.Format(sdkMessageQuerySingle, entityLogicalName), cancellationToken).ConfigureAwait(false);
+            if (response.IsSuccessStatusCode)
+            {
+                using var content = await response.Content.ReadAsStreamAsync().ConfigureAwait(false);
+                return content.Deserialize<ODataQueryResponse<SdkMessage>>().Value;
+            }
+            return Enumerable.Empty<SdkMessage>();
+        }, cancellationToken).ConfigureAwait(false);
     }
 
     public async Task<IEnumerable<SdkMessage>> GetCustomProcessingStepAllowedAsync(CancellationToken cancellationToken)
     {
-        var response = await service.GetAsync(sdkMessageQueryForPlugins, cancellationToken).ConfigureAwait(false);
-        var typed = await response.CastAsync<ODataQueryResponse<SdkMessage>>().ConfigureAwait(false);
-        if (typed is not null && typed.Value is not null)
+        var cacheKey = "SdkMessages_CustomProcessingStepAllowed";
+        
+        return await GetOrCreateCacheItemAsync(cacheKey, async () =>
         {
-            return typed.Value;
-        }
-        return [];
+            var response = await service.GetAsync(sdkMessageQueryForPlugins, cancellationToken).ConfigureAwait(false);
+            var typed = await response.CastAsync<ODataQueryResponse<SdkMessage>>().ConfigureAwait(false);
+            if (typed is not null && typed.Value is not null)
+            {
+                return typed.Value;
+            }
+            return Enumerable.Empty<SdkMessage>();
+        }, cancellationToken).ConfigureAwait(false);
     }
 
     public async Task<IEnumerable<SdkMessage>> GetVisibleWithDescendantsAsync(CancellationToken cancellationToken)
     {
-        var response = await service.GetAsync(SdkMessageQueryVisible, cancellationToken).ConfigureAwait(false);
-        var typed = await response.CastAsync<ODataQueryResponse<SdkMessage>>().ConfigureAwait(false);
-        if (typed is not null && typed.Value is not null)
+        var cacheKey = "SdkMessages_VisibleWithDescendants";
+        
+        return await GetOrCreateCacheItemAsync(cacheKey, async () =>
         {
-            return typed.Value;
-        }
-        return [];
+            var response = await service.GetAsync(SdkMessageQueryVisible, cancellationToken).ConfigureAwait(false);
+            var typed = await response.CastAsync<ODataQueryResponse<SdkMessage>>().ConfigureAwait(false);
+            if (typed is not null && typed.Value is not null)
+            {
+                return typed.Value;
+            }
+            return Enumerable.Empty<SdkMessage>();
+        }, cancellationToken).ConfigureAwait(false);
     }
 
-    //TODO: Might need pagination support.
     public async Task<IEnumerable<SdkMessage>> GetVisibleWithoutDescendantsAsync(CancellationToken cancellationToken)
     {
-        var response = await service.GetAsync(SdkMessageQueryVisible_NoDescendants, cancellationToken).ConfigureAwait(false);
-        var typed = await response.CastAsync<ODataQueryResponse<SdkMessage>>().ConfigureAwait(false);
-        if (typed is not null && typed.Value is not null)
+        var cacheKey = "SdkMessages_VisibleWithoutDescendants";
+        
+        return await GetOrCreateCacheItemAsync(cacheKey, async () =>
         {
-            return typed.Value;
-        }
-        return [];
+            var response = await service.GetAsync(SdkMessageQueryVisible_NoDescendants, cancellationToken).ConfigureAwait(false);
+            var typed = await response.CastAsync<ODataQueryResponse<SdkMessage>>().ConfigureAwait(false);
+            if (typed is not null && typed.Value is not null)
+            {
+                return typed.Value;
+            }
+            return Enumerable.Empty<SdkMessage>();
+        }, cancellationToken).ConfigureAwait(false);
     }
 
     public async Task<SdkMessage?> GetByNameWithDescendantsAsync(string name, CancellationToken cancellationToken)
     {
-        var response = await service.GetAsync(string.Format(SdkMessageQueryByName, name), cancellationToken).ConfigureAwait(false);
-        var typed = await response.CastAsync<ODataQueryResponse<SdkMessage>>().ConfigureAwait(false);
-        if (typed is not null && typed.Value is not null && typed.Value.Any())
+        var cacheKey = $"SdkMessage_ByName_{name}";
+        
+        return await GetOrCreateCacheItemAsync(cacheKey, async () =>
         {
-            return typed.Value.FirstOrDefault();
-        }
-        return null;
+            var response = await service.GetAsync(string.Format(SdkMessageQueryByName, name), cancellationToken).ConfigureAwait(false);
+            var typed = await response.CastAsync<ODataQueryResponse<SdkMessage>>().ConfigureAwait(false);
+            if (typed is not null && typed.Value is not null && typed.Value.Any())
+            {
+                return typed.Value.FirstOrDefault();
+            }
+            return null;
+        }, cancellationToken).ConfigureAwait(false);
     }
-
 }
 #nullable restore

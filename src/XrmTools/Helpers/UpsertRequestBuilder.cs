@@ -10,6 +10,7 @@ using XrmTools.WebApi.Entities;
 using XrmTools.Meta.Attributes;
 using XrmTools.Meta.Model.Configuration;
 using XrmTools.Model.Configuration;
+using System;
 
 //TODO: Make this class IDisposable and dispose requests.
 internal class UpsertRequestBuilder(
@@ -68,6 +69,10 @@ internal class UpsertRequestBuilder(
                     _sdkMessages.TryGetValue(step.MessageName!, out var message))
                 {
                     step.Message = message;
+                }
+                if (step.Message is null)
+                {
+                    throw new InvalidOperationException($"No message found with the name {step.MessageName}. Are you sure you didn't make any typos?");
                 }
 
                 _requests.Add(UpsertPluginStepRequestFor(step, pluginType));
