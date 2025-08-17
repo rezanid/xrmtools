@@ -113,6 +113,8 @@ public partial class MyCustomApiPlugin : IPlugin
         // Marking the type as nullable will make the parameter optional in the Custom API.
         public decimal? DecimalParameter { get; set; }
         public Entity EntityParameter { get; set; }
+        public Contact ContactParameter { get; set; } // This is a typed entity, you can use any entity that is registered in your Dataverse environment.
+        public IEnumerable<Contact> ContactsParameter { get; set; } // This will be converted to an EntityCollection in the Custom API request.
         public EntityCollection EntityCollectionParameter { get; set; }
         public EntityReference EntityReferenceParameter { get; set; }
         // Null annotation makes the parameter optional.
