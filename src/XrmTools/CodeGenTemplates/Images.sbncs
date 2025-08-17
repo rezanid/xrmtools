@@ -27,18 +27,18 @@ public class {{base_class_name}} : Entity
 		{
 		{{~for attribute_meta in image.message_property_definition.attributes | filter_enum_attributes~}}
 		{{~if attribute_meta.option_set != null~}}
-		{{~if (attribute_meta.option_set.description.localized_labels | array.first)?.label~}}
+		{{~if (attribute_meta.option_set.description | get_label 1033)~}}
 			/// <summary>
-			/// {{attribute_meta.option_set.description.localized_labels[0].label}}
+			/// {{attribute_meta.option_set.description | get_label 1033}}
 			/// </summary>
 		{{~end~}}
 			[DataContract]
-			{{~enum_name = attribute_meta.option_set.display_name.localized_labels[0].label | tokenize~}}
+			{{~enum_name = attribute_meta.option_set.display_name | get_label 1033 | tokenize~}}
 			public enum {{enum_name}}
 			{
 			{{~for option_meta in attribute_meta.option_set.options~}}
 				[EnumMember]
-				{{option_meta.label.localized_labels[0].label | tokenize}} = {{option_meta.value}},
+				{{option_meta.label | get_label 1033 | tokenize}} = {{option_meta.value}},
 			{{~end~}}
 			}
 		{{~end~}}
@@ -47,7 +47,7 @@ public class {{base_class_name}} : Entity
 	}
 
 	{{~for attribute in image.message_property_definition.attributes | array.filter @supported_attribute~}}
-	{{~description = attribute.description?.localized_labels[0]?.label~}}
+	{{~description = attribute.description | get_label 1033~}}
 	/// <summary>
 	{{~if description != null && description.length > 0~}}
 	/// {{description}}

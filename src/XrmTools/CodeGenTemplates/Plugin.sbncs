@@ -1,6 +1,12 @@
 {{~func non_logical; ret ($0?.is_logical != true); end~}}
 {{~func logical; ret ($0?.is_logical == true); end~}}
 {{~func supported_attribute; ret ($0 && !$0?.is_primary_id && $0.attribute_type != 'EntityName') && ($0.is_valid_for_create || $0.is_valid_for_update || $0.is_valid_for_read); end~}}
+{{~func text_between;
+index1 = ($0 | string.index_of $1) + 1;
+index2 = $0 | string.index_of $2 index1 + 1;
+length = index2 - index1;
+ret $0 | string.slice index1 length
+end~}}
 {{~quote(text) = '"' + text + '"'~}}
 {{-first_plugin_type = model.plugin_types | array.first~}}
 {{~if first_plugin_type.is_nullable_enabled ~}}
@@ -14,17 +20,20 @@ using System.CodeDom.Compiler;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Globalization;
+using System.Linq;
 using System.Runtime.Serialization;
 
 namespace {{ first_plugin_type?.namespace ?? config.default_namespace }}
 {
-
     {{~for plugintype in model.plugin_types~}}
     {{codegen_attribute}}
     public partial class {{plugintype.type_name | last_segment }}
     {
         {{~dependencies = plugintype.dependency_graph?.dependencies~}}
+        {{~if dependencies && dependencies.size > 0~}}
         {{include 'InjectDependencies.sbncs'~}}
+        {{~end~}}
+    {{~if plugintype.steps.size > 0~}}
 
     {{~for step in plugintype.steps~}}
 	    {{~target_type_name = (plugintype.steps | array.size > 1 ? step.message_name : '') + 'Target' + (step.primary_entity_definition.display_name | get_label 1033 | tokenize)~}}
@@ -40,6 +49,7 @@ namespace {{ first_plugin_type?.namespace ?? config.default_namespace }}
 	    {{~end~}}
     {{~end~}}
 
+    {{~end~}}
 	    /// <summary>
 	    /// This method should be called on every <see cref="{{plugintype.base_type_name == 'Object' ? plugintype.type_name : plugintype.base_type_name}}.Execute(IServiceProvider)"/> execution.
 	    /// </summary>
@@ -86,21 +96,46 @@ namespace {{ first_plugin_type?.namespace ?? config.default_namespace }}
             {{~for param in plugintype.custom_api.request_parameters~}}
             {{~case param.type~}}
             {{~when 'Boolean', 'DateTime', 'Decimal', 'Float', 'Integer'~}}
+            // type: {{param.type}}
+            // type_name: {{param.type_name}}
+            // full_type_name: {{param.full_type_name}}
             request.{{param.name}} = context.InputParameters.TryGetValue("{{param.name}}", out {{param.full_type_name}} {{param.name | string.downcase}}) ? {{param.name | string.downcase}} : default;
             {{~when 'String'~}}
-            request.{{param.name}} = context.InputParameters.TryGetValue("{{param.name}}", out {{plugintype.is_nullable_enabled ? param.full_type_name : param.full_type_name | string.replace_first "?" "" true}} {{param.name | string.downcase}}) ? {{param.name | string.downcase}} : string.Empty;
+            request.{{param.name}} = context.InputParameters.TryGetValue("{{param.name}}", out {{plugintype.is_nullable_enabled ? param.full_type_name : param.full_type_name | string.replace_first '?' '' true}} {{param.name | string.downcase}}) ? {{param.name | string.downcase}} : string.Empty;
             {{~when 'StringArray'~}}
             request.{{param.name}} = context.InputParameters.TryGetValue("{{param.name}}", out string[] {{param.name | string.downcase}}) ? {{param.name | string.downcase}} : default;
             {{~when 'Picklist'~}}
             {{~converter = param.type_name == 'OptionSetValue' ? (param.name | string.downcase) : '(' + param.full_type_name + ')' + (param.name | string.downcase) + '.Value' ~}}
             request.{{param.name}} = context.InputParameters.TryGetValue("{{param.name}}", out OptionSetValue {{param.name | string.downcase}}) ? {{converter}} : default;
             {{~when 'EntityCollection'~}}
-            if (context.InputParameters.TryGetValue("{{param.name}}", out {{plugintype.is_nullable_enabled ? "EntityCollection?" : "EntityCollection"}} {{param.name | string.downcase}}))
+            if (context.InputParameters.TryGetValue("{{param.name}}", out EntityCollection {{param.name | string.downcase}})
+                && {{param.name | string.downcase}} != null)
             {
-                request.{{param.name}} = {{param.name | string.downcase}} ?? request.{{param.name}};
+                {{~if param.type != (param.type_name | string.replace_first '?' '' true)~}}
+                request.{{param.name}} = {{param.name | string.downcase}}.Entities
+                    .Select(e => new {{param.full_type_name | text_between '<' '>'}}(e.Id)
+                    {
+                        Attributes = e.Attributes
+                    }).ToList();
+                {{~else~}}
+                request.{{param.name}} = {{param.name | string.downcase}};
+                {{~end~}}
+            }
+            {{~when 'Entity'~}}
+            if (context.InputParameters.TryGetValue("{{param.name}}", out Entity {{param.name | string.downcase}})
+                && {{param.name | string.downcase}} != null)
+            {
+                {{~if param.type != (param.type_name | string.replace_first "?" "" true)~}}
+                request.{{param.name}} = new {{param.full_type_name | string.replace_first '?' ''}}({{param.name | string.downcase}}.Id)
+                { 
+                    Attributes = {{param.name | string.downcase}}.Attributes
+                };
+                {{~else~}}
+                request.{{param.name}} = {{param.name | string.downcase}};
+                {{~end~}}
             }
             {{~else~}}
-            request.{{param.name}} = context.InputParameters.TryGetValue("{{param.name}}", out {{plugintype.is_nullable_enabled ? param.full_type_name : param.full_type_name | string.replace_first "?" "" true}} {{param.name | string.downcase}}) ? {{param.name | string.downcase}} : default;
+            request.{{param.name}} = context.InputParameters.TryGetValue("{{param.name}}", out {{plugintype.is_nullable_enabled ? param.full_type_name : param.full_type_name | string.replace_first '?' '' true}} {{param.name | string.downcase}}) ? {{param.name | string.downcase}} : default;
             {{~end~}}
             {{~end~}}
             return request;
@@ -117,6 +152,34 @@ namespace {{ first_plugin_type?.namespace ?? config.default_namespace }}
             if (response.{{param.name}} is {{param.full_type_name}} {{param.name | string.downcase}}Value) context.OutputParameters["{{param.name}}"] = {{converter}};
             {{~when 'StringArray'~}}
             if (response.{{param.name}} is {{param.type_name | string.replace_first "?" "" true}} {{param.name | string.downcase}}Value) context.OutputParameters["{{param.name}}"] = {{param.name | string.downcase}}Value;
+            {{~when 'EntityCollection'~}}
+            {{~if param.type != (param.type_name | string.replace_first '?' '' true)~}}
+            if (response.{{param.name}} is {{param.full_type_name}} {{param.name | string.downcase}}Value)
+            {
+                context.OutputParameters["{{param.name}}"] =
+                    new EntityCollection({{param.name | string.downcase}}Value.Select(e => e.ToEntity<Entity>()).ToList());
+            }
+            {{~else~}}
+            if (response.{{param.name}} is EntityCollection {{param.name | string.downcase}}Value)
+            {
+                context.OutputParameters["{{param.name}}"] = {{param.name | string.downcase}}Value;
+            }
+            {{~end~}}
+            {{~when 'Entity'~}}
+            {{~if param.type != (param.type_name | string.replace_first '?' '' true)~}}
+            if (response.{{param.name}} is {{param.full_type_name}} {{param.name | string.downcase}}Value)
+            {
+                context.OutputParameters["{{param.name}}"] = new Entity({{param.name | string.downcase}}Value.LogicalName, {{param.name | string.downcase}}Value.Id)
+                {
+                    Attributes = {{param.name | string.downcase}}Value.Attributes
+                };
+            }
+            {{~else~}}
+            if (response.{{param.name}} is Entity {{param.name | string.downcase}}Value)
+            {
+                context.OutputParameters["{{param.name}}"] = {{param.name | string.downcase}}Value;
+            }
+            {{~end~}}
             {{~else~}}
             if (response.{{param.name}} is {{param.type_name | string.replace_first "?" "" true}} {{param.name | string.downcase}}Value) context.OutputParameters["{{param.name}}"] = {{param.name | string.downcase}}Value;
             {{~end~}}
