@@ -35,7 +35,7 @@ internal class CSharpXrmMetaParser(
         ["Entity"] = WebApi.Types.CustomApiFieldType.Entity,
         ["EntityCollection"] = WebApi.Types.CustomApiFieldType.EntityCollection,
         ["EntityReference"] = WebApi.Types.CustomApiFieldType.EntityReference,
-        ["float"] = WebApi.Types.CustomApiFieldType.Float,
+        ["double"] = WebApi.Types.CustomApiFieldType.Float,
         ["int"] = WebApi.Types.CustomApiFieldType.Integer, 
         ["Money"] = WebApi.Types.CustomApiFieldType.Money,
         ["OptionSetValue"] = WebApi.Types.CustomApiFieldType.Picklist,
@@ -210,10 +210,14 @@ internal class CSharpXrmMetaParser(
                                 UniqueName = innerProperty.Name,
                                 DisplayName = innerProperty.Name,
                                 Type = CustomApiFieldTypeMapping.TryGetValue(innerProperty.Type.ToDisplayString(SymbolDisplayFormat.CSharpShortErrorMessageFormat).TrimEnd('?'), out var fieldType)
-                                    ? fieldType 
-                                    : innerProperty.Type.TypeKind == TypeKind.Enum 
-                                        ? WebApi.Types.CustomApiFieldType.Picklist 
-                                        : WebApi.Types.CustomApiFieldType.String,
+                                    ? fieldType
+                                    : innerProperty.Type.TypeKind == TypeKind.Enum
+                                        ? WebApi.Types.CustomApiFieldType.Picklist
+                                        : innerProperty.Type.IsEnumerableOfXrmEntityLike(compilation, out var elementType)
+                                            ? WebApi.Types.CustomApiFieldType.EntityCollection
+                                            : innerProperty.Type.IsXrmEntityLike(compilation)
+                                                ? WebApi.Types.CustomApiFieldType.Entity
+                                                : WebApi.Types.CustomApiFieldType.String,
                                 TypeName = innerProperty.Type.ToDisplayString(SymbolDisplayFormat.MinimallyQualifiedFormat),
                                 FullTypeName = innerProperty.Type.ToDisplayString(SymbolDisplayFormat.CSharpErrorMessageFormat),
                                 IsOptional = innerProperty.Type.NullableAnnotation == NullableAnnotation.Annotated
@@ -267,11 +271,15 @@ internal class CSharpXrmMetaParser(
                                 Name = innerProperty.Name,
                                 UniqueName = innerProperty.Name,
                                 DisplayName = innerProperty.Name,
-                                Type = CustomApiFieldTypeMapping.TryGetValue(innerProperty.Type.ToDisplayString(SymbolDisplayFormat.CSharpShortErrorMessageFormat), out var fieldType)
+                                Type = CustomApiFieldTypeMapping.TryGetValue(innerProperty.Type.ToDisplayString(SymbolDisplayFormat.CSharpShortErrorMessageFormat).TrimEnd('?'), out var fieldType)
                                     ? fieldType 
                                     : innerProperty.Type.TypeKind == TypeKind.Enum 
-                                        ? WebApi.Types.CustomApiFieldType.Picklist 
-                                        : WebApi.Types.CustomApiFieldType.String,
+                                        ? WebApi.Types.CustomApiFieldType.Picklist
+                                        : innerProperty.Type.IsEnumerableOfXrmEntityLike(compilation, out var elementType)
+                                            ? WebApi.Types.CustomApiFieldType.EntityCollection
+                                            : innerProperty.Type.IsXrmEntityLike(compilation)
+                                                ? WebApi.Types.CustomApiFieldType.Entity
+                                                : WebApi.Types.CustomApiFieldType.String,
                                 TypeName = innerProperty.Type.ToDisplayString(SymbolDisplayFormat.MinimallyQualifiedFormat),
                                 FullTypeName = innerProperty.Type.ToDisplayString(SymbolDisplayFormat.CSharpErrorMessageFormat),
                             };
