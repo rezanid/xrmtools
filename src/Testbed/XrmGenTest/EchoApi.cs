@@ -1,6 +1,7 @@
 ﻿#nullable enable
 using Microsoft.Xrm.Sdk;
 using System;
+using System.Collections.Generic;
 using XrmTools.Meta.Attributes;
 
 namespace XrmGenTest;
@@ -23,7 +24,9 @@ public partial class EchoApi : IPlugin
             DateTimeParameter = request.DateTimeParameter,
             DecimalParameter = request.DecimalParameter,
             EntityParameter = request.EntityParameter,
+            CustomEntityParameter = request.CustomEntityParameter,
             EntityCollectionParameter = request.EntityCollectionParameter,
+            CustomEntitiesParameter = request.CustomEntitiesParameter,
             EntityReferenceParameter = request.EntityReferenceParameter,
             FloatParameter = request.FloatParameter,
             IntegerParameter = request.IntegerParameter,
@@ -44,7 +47,9 @@ public partial class EchoApi : IPlugin
         public DateTime DateTimeParameter { get; set; }
         public decimal DecimalParameter { get; set; }
         public Entity EntityParameter { get; set; }
+        public CustomEntity CustomEntityParameter { get; set; }
         public EntityCollection? EntityCollectionParameter { get; set; }
+        public IEnumerable<CustomEntity> CustomEntitiesParameter { get; set; }
         public EntityReference EntityReferenceParameter { get; set; }
         public float FloatParameter { get; set; }
         public int IntegerParameter { get; set; }
@@ -64,7 +69,9 @@ public partial class EchoApi : IPlugin
         public required DateTime DateTimeParameter { get; set; }
         public required decimal DecimalParameter { get; set; }
         public required Entity EntityParameter { get; set; }
+        public required CustomEntity CustomEntityParameter { get; set; }
         public required EntityCollection EntityCollectionParameter { get; set; }
+        public required IEnumerable<CustomEntity> CustomEntitiesParameter { get; set; }
         public required EntityReference EntityReferenceParameter { get; set; }
         public required float FloatParameter { get; set; }
         public required int IntegerParameter { get; set; }
@@ -74,6 +81,17 @@ public partial class EchoApi : IPlugin
         public required string StringParameter { get; set; }
         public required string[] StringArrayParameter { get; set; }
         public required Guid GuidParameter { get; set; }
+    }
+}
+
+public class CustomEntity : Entity
+{
+    public CustomEntity() : base("custom_entity") { }
+    public CustomEntity(Guid id) : base("custom_entity", id) { }
+    public string CustomField
+    {
+        get => GetAttributeValue<string>("custom_field");
+        set => SetAttributeValue("custom_field", value);
     }
 }
 

@@ -11,7 +11,7 @@ public EntityReference {{prop_name}}
 	{{~if !force_readonly && (attribute.is_valid_for_create || attribute.is_valid_for_update)~}}
 	set
 	{
-		if (!{{base_class_name + '.Meta.Fields.' + prop_name}}Targets.Contains(value.LogicalName))
+		if (!{{(base_class_name ?? target_type_name) + '.Meta.Fields.' + prop_name}}Targets.Contains(value.LogicalName))
 		{
 			throw new InvalidPluginExecutionException($"{value.LogicalName}:{value.Id} is not a valid {{prop_name}}. The only valid references are {{attribute.targets | array.join ', '}}");			
 		}

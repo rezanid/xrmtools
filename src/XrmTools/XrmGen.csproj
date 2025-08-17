@@ -105,6 +105,8 @@
     <Compile Include="Commands\SetPluginGeneratorTemplateInProjectCommand.cs" />
     <Compile Include="Commands\SetEntityGeneratorTemplateInSolutionCommand.cs" />
     <Compile Include="Commands\SetPluginGeneratorTemplateInSolutionCommand.cs" />
+    <Compile Include="Helpers\RoslynHelpers.cs" />
+    <Compile Include="Helpers\RoslynXrmEntityHelpers.cs" />
     <Compile Include="Helpers\UpsertRequestBuilder.cs" />
     <Compile Include="Environments\DataverseEnvironmentProvider.cs" />
     <Compile Include="Helpers\AttributeDataHelper.cs" />

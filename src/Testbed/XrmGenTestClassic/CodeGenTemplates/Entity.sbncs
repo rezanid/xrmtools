@@ -64,7 +64,7 @@ namespace {{ first_plugin_type?.namespace ?? config.default_namespace }}
 			{
 			{{~for attribute_meta in entity_definition.attributes | filter_enum_attributes~}}
 			{{~if attribute_meta.option_set != null~}}
-			{{~if (attribute_meta.option_set.description | get_label 1033)~}}
+			{{~if (attribute_meta.option_set.description.localized_labels | get_label 1033)~}}
 				/// <summary>
 				/// {{attribute_meta.option_set.description | get_label 1033}}
 				/// </summary>
@@ -84,7 +84,7 @@ namespace {{ first_plugin_type?.namespace ?? config.default_namespace }}
 		}
 
 		{{~for attribute in entity_definition.attributes | array.filter @supported_attribute~}}
-		{{~description = attribute.description | get_label 1033~}}
+		{{~description = attribute.description?.localized_labels[0]?.label~}}
 		/// <summary>
 		{{~if description != null && description.length > 0~}}
 		/// {{description}}<br/>
@@ -111,7 +111,6 @@ namespace {{ first_plugin_type?.namespace ?? config.default_namespace }}
 		{{include attribute.attribute_type + '.sbncs' attributes:entity_definition.attributes}}
 		{{~end~}}
 		public {{base_class_name}}() : base(Meta.EntityLogicalName) { }
-		public {{base_class_name}}(Guid id) : base(Meta.EntityLogicalName, id) { }
 		public {{base_class_name}}(string keyName, object keyValue) : base(Meta.EntityLogicalName, keyName, keyValue) { }
 		public {{base_class_name}}(KeyAttributeCollection keyAttributes) : base(Meta.EntityLogicalName, keyAttributes) { }
 	}

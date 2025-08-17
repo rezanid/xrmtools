@@ -96,6 +96,9 @@ namespace {{ first_plugin_type?.namespace ?? config.default_namespace }}
             {{~for param in plugintype.custom_api.request_parameters~}}
             {{~case param.type~}}
             {{~when 'Boolean', 'DateTime', 'Decimal', 'Float', 'Integer'~}}
+            // type: {{param.type}}
+            // type_name: {{param.type_name}}
+            // full_type_name: {{param.full_type_name}}
             request.{{param.name}} = context.InputParameters.TryGetValue("{{param.name}}", out {{param.full_type_name}} {{param.name | string.downcase}}) ? {{param.name | string.downcase}} : default;
             {{~when 'String'~}}
             request.{{param.name}} = context.InputParameters.TryGetValue("{{param.name}}", out {{plugintype.is_nullable_enabled ? param.full_type_name : param.full_type_name | string.replace_first '?' '' true}} {{param.name | string.downcase}}) ? {{param.name | string.downcase}} : string.Empty;
@@ -156,21 +159,23 @@ namespace {{ first_plugin_type?.namespace ?? config.default_namespace }}
                 context.OutputParameters["{{param.name}}"] =
                     new EntityCollection({{param.name | string.downcase}}Value.Select(e => e.ToEntity<Entity>()).ToList());
             }
-            {{~when 'Entity'~}}
-            if (context.InputParameters.TryGetValue("{{param.name}}", out Entity {{param.name | string.downcase}})
-                && {{param.name | string.downcase}} != null)
-            {
-                {{~if param.type != (param.type_name | string.replace_first "?" "" true)~}}
-                request.{{param.name}} = new {{param.full_type_name | string.replace_first '?' ''}}({{param.name | string.downcase}}.Id)
-                { 
-                    Attributes = {{param.name | string.downcase}}.Attributes
-                };
-                {{~else~}}
-                request.{{param.name}} = {{param.name | string.downcase}};
-                {{~end~}}
-            }
             {{~else~}}
             if (response.{{param.name}} is EntityCollection {{param.name | string.downcase}}Value)
+            {
+                context.OutputParameters["{{param.name}}"] = {{param.name | string.downcase}}Value;
+            }
+            {{~end~}}
+            {{~when 'Entity'~}}
+            {{~if param.type != (param.type_name | string.replace_first '?' '' true)~}}
+            if (response.{{param.name}} is {{param.full_type_name}} {{param.name | string.downcase}}Value)
+            {
+                context.OutputParameters["{{param.name}}"] = new Entity({{param.name | string.downcase}}Value.LogicalName, {{param.name | string.downcase}}Value.Id)
+                {
+                    Attributes = {{param.name | string.downcase}}Value.Attributes
+                };
+            }
+            {{~else~}}
+            if (response.{{param.name}} is Entity {{param.name | string.downcase}}Value)
             {
                 context.OutputParameters["{{param.name}}"] = {{param.name | string.downcase}}Value;
             }

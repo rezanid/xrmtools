@@ -14,8 +14,8 @@
     <Deterministic>true</Deterministic>
     <LangVersion>13</LangVersion>
     <TargetFrameworkProfile />
-    <DataverseEntityTemplateFilePath>C:\Users\reza\source\repos\rezanid\xrmtools\src\Testbed\XrmGenTest\CodeGenTemplates\Entity.sbncs</DataverseEntityTemplateFilePath>
-    <DataversePluginTemplateFilePath>C:\Users\reza\source\repos\rezanid\xrmtools\src\Testbed\XrmGenTest\CodeGenTemplates\Plugin.sbncs</DataversePluginTemplateFilePath>
+    <DataverseEntityTemplateFilePath>\CodeGenTemplates\Entity.sbncs</DataverseEntityTemplateFilePath>
+    <DataversePluginTemplateFilePath>\CodeGenTemplates\Plugin.sbncs</DataversePluginTemplateFilePath>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
     <PlatformTarget>AnyCPU</PlatformTarget>
@@ -48,7 +48,7 @@
     <SignAssembly>true</SignAssembly>
   </PropertyGroup>
   <PropertyGroup>
-    <AssemblyOriginatorKeyFile>key.snk</AssemblyOriginatorKeyFile>
+    <AssemblyOriginatorKeyFile>../../key.snk</AssemblyOriginatorKeyFile>
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="System" />
@@ -114,31 +114,11 @@
     <None Include="CodeGenTemplates\Customer.sbncs" />
     <None Include="CodeGenTemplates\DateTime.sbncs" />
     <None Include="CodeGenTemplates\Decimal.sbncs" />
-    <None Include="CodeGenTemplates\DisplayNameBased\Boolean.sbn" />
-    <None Include="CodeGenTemplates\DisplayNameBased\Customer.sbn" />
-    <None Include="CodeGenTemplates\DisplayNameBased\DateTime.sbn" />
-    <None Include="CodeGenTemplates\DisplayNameBased\Decimal.sbn" />
-    <None Include="CodeGenTemplates\DisplayNameBased\Double.sbn" />
-    <None Include="CodeGenTemplates\DisplayNameBased\EntityName.sbn" />
-    <None Include="CodeGenTemplates\DisplayNameBased\Images.sbn" />
-    <None Include="CodeGenTemplates\DisplayNameBased\Integer.sbn" />
-    <None Include="CodeGenTemplates\DisplayNameBased\Lookup.sbn" />
-    <None Include="CodeGenTemplates\DisplayNameBased\Memo.sbn" />
-    <None Include="CodeGenTemplates\DisplayNameBased\Money.sbn" />
-    <None Include="CodeGenTemplates\DisplayNameBased\Owner.sbn" />
-    <None Include="CodeGenTemplates\DisplayNameBased\Picklist.sbn" />
-    <None Include="CodeGenTemplates\DisplayNameBased\Readme.md" />
-    <None Include="CodeGenTemplates\DisplayNameBased\State.sbn" />
-    <None Include="CodeGenTemplates\DisplayNameBased\Status.sbn" />
-    <None Include="CodeGenTemplates\DisplayNameBased\String.sbn" />
-    <None Include="CodeGenTemplates\DisplayNameBased\Target.sbn" />
-    <None Include="CodeGenTemplates\DisplayNameBased\UniqueIdentifier.sbn" />
-    <None Include="CodeGenTemplates\DisplayNameBased\Virtual.sbn" />
     <None Include="CodeGenTemplates\Double.sbncs" />
     <None Include="CodeGenTemplates\Entity.sbncs" />
     <None Include="CodeGenTemplates\EntityName.sbncs" />
     <None Include="CodeGenTemplates\Images.sbncs" />
-    <None Include="CodeGenTemplates\InjectDepdendencies.sbncs" />
+    <None Include="CodeGenTemplates\InjectDependencies.sbncs" />
     <None Include="CodeGenTemplates\Integer.sbncs" />
     <None Include="CodeGenTemplates\Lookup.sbncs" />
     <None Include="CodeGenTemplates\Memo.sbncs" />
@@ -146,7 +126,6 @@
     <None Include="CodeGenTemplates\Owner.sbncs" />
     <None Include="CodeGenTemplates\Picklist.sbncs" />
     <None Include="CodeGenTemplates\Plugin.sbncs" />
-    <None Include="CodeGenTemplates\Readme.md" />
     <None Include="CodeGenTemplates\State.sbncs" />
     <None Include="CodeGenTemplates\Status.sbncs" />
     <None Include="CodeGenTemplates\String.sbncs" />
@@ -157,7 +136,6 @@
       <Generator>XrmTools Entity Generator</Generator>
       <LastGenOutput>Entities.cs</LastGenOutput>
     </None>
-    <None Include="key.snk" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="Microsoft.CrmSdk.CoreAssemblies">
@@ -169,7 +147,7 @@
       <PrivateAssets>all</PrivateAssets>
     </PackageReference>
     <PackageReference Include="XrmTools.Meta.Attributes">
-      <Version>1.0.42</Version>
+      <Version>1.0.52</Version>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
       <PrivateAssets>all</PrivateAssets>
     </PackageReference>

@@ -1,4 +1,3 @@
-#nullable enable
 using Microsoft.Xrm.Sdk;
 using Microsoft.Xrm.Sdk.Client;
 using Microsoft.Xrm.Sdk.Extensions;
@@ -29,13 +28,13 @@ namespace XrmGenTest
             var executionContext = serviceProvider.Get<IPluginExecutionContext7>();
         }
 
-	    protected static T? EntityOrDefault<T>(DataCollection<string, object> keyValues, string key) where T : Entity
+	    protected static T EntityOrDefault<T>(DataCollection<string, object> keyValues, string key) where T : Entity
         {
             if (keyValues is null) return default;
             return keyValues.TryGetValue(key, out var obj) ? obj is Entity entity ? entity.ToEntity<T>() : default : default;
         }
 
-        protected static T? EntityOrDefault<T>(DataCollection<string, Entity> keyValues, string key) where T : Entity
+        protected static T EntityOrDefault<T>(DataCollection<string, Entity> keyValues, string key) where T : Entity
         {
             if (keyValues is null) return default;
             return keyValues.TryGetValue(key, out var entity) ? entity?.ToEntity<T>() : default;
@@ -44,20 +43,37 @@ namespace XrmGenTest
         protected static EchoApi.Request GetRequest(IExecutionContext context)
         {
             var request = new EchoApi.Request();
+            // type: Boolean
+            // type_name: bool?
+            // full_type_name: bool?
             request.BooleanParameter = context.InputParameters.TryGetValue("BooleanParameter", out bool? booleanparameter) ? booleanparameter : default;
+            // type: DateTime
+            // type_name: DateTime
+            // full_type_name: System.DateTime
             request.DateTimeParameter = context.InputParameters.TryGetValue("DateTimeParameter", out System.DateTime datetimeparameter) ? datetimeparameter : default;
+            // type: Decimal
+            // type_name: decimal
+            // full_type_name: decimal
             request.DecimalParameter = context.InputParameters.TryGetValue("DecimalParameter", out decimal decimalparameter) ? decimalparameter : default;
             if (context.InputParameters.TryGetValue("EntityParameter", out Entity entityparameter)
                 && entityparameter != null)
             {
                 request.EntityParameter = entityparameter;
             }
-            if (context.InputParameters.TryGetValue("CustomEntityParameter", out Entity customentityparameter)
-                && customentityparameter != null)
+            if (context.InputParameters.TryGetValue("ContactParameter", out Entity contactparameter)
+                && contactparameter != null)
             {
-                request.CustomEntityParameter = new XrmGenTest.CustomEntity(customentityparameter.Id)
+                request.ContactParameter = new XrmGenTest.Contact(contactparameter.Id)
                 { 
-                    Attributes = customentityparameter.Attributes
+                    Attributes = contactparameter.Attributes
+                };
+            }
+            if (context.InputParameters.TryGetValue("TypedExpandoParameter", out Entity typedexpandoparameter)
+                && typedexpandoparameter != null)
+            {
+                request.TypedExpandoParameter = new XrmGenTest.TypedExpando(typedexpandoparameter.Id)
+                { 
+                    Attributes = typedexpandoparameter.Attributes
                 };
             }
             if (context.InputParameters.TryGetValue("EntityCollectionParameter", out EntityCollection entitycollectionparameter)
@@ -68,13 +84,20 @@ namespace XrmGenTest
             if (context.InputParameters.TryGetValue("CustomEntitiesParameter", out EntityCollection customentitiesparameter)
                 && customentitiesparameter != null)
             {
-                request.CustomEntitiesParameter = customentitiesparameter.Entities.Select(e => new XrmGenTest.CustomEntity(e.Id)
-                {
-                    Attributes = e.Attributes
-                });
+                request.CustomEntitiesParameter = customentitiesparameter.Entities
+                    .Select(e => new XrmGenTest.Contact(e.Id)
+                    {
+                        Attributes = e.Attributes
+                    }).ToList();
             }
             request.EntityReferenceParameter = context.InputParameters.TryGetValue("EntityReferenceParameter", out Microsoft.Xrm.Sdk.EntityReference entityreferenceparameter) ? entityreferenceparameter : default;
-            request.FloatParameter = context.InputParameters.TryGetValue("FloatParameter", out float floatparameter) ? floatparameter : default;
+            // type: Float
+            // type_name: double
+            // full_type_name: double
+            request.FloatParameter = context.InputParameters.TryGetValue("FloatParameter", out double floatparameter) ? floatparameter : default;
+            // type: Integer
+            // type_name: int
+            // full_type_name: int
             request.IntegerParameter = context.InputParameters.TryGetValue("IntegerParameter", out int integerparameter) ? integerparameter : default;
             request.MoneyParameter = context.InputParameters.TryGetValue("MoneyParameter", out Microsoft.Xrm.Sdk.Money moneyparameter) ? moneyparameter : default;
             request.PicklistParameter = context.InputParameters.TryGetValue("PicklistParameter", out OptionSetValue picklistparameter) ? picklistparameter : default;
@@ -90,19 +113,35 @@ namespace XrmGenTest
             if (response.BooleanParameter is bool booleanparameterValue) context.OutputParameters["BooleanParameter"] = booleanparameterValue;
             if (response.DateTimeParameter is DateTime datetimeparameterValue) context.OutputParameters["DateTimeParameter"] = datetimeparameterValue;
             if (response.DecimalParameter is decimal decimalparameterValue) context.OutputParameters["DecimalParameter"] = decimalparameterValue;
-            if (response.EntityParameter is Entity entityparameterValue) context.OutputParameters["EntityParameter"] = entityparameterValue;
-            if (response.CustomEntityParameter is CustomEntity customentityparameterValue) context.OutputParameters["CustomEntityParameter"] = customentityparameterValue;
+            if (response.EntityParameter is Entity entityparameterValue)
+            {
+                context.OutputParameters["EntityParameter"] = entityparameterValue;
+            }
+            if (response.ContactParameter is XrmGenTest.Contact contactparameterValue)
+            {
+                context.OutputParameters["ContactParameter"] = new Entity(contactparameterValue.LogicalName, contactparameterValue.Id)
+                {
+                    Attributes = contactparameterValue.Attributes
+                };
+            }
+            if (response.TypedExpandoParameter is XrmGenTest.TypedExpando typedexpandoparameterValue)
+            {
+                context.OutputParameters["TypedExpandoParameter"] = new Entity(typedexpandoparameterValue.LogicalName, typedexpandoparameterValue.Id)
+                {
+                    Attributes = typedexpandoparameterValue.Attributes
+                };
+            }
             if (response.EntityCollectionParameter is EntityCollection entitycollectionparameterValue)
             {
                 context.OutputParameters["EntityCollectionParameter"] = entitycollectionparameterValue;
             }
-            if (response.CustomEntitiesParameter is System.Collections.Generic.IEnumerable<XrmGenTest.CustomEntity> customentitiesparameterValue)
+            if (response.CustomEntitiesParameter is System.Collections.Generic.IEnumerable<XrmGenTest.Contact> customentitiesparameterValue)
             {
                 context.OutputParameters["CustomEntitiesParameter"] =
                     new EntityCollection(customentitiesparameterValue.Select(e => e.ToEntity<Entity>()).ToList());
             }
             if (response.EntityReferenceParameter is EntityReference entityreferenceparameterValue) context.OutputParameters["EntityReferenceParameter"] = entityreferenceparameterValue;
-            if (response.FloatParameter is float floatparameterValue) context.OutputParameters["FloatParameter"] = floatparameterValue;
+            if (response.FloatParameter is double floatparameterValue) context.OutputParameters["FloatParameter"] = floatparameterValue;
             if (response.IntegerParameter is int integerparameterValue) context.OutputParameters["IntegerParameter"] = integerparameterValue;
             if (response.MoneyParameter is Money moneyparameterValue) context.OutputParameters["MoneyParameter"] = moneyparameterValue;
             if (response.PicklistParameter is Microsoft.Xrm.Sdk.OptionSetValue picklistparameterValue) context.OutputParameters["PicklistParameter"] = picklistparameterValue;
@@ -110,7 +149,7 @@ namespace XrmGenTest
             if (response.StringParameter is string stringparameterValue) context.OutputParameters["StringParameter"] = stringparameterValue;
             if (response.StringArrayParameter is string[] stringarrayparameterValue) context.OutputParameters["StringArrayParameter"] = stringarrayparameterValue;
             if (response.GuidParameter is Guid guidparameterValue) context.OutputParameters["GuidParameter"] = guidparameterValue;
+            if (response.Logs is string[] logsValue) context.OutputParameters["Logs"] = logsValue;
         }
     }
 }
-#nullable restore

@@ -5,7 +5,6 @@ using System.Threading.Tasks;
 using XrmTools.Options;
 using System.ComponentModel.Composition;
 using XrmTools.Settings;
-using Microsoft.VisualStudio.Shell;
 using XrmTools.Environments;
 using System;
 using System.Collections.Generic;
@@ -52,6 +51,8 @@ internal class DataverseEnvironmentProvider : IEnvironmentProvider
         switch (options.CurrentEnvironmentStorage)
         {
             case SettingsStorageTypes.Options:
+                options.CurrentEnvironment = environment;
+                await options.SaveAsync();
                 SetEnvironmentInSolution(null);
                 SetEnvironmentInSolutionUserFile(null);
                 await SetEnvironmentInProjectAsync(null);

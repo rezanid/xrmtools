@@ -3,102 +3,138 @@ using Microsoft.Xrm.Sdk.Client;
 using Microsoft.Xrm.Sdk.Extensions;
 using System;
 using System.CodeDom.Compiler;
+using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Globalization;
+using System.Linq;
 using System.Runtime.Serialization;
-namespace XrmGenTest;
 
-[GeneratedCode("TemplatedCodeGenerator", "1.0.4.0")]
-public partial class ContactCreatePlugin
+namespace XrmGenTest
 {
-    protected void InjectDependencies(IServiceProvider serviceProvider)
+    [GeneratedCode("TemplatedCodeGenerator", "1.3.3.0")]
+    public partial class ContactCreatePlugin
     {
-    }
-	[GeneratedCode("TemplatedCodeGenerator", "1.0.4.0")]
-	[EntityLogicalName("contact")]
-	public class TargetContact : Entity
-	{
-		public static class Meta
-		{
-			public const string EntityLogicalName = "contact";
-			public const string EntityLogicalCollectionName = "contacts";
-			public const string EntitySetName = "contacts";
-			public const string PrimaryNameAttribute = "";
-			public const string PrimaryIdAttribute = "contactid";
-	
-			public partial class Fields
-			{
-				public const string Description = "description";
-				public const string FirstName = "firstname";
-				public const string LastName = "lastname";
-			}
-	
-			public partial class Choices
-			{
-			}
-		}
-	
-		/// <summary>
-		/// Max Length: 2000</br>
-		/// Required Level: None</br>
-		/// Valid for: Create Update Read</br>
-		/// </summary>
-		[AttributeLogicalName("description")]
-		public string Description
-		{
-			get => TryGetAttributeValue("description", out string value) ? value : null;
-			set => this["description"] = value;
-		}
-		/// <summary>
-		/// Max Length: 50</br>
-		/// Required Level: Recommended</br>
-		/// Valid for: Create Update Read</br>
-		/// </summary>
-		[AttributeLogicalName("firstname")]
-		public string FirstName
-		{
-			get => TryGetAttributeValue("firstname", out string value) ? value : null;
-			set => this["firstname"] = value;
-		}
-		/// <summary>
-		/// Max Length: 50</br>
-		/// Required Level: ApplicationRequired</br>
-		/// Valid for: Create Update Read</br>
-		/// </summary>
-		[AttributeLogicalName("lastname")]
-		public string LastName
-		{
-			get => TryGetAttributeValue("lastname", out string value) ? value : null;
-			set => this["lastname"] = value;
-		}
-	}
-	
-	public TargetContact Target { get; set; }
 
-	/// <summary>
-	/// This method should be called on every <see cref="XrmGenTest.ContactCreatePlugin.Execute(IServiceProvider)"/> execution.
-	/// </summary>
-	/// <param name="serviceProvider"></param>
-	/// <exception cref="InvalidPluginExecutionException"></exception>
-	internal void Initialize(IServiceProvider serviceProvider)
-    {
-        if (serviceProvider == null)
+	    [GeneratedCode("TemplatedCodeGenerator", "1.3.3.0")]
+	    [EntityLogicalName("contact")]
+	    public class TargetContact : Entity
+	    {
+	    	public static class Meta
+	    	{
+	    		public const string EntityLogicalName = "contact";
+	    		public const string EntityLogicalCollectionName = "contacts";
+	    		public const string EntitySetName = "contacts";
+	    		public const string PrimaryNameAttribute = "";
+	    		public const string PrimaryIdAttribute = "contactid";
+	    
+	    		public partial class Fields
+	    		{
+	    			public const string AccountRoleCode = "accountrolecode";
+	    			public const string Description = "description";
+	    			public const string FirstName = "firstname";
+	    			public const string LastName = "lastname";
+	    		}
+	    
+	    		public partial class Choices
+	    		{
+	    			/// <summary>
+	    			/// Account role of the contact.
+	    			/// </summary>
+	    			[DataContract]
+	    			public enum Role
+	    			{
+	    				[EnumMember]
+	    				Owner = 1,
+	    				[EnumMember]
+	    				CeoPresident = 2,
+	    				[EnumMember]
+	    				ManagementExecutive = 3,
+	    				[EnumMember]
+	    				TeamManager = 426810001,
+	    				[EnumMember]
+	    				CoordinatorSpecialist = 426810002,
+	    				[EnumMember]
+	    				Operations = 426810003,
+	    				[EnumMember]
+	    				Other = 426810004,
+	    			}
+	    		}
+	    	}
+	    
+	    	/// <summary>
+	    	/// Required Level: None</br>
+	    	/// Valid for: Create Update Read</br>
+	    	/// </summary>
+	    	[AttributeLogicalName("accountrolecode")]
+	    	public TargetContact.Meta.Choices.Role? AccountRoleCode
+	    	{
+	    		get => TryGetAttributeValue("accountrolecode", out OptionSetValue opt) && opt != null ? (TargetContact.Meta.Choices.Role?)opt.Value : null;
+	    		set => this["accountrolecode"] = value == null ? null : new OptionSetValue((int)value);
+	    	}
+	    	/// <summary>
+	    	/// Max Length: 2000</br>
+	    	/// Required Level: None</br>
+	    	/// Valid for: Create Update Read</br>
+	    	/// </summary>
+	    	[AttributeLogicalName("description")]
+	    	public string Description
+	    	{
+	    		get => TryGetAttributeValue("description", out string value) ? value : null;
+	    		set => this["description"] = value;
+	    	}
+	    	/// <summary>
+	    	/// Max Length: 50</br>
+	    	/// Required Level: Recommended</br>
+	    	/// Valid for: Create Update Read</br>
+	    	/// </summary>
+	    	[AttributeLogicalName("firstname")]
+	    	public string FirstName
+	    	{
+	    		get => TryGetAttributeValue("firstname", out string value) ? value : null;
+	    		set => this["firstname"] = value;
+	    	}
+	    	/// <summary>
+	    	/// Max Length: 50</br>
+	    	/// Required Level: ApplicationRequired</br>
+	    	/// Valid for: Create Update Read</br>
+	    	/// </summary>
+	    	[AttributeLogicalName("lastname")]
+	    	public string LastName
+	    	{
+	    		get => TryGetAttributeValue("lastname", out string value) ? value : null;
+	    		set => this["lastname"] = value;
+	    	}
+	    }
+	    
+	    public TargetContact Target { get; set; }
+
+
+	    /// <summary>
+	    /// This method should be called on every <see cref="XrmGenTest.ContactCreatePlugin.Execute(IServiceProvider)"/> execution.
+	    /// </summary>
+	    /// <param name="serviceProvider"></param>
+	    /// <exception cref="InvalidPluginExecutionException"></exception>
+        internal void Initialize(IServiceProvider serviceProvider)
         {
-            throw new InvalidPluginExecutionException(nameof(serviceProvider) + " argument is null.");
+            if (serviceProvider == null)
+            {
+                throw new InvalidPluginExecutionException(nameof(serviceProvider) + " argument is null.");
+            }
+            var executionContext = serviceProvider.Get<IPluginExecutionContext7>();
+            Target = EntityOrDefault<TargetContact>(executionContext.InputParameters, "Target");
         }
-        var executionContext = serviceProvider.Get<IPluginExecutionContext7>();
-        Target = EntityOrDefault<TargetContact>(executionContext.InputParameters, "Target");
-    }
 
-	protected static T EntityOrDefault<T>(DataCollection<string, object> keyValues, string key) where T : Entity
-    {
-        if (keyValues is null) return default;
-        return keyValues.TryGetValue(key, out var obj) ? obj is Entity entity ? entity.ToEntity<T>() : default : default;
-    }
+	    protected static T EntityOrDefault<T>(DataCollection<string, object> keyValues, string key) where T : Entity
+        {
+            if (keyValues is null) return default;
+            return keyValues.TryGetValue(key, out var obj) ? obj is Entity entity ? entity.ToEntity<T>() : default : default;
+        }
 
-    protected static T EntityOrDefault<T>(DataCollection<string, Entity> keyValues, string key) where T : Entity
-    {
-        if (keyValues is null) return default;
-        return keyValues.TryGetValue(key, out var entity) ? entity?.ToEntity<T>() : default;
-    }
+        protected static T EntityOrDefault<T>(DataCollection<string, Entity> keyValues, string key) where T : Entity
+        {
+            if (keyValues is null) return default;
+            return keyValues.TryGetValue(key, out var entity) ? entity?.ToEntity<T>() : default;
+        }
 
+    }
 }
