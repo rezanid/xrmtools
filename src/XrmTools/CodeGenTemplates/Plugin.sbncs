@@ -151,10 +151,10 @@ namespace {{ first_plugin_type?.namespace ?? config.default_namespace }}
             {{~converter = param.type_name == 'OptionSetValue' ? (param.name | string.downcase) + 'Value' : 'new OptionSetValue((int)' + (param.name | string.downcase) + 'Value)' ~}}
             if (response.{{param.name}} is {{param.full_type_name}} {{param.name | string.downcase}}Value) context.OutputParameters["{{param.name}}"] = {{converter}};
             {{~when 'StringArray'~}}
-            if (response.{{param.name}} is {{param.type_name | string.replace_first "?" "" true}} {{param.name | string.downcase}}Value) context.OutputParameters["{{param.name}}"] = {{param.name | string.downcase}}Value;
+            if (response.{{param.name}} is {{param.type_name | string.replace_first '?' '' true}} {{param.name | string.downcase}}Value) context.OutputParameters["{{param.name}}"] = {{param.name | string.downcase}}Value;
             {{~when 'EntityCollection'~}}
             {{~if param.type != (param.type_name | string.replace_first '?' '' true)~}}
-            if (response.{{param.name}} is {{param.full_type_name}} {{param.name | string.downcase}}Value)
+            if (response.{{param.name}} is {{param.full_type_name | string.replace_first '?' '' true}} {{param.name | string.downcase}}Value)
             {
                 context.OutputParameters["{{param.name}}"] =
                     new EntityCollection({{param.name | string.downcase}}Value.Select(e => e.ToEntity<Entity>()).ToList());
@@ -167,7 +167,7 @@ namespace {{ first_plugin_type?.namespace ?? config.default_namespace }}
             {{~end~}}
             {{~when 'Entity'~}}
             {{~if param.type != (param.type_name | string.replace_first '?' '' true)~}}
-            if (response.{{param.name}} is {{param.full_type_name}} {{param.name | string.downcase}}Value)
+            if (response.{{param.name}} is {{param.full_type_name | string.replace_first '?' '' true}} {{param.name | string.downcase}}Value)
             {
                 context.OutputParameters["{{param.name}}"] = new Entity({{param.name | string.downcase}}Value.LogicalName, {{param.name | string.downcase}}Value.Id)
                 {

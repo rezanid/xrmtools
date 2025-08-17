@@ -43,17 +43,8 @@ namespace XrmGenTest
         protected static EchoApi.Request GetRequest(IExecutionContext context)
         {
             var request = new EchoApi.Request();
-            // type: Boolean
-            // type_name: bool?
-            // full_type_name: bool?
             request.BooleanParameter = context.InputParameters.TryGetValue("BooleanParameter", out bool? booleanparameter) ? booleanparameter : default;
-            // type: DateTime
-            // type_name: DateTime
-            // full_type_name: System.DateTime
             request.DateTimeParameter = context.InputParameters.TryGetValue("DateTimeParameter", out System.DateTime datetimeparameter) ? datetimeparameter : default;
-            // type: Decimal
-            // type_name: decimal
-            // full_type_name: decimal
             request.DecimalParameter = context.InputParameters.TryGetValue("DecimalParameter", out decimal decimalparameter) ? decimalparameter : default;
             if (context.InputParameters.TryGetValue("EntityParameter", out Entity entityparameter)
                 && entityparameter != null)
@@ -91,13 +82,7 @@ namespace XrmGenTest
                     }).ToList();
             }
             request.EntityReferenceParameter = context.InputParameters.TryGetValue("EntityReferenceParameter", out Microsoft.Xrm.Sdk.EntityReference entityreferenceparameter) ? entityreferenceparameter : default;
-            // type: Float
-            // type_name: double
-            // full_type_name: double
             request.FloatParameter = context.InputParameters.TryGetValue("FloatParameter", out double floatparameter) ? floatparameter : default;
-            // type: Integer
-            // type_name: int
-            // full_type_name: int
             request.IntegerParameter = context.InputParameters.TryGetValue("IntegerParameter", out int integerparameter) ? integerparameter : default;
             request.MoneyParameter = context.InputParameters.TryGetValue("MoneyParameter", out Microsoft.Xrm.Sdk.Money moneyparameter) ? moneyparameter : default;
             request.PicklistParameter = context.InputParameters.TryGetValue("PicklistParameter", out OptionSetValue picklistparameter) ? picklistparameter : default;

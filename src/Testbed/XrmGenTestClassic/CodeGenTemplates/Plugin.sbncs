@@ -96,9 +96,6 @@ namespace {{ first_plugin_type?.namespace ?? config.default_namespace }}
             {{~for param in plugintype.custom_api.request_parameters~}}
             {{~case param.type~}}
             {{~when 'Boolean', 'DateTime', 'Decimal', 'Float', 'Integer'~}}
-            // type: {{param.type}}
-            // type_name: {{param.type_name}}
-            // full_type_name: {{param.full_type_name}}
             request.{{param.name}} = context.InputParameters.TryGetValue("{{param.name}}", out {{param.full_type_name}} {{param.name | string.downcase}}) ? {{param.name | string.downcase}} : default;
             {{~when 'String'~}}
             request.{{param.name}} = context.InputParameters.TryGetValue("{{param.name}}", out {{plugintype.is_nullable_enabled ? param.full_type_name : param.full_type_name | string.replace_first '?' '' true}} {{param.name | string.downcase}}) ? {{param.name | string.downcase}} : string.Empty;
