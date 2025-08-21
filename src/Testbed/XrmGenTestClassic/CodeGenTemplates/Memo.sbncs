@@ -3,10 +3,10 @@ ret
 end~}}
 {{~prop_name = attribute.schema_name ~}}
 [AttributeLogicalName("{{attribute.logical_name}}")]
-public int? {{prop_name}}
+public string {{prop_name}}
 {
 	{{~if attribute.is_valid_for_read~}}
-	get => TryGetAttributeValue("{{attribute.logical_name}}", out int? value) ? value : null;
+	get => TryGetAttributeValue("{{attribute.logical_name}}", out string value) ? value : null;
 	{{~end~}}
 	{{~if !force_readonly && (attribute.is_valid_for_create || attribute.is_valid_for_update)~}}
 	set => this["{{attribute.logical_name}}"] = value;

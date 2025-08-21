@@ -104,11 +104,17 @@ public class CustomApiRefactoringProvider : CodeRefactoringProvider
 
     private void UpdateAttribute(DocumentEditor editor, ClassDeclarationSyntax classNode, AttributeSyntax attributeNode, CustomApi customApi)
     {
+        if (string.IsNullOrWhiteSpace(customApi.UniqueName))
+        {
+            // It is impossible for a CustomApi to not have a UniqueName, but if it does, we remove the attribute.
+            editor.RemoveNode(attributeNode);
+            return;
+        }
         var updatedAttributeSyntax = SyntaxFactory.Attribute(
             SyntaxFactory.IdentifierName(nameof(CustomApiAttribute)[..^9]),
             SyntaxFactory.AttributeArgumentList(
                 SyntaxFactory.SeparatedList(
-                    new[] { SyntaxFactory.AttributeArgument(SyntaxFactory.LiteralExpression(SyntaxKind.StringLiteralExpression, SyntaxFactory.Literal(customApi.UniqueName))) }
+                    new[] { SyntaxFactory.AttributeArgument(SyntaxFactory.LiteralExpression(SyntaxKind.StringLiteralExpression, SyntaxFactory.Literal(customApi.UniqueName!))) }
                     .Concat(GetNamedArguments(customApi))
                 )
             )
@@ -225,9 +231,9 @@ public class CustomApiRefactoringProvider : CodeRefactoringProvider
             }
         }
 
-        AddArg("Name", api.Name);
-        AddArg("DisplayName", api.DisplayName);
-        AddArg("Description", api.Description);
+        if (api.Name is string name) AddArg("Name", name);
+        if (api.DisplayName is string displayName) AddArg("DisplayName", displayName);
+        if (api.Description is string description) AddArg("Description", description);
 
         if (api.StepType != CustomApi.ProcessingStepTypes.None)
         {
@@ -243,8 +249,8 @@ public class CustomApiRefactoringProvider : CodeRefactoringProvider
                 SyntaxFactory.ParseExpression($"{nameof(CustomApi.BindingTypes)}.{api.BindingType}")));
         }
 
-        AddArg("BoundEntityLogicalName", api.BoundEntityLogicalName);
-        AddArg("ExecutePrivilegeName", api.ExecutePrivilegeName);
+        if (api.BoundEntityLogicalName is string boundEntity) AddArg("BoundEntityLogicalName", boundEntity);
+        if (api.ExecutePrivilegeName is string executePrivilege) AddArg("ExecutePrivilegeName", executePrivilege);
 
         args.Add(SyntaxFactory.AttributeArgument(SyntaxFactory.NameEquals("IsFunction"), null,
             api.IsFunction ? SyntaxFactory.LiteralExpression(SyntaxKind.TrueLiteralExpression) : SyntaxFactory.LiteralExpression(SyntaxKind.FalseLiteralExpression)));
@@ -263,7 +269,7 @@ public class CustomApiRefactoringProvider : CodeRefactoringProvider
         CustomApiFieldType.Entity => isNullable ? "Entity?" : "Entity",
         CustomApiFieldType.EntityCollection => isNullable ? "EntityCollection?" : "EntityCollection",
         CustomApiFieldType.EntityReference => isNullable ? "EntityReference?" : "EntityReference",
-        CustomApiFieldType.Float => isNullable ? "float?" : "float",
+        CustomApiFieldType.Float => isNullable ? "double?" : "double",
         CustomApiFieldType.Integer => isNullable ? "int?" : "int",
         CustomApiFieldType.Money => isNullable ? "Money?" : "Money",
         CustomApiFieldType.Picklist => isNullable ? "OptionSetValue?" : "OptionSetValue",

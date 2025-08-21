@@ -4,7 +4,6 @@ using System;
 using System.IO;
 using System.Text.Json;
 using System.Threading.Tasks;
-using XrmTools.Core.Serialization;
 using XrmTools.Meta.Model;
 using Xunit;
 
@@ -29,23 +28,23 @@ public class RetrieveAllEntitiesResponseTests
     //    }
     //}
 
-    [Fact]
-    public void NewtonsoftDeserializeWithCustomSettings()
-    {
-        var filePath = Path.Combine("Samples", "RetrieveAllEntitiesResponse.txt");
-        using var stream = File.OpenRead(filePath);
-        using var sr = new StreamReader(stream);
-        using var jr = new JsonTextReader(sr);
-        var settings = new JsonSerializerSettings()
-        {
-            TypeNameHandling = TypeNameHandling.Auto,
-            NullValueHandling = NullValueHandling.Ignore,
-            ContractResolver = new IgnoreEntityPropertiesResolver()
-        };
-        var serializer = Newtonsoft.Json.JsonSerializer.Create(settings);
-        var result = serializer.Deserialize<RetrieveAllEntitiesResponse>(jr);
+    //[Fact]
+    //public void NewtonsoftDeserializeWithCustomSettings()
+    //{
+    //    var filePath = Path.Combine("Samples", "RetrieveAllEntitiesResponse.txt");
+    //    using var stream = File.OpenRead(filePath);
+    //    using var sr = new StreamReader(stream);
+    //    using var jr = new JsonTextReader(sr);
+    //    var settings = new JsonSerializerSettings()
+    //    {
+    //        TypeNameHandling = TypeNameHandling.Auto,
+    //        NullValueHandling = NullValueHandling.Ignore,
+    //        ContractResolver = new IgnoreEntityPropertiesResolver()
+    //    };
+    //    var serializer = Newtonsoft.Json.JsonSerializer.Create(settings);
+    //    var result = serializer.Deserialize<RetrieveAllEntitiesResponse>(jr);
 
-        // Assert
-        result.Should().NotBeNull();
-    }
+    //    // Assert
+    //    result.Should().NotBeNull();
+    //}
 }

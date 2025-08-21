@@ -2,12 +2,12 @@
 ret
 end~}}
 {{~prop_name = attribute.schema_name ~}}
-{{~enum_name = base_class_name + '.Meta.Choices.' + (attribute.option_set.display_name.localized_labels[0].label | tokenize)~}}
+{{~enum_name = (base_class_name ?? target_type_name) + '.Meta.Choices.' + (attribute.option_set.display_name | get_label 1033 | tokenize)~}}
 [AttributeLogicalName("{{attribute.logical_name}}")]
 public {{enum_name}}? {{prop_name}}
 {
 	{{~if attribute.is_valid_for_read~}}
-	get => TryGetAttributeValue("{{attribute.logical_name}}", out OptionSetValue opt) && opt == null ? null : ({{enum_name}})opt.Value;
+	get => TryGetAttributeValue("{{attribute.logical_name}}", out OptionSetValue opt) && opt != null ? ({{enum_name}}?)opt.Value : null;
 	{{~end~}}
 	{{~if !force_readonly && (attribute.is_valid_for_create || attribute.is_valid_for_update)~}}
 	set => this["{{attribute.logical_name}}"] = value == null ? null : new OptionSetValue((int)value);

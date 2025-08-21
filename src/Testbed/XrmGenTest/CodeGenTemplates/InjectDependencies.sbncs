@@ -1,0 +1,90 @@
+{{- # Initialize collections for local variables
+localTypeNames = [] -}}
+{{- localDeps = [] -}}
+
+{{- # Helper function to compute a camel-cased variable name from a short type name -}}
+{{func varName(name) 
+    # Use first character in lowercase + the rest of the name
+    ret (name | string.slice 0 1 | string.downcase) + (name | string.slice 1) 
+end -}}
+
+{{- # Recursive function to gather all dependencies that need local variables -}}
+{{func gather_locals(dep) 
+    for sub in dep.dependencies 
+        gather_locals(sub) 
+    end 
+    if dep.is_local_variable_needed && !dep.provided_by_base_property
+        if !(localTypeNames | array.contains dep.full_type_name) 
+            localTypeNames = localTypeNames | array.add dep.full_type_name 
+            localDeps = localDeps | array.add dep 
+        end 
+    end 
+end -}}
+
+{{- # Function to instantiate a dependency (returns the C# expression as string) -}}
+{{func instantiate(dep) 
+    if dep.provided_by_base_property 
+        ret "this." + dep.provided_by_base_property
+    end 
+    if dep.full_type_name == "System.IServiceProvider" 
+        ret "serviceProvider" 
+    end 
+    if dep.is_local_variable_needed 
+        # Use the shared local variable instead of a new expression
+        ret varName(dep.short_type_name) 
+    end 
+    # Otherwise, construct a new object with its dependencies
+    $ctorList = [] 
+    $propList = [] 
+    for child in dep.dependencies 
+        if child.is_property 
+            $propList = $propList | array.add (child.property_name + " = " + (instantiate(child))) 
+        else 
+            $ctorList = $ctorList | array.add (instantiate(child)) 
+        end 
+    end 
+    $expr = "new " + dep.full_type_name + "(" + ($ctorList | array.join ", ") + ")" 
+    if $propList.size > 0 
+        $expr = $expr + " { " + ($propList | array.join ", ") + " }" 
+    end 
+    ret $expr 
+end -}}
+
+{{- # Function to instantiate a dependency *even if* marked local (for local var declarations) -}}
+{{func instantiate_new(dep)
+    if dep.provided_by_base_property 
+        ret "this." + dep.provided_by_base_property
+    end 
+    if dep.full_type_name == "System.IServiceProvider" 
+        ret "serviceProvider" 
+    end 
+    $ctorList = [] 
+    $propList = [] 
+    for child in dep.dependencies 
+        if child.is_property 
+            $propList = $propList | array.add (child.property_name + " = " + (instantiate(child))) 
+        else 
+            $ctorList = $ctorList | array.add (instantiate(child)) 
+        end 
+    end 
+    $expr = "new " + dep.full_type_name + "(" + ($ctorList | array.join ", ") + ")" 
+    if $propList.size > 0 
+        $expr = $expr + " { " + ($propList | array.join ", ") + " }" 
+    end 
+    ret $expr 
+end -}}
+
+{{- # Gather all needed local dependencies from the top-level list -}}
+{{for dep in dependencies 
+    gather_locals(dep) 
+end ~}}
+protected void InjectDependencies(IServiceProvider serviceProvider)
+{
+{{~ for local in localDeps ~}}
+    var {{ varName(local.short_type_name) }} = {{ instantiate_new(local) }};
+{{~ end ~}}
+{{~ if localDeps.size > 0 && dependencies.size > 0 ~}}{{ "\r\n" }}{{~ end ~}}
+{{~ for dep in dependencies ~}}
+    this.{{ dep.property_name }} = {{ instantiate(dep) }};
+{{~ end ~}}
+}

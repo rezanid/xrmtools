@@ -1,6 +1,6 @@
 {{~func non_logical; ret ($0?.is_logical != true); end~}}
 {{~func logical; ret ($0?.is_logical == true); end~}}
-{{~func supported_attribute; ret ($0?.attribute_type != 'EntityName'); end~}}
+{{~func supported_attribute; ret ($0 && !$0?.is_primary_id && $0.attribute_type != 'EntityName') && ($0.is_valid_for_create || $0.is_valid_for_update || $0.is_valid_for_read); end~}}
 {{~quote(text) = '"' + text + '"'~}}
 using Microsoft.Xrm.Sdk;
 using Microsoft.Xrm.Sdk.Client;
@@ -13,84 +13,107 @@ using System.Linq;
 using System.Runtime.Serialization;
 
 {{~ first_plugin_type = model.plugin_types | array.first ~}}
-namespace {{ first_plugin_type?.namespace ?? config.default_namespace }};
-{{~for entity_definition in model.entity_definitions~}}
-{{~base_class_name = entity_definition.display_name.localized_labels[0].label | tokenize~}}
-{{codegen_attribute}}
-[EntityLogicalName("{{entity_definition.logical_name}}")]
-[global::System.Diagnostics.CodeAnalysis.ExcludeFromCodeCoverage]
-public partial class {{base_class_name}} : Entity
+namespace {{ first_plugin_type?.namespace ?? config.default_namespace }}
 {
-	public static class Meta 
+{{~for entity_definition in model.entity_definitions~}}
+{{~base_class_name = entity_definition.display_name | get_label 1033 | tokenize~}}
+	{{codegen_attribute}}
+	[EntityLogicalName("{{entity_definition.logical_name}}")]
+	[global::System.Diagnostics.CodeAnalysis.ExcludeFromCodeCoverage]
+	public partial class {{base_class_name}} : Entity
 	{
-		public const string EntityLogicalName = "{{entity_definition.logical_name}}";
-		public const string EntityLogicalCollectionName = "{{entity_definition.logical_collection_name}}";
-		public const string EntitySetName = "{{entity_definition.entity_set_name}}";
-		public const string PrimaryNameAttribute = "{{entity_definition.primary_name_attribute}}";
-		public const string PrimaryIdAttribute = "{{entity_definition.primary_id_attribute}}";
-
-		public partial class Fields
+		public partial class Meta 
 		{
-		{{~for attribute in entity_definition.attributes | array.filter @supported_attribute~}}
-			public const string {{attribute.schema_name}} = "{{attribute.logical_name}}";
-			{{~if attribute.attribute_type == 'Lookup' || attribute.attribute_type == 'Customer'~}}
-			public static readonly ReadOnlyCollection<string> {{attribute.schema_name}}Targets = new ([{{attribute.targets | array.join ',' @quote}}]);
-			{{~end~}}
-		{{~end~}}
-		}
+			public const string EntityLogicalName = "{{entity_definition.logical_name}}";
+			public const string EntityLogicalCollectionName = "{{entity_definition.logical_collection_name}}";
+			public const string EntitySetName = "{{entity_definition.entity_set_name}}";
+			public const string PrimaryNameAttribute = "{{entity_definition.primary_name_attribute}}";
+			public const string PrimaryIdAttribute = "{{entity_definition.primary_id_attribute}}";
 
-		public partial class Choices
-		{
-		{{~for attribute_meta in entity_definition.attributes | filter_enum_attributes~}}
-		{{~if attribute_meta.option_set != null~}}
-		{{~if (attribute_meta.option_set.description.localized_labels | array.first)?.label~}}
-			/// <summary>
-			/// {{attribute_meta.option_set.description.localized_labels[0].label}}
-			/// </summary>
-		{{~end~}}
-			[DataContract]
-			{{~enum_name = attribute_meta.option_set.display_name.localized_labels[0].label | tokenize~}}
-			public enum {{enum_name}}
+			public partial class Fields
 			{
-			{{~for option_meta in attribute_meta.option_set.options~}}
-				[EnumMember]
-				{{option_meta.label.localized_labels[0].label | tokenize}} = {{option_meta.value}},
+			{{~for attribute in entity_definition.attributes | array.filter @supported_attribute~}}
+				public const string {{attribute.schema_name}} = "{{attribute.logical_name}}";
+				{{~if attribute.attribute_type == 'Lookup' || attribute.attribute_type == 'Customer'~}}
+				public static readonly ReadOnlyCollection<string> {{attribute.schema_name}}Targets = new ReadOnlyCollection<string>(new List<string> { {{attribute.targets | array.join ',' @quote}} });
+				{{~end~}}
+			{{~end~}}
+
+			{{~if entity_definition.attributes.size < 32~}}
+				public string this[string logicalName] => logicalName switch
+				{
+				{{~for attribute in entity_definition.attributes | array.filter @supported_attribute~}}
+					"{{attribute.schema_name}}" => "{{attribute.logical_name}}",
+				{{~end~}}
+					_ => throw new ArgumentException($"Invalid attribute logical name: {logicalName}", nameof(logicalName))
+				};
+			{{~else~}}
+				private static readonly Dictionary<string, string> _fieldMap = new()
+				{
+					{{~for attribute in entity_definition.attributes | array.filter @supported_attribute~}}
+					["{{attribute.schema_name}}"] = "{{attribute.logical_name}}",
+					{{~end~}}
+				};
+				public string this[string logicalName] => _fieldMap.TryGetValue(logicalName, out var fieldName) 
+					? fieldName 
+					: throw new ArgumentException($"Invalid attribute logical name: {logicalName}", nameof(logicalName));
 			{{~end~}}
 			}
-		{{~end~}}
-		{{~end~}}
-		}
-	}
 
-	{{~for attribute in entity_definition.attributes | array.filter @supported_attribute~}}
-	{{~description = attribute.description?.localized_labels[0]?.label~}}
-	/// <summary>
-	{{~if description != null && description.length > 0~}}
-	/// {{description}}</br>
-	{{~end~}}
-	{{~ if attribute.attribute_of != null && !attribute.attribute_of.empty?~}}
-	/// Attribute of: {{attribute.attribute_of}}</br>
-	{{~end~}}
-	{{~if attribute.max_length~}}
-	/// Max Length: {{attribute.max_length}}</br>
-	{{~end~}}
-	/// Required Level: {{attribute.required_level.value}}<br/>
-	/// Valid for: {{~ attribute.is_valid_for_create ? ' Create' : null ~}}{{attribute.is_valid_for_update ? ' Update' : null}}{{attribute.is_valid_for_read ? ' Read' : null}}</br>
-	{{~if attribute.is_entity_reference_stored~}}
-	/// EntityReference Is Stored</br>
-	{{~end~}}
-	{{~if attribute.targets~}}
-	/// Targets: {{attribute.targets | array.join ','}}</br>
-	{{~end~}}
-	{{~if attribute.auto_number_format && !attribute.auto_number_format.empty?~}}
-	/// Auto Number Format: {{attribute.auto_number_format}}
-	{{~end~}}
-	/// </summary>
-	{{~prop_name = attribute.schema_name ~}}
-	{{include attribute.attribute_type + '.sbncs' attributes:entity_definition.attributes}}
-	{{~end~}}
-	public {{base_class_name}}() : base(Meta.EntityLogicalName) { }
-    public {{base_class_name}}(string keyName, object keyValue) : base(Meta.EntityLogicalName, keyName, keyValue) { }
-    public {{base_class_name}}(KeyAttributeCollection keyAttributes) : base(Meta.EntityLogicalName, keyAttributes) { }
-}
+			public partial class Choices
+			{
+			{{~for attribute_meta in entity_definition.attributes | filter_enum_attributes~}}
+			{{~if attribute_meta.option_set != null~}}
+			{{~if (attribute_meta.option_set.description | get_label 1033)~}}
+				/// <summary>
+				/// {{attribute_meta.option_set.description | get_label 1033}}
+				/// </summary>
+			{{~end~}}
+				[DataContract]
+				{{~enum_name = attribute_meta.option_set.display_name | get_label 1033 | tokenize~}}
+				public enum {{enum_name}}
+				{
+				{{~for option_meta in attribute_meta.option_set.options~}}
+					[EnumMember]
+					{{option_meta.label | get_label 1033 | tokenize}} = {{option_meta.value}},
+				{{~end~}}
+				}
+			{{~end~}}
+			{{~end~}}
+			}
+		}
+
+		{{~for attribute in entity_definition.attributes | array.filter @supported_attribute~}}
+		{{~description = attribute.description | get_label 1033~}}
+		/// <summary>
+		{{~if description != null && description.length > 0~}}
+		/// {{description}}<br/>
+		{{~end~}}
+		{{~ if attribute.attribute_of != null && !attribute.attribute_of.empty?~}}
+		/// Attribute of: {{attribute.attribute_of}}<br/>
+		{{~end~}}
+		{{~if attribute.max_length~}}
+		/// Max Length: {{attribute.max_length}}<br/>
+		{{~end~}}
+		/// Required Level: {{attribute.required_level.value}}<br/>
+		/// Valid for:{{~ attribute.is_valid_for_create ? ' Create' : null ~}}{{attribute.is_valid_for_update ? ' Update' : null}}{{attribute.is_valid_for_read ? ' Read' : null}}<br/>
+		{{~if attribute.is_entity_reference_stored~}}
+		/// EntityReference Is Stored<br/>
+		{{~end~}}
+		{{~if attribute.targets~}}
+		/// Targets: {{attribute.targets | array.join ','}}<br/>
+		{{~end~}}
+		{{~if attribute.auto_number_format && !attribute.auto_number_format.empty?~}}
+		/// Auto Number Format: {{attribute.auto_number_format}}
+		{{~end~}}
+		/// </summary>
+		{{~prop_name = attribute.schema_name ~}}
+		{{include attribute.attribute_type + '.sbncs' attributes:entity_definition.attributes}}
+		{{~end~}}
+		public {{base_class_name}}() : base(Meta.EntityLogicalName) { }
+		public {{base_class_name}}(Guid id) : base(Meta.EntityLogicalName, id) { }
+		public {{base_class_name}}(string keyName, object keyValue) : base(Meta.EntityLogicalName, keyName, keyValue) { }
+		public {{base_class_name}}(KeyAttributeCollection keyAttributes) : base(Meta.EntityLogicalName, keyAttributes) { }
+	}
 {{~end~}}
+}
