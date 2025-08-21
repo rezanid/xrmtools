@@ -8,19 +8,31 @@ using System.Collections.ObjectModel;
 using System.Globalization;
 using System.Linq;
 using System.Runtime.Serialization;
+using XrmTools;
 
 namespace XrmGenTest
 {
     [GeneratedCode("TemplatedCodeGenerator", "1.3.3.0")]
     public partial class ContactCreatePlugin
     {
-        protected void InjectDependencies(IServiceProvider serviceProvider)
+        /// <summary>
+        /// This method should be called in <see cref="PluginBase.Execute(IServiceProvider)"/> before
+        /// any target, image or other dependencies are used.
+        /// </summary>
+        protected IDisposable CreateScope(IServiceProvider serviceProvider)
         {
-            this.ServiceProvider = serviceProvider;
-            this.ServiceFactory = new XrmGenTest.SomeService(serviceProvider);
-            this.ContactPersister = new XrmGenTest.ContactPersister(this.OrganizationService);
+            var scope = new DependencyScope<ContactCreatePlugin>();
+            scope.Set<IServiceProvider>(serviceProvider);
+            scope.Set<IPluginExecutionContext>(serviceProvider.GetService(typeof(IPluginExecutionContext)) as IPluginExecutionContext);
+        
+            var iContactPersister = new XrmGenTest.ContactPersister(this.OrganizationServiceFactory, this.TracingService);
+        
+            scope.Set<XrmGenTest.IContactPersister>(iContactPersister);
+            scope.Set<XrmGenTest.IContactOrchestrator>(scope.SetAndTrack(new XrmGenTest.ContactOrchestrator(iContactPersister, this.TracingService)));
+            scope.Set<XrmGenTest.IValidationService>(scope.Set(new XrmGenTest.ValidationService()));
+        
+            return scope;
         }
-	    [GeneratedCode("TemplatedCodeGenerator", "1.3.3.0")]
 	    [EntityLogicalName("contact")]
 	    public class CreateTargetContact : Entity
 	    {
@@ -38,9 +50,28 @@ namespace XrmGenTest
 	    			public const string Description = "description";
 	    			public const string FirstName = "firstname";
 	    			public const string LastName = "lastname";
+	    		
+	    			public static bool TryGet(string logicalName, out string attribute)
+	    			{
+	    				switch (logicalName)
+	    				{
+	    					case nameof(AccountRoleCode): attribute = AccountRoleCode; return true;
+	    					case nameof(Description): attribute = Description; return true;
+	    					case nameof(FirstName): attribute = FirstName; return true;
+	    					case nameof(LastName): attribute = LastName; return true;
+	    					default: attribute = null; return false;
+	    				}
+	    			}
+	    
+	    			public string this[string logicalName]
+	    			{
+	    				get => TryGet(logicalName, out var value)
+	    					? value
+	    					: throw new ArgumentException("Invalid attribute logical name.", nameof(logicalName));
+	    			}
 	    		}
 	    
-	    		public partial class Choices
+	    		public partial class OptionSets
 	    		{
 	    			/// <summary>
 	    			/// Account role of the contact.
@@ -63,9 +94,9 @@ namespace XrmGenTest
 	    	/// Valid for: Create Update Read</br>
 	    	/// </summary>
 	    	[AttributeLogicalName("accountrolecode")]
-	    	public CreateTargetContact.Meta.Choices.Role? AccountRoleCode
+	    	public CreateTargetContact.Meta.OptionSets.Role? AccountRoleCode
 	    	{
-	    		get => TryGetAttributeValue("accountrolecode", out OptionSetValue opt) && opt != null ? (CreateTargetContact.Meta.Choices.Role?)opt.Value : null;
+	    		get => TryGetAttributeValue("accountrolecode", out OptionSetValue opt) && opt != null ? (CreateTargetContact.Meta.OptionSets.Role?)opt.Value : null;
 	    		set => this["accountrolecode"] = value == null ? null : new OptionSetValue((int)value);
 	    	}
 	    	/// <summary>
@@ -103,9 +134,8 @@ namespace XrmGenTest
 	    	}
 	    }
 	    
-	    public CreateTargetContact CreateTarget { get; set; }
+	    public CreateTargetContact CreateTarget { get => EntityOrDefault<CreateTargetContact>(Require<IPluginExecutionContext>().InputParameters, "Target"); }
 
-	    [GeneratedCode("TemplatedCodeGenerator", "1.3.3.0")]
 	    [EntityLogicalName("contact")]
 	    public class UpdateTargetContact : Entity
 	    {
@@ -123,9 +153,28 @@ namespace XrmGenTest
 	    			public const string Description = "description";
 	    			public const string FirstName = "firstname";
 	    			public const string LastName = "lastname";
+	    		
+	    			public static bool TryGet(string logicalName, out string attribute)
+	    			{
+	    				switch (logicalName)
+	    				{
+	    					case nameof(AccountRoleCode): attribute = AccountRoleCode; return true;
+	    					case nameof(Description): attribute = Description; return true;
+	    					case nameof(FirstName): attribute = FirstName; return true;
+	    					case nameof(LastName): attribute = LastName; return true;
+	    					default: attribute = null; return false;
+	    				}
+	    			}
+	    
+	    			public string this[string logicalName]
+	    			{
+	    				get => TryGet(logicalName, out var value)
+	    					? value
+	    					: throw new ArgumentException("Invalid attribute logical name.", nameof(logicalName));
+	    			}
 	    		}
 	    
-	    		public partial class Choices
+	    		public partial class OptionSets
 	    		{
 	    			/// <summary>
 	    			/// Account role of the contact.
@@ -148,9 +197,9 @@ namespace XrmGenTest
 	    	/// Valid for: Create Update Read</br>
 	    	/// </summary>
 	    	[AttributeLogicalName("accountrolecode")]
-	    	public UpdateTargetContact.Meta.Choices.Role? AccountRoleCode
+	    	public UpdateTargetContact.Meta.OptionSets.Role? AccountRoleCode
 	    	{
-	    		get => TryGetAttributeValue("accountrolecode", out OptionSetValue opt) && opt != null ? (UpdateTargetContact.Meta.Choices.Role?)opt.Value : null;
+	    		get => TryGetAttributeValue("accountrolecode", out OptionSetValue opt) && opt != null ? (UpdateTargetContact.Meta.OptionSets.Role?)opt.Value : null;
 	    		set => this["accountrolecode"] = value == null ? null : new OptionSetValue((int)value);
 	    	}
 	    	/// <summary>
@@ -187,105 +236,9 @@ namespace XrmGenTest
 	    		set => this["lastname"] = value;
 	    	}
 	    }
-	    [GeneratedCode("TemplatedCodeGenerator", "1.3.3.0")]
-	    [EntityLogicalName("contact")]
-	    public class UpdatecontactPreImageContact : Entity
-	    {
-	    	public static class Meta
-	    	{
-	    		public const string EntityLogicalName = "contact";
-	    		public const string EntityLogicalCollectionName = "contacts";
-	    		public const string EntitySetName = "contacts";
-	    		public const string PrimaryNameAttribute = "";
-	    		public const string PrimaryIdAttribute = "contactid";
 	    
-	    		public partial class Fields
-	    		{
-	    			public const string AccountRoleCode = "accountrolecode";
-	    			public const string Description = "description";
-	    			public const string FirstName = "firstname";
-	    			public const string LastName = "lastname";
-	    		}
-	    
-	    		public partial class Choices
-	    		{
-	    			/// <summary>
-	    			/// Account role of the contact.
-	    			/// </summary>
-	    			[DataContract]
-	    			public enum Role
-	    			{
-	    				[EnumMember]
-	    				DecisionMaker = 1,
-	    				[EnumMember]
-	    				Employee = 2,
-	    				[EnumMember]
-	    				Influencer = 3,
-	    			}
-	    		}
-	    	}
-	    
-	    	/// <summary>
-	    	/// Required Level: None
-	    	/// Valid for: Create Update Read
-	    	/// </summary>
-	    	[AttributeLogicalName("accountrolecode")]
-	    	public UpdatecontactPreImageContact.Meta.Choices.Role? AccountRoleCode
-	    	{
-	    		get => TryGetAttributeValue("accountrolecode", out OptionSetValue opt) && opt != null ? (UpdatecontactPreImageContact.Meta.Choices.Role?)opt.Value : null;
-	    	}
-	    	/// <summary>
-	    	/// Max Length: 2000
-	    	/// Required Level: None
-	    	/// Valid for: Create Update Read
-	    	/// </summary>
-	    	[AttributeLogicalName("description")]
-	    	public string Description
-	    	{
-	    		get => TryGetAttributeValue("description", out string value) ? value : null;
-	    	}
-	    	/// <summary>
-	    	/// Max Length: 50
-	    	/// Required Level: Recommended
-	    	/// Valid for: Create Update Read
-	    	/// </summary>
-	    	[AttributeLogicalName("firstname")]
-	    	public string FirstName
-	    	{
-	    		get => TryGetAttributeValue("firstname", out string value) ? value : null;
-	    	}
-	    	/// <summary>
-	    	/// Max Length: 50
-	    	/// Required Level: ApplicationRequired
-	    	/// Valid for: Create Update Read
-	    	/// </summary>
-	    	[AttributeLogicalName("lastname")]
-	    	public string LastName
-	    	{
-	    		get => TryGetAttributeValue("lastname", out string value) ? value : null;
-	    	}
-	    }
-	    
-	    public UpdateTargetContact UpdateTarget { get; set; }
+	    public UpdateTargetContact UpdateTarget { get => EntityOrDefault<UpdateTargetContact>(Require<IPluginExecutionContext>().InputParameters, "Target"); }
 
-	    public UpdatecontactPreImageContact contactPreImage { get; set; }
-
-	    /// <summary>
-	    /// This method should be called on every <see cref="XrmGenTest.ContactCreatePlugin.Execute(IServiceProvider)"/> execution.
-	    /// </summary>
-	    /// <param name="serviceProvider"></param>
-	    /// <exception cref="InvalidPluginExecutionException"></exception>
-        internal void Initialize(IServiceProvider serviceProvider)
-        {
-            if (serviceProvider == null)
-            {
-                throw new InvalidPluginExecutionException(nameof(serviceProvider) + " argument is null.");
-            }
-            var executionContext = serviceProvider.Get<IPluginExecutionContext7>();
-            CreateTarget = EntityOrDefault<CreateTargetContact>(executionContext.InputParameters, "Target");
-            UpdateTarget = EntityOrDefault<UpdateTargetContact>(executionContext.InputParameters, "Target");
-            contactPreImage = EntityOrDefault<UpdatecontactPreImageContact>(executionContext.PreEntityImages, "contactPreImage");
-        }
 
 	    protected static T EntityOrDefault<T>(DataCollection<string, object> keyValues, string key) where T : Entity
         {
@@ -298,6 +251,5 @@ namespace XrmGenTest
             if (keyValues is null) return default;
             return keyValues.TryGetValue(key, out var entity) ? entity?.ToEntity<T>() : default;
         }
-
     }
 }

@@ -321,7 +321,7 @@ internal class XrmPluginDefinitionCompletionSource(
         return symbol?.ContainingType.Name is "CustomApiAttribute" or "RequestProxyAttribute" or "ResponseProxyAttribute";
     }
 
-    private bool IsSupportedAttribute(AttributeMetadata attribute) => attribute.IsValidForRead.HasValue && attribute.IsValidForRead.Value && attribute.AttributeOf is null;
+    private bool IsSupportedAttribute(AttributeMetadata attribute) => attribute.IsValidForRead && attribute.AttributeOf is null;
 
     private int GetArgumentIndexAtPosition(SeparatedSyntaxList<AttributeArgumentSyntax> arguments, int position)
     {

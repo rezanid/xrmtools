@@ -50,6 +50,7 @@ internal class CSharpXrmMetaParser(
         AttributeData? assemblyAttribute = null;
         AttributeData? solutionAttribute = null;
         AttributeData? codeGenPrefixAttribute = null;
+        AttributeData? codeGenGlobalOptionSetsAttribute = null;
         //List<EntityConfig> entityConfigs = [];
         foreach (var attr in assemblySymbol.GetAttributes())
         {
@@ -65,6 +66,14 @@ internal class CSharpXrmMetaParser(
             {
                 codeGenPrefixAttribute = attr;
             }
+            else if (attr.AttributeClass?.ToDisplayString() == typeof(CodeGenGlobalOptionSetAttribute).FullName)
+            {
+                codeGenGlobalOptionSetsAttribute = attr;
+            }
+            //else if (attr.AttributeClass?.ToDisplayString() == typeof(EntityAttribute).FullName)
+            //{
+            //    entityConfigs.Add(ParseEntityConfig(attr));
+            //}
             else
             {
                 // Not interested in other attributes.
@@ -91,6 +100,11 @@ internal class CSharpXrmMetaParser(
         if (codeGenPrefixAttribute != null)
         {
             pluginAssemblyConfig.ReplacePrefixes.SetPropertiesFromAttribute(codeGenPrefixAttribute);
+        }
+
+        if (codeGenGlobalOptionSetsAttribute != null)
+        {
+            pluginAssemblyConfig.GlobalOptionSetCodeGen.SetPropertiesFromAttribute(codeGenGlobalOptionSetsAttribute);
         }
 
         if (assemblyAttribute == null) return pluginAssemblyConfig;
@@ -172,7 +186,7 @@ internal class CSharpXrmMetaParser(
                         {
                             if (string.IsNullOrWhiteSpace(imageConfig.Name))
                             {
-                                imageConfig.Name = lastStepConfig.PrimaryEntityName
+                                imageConfig.Name = char.ToUpper(lastStepConfig.PrimaryEntityName?[0] ?? 'X') + lastStepConfig.PrimaryEntityName?[1..].Replace("_", "")
                                     + (imageConfig.ImageType.HasValue ? Enum.GetName(typeof(ImageTypes), imageConfig.ImageType) : "");
                             }
                             if (string.IsNullOrWhiteSpace(imageConfig.EntityAlias))

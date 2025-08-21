@@ -22,6 +22,7 @@ using System.Collections.ObjectModel;
 using System.Globalization;
 using System.Linq;
 using System.Runtime.Serialization;
+using XrmTools;
 
 namespace {{ first_plugin_type?.namespace ?? config.default_namespace }}
 {
@@ -30,51 +31,25 @@ namespace {{ first_plugin_type?.namespace ?? config.default_namespace }}
     public partial class {{plugintype.type_name | last_segment }}
     {
         {{~dependencies = plugintype.dependency_graph?.dependencies~}}
-        {{~if dependencies && dependencies.size > 0~}}
         {{include 'InjectDependencies.sbncs'~}}
-        {{~end~}}
     {{~if plugintype.steps.size > 0~}}
 
     {{~for step in plugintype.steps~}}
-	    {{~target_type_name = (plugintype.steps | array.size > 1 ? step.message_name : '') + 'Target' + (step.primary_entity_definition.display_name | get_label 1033 | tokenize)~}}
+	    {{~target_type_name = (plugintype.steps | array.size > 1 ? step.message_name : '') + 'Target' + step.primary_entity_definition.schema_name~}}
         {{~target_name = (plugintype.steps | array.size > 1 ? step.message_name : '') + 'Target'~}}
 	    {{include 'Target.sbncs' target_type_name}}
 	    {{~if step.images~}}
 	    {{include 'Images.sbncs'~}}
 	    {{~end~}}
-	    public {{target_type_name}} {{target_name}} { get; set; }
+	    public {{target_type_name}} {{target_name}} { get => EntityOrDefault<{{target_type_name}}>(Require<IPluginExecutionContext>().InputParameters, "Target"); }
 
 	    {{~for image in step.images~}}
-	    public {{plugintype.steps | array.size > 1 ? step.message_name : ''}}{{image.name}}{{step.primary_entity_definition.display_name | get_label 1033 | tokenize}} {{image.name}} { get; set; }
+        {{~image_type_name = (plugintype.steps | array.size > 1 ? step.message_name : '') + image.name + (step.primary_entity_definition.schema_name)~}}
+        {{~image_collection_name = image.image_type == 'PreImage' ? 'PreEntityImages' : 'PostEntityImages'~}}
+	    public {{image_type_name}} {{image.name}} { get => EntityOrDefault<{{image_type_name}}>(Require<IPluginExecutionContext>().{{image_collection_name}}, "{{image.name}}"); }
 	    {{~end~}}
     {{~end~}}
-
     {{~end~}}
-	    /// <summary>
-	    /// This method should be called on every <see cref="{{plugintype.base_type_name == 'Object' ? plugintype.type_name : plugintype.base_type_name}}.Execute(IServiceProvider)"/> execution.
-	    /// </summary>
-	    /// <param name="serviceProvider"></param>
-	    /// <exception cref="InvalidPluginExecutionException"></exception>
-        {{~initialize_exists = plugintype.base_type_method_names | array.contains "Initialize"~}}
-        internal {{initialize_exists ? 'override ' : '' }}void Initialize(IServiceProvider serviceProvider)
-        {
-            {{~if initialize_exists~}}
-            base.Initialize(serviceProvider);
-            {{~end~}}
-            if (serviceProvider == null)
-            {
-                throw new InvalidPluginExecutionException(nameof(serviceProvider) + " argument is null.");
-            }
-            var executionContext = serviceProvider.Get<IPluginExecutionContext7>();
-            {{~for step in plugintype.steps~}}
-	        {{~target_type_name = (plugintype.steps | array.size > 1 ? step.message_name : '') + 'Target' + (step.primary_entity_definition.display_name | get_label 1033 | tokenize)~}}
-            {{~target_name = (plugintype.steps | array.size > 1 ? step.message_name : '') + 'Target'~}}
-            {{target_name}} = EntityOrDefault<{{target_type_name}}>(executionContext.InputParameters, "Target");
-	        {{~for image in step.images~}}
-            {{image.name}} = EntityOrDefault<{{plugintype.steps | array.size > 1 ? step.message_name : ''}}{{image.name}}{{step.primary_entity_definition.display_name | get_label 1033 | tokenize}}>(executionContext.PreEntityImages, "{{image.name}}");
-	        {{~end~}}
-	    {{~end~}}
-        }
 
 	    protected static T{{plugintype.is_nullable_enabled ? "?" : ""}} EntityOrDefault<T>(DataCollection<string, object> keyValues, string key) where T : Entity
         {
@@ -87,18 +62,15 @@ namespace {{ first_plugin_type?.namespace ?? config.default_namespace }}
             if (keyValues is null) return default;
             return keyValues.TryGetValue(key, out var entity) ? entity?.ToEntity<T>() : default;
         }
-
     {{~if plugintype.custom_api ~}}
     {{~if plugintype.custom_api.request_parameters.size > 0~}}
+
         protected static {{plugintype.custom_api.request_type_name}} GetRequest(IExecutionContext context)
         {
             var request = new {{plugintype.custom_api.request_type_name}}();
             {{~for param in plugintype.custom_api.request_parameters~}}
             {{~case param.type~}}
             {{~when 'Boolean', 'DateTime', 'Decimal', 'Float', 'Integer'~}}
-            // type: {{param.type}}
-            // type_name: {{param.type_name}}
-            // full_type_name: {{param.full_type_name}}
             request.{{param.name}} = context.InputParameters.TryGetValue("{{param.name}}", out {{param.full_type_name}} {{param.name | string.downcase}}) ? {{param.name | string.downcase}} : default;
             {{~when 'String'~}}
             request.{{param.name}} = context.InputParameters.TryGetValue("{{param.name}}", out {{plugintype.is_nullable_enabled ? param.full_type_name : param.full_type_name | string.replace_first '?' '' true}} {{param.name | string.downcase}}) ? {{param.name | string.downcase}} : string.Empty;

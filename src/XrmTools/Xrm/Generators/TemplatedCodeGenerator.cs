@@ -20,20 +20,20 @@ internal class TemplatedCodeGenerator(IValidationService validationService) : IX
     private static readonly Type generatorType = typeof(TemplatedCodeGenerator);
     private static readonly string generatorAttributeString = $"[GeneratedCode(\"{generatorType.Name}\", \"{generatorType.Assembly.GetName().Version}\")]";
 
-    public ValidationResult IsValid(PluginAssemblyConfig pluginAssembly)
+    public ValidationResult IsValid(PluginAssemblyConfig inputModel)
     {
         if (Config == null) { throw new InvalidOperationException("Config is not set."); }
-        return validationService.ValidateIfValidatorAvailable(pluginAssembly, Categories.CodeGeneration);
+        return validationService.ValidateIfValidatorAvailable(inputModel, Categories.CodeGeneration);
     }
 
-    public string GenerateCode(PluginAssemblyConfig plugin)
+    public string GenerateCode(PluginAssemblyConfig inputModel)
     {
         if (Config == null) { throw new InvalidOperationException("Config is not set."); }
         if (string.IsNullOrWhiteSpace(Config.TemplateFilePath)) { throw new InvalidOperationException(Resources.Strings.PluginGenerator_TemplatePathNotSet); }
-        return GenerateCodeUsingScribanTemplate(plugin);
+        return GenerateCodeUsingScribanTemplate(inputModel);
     }
 
-    private string GenerateCodeUsingScribanTemplate(PluginAssemblyConfig config)
+    private string GenerateCodeUsingScribanTemplate(PluginAssemblyConfig inputModel)
     {
         var scriptObject = new ScriptObject();
         scriptObject.Import(typeof(ScribanExtensions));
@@ -41,7 +41,7 @@ internal class TemplatedCodeGenerator(IValidationService validationService) : IX
             ScribanExtensionCache.KnownAssemblies.Humanizr.ToString().ToLowerInvariant(), 
             ScribanExtensionCache.GetHumanizrMethods());
         scriptObject.Add("config", Config);
-        scriptObject.Add("model", config);
+        scriptObject.Add("model", inputModel);
         scriptObject.Add("codegen_attribute", generatorAttributeString);
 
         var context = new TemplateContext()

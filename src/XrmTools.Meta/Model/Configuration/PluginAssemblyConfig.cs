@@ -28,15 +28,25 @@ public sealed class PluginAssemblyConfig : PluginAssembly//, IPluginAssemblyConf
     /// </summary>
     public ICollection<EntityConfig> Entities { get; set; } = [];
 
+    public ICollection<EntityConfig> OtherEntities { get; set; } = [];
+
     [JsonIgnore]
     public ICollection<EntityMetadata>? EntityDefinitions { get; set; }
 
     [JsonIgnore]
-    public string? FilePath { get; set; }
+    public ICollection<EntityMetadata>? OtherEntityDefinitions { get; set; }
 
+    [JsonIgnore]
+    public ICollection<OptionSetMetadata>? GlobalOptionSetDefinitions { get; set; }
+
+    [JsonIgnore]
+    public string? FilePath { get; set; }
 
     [JsonPropertyOrder(1)]
     public CodeGenReplacePrefixConfig ReplacePrefixes { get; set; } = new();
+
+    [JsonPropertyOrder(2)]
+    public CodeGenGlobalOptionSetsConfig GlobalOptionSetCodeGen { get; set; } = new();
 
     public Solution? Solution { get; set; }
 

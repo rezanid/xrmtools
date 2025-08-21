@@ -49,7 +49,7 @@ public class PluginCodeGenerator : BaseCodeGeneratorWithSite
     internal IRepositoryFactory RepositoryFactory { get; set; }
 
     [Import]
-    public IEnvironmentProvider? EnvironmentProvider { get; set; }
+    public IEnvironmentProvider EnvironmentProvider { get; set; }
 
     [Import]
     internal ISettingsProvider SettingsProvider { get; set; }
@@ -109,7 +109,7 @@ public class PluginCodeGenerator : BaseCodeGeneratorWithSite
                 return null;
             }
 
-            var templateFilePath = GetTemplateFilePath(inputModel);
+            var templateFilePath = await GetTemplateFilePathAsync(inputModel);
 
             if (string.IsNullOrEmpty(templateFilePath))
             {
@@ -198,7 +198,7 @@ public class PluginCodeGenerator : BaseCodeGeneratorWithSite
     //    return null;
     //}
 
-    private string? GetTemplateFilePath(PluginAssemblyConfig config)
+    private async Task<string?> GetTemplateFilePathAsync(PluginAssemblyConfig config)
     {
         if (config == null) return null;
         bool isTemplatePlugin = config.PluginTypes?.Any() ?? false;
@@ -209,7 +209,15 @@ public class PluginCodeGenerator : BaseCodeGeneratorWithSite
             return null;
         }
 
-        var templateFilePath = isTemplatePlugin ? TemplateFinder.FindPluginTemplatePath(InputFilePath) : TemplateFinder.FindEntityTemplatePath(InputFilePath);
+        string? templateFilePath;
+        if (isTemplatePlugin)
+        {
+            templateFilePath = await TemplateFinder.FindPluginTemplatePathAsync(InputFilePath);
+        }
+        else
+        {
+            templateFilePath = await TemplateFinder.FindEntityTemplatePathAsync(InputFilePath);
+        }
         if (templateFilePath != null) return templateFilePath;
 
         Logger.LogTrace("No template found for " + (isTemplatePlugin ? "plugin code generation." : "entity code generation."));
@@ -222,7 +230,14 @@ public class PluginCodeGenerator : BaseCodeGeneratorWithSite
         ThreadHelper.JoinableTaskFactory.Run(TemplateFileGenerator.GenerateTemplatesAsync);
         Logger.LogInformation("Default template generation completed.");
 
-        templateFilePath = isTemplatePlugin ? TemplateFinder.FindPluginTemplatePath(InputFilePath) : TemplateFinder.FindEntityTemplatePath(InputFilePath);
+        if (isTemplatePlugin)
+        {
+            templateFilePath = await TemplateFinder.FindPluginTemplatePathAsync(InputFilePath);
+        }
+        else
+        {
+            templateFilePath = await TemplateFinder.FindEntityTemplatePathAsync(InputFilePath);
+        }
         if (templateFilePath != null) return templateFilePath;
         Logger.LogCritical("Still, no template found for " + (isTemplatePlugin ? "plugin generation." : "entity generation."));
         return null;

@@ -35,6 +35,7 @@ public class SolutionSettings(SolutionStorageType storageType) : IXrmToolsSettin
     public string? ConnectionString() => Get(XrmSettingKeys.DataverseConnectionString);
     public string? PluginTemplateFilePath() => Get(XrmSettingKeys.DataversePluginTemplateFilePath);
     public string? EntityTemplateFilePath() => Get(XrmSettingKeys.DataverseEntityTemplateFilePath);
+    public string? GlobalOptionSetsTemplateFilePath() => Get(XrmSettingKeys.DataverseGlobalOptionSetsTemplateFilePath);
     public bool EnvironmentUrl(string? value) => Set(XrmSettingKeys.EnvironmentUrl, value);
     public bool ConnectionString(string? value) => Set(XrmSettingKeys.DataverseConnectionString, value);
     public bool PluginTemplateFilePath(string? value) => Set(XrmSettingKeys.DataversePluginTemplateFilePath, value);
