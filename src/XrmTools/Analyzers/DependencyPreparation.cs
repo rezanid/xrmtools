@@ -18,10 +18,10 @@ public class DependencyPreparation : IDependencyPreparation
         // First pass: count types
         void CountTypes(Dependency node)
         {
-            if (typeCount.ContainsKey(node.FullTypeName))
-                typeCount[node.FullTypeName]++;
+            if (typeCount.ContainsKey(node.ResolvedFullTypeName))
+                typeCount[node.ResolvedFullTypeName]++;
             else
-                typeCount[node.FullTypeName] = 1;
+                typeCount[node.ResolvedFullTypeName] = 1;
 
             foreach (var child in node.Dependencies)
                 CountTypes(child);
@@ -32,11 +32,11 @@ public class DependencyPreparation : IDependencyPreparation
         // Second pass: mark reused types
         void MarkLocals(Dependency node)
         {
-            if (typeCount[node.FullTypeName] > 1)
+            if (typeCount[node.ResolvedFullTypeName] > 1)
                 node.IsLocalVariableNeeded = true;
 
             foreach (var child in node.Dependencies)
-                if (child.FullTypeName != "System.IServiceProvider") MarkLocals(child);
+                if (child.ResolvedFullTypeName != "System.IServiceProvider") MarkLocals(child);
         }
 
         MarkLocals(root);
