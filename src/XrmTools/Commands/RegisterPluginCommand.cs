@@ -437,26 +437,6 @@ internal sealed class RegisterPluginCommand : BaseCommand<RegisterPluginCommand>
         return deleteRequests;
     }
 
-    private ICollection<HttpRequestMessage> GenerateDeleteRequestsForPluginAssembly(PluginAssemblyConfig pluginAssembly)
-    {
-        var deleteRequests = new List<HttpRequestMessage>();
-        foreach (var plugin in pluginAssembly.PluginTypes)
-        {
-            foreach (var step in plugin.Steps)
-            {
-                // We shouldn't (and cannot) delete / modify MainOperations (generated automatically by Dataverse for CustomApis).
-                if (step.Stage != Stages.MainOperation)
-                    deleteRequests.Add(new DeleteRequest(step.ToReference()));
-            }
-            if (plugin.CustomApi != null)
-            {
-                deleteRequests.Add(new DeleteRequest(plugin.CustomApi.ToReference()));
-            }
-            deleteRequests.Add(new DeleteRequest(PluginType.CreateReference(plugin.Id!.Value)));
-        }
-        return deleteRequests;
-    }
-
     [MemberNotNull(nameof(Logger), nameof(MetaDataService), nameof(WebApiService),
         nameof(EnvironmentProvider), nameof(RepositoryFactory))]
     private void EnsureDependencies()
