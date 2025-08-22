@@ -265,7 +265,7 @@ public class PluginCodeGenerator : BaseCodeGeneratorWithSite
 
         // The cloning is done because we don't want to modify the object in the cache.
         // In future when we load from local storage this might not be required.
-        if (filteredAttributes?.Length != entityDefinition.Attributes.Length)
+        if (filteredAttributes?.Length != entityDefinition.Attributes?.Length)
         {
             var clone = entityDefinition.Clone();
             var propertyInfo = typeof(EntityMetadata).GetProperty("Attributes");
@@ -396,7 +396,7 @@ public class PluginCodeGenerator : BaseCodeGeneratorWithSite
             }
         }
         // Now we update entity definitions with the attributes used in the plugin definitions.
-        foreach(var entityEntry in entitiesAndAttributes)//.Where(e => e.Value.Count > 0))
+        foreach (var entityEntry in entitiesAndAttributes)//.Where(e => e.Value.Count > 0))
         {
             //var entityDefinition = entityDefinitions[entity.Key];
             //var entityDefinition = GetEntityMetadata(entity.Key, entity.Value, config.RemovePrefixesCollection);

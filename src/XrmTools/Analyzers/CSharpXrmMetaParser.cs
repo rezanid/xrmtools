@@ -362,7 +362,11 @@ internal class CSharpXrmMetaParser(
     }
 
     private PluginStepConfig CreatePluginStepConfig(AttributeData attributeData)
-        => ReflectionHelper.SetPropertiesFromAttribute(new PluginStepConfig(), attributeData);
+    {
+        var pluginStep = ReflectionHelper.SetPropertiesFromAttribute(new PluginStepConfig(), attributeData);
+        pluginStep.FilteringAttributes = pluginStep.FilteringAttributes?.Replace(" ", "");
+        return pluginStep;
+    }
 
     private PluginStepImageConfig CreatePluginImageConfig(AttributeData attributeData)
     {
