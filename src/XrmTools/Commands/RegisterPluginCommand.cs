@@ -155,7 +155,7 @@ internal sealed class RegisterPluginCommand : BaseCommand<RegisterPluginCommand>
                 inputModel.Id = existingAssembly.Id;
                 Logger.LogInformation($"Found existing assembly ({existingAssembly.Id}).");
                 requests.AddRange(GenerateDeleteRequestsForCleanup(
-                    newAssembly: inputModel, existingAssembly: existingAssembly, skipPlugins: true));
+                    newAssembly: inputModel, existingAssembly: existingAssembly, skipPluginTypes: true));
                 Logger.LogInformation($"Generated {requests.Count} delete requests for cleanup.");
             }
             AssignIds(inputModel, existingAssembly);
@@ -394,7 +394,7 @@ internal sealed class RegisterPluginCommand : BaseCommand<RegisterPluginCommand>
     }
 
     private ICollection<HttpRequestMessage> GenerateDeleteRequestsForCleanup(
-        PluginAssemblyConfig newAssembly, PluginAssembly existingAssembly, bool skipPlugins)
+        PluginAssemblyConfig newAssembly, PluginAssembly existingAssembly, bool skipPluginTypes)
     {
         var deleteRequests = new List<HttpRequestMessage>();
 
@@ -402,7 +402,8 @@ internal sealed class RegisterPluginCommand : BaseCommand<RegisterPluginCommand>
         {
             if (string.IsNullOrEmpty(existingPlugin.Name)) continue;
 
-            // If plugin type exists, delete all its steps, later plugin type will be upserted and its new steps created.
+            // If plugin type exists, delete all its steps and customapis.
+            // Later, plugin type will be upserted and its new steps and customapis created.
             if (newAssembly.PluginTypes.FirstOrDefault(p => string.Equals(p.TypeName, existingPlugin.TypeName, StringComparison.InvariantCulture)) is PluginTypeConfig newPlugin)
             {
                 foreach (var step in existingPlugin.Steps)
@@ -410,20 +411,20 @@ internal sealed class RegisterPluginCommand : BaseCommand<RegisterPluginCommand>
                     // We shouldn't (and cannot) delete / modify MainOperations (generated automatically by Dataverse for CustomApis).
                     if (step.Stage != Stages.MainOperation)
                         deleteRequests.Add(new DeleteRequest(step.ToReference()));
+                    // Delete all existing custom APIs
+                    if (existingPlugin.CustomApi != null)
+                    {
+                        foreach (var customApi in existingPlugin.CustomApi)
+                        {
+                            deleteRequests.Add(new DeleteRequest(customApi.ToReference()));
+                        }
+                    }
                 }
             }
-            // Delete all existing plguin types (if needed)
-            else if (!skipPlugins)
+            // Delete all existing plugin types (if needed)
+            else if (!skipPluginTypes)
             {
                 deleteRequests.Add(new DeleteRequest(PluginType.CreateReference(existingPlugin.Id!.Value)));
-            }
-            // Delete all existing custom APIs
-            if (existingPlugin.CustomApi != null)
-            {
-                foreach (var customApi in existingPlugin.CustomApi)
-                {
-                    deleteRequests.Add(new DeleteRequest(customApi.ToReference()));
-                }
             }
         }
 
@@ -433,6 +434,26 @@ internal sealed class RegisterPluginCommand : BaseCommand<RegisterPluginCommand>
         //    deleteRequests.Add(new DeleteRequest(existingAssembly.Package.ToReference()));
         //}
 
+        return deleteRequests;
+    }
+
+    private ICollection<HttpRequestMessage> GenerateDeleteRequestsForPluginAssembly(PluginAssemblyConfig pluginAssembly)
+    {
+        var deleteRequests = new List<HttpRequestMessage>();
+        foreach (var plugin in pluginAssembly.PluginTypes)
+        {
+            foreach (var step in plugin.Steps)
+            {
+                // We shouldn't (and cannot) delete / modify MainOperations (generated automatically by Dataverse for CustomApis).
+                if (step.Stage != Stages.MainOperation)
+                    deleteRequests.Add(new DeleteRequest(step.ToReference()));
+            }
+            if (plugin.CustomApi != null)
+            {
+                deleteRequests.Add(new DeleteRequest(plugin.CustomApi.ToReference()));
+            }
+            deleteRequests.Add(new DeleteRequest(PluginType.CreateReference(plugin.Id!.Value)));
+        }
         return deleteRequests;
     }
 
