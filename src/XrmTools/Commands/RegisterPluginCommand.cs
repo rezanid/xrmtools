@@ -228,46 +228,11 @@ internal sealed class RegisterPluginCommand : BaseCommand<RegisterPluginCommand>
             return;
         }
 
-        var batchResponse = await WebApiService.SendAsync<BatchResponse>(batch);
-        var responses = await batchResponse.ParseResponseAsync();
-        foreach (var response in responses)
+
+        BatchResponse? batchResponse;
+        List<HttpResponseMessage> responses;
+        try
         {
-            if (!response.IsSuccessStatusCode)
-            {
-                await VS.StatusBar.EndAnimationAsync(StatusAnimation.General);
-                await VS.StatusBar.ShowMessageAsync("Plugin registration failed.");
-                var error = await WebApi.WebApiService.ParseExceptionAsync(response);
-                Logger.LogCritical(error.ToString());
-                await VS.MessageBox.ShowErrorAsync(Vsix.Name, error.Message);
-                return;
-            }
-            else
-            {
-                if (response.Headers.Contains("OData-EntityId"))
-                {
-                    var path = response.As<UpsertResponse>().EntityReference?.Path;
-                    Logger.LogTrace($"Registered ({path}).");
-                }
-            }
-        }
-
-        if (inputModel.Package is not null)
-        {
-            var assemblyQuery = await WebApiService.RetrieveMultipleAsync<PluginAssembly>(
-                $"{PluginAssembly.Metadata.EntitySetName}?$select=name" +
-                $"&$filter=name eq '{inputModel.Name}'" +
-                $"&$expand=PackageId($select=name),pluginassembly_plugintype($select=name,typename" +
-                    $";$expand=plugintype_sdkmessageprocessingstep($select=name,stage),CustomAPIId($select=uniquename))");
-            var existingAssembly = assemblyQuery?.Value?.SingleOrDefault();
-            AssignIds(inputModel, existingAssembly);
-
-            var builder = new UpsertRequestBuilder(inputModel, sdkMessages);
-            var upserts = builder.WithStepsAndCustomApis().Build();
-            batch = new BatchRequest(environment!.BaseServiceUrl!)
-            {
-                ChangeSets = [new(upserts)]
-            };
-
             batchResponse = await WebApiService.SendAsync<BatchResponse>(batch);
             responses = await batchResponse.ParseResponseAsync();
             foreach (var response in responses)
@@ -289,6 +254,64 @@ internal sealed class RegisterPluginCommand : BaseCommand<RegisterPluginCommand>
                         Logger.LogTrace($"Registered ({path}).");
                     }
                 }
+            }
+
+        }
+        catch (Exception ex)
+        {
+            await VS.StatusBar.EndAnimationAsync(StatusAnimation.General);
+            await VS.StatusBar.ShowMessageAsync("Plugin registration failed. " + ex.Message);
+            return;
+        }
+
+        if (inputModel.Package is not null)
+        {
+            var assemblyQuery = await WebApiService.RetrieveMultipleAsync<PluginAssembly>(
+                $"{PluginAssembly.Metadata.EntitySetName}?$select=name" +
+                $"&$filter=name eq '{inputModel.Name}'" +
+                $"&$expand=PackageId($select=name),pluginassembly_plugintype($select=name,typename" +
+                    $";$expand=plugintype_sdkmessageprocessingstep($select=name,stage),CustomAPIId($select=uniquename))");
+            var existingAssembly = assemblyQuery?.Value?.SingleOrDefault();
+            AssignIds(inputModel, existingAssembly);
+
+            var builder = new UpsertRequestBuilder(inputModel, sdkMessages);
+            var upserts = builder.WithStepsAndCustomApis().Build();
+            batch = new BatchRequest(environment!.BaseServiceUrl!)
+            {
+                ChangeSets = [new(upserts)]
+            };
+
+            try
+            {
+                batchResponse = await WebApiService.SendAsync<BatchResponse>(batch);
+
+                responses = await batchResponse.ParseResponseAsync();
+                foreach (var response in responses)
+                {
+                    if (!response.IsSuccessStatusCode)
+                    {
+                        await VS.StatusBar.EndAnimationAsync(StatusAnimation.General);
+                        await VS.StatusBar.ShowMessageAsync("Plugin registration failed.");
+                        var error = await WebApi.WebApiService.ParseExceptionAsync(response);
+                        Logger.LogCritical(error.ToString());
+                        await VS.MessageBox.ShowErrorAsync(Vsix.Name, error.Message);
+                        return;
+                    }
+                    else
+                    {
+                        if (response.Headers.Contains("OData-EntityId"))
+                        {
+                            var path = response.As<UpsertResponse>().EntityReference?.Path;
+                            Logger.LogTrace($"Registered ({path}).");
+                        }
+                    }
+                }
+            }
+            catch (Exception)
+            {
+                await VS.StatusBar.EndAnimationAsync(StatusAnimation.General);
+                await VS.StatusBar.ShowMessageAsync("Plugin registration failed.");
+                return;
             }
         }
 
