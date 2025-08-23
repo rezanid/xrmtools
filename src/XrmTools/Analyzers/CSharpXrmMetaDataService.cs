@@ -11,6 +11,7 @@ using System.Threading.Tasks;
 using XrmTools.Helpers;
 using System.ComponentModel.Composition;
 using XrmTools.Meta.Model.Configuration;
+using XrmTools.Meta.Attributes;
 
 internal interface IXrmMetaDataService
 {
@@ -65,6 +66,11 @@ internal class CSharpXrmMetaDataService(ICSharpXrmMetaParser parser) : IXrmMetaD
             var pluginTypes = await ParsePluginConfigsFromDocumentAsync(document, compilation, processedSymbols, semanticModelCache, cancellationToken).ConfigureAwait(false);
             pluginTypes.ForEach(config.PluginTypes.Add);
 
+            var allPluginsTypes = compilation.GetProjectTypesWithAttribute(typeof(PluginAttribute).FullName);
+            config.OtherPluginTypes = allPluginsTypes.Where(p => !pluginTypes.Any(currentPlugin => currentPlugin.TypeName == p.ToDisplayString()))
+                .Select(p => new PluginTypeConfig { TypeName = p.ToDisplayString() })
+                .ToList();
+
             return config;
         }
         catch (Exception ex)
@@ -96,8 +102,9 @@ internal class CSharpXrmMetaDataService(ICSharpXrmMetaParser parser) : IXrmMetaD
 
             var compilation = await document.Project.GetCompilationAsync(cancellationToken).ConfigureAwait(false);
             if (compilation == null) return null;
-            var entityConfigs = await ParseEntityAttributesFromDocumentAsync(document, compilation, cancellationToken).ConfigureAwait(false);
-            config.Entities = entityConfigs;
+            var (documentEntities, otherEntities) = await ParseEntityAttributesFromDocumentAsync(document, compilation, cancellationToken).ConfigureAwait(false);
+            config.Entities = documentEntities;
+            config.OtherEntities = otherEntities;
             return config;
         }
         catch (Exception ex)
@@ -209,23 +216,28 @@ internal class CSharpXrmMetaDataService(ICSharpXrmMetaParser parser) : IXrmMetaD
         return result;
     }
 
-    private async Task<List<EntityConfig>> ParseEntityAttributesFromDocumentAsync(
+    private async Task<(List<EntityConfig> documentEntities, List<EntityConfig> otherEntities)> ParseEntityAttributesFromDocumentAsync(
         Document document,
         Compilation compilation,
         CancellationToken cancellationToken)
     {
         var syntaxTree = await document.GetSyntaxTreeAsync(cancellationToken).ConfigureAwait(false);
-        if (syntaxTree == null) return [];
+        if (syntaxTree == null) return ([], []);
 
-        var entityConfigs = new List<EntityConfig>();
+        var documentEntities = new List<EntityConfig>();
+        var otherEntities = new List<EntityConfig>();
         var assemblyAttributes = compilation.Assembly.GetAttributes();
         foreach (var assemblyAttribute in assemblyAttributes)
         {
-            if (syntaxTree == assemblyAttribute.ApplicationSyntaxReference!.SyntaxTree)
+            if (assemblyAttribute.AttributeClass?.ToDisplayString() == typeof(EntityAttribute).FullName && syntaxTree == assemblyAttribute.ApplicationSyntaxReference!.SyntaxTree)
             {
-                entityConfigs.Add(parser.ParseEntityConfig(assemblyAttribute));
+                documentEntities.Add(parser.ParseEntityConfig(assemblyAttribute));
+            }
+            else if (assemblyAttribute.AttributeClass?.ToDisplayString() == typeof(EntityAttribute).FullName)
+            {
+                otherEntities.Add(parser.ParseEntityConfig(assemblyAttribute));
             }
         }
-        return entityConfigs;
+        return (documentEntities, otherEntities);
     }
 }

@@ -16,7 +16,10 @@ using System.Runtime.Serialization;
 namespace {{ first_plugin_type?.namespace ?? config.default_namespace }}
 {
 {{~for entity_definition in model.entity_definitions~}}
-{{~base_class_name = entity_definition.display_name | get_label 1033 | tokenize~}}
+{{~base_class_name = entity_definition.schema_name~}}
+	/// <summary>
+	/// Display Name: {{entity_definition.display_name | get_label 1033}}
+	/// </summary>
 	{{codegen_attribute}}
 	[EntityLogicalName("{{entity_definition.logical_name}}")]
 	[global::System.Diagnostics.CodeAnalysis.ExcludeFromCodeCoverage]
@@ -35,36 +38,49 @@ namespace {{ first_plugin_type?.namespace ?? config.default_namespace }}
 			{{~for attribute in entity_definition.attributes | array.filter @supported_attribute~}}
 				public const string {{attribute.schema_name}} = "{{attribute.logical_name}}";
 				{{~if attribute.attribute_type == 'Lookup' || attribute.attribute_type == 'Customer'~}}
-				public static readonly ReadOnlyCollection<string> {{attribute.schema_name}}Targets = new ReadOnlyCollection<string>(new List<string> { {{attribute.targets | array.join ',' @quote}} });
+				public static readonly ReadOnlyCollection<string> {{attribute.schema_name}}Targets = new ReadOnlyCollection<string>(new string[] { {{attribute.targets | array.join ',' @quote}} });
 				{{~end~}}
 			{{~end~}}
 
 			{{~if entity_definition.attributes.size < 32~}}
-				public string this[string logicalName] => logicalName switch
+				public static bool TryGet(string logicalName, out string attribute)
+				{
+					switch (logicalName)
+					{
+					{{~for attribute in entity_definition.attributes | array.filter @supported_attribute~}}
+						case nameof({{attribute.schema_name}}): attribute = {{attribute.schema_name}}; return true;
+					{{~end~}}
+						default: attribute = null; return false;
+					}
+				}
+			{{~else~}}
+				private static readonly Dictionary<string, string> _fieldMap = new Dictionary<string, string>
 				{
 				{{~for attribute in entity_definition.attributes | array.filter @supported_attribute~}}
-					"{{attribute.schema_name}}" => "{{attribute.logical_name}}",
+					[nameof({{attribute.schema_name}})] = {{attribute.schema_name}},
 				{{~end~}}
-					_ => throw new ArgumentException($"Invalid attribute logical name: {logicalName}", nameof(logicalName))
 				};
-			{{~else~}}
-				private static readonly Dictionary<string, string> _fieldMap = new()
-				{
-					{{~for attribute in entity_definition.attributes | array.filter @supported_attribute~}}
-					["{{attribute.schema_name}}"] = "{{attribute.logical_name}}",
-					{{~end~}}
-				};
-				public string this[string logicalName] => _fieldMap.TryGetValue(logicalName, out var fieldName) 
-					? fieldName 
-					: throw new ArgumentException($"Invalid attribute logical name: {logicalName}", nameof(logicalName));
-			{{~end~}}
-			}
 
-			public partial class Choices
+				public static bool TryGet(string logicalName, out string attribute)
+				{
+					return _fieldMap.TryGetValue(logicalName, out attribute);
+				}
+			{{~end~}}
+
+				public string this[string logicalName]
+				{
+					get => TryGet(logicalName, out var value)
+						? value
+						: throw new ArgumentException("Invalid attribute logical name.", nameof(logicalName));
+				}
+			}
+			{{~enum_attributes = model.global_option_set_code_gen.mode == 'GlobalOptionSetFile' ? (entity_definition.attributes | filter_local_enum_attributes) : (entity_definition.attributes | filter_enum_attributes)~}}
+			{{~if enum_attributes && !(enum_attributes.empty?)}}
+			public partial class OptionSets
 			{
-			{{~for attribute_meta in entity_definition.attributes | filter_enum_attributes~}}
+			{{~for attribute_meta in enum_attributes~}}
 			{{~if attribute_meta.option_set != null~}}
-			{{~if (attribute_meta.option_set.description | get_label 1033)~}}
+			{{~if !(attribute_meta.option_set.description | get_label 1033 | string.empty)~}}
 				/// <summary>
 				/// {{attribute_meta.option_set.description | get_label 1033}}
 				/// </summary>
@@ -74,13 +90,13 @@ namespace {{ first_plugin_type?.namespace ?? config.default_namespace }}
 				public enum {{enum_name}}
 				{
 				{{~for option_meta in attribute_meta.option_set.options~}}
-					[EnumMember]
-					{{option_meta.label | get_label 1033 | tokenize}} = {{option_meta.value}},
+					[EnumMember] {{option_meta.label | get_label 1033 | tokenize}} = {{option_meta.value}},
 				{{~end~}}
 				}
 			{{~end~}}
 			{{~end~}}
 			}
+			{{~end~}}
 		}
 
 		{{~for attribute in entity_definition.attributes | array.filter @supported_attribute~}}
@@ -89,7 +105,7 @@ namespace {{ first_plugin_type?.namespace ?? config.default_namespace }}
 		{{~if description != null && description.length > 0~}}
 		/// {{description}}<br/>
 		{{~end~}}
-		{{~ if attribute.attribute_of != null && !attribute.attribute_of.empty?~}}
+		{{~ if attribute.attribute_of != null && !(attribute.attribute_of.empty?)~}}
 		/// Attribute of: {{attribute.attribute_of}}<br/>
 		{{~end~}}
 		{{~if attribute.max_length~}}
@@ -103,7 +119,7 @@ namespace {{ first_plugin_type?.namespace ?? config.default_namespace }}
 		{{~if attribute.targets~}}
 		/// Targets: {{attribute.targets | array.join ','}}<br/>
 		{{~end~}}
-		{{~if attribute.auto_number_format && !attribute.auto_number_format.empty?~}}
+		{{~if attribute.auto_number_format && !(attribute.auto_number_format.empty?)~}}
 		/// Auto Number Format: {{attribute.auto_number_format}}
 		{{~end~}}
 		/// </summary>

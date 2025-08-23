@@ -13,7 +13,7 @@
 
     <!-- If not found, exclude specific file(s) -->
     <ItemGroup Condition="'@(_XrmReference)' == ''">
-      <Compile Remove="**/OrganizationServiceExtensions.cs" />
+      <Compile Remove="**/DependencyScope.cs" />
     </ItemGroup>
   </Target>
 </Project>

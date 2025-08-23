@@ -25,11 +25,12 @@ public class CSharpDependencyAnalyzer : ICSharpDependencyAnalyzer
         var implementationMap = BuildImplementationMap(compilation);
         var providerProperties = DiscoverProviderProperties(rootType);
         var dependedOn = new HashSet<INamedTypeSymbol>(SymbolEqualityComparer.Default);
-        return BuildNode(rootType, null, compilation, implementationMap, dependedOn, providerProperties);
+        return BuildNode(rootType, null, null, compilation, implementationMap, dependedOn, providerProperties);
     }
 
     private Dependency BuildNode(
-        INamedTypeSymbol classSymbol,
+        INamedTypeSymbol typeSymbol,
+        INamedTypeSymbol? originalTypeSymbol,
         string? propertyName,
         Compilation compilation,
         Dictionary<ITypeSymbol, INamedTypeSymbol> implementationMap,
@@ -40,13 +41,16 @@ public class CSharpDependencyAnalyzer : ICSharpDependencyAnalyzer
         var node = new Dependency
         {
             PropertyName = propertyName,
-            FullTypeName = classSymbol.ToDisplayString(),
-            ShortTypeName = classSymbol.Name,
-            Dependencies = []
+            ResolvedFullTypeName = typeSymbol.ToDisplayString(),
+            ResolvedShortTypeName = typeSymbol.Name,
+            FullTypeName = originalTypeSymbol?.ToDisplayString() ?? typeSymbol.ToDisplayString(),
+            ShortTypeName = originalTypeSymbol?.Name ?? typeSymbol.Name,
+            Dependencies = [],
+            IsDisposable = IsDisposable(typeSymbol)
         };
 
         // Analyze [Dependency] properties
-        foreach (var prop in classSymbol.GetMembers().OfType<IPropertySymbol>())
+        foreach (var prop in typeSymbol.GetMembers().OfType<IPropertySymbol>())
         {
             if (!prop.GetAttributes().Any(attr => attr.AttributeClass?.ToDisplayString() == typeof(DependencyAttribute).FullName))
                 continue;
@@ -59,7 +63,8 @@ public class CSharpDependencyAnalyzer : ICSharpDependencyAnalyzer
                     FullTypeName = serviceProviderType.ToDisplayString(),
                     ShortTypeName = serviceProviderType.Name,
                     Dependencies = [],
-                    IsProperty = true
+                    IsProperty = true,
+                    IsDisposable = IsDisposable(prop.Type as INamedTypeSymbol),
                 });
                 continue;
             }
@@ -77,11 +82,14 @@ public class CSharpDependencyAnalyzer : ICSharpDependencyAnalyzer
                 node.Dependencies.Add(new Dependency
                 {
                     PropertyName = prop.Name,
-                    FullTypeName = propResolvedType.ToDisplayString(),
-                    ShortTypeName = propResolvedType.Name,
+                    FullTypeName = prop.Type.ToDisplayString(),
+                    ShortTypeName = prop.Type.Name,
+                    ResolvedFullTypeName = propResolvedType.ToDisplayString(),
+                    ResolvedShortTypeName = propResolvedType.Name,
                     Dependencies = [],
                     IsProperty = true,
-                    ProvidedByBaseProperty = existingPropertyName
+                    IsDisposable = IsDisposable(depSymbol),
+                    ProvidedByProperty = existingPropertyName
                 });
                 continue;
             }
@@ -94,14 +102,14 @@ public class CSharpDependencyAnalyzer : ICSharpDependencyAnalyzer
                     depSymbol
                 };
 
-                var childNode = BuildNode(depSymbol, prop.Name, compilation, implementationMap, newDependedOn, providerProperties);
+                var childNode = BuildNode(depSymbol, prop.Type as INamedTypeSymbol, prop.Name, compilation, implementationMap, newDependedOn, providerProperties);
                 childNode.IsProperty = true;
                 node.Dependencies.Add(childNode);
             }
         }
 
         // Analyze constructor parameters
-        var ctor = SelectConstructor(classSymbol);
+        var ctor = SelectConstructor(typeSymbol);
         if (ctor is not null)
         {
             foreach (var param in ctor.Parameters)
@@ -114,6 +122,7 @@ public class CSharpDependencyAnalyzer : ICSharpDependencyAnalyzer
                         FullTypeName = param.Type.ToDisplayString(),
                         ShortTypeName = param.Name,
                         IsProperty = false,
+                        IsDisposable = IsDisposable(param.Type as INamedTypeSymbol),
                     });
                     continue;
                 }
@@ -132,11 +141,14 @@ public class CSharpDependencyAnalyzer : ICSharpDependencyAnalyzer
                     node.Dependencies.Add(new Dependency
                     {
                         PropertyName = param.Name,
-                        FullTypeName = paramResolvedType.ToDisplayString(),
-                        ShortTypeName = paramResolvedType.Name,
+                        FullTypeName = param.Type.ToDisplayString(),
+                        ShortTypeName = param.Type.Name,
+                        ResolvedFullTypeName = paramResolvedType.ToDisplayString(),
+                        ResolvedShortTypeName = paramResolvedType.Name,
                         Dependencies = [],
                         IsProperty = false,
-                        ProvidedByBaseProperty = existingPropertyName
+                        IsDisposable = IsDisposable(depSymbol),
+                        ProvidedByProperty = existingPropertyName
                     });
                     continue;
                 }
@@ -149,7 +161,7 @@ public class CSharpDependencyAnalyzer : ICSharpDependencyAnalyzer
                         depSymbol
                     };
 
-                    var childNode = BuildNode(depSymbol, param.Name, compilation, implementationMap, newDependedOn, providerProperties);
+                    var childNode = BuildNode(depSymbol, param.Type as INamedTypeSymbol, param.Name, compilation, implementationMap, newDependedOn, providerProperties);
                     childNode.IsProperty = false;
                     node.Dependencies.Add(childNode);
                 }
@@ -276,6 +288,17 @@ public class CSharpDependencyAnalyzer : ICSharpDependencyAnalyzer
         }
 
         return result;
+    }
+
+    private static bool IsDisposable(INamedTypeSymbol? typeSymbol)
+    {
+        if (typeSymbol is null)
+            return false;
+        if (typeSymbol.SpecialType == SpecialType.System_Object)
+            return false;
+        if (typeSymbol.AllInterfaces.Any(i => i.ToDisplayString() == "System.IDisposable"))
+            return true;
+        return typeSymbol.BaseType?.SpecialType != SpecialType.System_Object && IsDisposable(typeSymbol.BaseType);
     }
 }
 #nullable restore

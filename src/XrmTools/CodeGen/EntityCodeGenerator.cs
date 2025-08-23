@@ -93,12 +93,13 @@ internal class EntityCodeGenerator : BaseCodeGeneratorWithSite
 
         return ThreadHelper.JoinableTaskFactory.Run(async () =>
         {
-            if (TemplateFinder.FindEntityTemplatePath(InputFilePath) is not string templateFilePath)
+            var templateFilePath = await TemplateFinder.FindEntityTemplatePathAsync(InputFilePath);
+            if (templateFilePath is null)
             { 
                 Logger.LogTrace("No template found for entity code generation.");
                 Logger.LogInformation("Creating default templates.");
                 await TemplateFileGenerator.GenerateTemplatesAsync();
-                templateFilePath = TemplateFinder.FindEntityTemplatePath(InputFilePath) ?? string.Empty;
+                templateFilePath = await TemplateFinder.FindEntityTemplatePathAsync(InputFilePath) ?? string.Empty;
                 Logger.LogCritical("Still no template found for entity code generation.");
                 if (templateFilePath == string.Empty) return Encoding.UTF8.GetBytes("// No template found for entity code generation.");
             }
@@ -110,13 +111,6 @@ internal class EntityCodeGenerator : BaseCodeGeneratorWithSite
                 return Encoding.UTF8.GetBytes("// No entity definition found for entity code generation.");
             }
 
-            Generator.Config = new XrmCodeGenConfig
-            {
-                //TODO: The GetDefaultNamespace is not required. The FileNamespace is never empty even when not set.
-                DefaultNamespace = string.IsNullOrWhiteSpace(FileNamespace) ? GetDefaultNamespace() : FileNamespace,
-                TemplateFilePath = templateFilePath
-            };
-
             var currentEnvironment = await EnvironmentProvider.GetActiveEnvironmentAsync();
             if (currentEnvironment == null || currentEnvironment == DataverseEnvironment.Empty)
             {
@@ -126,6 +120,38 @@ internal class EntityCodeGenerator : BaseCodeGeneratorWithSite
             }
 
             AddEntityMetadataToEntityConfig(inputModel);
+
+            if (inputModel.GlobalOptionSetCodeGen.Mode == Meta.Attributes.GlobalOptionSetGenerationMode.GlobalOptionSetFile)
+            {
+                inputModel.GlobalOptionSetDefinitions = inputModel.EntityDefinitions.Union(inputModel.OtherEntityDefinitions ?? [])
+                    .SelectMany(e => e.Attributes.FilterGlobalEnumAttributes())
+                    .Select(a => a.OptionSet)
+                    .Where(o => o?.Name != null)
+                    .GroupBy(o => o!.Name!)
+                    .Select(g => g.First())
+                    .ToList()!;
+
+                // Generate GlobalOptionSets.cs file if there are any global option sets.
+                if (inputModel.GlobalOptionSetDefinitions.Any())
+                {
+                    Generator.Config = new XrmCodeGenConfig
+                    {
+                        DefaultNamespace = GetDefaultNamespace() + ".OptionSets",
+                        TemplateFilePath = await TemplateFinder.FindGlobalOptionSetsTemplatePathAsync()
+                    };
+
+                    var globalOptionSetFileName = await SettingsProvider.GlobalOptionSetsFilePathAsync();
+                    var globalOptionSetCode = Generator.GenerateCode(inputModel);
+                    File.WriteAllText(globalOptionSetFileName, globalOptionSetCode);
+                }
+            }
+
+            Generator.Config = new XrmCodeGenConfig
+            {
+                //TODO: The GetDefaultNamespace is not required. The FileNamespace is never empty even when not set.
+                DefaultNamespace = string.IsNullOrWhiteSpace(FileNamespace) ? GetDefaultNamespace() : FileNamespace,
+                TemplateFilePath = templateFilePath
+            };
 
             if (GeneralOptions.Instance.LogLevel == LogLevel.Trace)
             {
@@ -223,7 +249,7 @@ internal class EntityCodeGenerator : BaseCodeGeneratorWithSite
         // Logical attributes to avoid unnecessary processing.
         var filteredAttributes =
             attributeNames.Count() == 0 ?
-            entityDefinition.Attributes :
+            entityDefinition.Attributes.Where(a => a.IsValidForRead && a.AttributeOf is null).ToArray() :
             [.. entityDefinition.Attributes.Where(a => attributeNames.Contains(a.LogicalName))];
         //    entityDefinition.Attributes.Where(a => a.AttributeType != AttributeTypeCode.EntityName && a.IsLogical != true).ToArray() :
         //    entityDefinition.Attributes.Where(a => a.AttributeType != AttributeTypeCode.EntityName && attributes.Contains(a.LogicalName)).ToArray();
@@ -233,7 +259,7 @@ internal class EntityCodeGenerator : BaseCodeGeneratorWithSite
 
         // The cloning is done because we don't want to modify the object in the cache.
         // In future when we load from local storage this might not be required.
-        if (filteredAttributes?.Length != entityDefinition.Attributes.Length)
+        if (filteredAttributes?.Length != entityDefinition.Attributes?.Length)
         {
             var clone = entityDefinition.Clone();
             var propertyInfo = typeof(EntityMetadata).GetProperty("Attributes");

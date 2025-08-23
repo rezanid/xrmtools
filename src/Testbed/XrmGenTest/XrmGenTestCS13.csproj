@@ -71,6 +71,15 @@
       <DesignTime>True</DesignTime>
       <DependentUpon>AccountCreatePlugin.cs</DependentUpon>
     </Compile>
+    <Compile Include="Entities.cs">
+      <Generator>XrmTools Entity Generator</Generator>
+      <LastGenOutput>Entities.Generated.cs</LastGenOutput>
+    </Compile>
+    <Compile Include="Entities.Generated.cs">
+      <AutoGen>True</AutoGen>
+      <DesignTime>True</DesignTime>
+      <DependentUpon>Entities.cs</DependentUpon>
+    </Compile>
     <Compile Include="TypedSdkMessages\EchoRequest.cs" />
     <Compile Include="TypedSdkMessages\EchoResponse.cs" />
     <Compile Include="ContactCreatePlugin.cs">
@@ -84,11 +93,6 @@
       <DependentUpon>ContactCreatePlugin.cs</DependentUpon>
     </Compile>
     <Compile Include="EchoApiRetrofit.cs" />
-    <Compile Include="Entities.cs">
-      <DependentUpon>Entities.yaml</DependentUpon>
-      <DesignTime>True</DesignTime>
-      <AutoGen>True</AutoGen>
-    </Compile>
     <Compile Include="LeadCreatePlugin.cs">
       <Generator>Xrm Tools Plugin Code Generator</Generator>
       <LastGenOutput>LeadCreatePlugin.Generated.cs</LastGenOutput>
@@ -109,6 +113,23 @@
       <DependentUpon>LeadCreatePlugin.cs</DependentUpon>
     </Compile>
     <Compile Include="Properties\AssemblyInfo.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="Microsoft.CrmSdk.CoreAssemblies">
+      <Version>9.0.2.59</Version>
+    </PackageReference>
+    <PackageReference Include="PolySharp">
+      <Version>1.15.0</Version>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+      <PrivateAssets>all</PrivateAssets>
+    </PackageReference>
+    <PackageReference Include="XrmTools.Meta.Attributes">
+      <Version>1.0.53</Version>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+      <PrivateAssets>all</PrivateAssets>
+    </PackageReference>
+  </ItemGroup>
+  <ItemGroup>
     <None Include="CodeGenTemplates\BigInt.sbncs" />
     <None Include="CodeGenTemplates\Boolean.sbncs" />
     <None Include="CodeGenTemplates\Customer.sbncs" />
@@ -132,27 +153,7 @@
     <None Include="CodeGenTemplates\Target.sbncs" />
     <None Include="CodeGenTemplates\UniqueIdentifier.sbncs" />
     <None Include="CodeGenTemplates\Virtual.sbncs" />
-    <None Include="Entities.yaml">
-      <Generator>XrmTools Entity Generator</Generator>
-      <LastGenOutput>Entities.cs</LastGenOutput>
-    </None>
   </ItemGroup>
-  <ItemGroup>
-    <PackageReference Include="Microsoft.CrmSdk.CoreAssemblies">
-      <Version>9.0.2.59</Version>
-    </PackageReference>
-    <PackageReference Include="PolySharp">
-      <Version>1.15.0</Version>
-      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
-      <PrivateAssets>all</PrivateAssets>
-    </PackageReference>
-    <PackageReference Include="XrmTools.Meta.Attributes">
-      <Version>1.0.52</Version>
-      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
-      <PrivateAssets>all</PrivateAssets>
-    </PackageReference>
-  </ItemGroup>
-  <ItemGroup />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <ProjectExtensions />
 </Project>

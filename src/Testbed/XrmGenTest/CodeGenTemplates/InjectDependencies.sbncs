@@ -1,10 +1,10 @@
 {{- # Initialize collections for local variables
 localTypeNames = [] -}}
 {{- localDeps = [] -}}
+{{- knownDeps = ["ITracingService", "IOrganizationServiceFactory", "IServiceEndpointNotificationService", "IManagedIdentityService"] -}}
 
 {{- # Helper function to compute a camel-cased variable name from a short type name -}}
 {{func varName(name) 
-    # Use first character in lowercase + the rest of the name
     ret (name | string.slice 0 1 | string.downcase) + (name | string.slice 1) 
 end -}}
 
@@ -13,7 +13,7 @@ end -}}
     for sub in dep.dependencies 
         gather_locals(sub) 
     end 
-    if dep.is_local_variable_needed && !dep.provided_by_base_property
+    if dep.is_local_variable_needed && !dep.provided_by_property
         if !(localTypeNames | array.contains dep.full_type_name) 
             localTypeNames = localTypeNames | array.add dep.full_type_name 
             localDeps = localDeps | array.add dep 
@@ -23,12 +23,15 @@ end -}}
 
 {{- # Function to instantiate a dependency (returns the C# expression as string) -}}
 {{func instantiate(dep) 
-    if dep.provided_by_base_property 
-        ret "this." + dep.provided_by_base_property
+    if dep.provided_by_property 
+        ret "this." + dep.provided_by_property
     end 
     if dep.full_type_name == "System.IServiceProvider" 
         ret "serviceProvider" 
-    end 
+    end
+    if (knownDeps | array.contains dep.short_type_name)
+        ret "serviceProvider.GetService(typeof(" + dep.full_type_name + ")) as " + dep.full_type_name
+    end
     if dep.is_local_variable_needed 
         # Use the shared local variable instead of a new expression
         ret varName(dep.short_type_name) 
@@ -42,22 +45,31 @@ end -}}
         else 
             $ctorList = $ctorList | array.add (instantiate(child)) 
         end 
-    end 
-    $expr = "new " + dep.full_type_name + "(" + ($ctorList | array.join ", ") + ")" 
+    end
+    #&& !(dep.full_type_name | string.starts_with 'Microsoft.Xrm')
+    if dep.is_disposable 
+        $expr = "scope.SetAndTrack("
+    else
+        $expr = "scope.Set("
+    end
+    $expr += "new " + dep.resolved_full_type_name + "(" + ($ctorList | array.join ", ") + ")" 
     if $propList.size > 0 
         $expr = $expr + " { " + ($propList | array.join ", ") + " }" 
     end 
-    ret $expr 
+    ret $expr + ")"
 end -}}
 
 {{- # Function to instantiate a dependency *even if* marked local (for local var declarations) -}}
 {{func instantiate_new(dep)
-    if dep.provided_by_base_property 
-        ret "this." + dep.provided_by_base_property
+    if dep.provided_by_property 
+        ret "this." + dep.provided_by_property
     end 
     if dep.full_type_name == "System.IServiceProvider" 
         ret "serviceProvider" 
-    end 
+    end
+    if (knownDeps | array.contains dep.short_type_name)
+        ret "serviceProvider.GetService(typeof(" + dep.full_type_name + ")) as " + dep.full_type_name
+    end
     $ctorList = [] 
     $propList = [] 
     for child in dep.dependencies 
@@ -67,7 +79,7 @@ end -}}
             $ctorList = $ctorList | array.add (instantiate(child)) 
         end 
     end 
-    $expr = "new " + dep.full_type_name + "(" + ($ctorList | array.join ", ") + ")" 
+    $expr = "new " + dep.resolved_full_type_name + "(" + ($ctorList | array.join ", ") + ")" 
     if $propList.size > 0 
         $expr = $expr + " { " + ($propList | array.join ", ") + " }" 
     end 
@@ -78,13 +90,28 @@ end -}}
 {{for dep in dependencies 
     gather_locals(dep) 
 end ~}}
-protected void InjectDependencies(IServiceProvider serviceProvider)
+{{~initialize_exists = plugintype.base_type_method_names | array.contains "InjectDependencies"~}}
+/// <summary>
+/// This method should be called in <see cref="{{plugintype.base_type_name == 'Object' ? plugintype.type_name : plugintype.base_type_name}}.Execute(IServiceProvider)"/> before
+/// any target, image or other dependencies are used.
+/// </summary>
+protected {{initialize_exists ? 'override ' : '' }}IDisposable CreateScope(IServiceProvider serviceProvider)
 {
+    {{~if initialize_exists~}}
+    var scope = base.Initialize(serviceProvider);
+    {{~else~}}
+    var scope = new DependencyScope<{{plugintype.type_name | last_segment }}>();
+    {{~end~}}
+    scope.Set<IServiceProvider>(serviceProvider);
+    scope.Set<IPluginExecutionContext>(serviceProvider.GetService(typeof(IPluginExecutionContext)) as IPluginExecutionContext);
+
 {{~ for local in localDeps ~}}
     var {{ varName(local.short_type_name) }} = {{ instantiate_new(local) }};
 {{~ end ~}}
 {{~ if localDeps.size > 0 && dependencies.size > 0 ~}}{{ "\r\n" }}{{~ end ~}}
 {{~ for dep in dependencies ~}}
-    this.{{ dep.property_name }} = {{ instantiate(dep) }};
+    scope.Set<{{ dep.full_type_name }}>({{ instantiate(dep) }});
 {{~ end ~}}
+
+    return scope;
 }

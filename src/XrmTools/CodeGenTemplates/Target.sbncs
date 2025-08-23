@@ -1,4 +1,3 @@
-{{codegen_attribute}}
 [EntityLogicalName("{{step.primary_entity_definition.logical_name}}")]
 public class {{target_type_name}} : Entity
 {
@@ -15,12 +14,45 @@ public class {{target_type_name}} : Entity
 		{{~for attribute in step.primary_entity_definition.attributes | array.filter @supported_attribute~}}
 			public const string {{attribute.schema_name}} = "{{attribute.logical_name}}";
 			{{~if attribute.attribute_type == 'Lookup' || attribute.attribute_type == 'Customer'~}}
-			public static readonly ReadOnlyCollection<string> {{attribute.schema_name}}Targets = new ReadOnlyCollection<string>(new List<string> { {{attribute.targets | array.join ',' @quote}} });
+			public static readonly ReadOnlyCollection<string> {{attribute.schema_name}}Targets =
+				new ReadOnlyCollection<string>(new string[] { {{attribute.targets | array.join ',' @quote}} });
 			{{~end~}}
 		{{~end~}}
+		
+		{{~ if step.primary_entity_definition.attributes.size < 32 ~}}
+			public static bool TryGet(string logicalName, out string attribute)
+			{
+				switch (logicalName)
+				{
+				{{~ for attribute in step.primary_entity_definition.attributes | array.filter @supported_attribute ~}}
+					case nameof({{attribute.schema_name}}): attribute = {{attribute.schema_name}}; return true;
+				{{~ end ~}}
+					default: attribute = null; return false;
+				}
+			}
+		{{~ else ~}}
+			private static readonly Dictionary<string, string> _fieldMap = new Dictionary<string, string>
+			{
+			{{~ for attribute in step.primary_entity_definition.attributes | array.filter @supported_attribute ~}}
+				{ nameof({{attribute.schema_name}}), {{attribute.schema_name}} },
+			{{~ end ~}}
+			};
+
+			public static bool TryGet(string logicalName, out string attribute)
+			{
+				return _fieldMap.TryGetValue(logicalName, out attribute);
+			}
+		{{~ end ~}}
+
+			public string this[string logicalName]
+			{
+				get => TryGet(logicalName, out var value)
+					? value
+					: throw new ArgumentException("Invalid attribute logical name.", nameof(logicalName));
+			}
 		}
 
-		public partial class Choices
+		public partial class OptionSets
 		{
 		{{~for attribute_meta in step.primary_entity_definition.attributes | filter_enum_attributes~}}
 		{{~if attribute_meta.option_set != null~}}
@@ -47,7 +79,7 @@ public class {{target_type_name}} : Entity
 	{{~description = attribute.description | get_label 1033~}}
 	/// <summary>
 	{{~if description != null && description.length > 0~}}</br>
-	/// {{description}}
+	/// {{description}}<br/>
 	{{~end~}}
 	{{~ if attribute.attribute_of != null && !attribute.attribute_of.empty?~}}
 	/// Attribute of: {{attribute.attribute_of}}</br>

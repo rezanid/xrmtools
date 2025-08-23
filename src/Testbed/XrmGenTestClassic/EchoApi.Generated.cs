@@ -8,26 +8,26 @@ using System.Collections.ObjectModel;
 using System.Globalization;
 using System.Linq;
 using System.Runtime.Serialization;
+using XrmTools;
 
 namespace XrmGenTest
 {
     [GeneratedCode("TemplatedCodeGenerator", "1.3.3.0")]
     public partial class EchoApi
     {
-	    /// <summary>
-	    /// This method should be called on every <see cref="XrmGenTest.EchoApi.Execute(IServiceProvider)"/> execution.
-	    /// </summary>
-	    /// <param name="serviceProvider"></param>
-	    /// <exception cref="InvalidPluginExecutionException"></exception>
-        internal void Initialize(IServiceProvider serviceProvider)
+        /// <summary>
+        /// This method should be called in <see cref="XrmGenTest.EchoApi.Execute(IServiceProvider)"/> before
+        /// any target, image or other dependencies are used.
+        /// </summary>
+        protected IDisposable CreateScope(IServiceProvider serviceProvider)
         {
-            if (serviceProvider == null)
-            {
-                throw new InvalidPluginExecutionException(nameof(serviceProvider) + " argument is null.");
-            }
-            var executionContext = serviceProvider.Get<IPluginExecutionContext7>();
+            var scope = new DependencyScope<EchoApi>();
+            scope.Set<IServiceProvider>(serviceProvider);
+            scope.Set<IPluginExecutionContext>(serviceProvider.GetService(typeof(IPluginExecutionContext)) as IPluginExecutionContext);
+        
+        
+            return scope;
         }
-
 	    protected static T EntityOrDefault<T>(DataCollection<string, object> keyValues, string key) where T : Entity
         {
             if (keyValues is null) return default;

@@ -9,7 +9,7 @@ using XrmTools.Meta.Model.Configuration;
 internal interface IXrmCodeGenerator
 {
     public XrmCodeGenConfig? Config { get; set; }
-    ValidationResult IsValid(PluginAssemblyConfig plugin);
-    string GenerateCode(PluginAssemblyConfig plugin);
+    ValidationResult IsValid(PluginAssemblyConfig inputModel);
+    string GenerateCode(PluginAssemblyConfig inputModel);
 }
 #nullable restore

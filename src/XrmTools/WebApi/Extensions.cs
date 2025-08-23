@@ -5,7 +5,6 @@ using System;
 using System.Linq;
 using System.Net.Http;
 using System.Threading.Tasks;
-using XrmTools.Meta.Model;
 using XrmTools.Core.Helpers;
 
 public static partial class Extensions

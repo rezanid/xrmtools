@@ -13,7 +13,7 @@ public abstract class PluginBase : IPlugin
         {
             throw new InvalidPluginExecutionException(nameof(serviceProvider));
         }
-        var executionContext = serviceProvider.Get<IPluginExecutionContext7>();
+        var executionContext = serviceProvider.Get<IPluginExecutionContext>();
         var organizationService = serviceProvider.GetOrganizationService(executionContext.UserId);
         var tracing = serviceProvider.Get<ITracingService>();
         Initialize(serviceProvider);

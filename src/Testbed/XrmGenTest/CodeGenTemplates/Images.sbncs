@@ -1,8 +1,6 @@
 {{~for image in step.images~}}
 {{~base_class_name = (plugintype.steps | array.size > 1 ? step.message_name : '') + image.name + (step.primary_entity_definition.display_name.localized_labels[0].label | tokenize)~}}
-{{codegen_attribute}}
 [EntityLogicalName("{{step.primary_entity_definition.logical_name}}")]
-{{~#public class {image.name}{step.primary_entity_definition.schema_name} : Entity~}}
 public class {{base_class_name}} : Entity
 {
 	public static class Meta
@@ -18,12 +16,45 @@ public class {{base_class_name}} : Entity
 		{{~for attribute in image.message_property_definition.attributes~}}
 			public const string {{attribute.schema_name}} = "{{attribute.logical_name}}";
 			{{~if attribute.attribute_type == 'Lookup' || attribute.attribute_type == 'Customer'~}}
-			public static readonly ReadOnlyCollection<string> {{attribute.schema_name}}Targets = new ReadOnlyCollection<string>(new List<string> { {{attribute.targets | array.join ',' @quote}} });
+			public static readonly ReadOnlyCollection<string> {{attribute.schema_name}}Targets =
+				new ReadOnlyCollection<string>(new string[] { {{attribute.targets | array.join ',' @quote}} });
 			{{~end~}}
 		{{~end~}}
+		
+		{{~ if image.message_property_definition.attributes.size < 32 ~}}
+			public static bool TryGet(string logicalName, out string attribute)
+			{
+				switch (logicalName)
+				{
+				{{~ for attribute in image.message_property_definition.attributes | array.filter @supported_attribute ~}}
+					case nameof({{attribute.schema_name}}): attribute = {{attribute.schema_name}}; return true;
+				{{~ end ~}}
+					default: attribute = null; return false;
+				}
+			}
+		{{~ else ~}}
+			private static readonly Dictionary<string, string> _fieldMap = new Dictionary<string, string>
+			{
+			{{~ for attribute in image.message_property_definition.attributes | array.filter @supported_attribute ~}}
+				{ nameof({{attribute.schema_name}}), {{attribute.schema_name}} },
+			{{~ end ~}}
+			};
+
+			public static bool TryGet(string logicalName, out string attribute)
+			{
+				return _fieldMap.TryGetValue(logicalName, out attribute);
+			}
+		{{~ end ~}}
+
+			public string this[string logicalName]
+			{
+				get => TryGet(logicalName, out var value)
+					? value
+					: throw new ArgumentException("Invalid attribute logical name.", nameof(logicalName));
+			}
 		}
 
-		public partial class Choices
+		public partial class OptionSets
 		{
 		{{~for attribute_meta in image.message_property_definition.attributes | filter_enum_attributes~}}
 		{{~if attribute_meta.option_set != null~}}

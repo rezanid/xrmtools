@@ -4,14 +4,16 @@ using Microsoft.VisualStudio.Shell;
 using System;
 using System.ComponentModel.Composition;
 using System.IO;
+using System.Threading.Tasks;
 using XrmTools.CodeGen;
 using XrmTools.Logging.Compatibility;
 using XrmTools.Settings;
 
 public interface ITemplateFinder
 {
-    string? FindEntityTemplatePath(string inputFile);
-    string? FindPluginTemplatePath(string inputFile);
+    Task<string?> FindEntityTemplatePathAsync(string inputFile);
+    Task<string?> FindPluginTemplatePathAsync(string inputFile);
+    Task<string?> FindGlobalOptionSetsTemplatePathAsync();
 }
 
 [Export(typeof(ITemplateFinder))]
@@ -20,7 +22,7 @@ public class TemplatePathFinder(ISettingsProvider settings, ILogger<TemplatePath
 {
     private readonly ISettingsProvider settings = settings ?? throw new ArgumentNullException(nameof(settings));
 
-    public string? FindEntityTemplatePath(string inputFile)
+    public async Task<string?> FindEntityTemplatePathAsync(string inputFile)
     {
         var templateFilePath = inputFile + Constants.ScribanTemplateExtensionWithDot;
         if (File.Exists(templateFilePath))
@@ -28,7 +30,7 @@ public class TemplatePathFinder(ISettingsProvider settings, ILogger<TemplatePath
             return templateFilePath;
         }
 
-        templateFilePath = ThreadHelper.JoinableTaskFactory.Run(settings.EntityTemplateFilePathAsync);
+        templateFilePath = await settings.EntityTemplateFilePathAsync();
         if (!string.IsNullOrWhiteSpace(templateFilePath) && File.Exists(templateFilePath))
         {
             return templateFilePath!;
@@ -39,7 +41,7 @@ public class TemplatePathFinder(ISettingsProvider settings, ILogger<TemplatePath
         return null;
     }
 
-    public string? FindPluginTemplatePath(string inputFile)
+    public async Task<string?> FindPluginTemplatePathAsync(string inputFile)
     {
         var templateFilePath = Path.Combine(Path.GetDirectoryName(inputFile), Path.GetFileNameWithoutExtension(inputFile)) + Constants.ScribanTemplateExtensionWithDot;
         if (File.Exists(templateFilePath))
@@ -47,7 +49,7 @@ public class TemplatePathFinder(ISettingsProvider settings, ILogger<TemplatePath
             return templateFilePath;
         }
 
-        templateFilePath = ThreadHelper.JoinableTaskFactory.Run(settings.PluginTemplateFilePathAsync);
+        templateFilePath = await settings.PluginTemplateFilePathAsync();
         if (!string.IsNullOrWhiteSpace(templateFilePath) && File.Exists(templateFilePath))
         {
             return templateFilePath!;
@@ -57,6 +59,20 @@ public class TemplatePathFinder(ISettingsProvider settings, ILogger<TemplatePath
 
         return null;
     }
+
+    public async Task<string?> FindGlobalOptionSetsTemplatePathAsync()
+    {
+        var templateFilePath = await settings.GlobalOptionSetsTemplateFilePathAsync();
+        if (!string.IsNullOrWhiteSpace(templateFilePath) && File.Exists(templateFilePath))
+        {
+            return templateFilePath!;
+        }
+
+        logger.LogWarning("Failed to find any template for global option sets code generation. Consequently default global option sets generation template will be created.");
+
+        return null;
+    }
+
 }
 
 #nullable restore

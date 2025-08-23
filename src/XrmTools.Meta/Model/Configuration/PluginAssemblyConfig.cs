@@ -28,17 +28,33 @@ public sealed class PluginAssemblyConfig : PluginAssembly//, IPluginAssemblyConf
     /// </summary>
     public ICollection<EntityConfig> Entities { get; set; } = [];
 
+    /// <summary>
+    /// Gets or sets the collection of additional entity that are not part of current
+    /// scope. When parsing a C# document, it refers to other entities not in the document.
+    /// </summary>
+    public ICollection<EntityConfig> OtherEntities { get; set; } = [];
+
     [JsonIgnore]
     public ICollection<EntityMetadata>? EntityDefinitions { get; set; }
 
     [JsonIgnore]
-    public string? FilePath { get; set; }
+    public ICollection<EntityMetadata>? OtherEntityDefinitions { get; set; }
 
+    [JsonIgnore]
+    public ICollection<OptionSetMetadata>? GlobalOptionSetDefinitions { get; set; }
+
+    [JsonIgnore]
+    public string? FilePath { get; set; }
 
     [JsonPropertyOrder(1)]
     public CodeGenReplacePrefixConfig ReplacePrefixes { get; set; } = new();
 
+    [JsonPropertyOrder(2)]
+    public CodeGenGlobalOptionSetsConfig GlobalOptionSetCodeGen { get; set; } = new();
+
     public Solution? Solution { get; set; }
 
     public new ICollection<PluginTypeConfig> PluginTypes { get; set; } = [];
+
+    public ICollection<PluginTypeConfig> OtherPluginTypes { get; set; } = [];
 }

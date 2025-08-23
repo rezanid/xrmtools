@@ -8,7 +8,7 @@
     /// Each time you save the file, all entities will be regenerated.
     /// Example usage: [assembly: Entity("contact", AttributeNames = "firstname,lastname")]
     /// </summary>
-    [AttributeUsage(AttributeTargets.Assembly | AttributeTargets.Class, AllowMultiple = true, Inherited = false)]
+    [AttributeUsage(AttributeTargets.Assembly, AllowMultiple = true, Inherited = false)]
     public class EntityAttribute : Attribute
     {
         /// <summary>

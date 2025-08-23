@@ -3,9 +3,9 @@ namespace XrmTools.Meta.Attributes
     using System;
 
     /// <summary>
-    /// Attribute to specify prefixes to replace during entity code generation.
+    /// Specifies prefixes to replace during entity code generation.
     /// </summary>
-    [AttributeUsage(AttributeTargets.Assembly | AttributeTargets.Class, AllowMultiple = true, Inherited = false)]
+    [AttributeUsage(AttributeTargets.Assembly, AllowMultiple = true, Inherited = false)]
     public class CodeGenReplacePrefixesAttribute : Attribute
     {
         /// <summary>

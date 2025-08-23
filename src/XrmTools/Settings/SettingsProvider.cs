@@ -25,23 +25,37 @@ public interface ISettingsProvider
     /// <returns></returns>
     Task<string?> ConnectionStringAsync();
     /// <summary>
-    /// Searchs for the entity template file path in the following order and checks if the file exists:
+    /// Searchs for the entity template file path in the following order:
     /// 1. Project user settings
     /// 2. Project settings
     /// 3. Solution user settings
     /// 4. Solution settings
     /// </summary>
-    /// <returns>Full file path or null if not the setting is not set or the file does not exist.</returns>
+    /// <returns>Full file path or null if the setting is not set.</returns>
     Task<string?> EntityTemplateFilePathAsync();
     /// <summary>
-    /// Searchs for the plugin template file path in the following order and checks if the file exists:
+    /// Searchs for the plugin template file path in the following order:
     /// 1. Project user settings
     /// 2. Project settings
     /// 3. Solution user settings
     /// 4. Solution settings
     /// </summary>
-    /// <returns>Full file path or null if not the setting is not set or the file does not exist.</returns>
+    /// <returns>Full file path or null if the setting is not set.</returns>
     Task<string?> PluginTemplateFilePathAsync();
+    /// <summary>
+    /// Searchs for the global option sets template file path in the following order:
+    /// 1. Project user settings
+    /// 2. Project settings
+    /// 3. Solution user settings
+    /// 4. Solution settings
+    /// </summary>
+    /// <returns>Full file path or null if the setting is not set.</returns>
+    Task<string?> GlobalOptionSetsTemplateFilePathAsync();
+    /// <summary>
+    /// Searchs for the GlobalOptionSets file path in the active project settings.
+    /// </summary>
+    /// <returns>Full file path or null if the setting is not set.</returns>
+    Task<string?> GlobalOptionSetsFilePathAsync();
 }
 
 [ComVisible(true)]
@@ -77,7 +91,23 @@ public class SettingsProvider : ISettingsProvider
         ?? await ResolveFilePathAsync(await ProjectSettings.PluginTemplateFilePathAsync(), true, false)
         ?? await ResolveFilePathAsync(SolutionUserSettings.PluginTemplateFilePath(), false, true)
         ?? await ResolveFilePathAsync(SolutionSettings.PluginTemplateFilePath(), false, true);
-     
+    /// <inheritdoc cref="ISettingsProvider.GlobalOptionSetsTemplateFilePathAsync"/>
+    public async Task<string?> GlobalOptionSetsTemplateFilePathAsync()
+        => await ResolveFilePathAsync(await ProjectUserSettings.GlobalOptionSetsTemplateFilePathAsync(), true, false)
+        ?? await ResolveFilePathAsync(await ProjectSettings.GlobalOptionSetsTemplateFilePathAsync(), true, false)
+        ?? await ResolveFilePathAsync(SolutionUserSettings.GlobalOptionSetsTemplateFilePath(), false, true)
+        ?? await ResolveFilePathAsync(SolutionSettings.GlobalOptionSetsTemplateFilePath(), false, true);
+    public async Task<string?> GlobalOptionSetsFilePathAsync()
+    {
+        var path = await ProjectSettings.GlobalOptionSetsFilePathAsync();
+        if (string.IsNullOrWhiteSpace(path))
+        {
+            path = "GlobalOptionSets.cs";
+        }
+        return await ResolveFilePathAsync(path, true, false);
+    }
+
+
     private async Task<string?> ResolveFilePathAsync(string? filePath, bool atProjectLevel, bool atSolutionLevel)
     {
         if (string.IsNullOrWhiteSpace(filePath)) return null;
