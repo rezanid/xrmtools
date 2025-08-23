@@ -1,6 +1,6 @@
 ﻿using Microsoft.Xrm.Sdk;
 using System;
-using System.Web.UI.WebControls;
+using XrmGenTestClassic;
 using XrmTools;
 using XrmTools.Meta.Attributes;
 

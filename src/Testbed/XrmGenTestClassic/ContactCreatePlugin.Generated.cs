@@ -134,7 +134,10 @@ namespace XrmGenTest
 	    	}
 	    }
 	    
-	    public CreateTargetContact CreateTarget { get => EntityOrDefault<CreateTargetContact>(Require<IPluginExecutionContext>().InputParameters, "Target"); }
+	    public CreateTargetContact CreateTarget
+        {
+            get => EntityOrDefault<CreateTargetContact>(DependencyScope<ContactCreatePlugin>.Current.Require<IPluginExecutionContext>().InputParameters, "Target");
+        }
 
 	    [EntityLogicalName("contact")]
 	    public class UpdateTargetContact : Entity
@@ -237,7 +240,10 @@ namespace XrmGenTest
 	    	}
 	    }
 	    
-	    public UpdateTargetContact UpdateTarget { get => EntityOrDefault<UpdateTargetContact>(Require<IPluginExecutionContext>().InputParameters, "Target"); }
+	    public UpdateTargetContact UpdateTarget
+        {
+            get => EntityOrDefault<UpdateTargetContact>(DependencyScope<ContactCreatePlugin>.Current.Require<IPluginExecutionContext>().InputParameters, "Target");
+        }
 
 
 	    protected static T EntityOrDefault<T>(DataCollection<string, object> keyValues, string key) where T : Entity

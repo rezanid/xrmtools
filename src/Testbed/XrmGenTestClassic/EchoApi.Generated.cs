@@ -8,26 +8,26 @@ using System.Collections.ObjectModel;
 using System.Globalization;
 using System.Linq;
 using System.Runtime.Serialization;
+using XrmTools;
 
 namespace XrmGenTest
 {
     [GeneratedCode("TemplatedCodeGenerator", "1.3.3.0")]
     public partial class EchoApi
     {
-	    /// <summary>
-	    /// This method should be called on every <see cref="XrmGenTest.EchoApi.Execute(IServiceProvider)"/> execution.
-	    /// </summary>
-	    /// <param name="serviceProvider"></param>
-	    /// <exception cref="InvalidPluginExecutionException"></exception>
-        internal void Initialize(IServiceProvider serviceProvider)
+        /// <summary>
+        /// This method should be called in <see cref="XrmGenTest.EchoApi.Execute(IServiceProvider)"/> before
+        /// any target, image or other dependencies are used.
+        /// </summary>
+        protected IDisposable CreateScope(IServiceProvider serviceProvider)
         {
-            if (serviceProvider == null)
-            {
-                throw new InvalidPluginExecutionException(nameof(serviceProvider) + " argument is null.");
-            }
-            var executionContext = serviceProvider.Get<IPluginExecutionContext7>();
+            var scope = new DependencyScope<EchoApi>();
+            scope.Set<IServiceProvider>(serviceProvider);
+            scope.Set<IPluginExecutionContext>(serviceProvider.GetService(typeof(IPluginExecutionContext)) as IPluginExecutionContext);
+        
+        
+            return scope;
         }
-
 	    protected static T EntityOrDefault<T>(DataCollection<string, object> keyValues, string key) where T : Entity
         {
             if (keyValues is null) return default;
@@ -43,17 +43,8 @@ namespace XrmGenTest
         protected static EchoApi.Request GetRequest(IExecutionContext context)
         {
             var request = new EchoApi.Request();
-            // type: Boolean
-            // type_name: bool?
-            // full_type_name: bool?
             request.BooleanParameter = context.InputParameters.TryGetValue("BooleanParameter", out bool? booleanparameter) ? booleanparameter : default;
-            // type: DateTime
-            // type_name: DateTime
-            // full_type_name: System.DateTime
             request.DateTimeParameter = context.InputParameters.TryGetValue("DateTimeParameter", out System.DateTime datetimeparameter) ? datetimeparameter : default;
-            // type: Decimal
-            // type_name: decimal
-            // full_type_name: decimal
             request.DecimalParameter = context.InputParameters.TryGetValue("DecimalParameter", out decimal decimalparameter) ? decimalparameter : default;
             if (context.InputParameters.TryGetValue("EntityParameter", out Entity entityparameter)
                 && entityparameter != null)
@@ -91,13 +82,7 @@ namespace XrmGenTest
                     }).ToList();
             }
             request.EntityReferenceParameter = context.InputParameters.TryGetValue("EntityReferenceParameter", out Microsoft.Xrm.Sdk.EntityReference entityreferenceparameter) ? entityreferenceparameter : default;
-            // type: Float
-            // type_name: double
-            // full_type_name: double
             request.FloatParameter = context.InputParameters.TryGetValue("FloatParameter", out double floatparameter) ? floatparameter : default;
-            // type: Integer
-            // type_name: int
-            // full_type_name: int
             request.IntegerParameter = context.InputParameters.TryGetValue("IntegerParameter", out int integerparameter) ? integerparameter : default;
             request.MoneyParameter = context.InputParameters.TryGetValue("MoneyParameter", out Microsoft.Xrm.Sdk.Money moneyparameter) ? moneyparameter : default;
             request.PicklistParameter = context.InputParameters.TryGetValue("PicklistParameter", out OptionSetValue picklistparameter) ? picklistparameter : default;

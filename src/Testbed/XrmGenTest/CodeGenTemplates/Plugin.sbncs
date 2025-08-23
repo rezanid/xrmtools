@@ -41,10 +41,7 @@ namespace {{ first_plugin_type?.namespace ?? config.default_namespace }}
 	    {{~if step.images~}}
 	    {{include 'Images.sbncs'~}}
 	    {{~end~}}
-	    public {{target_type_name}} {{target_name}}
-        {
-            get => EntityOrDefault<{{target_type_name}}>(DependencyScope<{{plugintype.type_name | last_segment }}>.Current.Require<IPluginExecutionContext>().InputParameters, "Target");
-        }
+	    public {{target_type_name}} {{target_name}} { get => EntityOrDefault<{{target_type_name}}>(Require<IPluginExecutionContext>().InputParameters, "Target"); }
 
 	    {{~for image in step.images~}}
         {{~image_type_name = (plugintype.steps | array.size > 1 ? step.message_name : '') + image.name + (step.primary_entity_definition.schema_name)~}}
