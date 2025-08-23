@@ -66,6 +66,11 @@ internal class CSharpXrmMetaDataService(ICSharpXrmMetaParser parser) : IXrmMetaD
             var pluginTypes = await ParsePluginConfigsFromDocumentAsync(document, compilation, processedSymbols, semanticModelCache, cancellationToken).ConfigureAwait(false);
             pluginTypes.ForEach(config.PluginTypes.Add);
 
+            var allPluginsTypes = compilation.GetProjectTypesWithAttribute(typeof(PluginAttribute).FullName);
+            config.OtherPluginTypes = allPluginsTypes.Where(p => !pluginTypes.Any(currentPlugin => currentPlugin.TypeName == p.ToDisplayString()))
+                .Select(p => new PluginTypeConfig { TypeName = p.ToDisplayString() })
+                .ToList();
+
             return config;
         }
         catch (Exception ex)

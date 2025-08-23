@@ -15,8 +15,6 @@ using XrmTools.Meta.Attributes;
 using XrmTools.WebApi;
 using XrmTools.WebApi.Entities;
 using System.Collections.Generic;
-using XrmTools.Meta.Model;
-using XrmTools.WebApi.Methods;
 
 [ExportCodeRefactoringProvider(LanguageNames.CSharp, Name = nameof(PluginRefactoringProvider)), Shared]
 public class PluginRefactoringProvider : CodeRefactoringProvider

@@ -154,8 +154,36 @@ internal sealed class RegisterPluginCommand : BaseCommand<RegisterPluginCommand>
             {
                 inputModel.Id = existingAssembly.Id;
                 Logger.LogInformation($"Found existing assembly ({existingAssembly.Id}).");
+
+                if (activeItem.Type != SolutionItemType.Project)
+                {
+                    var removedPlugins = existingAssembly.PluginTypes
+                        .Where(existing => !inputModel.PluginTypes.Any(p => p.TypeName == existing.TypeName) && !inputModel.OtherPluginTypes.Any(p => p.TypeName == existing.TypeName))
+                        .ToArray();
+                    if (removedPlugins.Length > 0)
+                    {
+                        var removedPluginNames = string.Join(", ", removedPlugins.Select(p => p.TypeName));
+                        var confirmed = await VS.MessageBox.ShowConfirmAsync("Xrm Tools", "Looks like you have removed the following plugins. Continuing will remove these plugins from Dataverse too. Is that ok?\r\n" + removedPluginNames);
+                        if (confirmed)
+                        {
+                            foreach (var removedPlugin in removedPlugins)
+                            {
+                                requests.AddRange(removedPlugin.Steps.Select(s => new DeleteRequest(SdkMessageProcessingStep.CreateReference(s.Id!.Value))));
+                                if (removedPlugin.CustomApi.Count > 0)
+                                {
+                                    requests.Add(new DeleteRequest(CustomApi.CreateReference(removedPlugin.CustomApi[0].Id!.Value)));
+                                }
+                                requests.Add(new DeleteRequest(PluginType.CreateReference(removedPlugin.Id!.Value)));
+                            }
+                            //requests.AddRange(
+                            //    removedPlugins.SelectMany(p => p.Steps)
+                            //    .Select(s => new DeleteRequest(SdkMessageProcessingStep.CreateReference(s.Id!.Value))));
+                        }
+                    }
+                }
+
                 requests.AddRange(GenerateDeleteRequestsForCleanup(
-                    newAssembly: inputModel, existingAssembly: existingAssembly, skipPluginTypes: true));
+                    newAssembly: inputModel, existingAssembly: existingAssembly, deleteRemovedPlugins: activeItem.Type == SolutionItemType.Project));
                 Logger.LogInformation($"Generated {requests.Count} delete requests for cleanup.");
             }
             AssignIds(inputModel, existingAssembly);
@@ -417,7 +445,7 @@ internal sealed class RegisterPluginCommand : BaseCommand<RegisterPluginCommand>
     }
 
     private ICollection<HttpRequestMessage> GenerateDeleteRequestsForCleanup(
-        PluginAssemblyConfig newAssembly, PluginAssembly existingAssembly, bool skipPluginTypes)
+        PluginAssemblyConfig newAssembly, PluginAssembly existingAssembly, bool deleteRemovedPlugins)
     {
         var deleteRequests = new List<HttpRequestMessage>();
 
@@ -444,9 +472,13 @@ internal sealed class RegisterPluginCommand : BaseCommand<RegisterPluginCommand>
                     }
                 }
             }
-            // Delete all existing plugin types (if needed)
-            else if (!skipPluginTypes)
+            // Delete all existing plugin types that were removed from the new assembly.
+            else if (deleteRemovedPlugins)
             {
+                if (existingPlugin.CustomApi is not null && existingPlugin.CustomApi.Count > 0 && existingPlugin.CustomApi[0] is CustomApi api)
+                {
+                    deleteRequests.Add(new DeleteRequest(CustomApi.CreateReference(api.Id!.Value)));
+                }
                 deleteRequests.Add(new DeleteRequest(PluginType.CreateReference(existingPlugin.Id!.Value)));
             }
         }
