@@ -269,7 +269,7 @@ namespace XrmTools.Resources {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to No plugin code generation template has been specified. You need to create a Scriban template for the code generator to work. For more information please visit https://rezanid.github.io/xrmtools/docs/howto/write-a-plugin-template.
+        ///   Looks up a localized string similar to Did you forget to add [Plugin] attribute to your plugin class? If not it can be your code generation template is not correctly setup. You need to create a Scriban template for the code generator to work. For more information please visit https://rezanid.github.io/xrmtools/docs/howto/write-a-plugin-template..
         /// </summary>
         internal static string PluginGenerator_TemplateNotSet {
             get {

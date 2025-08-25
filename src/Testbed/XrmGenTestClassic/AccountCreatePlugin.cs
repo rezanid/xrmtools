@@ -5,7 +5,7 @@
     using XrmTools.Meta.Attributes;
 
     [Plugin]
-    [Step("Create", "account", "name, description,accountnumber", Stages.PreOperation, ExecutionMode.Synchronous)]
+    [Step("Create", "account", "name, description, accountnumber", Stages.PreOperation, ExecutionMode.Synchronous)]
     public partial class AccountCreatePlugin : IPlugin
     {
         public void Execute(IServiceProvider serviceProvider)

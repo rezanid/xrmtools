@@ -28,6 +28,7 @@ namespace XrmGenTest
             }
             catch (Exception ex)
             {
+                TracingService.Trace("Unhandled Exception: " + ex.ToString());
                 throw new InvalidPluginExecutionException("Something went wrong! " + ex.ToString(), ex);
             }
         }
