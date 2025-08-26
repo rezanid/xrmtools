@@ -116,9 +116,9 @@
       <IsXrmPlugin>True</IsXrmPlugin>
     </Compile>
     <Compile Include="ContactCreatePlugin.Generated.cs">
-      <DependentUpon>ContactCreatePlugin.cs</DependentUpon>
       <AutoGen>True</AutoGen>
       <DesignTime>True</DesignTime>
+      <DependentUpon>ContactCreatePlugin.cs</DependentUpon>
     </Compile>
     <Compile Include="EchoApi.cs">
       <Generator>Xrm Tools Plugin Code Generator</Generator>

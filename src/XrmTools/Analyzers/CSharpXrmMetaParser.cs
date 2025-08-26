@@ -123,7 +123,11 @@ internal class CSharpXrmMetaParser(
     }
 
     public EntityConfig ParseEntityConfig(AttributeData entityAttribute)
-        => new EntityConfig().SetPropertiesFromAttribute(entityAttribute);
+    {
+        var entity = new EntityConfig().SetPropertiesFromAttribute(entityAttribute);
+        entity.AttributeNames = entity.AttributeNames?.Replace(" ", "");
+        return entity;
+    }
 
     public PluginTypeConfig? ParsePluginConfig(INamedTypeSymbol typeSymbol, Compilation compilation)
     {

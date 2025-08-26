@@ -135,6 +135,18 @@
           <LocCanonicalName>.XrmTools.SetAsPluginFile</LocCanonicalName>
         </Strings>
       </Button>
+      <!--[Item Context Menu] > "Reset code generation templates"-->
+      <Button guid="XrmToolsCmdSetId" id="ResetCodeGenTemplatesCmdId" priority="0x0100" type="Button">
+        <Parent guid="XrmToolsCmdSetId" id="XrmToolsContextMenuGroup" />
+        <Icon guid="ImageCatalogGuid" id="CleanData" />
+        <CommandFlag>IconIsMoniker</CommandFlag>
+        <CommandFlag>DynamicVisibility</CommandFlag>
+        <CommandFlag>AllowParams</CommandFlag>
+        <Strings>
+          <ButtonText>Reset code generation templates</ButtonText>
+          <LocCanonicalName>.XrmTools.ResetTemplates</LocCanonicalName>
+        </Strings>
+      </Button>
       <!-- [Item Context Menu] > "Register plugin(s)"-->
       <Button guid="XrmToolsCmdSetId" id="RegisterPluginCmdId" priority="0x100" type="Button">
         <Parent guid="XrmToolsCmdSetId" id="XrmToolsContextMenuGroup" />
@@ -228,16 +240,20 @@
     <!--<CommandPlacement guid="XrmToolsCmdSetId" id="XrmToolsToolbarGroup" priority="0x0100">
       <Parent guid="XrmToolsCmdSetId" id="XrmToolsToolbar" />
     </CommandPlacement>-->
+    <CommandPlacement guid="XrmToolsCmdSetId" id="ResetCodeGenTemplatesCmdId" priority="0x0200">
+      <Parent guid="XrmToolsCmdSetId" id="XrmToolsProjectContextMenuGroup"/>
+    </CommandPlacement>
   </CommandPlacements>
 
   <VisibilityConstraints>
     <VisibilityItem guid="XrmToolsCmdSetId" id="SetCustomToolEntityGeneratorCmdId" context="SetCustomToolEntitiesCmdUIRule" />
     <VisibilityItem guid="XrmToolsCmdSetId" id="SetCustomToolPluginGeneratorCmdId" context="SetCustomToolPluginDefitionCmdUIRule" />
     <!--<VisibilityItem guid="XrmToolsCmdSetId" id="RegisterPluginCmdId" context="SetCustomToolPluginDefitionCmdUIRule" />-->
-    <VisibilityItem guid="XrmToolsCmdSetId" id="SetPluginGeneratorTemplateInSolutionCmdId" context="SetPluginGeneratorTemplateCmdUIRule" />
-    <VisibilityItem guid="XrmToolsCmdSetId" id="SetPluginGeneratorTemplateInProjectCmdId" context="SetPluginGeneratorTemplateCmdUIRule" />
-    <VisibilityItem guid="XrmToolsCmdSetId" id="SetEntityGeneratorTemplateInSolutionCmdId" context="SetPluginGeneratorTemplateCmdUIRule" />
-    <VisibilityItem guid="XrmToolsCmdSetId" id="SetEntityGeneratorTemplateInProjectCmdId" context="SetPluginGeneratorTemplateCmdUIRule" />
+    <VisibilityItem guid="XrmToolsCmdSetId" id="SetPluginGeneratorTemplateInSolutionCmdId" context="CodeGenerationTemplateCmdUIRule" />
+    <VisibilityItem guid="XrmToolsCmdSetId" id="SetPluginGeneratorTemplateInProjectCmdId" context="CodeGenerationTemplateCmdUIRule" />
+    <VisibilityItem guid="XrmToolsCmdSetId" id="SetEntityGeneratorTemplateInSolutionCmdId" context="CodeGenerationTemplateCmdUIRule" />
+    <VisibilityItem guid="XrmToolsCmdSetId" id="SetEntityGeneratorTemplateInProjectCmdId" context="CodeGenerationTemplateCmdUIRule" />
+    <VisibilityItem guid="XrmToolsCmdSetId" id="ResetCodeGenTemplatesCmdId" context="CSProjOrCodeGenerationTemplateCmdUIRule" />
     <!--<VisibilityItem guid="XrmToolsCmdSetId" id="NewPluginDefinitionCmdId" context="NewPluginDefinitionCmdUIRule" />-->
   </VisibilityConstraints>
 
@@ -249,7 +265,8 @@
     <GuidSymbol name="SetCustomToolEntitiesCmdUIRule" value="{6b9f081c-67ed-43f3-8434-237387ae4f5d}" />
     <GuidSymbol name="SetCustomToolPluginDefitionCmdUIRule" value="{ee3324f2-0e72-4af6-bcba-ac3af05df4e8}" />
     <!--<GuidSymbol name="NewPluginDefinitionCmdUIRule" value="{87765b0d-0ab7-4812-9668-a2d621957cf9}" />-->
-    <GuidSymbol name="SetPluginGeneratorTemplateCmdUIRule" value="{be4c5f8f-c72b-4442-9b9c-d2b5f7f2b9a0}" />
+    <GuidSymbol name="CodeGenerationTemplateCmdUIRule" value="{be4c5f8f-c72b-4442-9b9c-d2b5f7f2b9a0}" />
+    <GuidSymbol name="CSProjOrCodeGenerationTemplateCmdUIRule" value="{f3e2d1c4-2b6e-4f7a-8e2e-5c9f0b6e4d3a}" />
                       
     <!-- MEF Services-->
     <GuidSymbol name="guidEnvironmentSelector" value="{1c9aad2b-53da-44b8-89ad-0e1d49945198}"/>
@@ -266,6 +283,7 @@
       <!--<IDSymbol name="NewPluginDefinitionCmdId" value="0x0200" />-->
       <IDSymbol name="SetCustomToolPluginGeneratorCmdId" value="0x0300" />
       <IDSymbol name="SetCustomToolEntityGeneratorCmdId" value="0x0310" />
+      <IDSymbol name="ResetCodeGenTemplatesCmdId" value="0x0320"/>
       <IDSymbol name="SetPluginGeneratorTemplateInSolutionCmdId" value="0x0800"/>
       <IDSymbol name="SetPluginGeneratorTemplateInProjectCmdId" value="0x0810"/>
       <IDSymbol name="SetEntityGeneratorTemplateInSolutionCmdId" value="0x0820"/>

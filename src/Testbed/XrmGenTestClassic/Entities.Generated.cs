@@ -13,7 +13,7 @@ namespace XrmGenTestClassic
 	/// <summary>
 	/// Display Name: Contact
 	/// </summary>
-	[GeneratedCode("TemplatedCodeGenerator", "1.3.3.0")]
+	[GeneratedCode("TemplatedCodeGenerator", "1.4.0.0")]
 	[EntityLogicalName("contact")]
 	[global::System.Diagnostics.CodeAnalysis.ExcludeFromCodeCoverage]
 	public partial class Contact : Entity
@@ -91,9 +91,9 @@ namespace XrmGenTestClassic
 		public Contact(KeyAttributeCollection keyAttributes) : base(Meta.EntityLogicalName, keyAttributes) { }
 	}
 	/// <summary>
-	/// Display Name: Partner
+	/// Display Name: Account
 	/// </summary>
-	[GeneratedCode("TemplatedCodeGenerator", "1.3.3.0")]
+	[GeneratedCode("TemplatedCodeGenerator", "1.4.0.0")]
 	[EntityLogicalName("account")]
 	[global::System.Diagnostics.CodeAnalysis.ExcludeFromCodeCoverage]
 	public partial class Account : Entity
@@ -131,7 +131,6 @@ namespace XrmGenTestClassic
 				}
 			}
 
-			//
 			public partial class OptionSets
 			{
 				/// <summary>

@@ -44,12 +44,23 @@ internal class IntegratedAuthenticator : DelegatingAuthenticator
             {
                 await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync();
                 var vsUIShell = (IVsUIShell)Package.GetGlobalService(typeof(SVsUIShell));
-                if (0 != vsUIShell.GetDialogOwnerHwnd(out var phwnd)) return null;
-                result = await app.AcquireTokenInteractive(parameters.Scopes)
-                    .WithAccount(accounts.FirstOrDefault())
-                    .WithPrompt(Prompt.SelectAccount)
-                    .WithParentActivityOrWindow(phwnd)
-                    .ExecuteAsync().ConfigureAwait(false);
+                if (0 != vsUIShell.GetDialogOwnerHwnd(out var phwnd))
+                {
+                    result = await app.AcquireTokenInteractive(parameters.Scopes)
+                        .WithAccount(accounts.FirstOrDefault())
+                        .WithPrompt(Prompt.SelectAccount)
+                        .WithParentActivityOrWindow(phwnd)
+                        .ExecuteAsync().ConfigureAwait(false);
+                }
+                else
+                {
+                    result = await app.AcquireTokenInteractive(parameters.Scopes)
+                        .WithAccount(accounts.FirstOrDefault())
+                        .WithPrompt(Prompt.SelectAccount)
+                        .WithParentActivityOrWindow(phwnd)
+                        .ExecuteAsync().ConfigureAwait(false);
+
+                }
             }
             catch (MsalException)
             {
@@ -62,6 +73,7 @@ internal class IntegratedAuthenticator : DelegatingAuthenticator
         }
         if (result == null)
         {
+            // WAM cannot be used in VS 2022, so we are stuck with IWA.
             return await app.AcquireTokenByIntegratedWindowsAuth(parameters.Scopes)
                 .ExecuteAsync(cancellationToken).ConfigureAwait(false);
         }
