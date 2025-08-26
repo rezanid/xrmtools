@@ -78,14 +78,24 @@ using Task = System.Threading.Tasks.Task;
         "ActiveProjectCapability:CSharp",
         VSConstants.UICONTEXT.SolutionHasSingleProject_string,
         VSConstants.UICONTEXT.SolutionHasMultipleProjects_string])]
-[ProvideUIContextRule(PackageGuids.SetPluginGeneratorTemplateCmdUIRuleString,
-    name: "UI Context Plugin Generator Template",
+[ProvideUIContextRule(PackageGuids.CodeGenerationTemplateCmdUIRuleString,
+    name: "UI Context Code Generator Template",
     expression: "Sbn & CSharp & (SingleProj | MultiProj)",
     termNames: ["Sbn", "CSharp", "SingleProj", "MultiProj"],
     termValues: [
         "HierSingleSelectionName:.sbncs$", 
         "ActiveProjectCapability:CSharp", 
         VSConstants.UICONTEXT.SolutionHasSingleProject_string, 
+        VSConstants.UICONTEXT.SolutionHasMultipleProjects_string])]
+[ProvideUIContextRule(PackageGuids.CSProjOrCodeGenerationTemplateCmdUIRuleString,
+    name: "UI Context Code Generator Template or Project",
+    expression: "(Sbn|CSProj) & CSharp & (SingleProj | MultiProj)",
+    termNames: ["Sbn", "CSProj" , "CSharp", "SingleProj", "MultiProj"],
+    termValues: [
+        "HierSingleSelectionName:.sbncs$",
+        "HierSingleSelectionName:.csproj$",
+        "ActiveProjectCapability:CSharp",
+        VSConstants.UICONTEXT.SolutionHasSingleProject_string,
         VSConstants.UICONTEXT.SolutionHasMultipleProjects_string])]
 //[ProvideUIContextRule(PackageGuids.NewPluginDefinitionCmdUIRuleString,
 //    name: "UI Context NewPluginConfigCommand",
@@ -181,6 +191,7 @@ public sealed partial class XrmToolsPackage : ToolkitPackage
         await SetCustomToolPluginGeneratorCommand.InitializeAsync(this);
         await RegisterPluginCommand.InitializeAsync(this);
         await SelectEnvironmentCommand.InitializeAsync(this);
+        await ResetCodeGenTemplatesCommand.InitializeAsync(this);
         // The following two commands contirbute to the dropdown combo box for selecting environments.
         await ManageEnvironmentsCommand.InitializeAsync(this);
         await ManageEnvironmentsGetListCommand.InitializeAsync(this);
