@@ -187,7 +187,7 @@ namespace XrmTools.Resources {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to Missing {0} service depndency. {0} is not available..
+        ///   Looks up a localized string similar to Missing {0} service dependency. {1} is not available..
         /// </summary>
         internal static string MissingServiceDependency {
             get {
