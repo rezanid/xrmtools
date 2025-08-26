@@ -30,7 +30,7 @@ end -}}
         ret "serviceProvider" 
     end
     if (knownDeps | array.contains dep.short_type_name)
-        ret "serviceProvider.GetService(typeof(" + dep.full_type_name + ")) as " + dep.full_type_name
+        ret "(" + dep.full_type_name + ")serviceProvider.GetService(typeof(" + dep.full_type_name + "))"
     end
     if dep.is_local_variable_needed 
         # Use the shared local variable instead of a new expression
@@ -46,8 +46,7 @@ end -}}
             $ctorList = $ctorList | array.add (instantiate(child)) 
         end 
     end
-    #&& !(dep.full_type_name | string.starts_with 'Microsoft.Xrm')
-    if dep.is_disposable 
+    if dep.is_disposable
         $expr = "scope.SetAndTrack("
     else
         $expr = "scope.Set("
@@ -68,7 +67,7 @@ end -}}
         ret "serviceProvider" 
     end
     if (knownDeps | array.contains dep.short_type_name)
-        ret "serviceProvider.GetService(typeof(" + dep.full_type_name + ")) as " + dep.full_type_name
+        ret "(" + dep.full_type_name + ")serviceProvider.GetService(typeof(" + dep.full_type_name + "))"
     end
     $ctorList = [] 
     $propList = [] 
@@ -92,8 +91,7 @@ end -}}
 end ~}}
 {{~initialize_exists = plugintype.base_type_method_names | array.contains "InjectDependencies"~}}
 /// <summary>
-/// This method should be called in <see cref="{{plugintype.base_type_name == 'Object' ? plugintype.type_name : plugintype.base_type_name}}.Execute(IServiceProvider)"/> before
-/// any target, image or other dependencies are used.
+/// This method should be called before accessing any target, image or any of your dependencies.
 /// </summary>
 protected {{initialize_exists ? 'override ' : '' }}IDisposable CreateScope(IServiceProvider serviceProvider)
 {
@@ -103,7 +101,7 @@ protected {{initialize_exists ? 'override ' : '' }}IDisposable CreateScope(IServ
     var scope = new DependencyScope<{{plugintype.type_name | last_segment }}>();
     {{~end~}}
     scope.Set<IServiceProvider>(serviceProvider);
-    scope.Set<IPluginExecutionContext>(serviceProvider.GetService(typeof(IPluginExecutionContext)) as IPluginExecutionContext);
+    scope.Set<IPluginExecutionContext>((IPluginExecutionContext)serviceProvider.GetService(typeof(IPluginExecutionContext)));
 
 {{~ for local in localDeps ~}}
     var {{ varName(local.short_type_name) }} = {{ instantiate_new(local) }};
