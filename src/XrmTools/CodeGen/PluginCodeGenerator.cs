@@ -91,7 +91,7 @@ public class PluginCodeGenerator : BaseCodeGeneratorWithSite
     {
         if (string.IsNullOrWhiteSpace(inputFileContent)) { return null; }
         if (Generator is null) { return Encoding.UTF8.GetBytes("// No generator found."); }
-
+        
         return ThreadHelper.JoinableTaskFactory.Run(async () =>
         {
             PluginAssemblyConfig? inputModel = null;
@@ -109,7 +109,13 @@ public class PluginCodeGenerator : BaseCodeGeneratorWithSite
                 return null;
             }
 
-            var templateFilePath = await GetTemplateFilePathAsync(inputModel);
+            var inputFile = await PhysicalFile.FromFileAsync(inputFileName);
+            if (inputFile is null || inputFile.FindParent(SolutionItemType.Project) is not Project project)
+            {
+                return Encoding.UTF8.GetBytes("// Unable to find the project for the input file.");
+            }
+
+            var templateFilePath = await GetTemplateFilePathAsync(inputModel, project);
 
             if (string.IsNullOrEmpty(templateFilePath))
             {
@@ -122,7 +128,6 @@ public class PluginCodeGenerator : BaseCodeGeneratorWithSite
 
             Generator.Config = new XrmCodeGenConfig
             {
-                //TODO: The GetDefaultNamespace is not required. The FileNamespace is never empty even when not set.
                 DefaultNamespace = string.IsNullOrWhiteSpace(FileNamespace) ? GetDefaultNamespace() : FileNamespace,
                 TemplateFilePath = templateFilePath
             };
@@ -139,9 +144,6 @@ public class PluginCodeGenerator : BaseCodeGeneratorWithSite
 
             if (GeneralOptions.Instance.LogLevel == LogLevel.Trace)
             {
-                // We use Newtonsoft for serialization because it supports polymorphic types
-                // Probably through old serialization attributes set on Xrm.Sdk types.
-                //var serializedConfig =  inputModel.SerializeJson(useNewtonsoft: true);
                 var serializedConfig = JsonConvert.SerializeObject(inputModel, new JsonSerializerSettings
                 {
                     ContractResolver = new PolymorphicContractResolver()
@@ -155,8 +157,7 @@ public class PluginCodeGenerator : BaseCodeGeneratorWithSite
                 return Encoding.UTF8.GetBytes("// " + validation.ErrorMessage);
             }
 
-            var inputFile = await PhysicalFile.FromFileAsync(inputFileName);
-            if (inputFile is not null && inputFile.FindParent(SolutionItemType.Project) is Project project && project.IsSdkStyle())
+            if (project.IsSdkStyle())
             {
                 var lastGenFileName = await inputFile.GetAttributeAsync("LastGenOutput");
                 if (string.IsNullOrWhiteSpace(lastGenFileName))
@@ -185,20 +186,7 @@ public class PluginCodeGenerator : BaseCodeGeneratorWithSite
         return null;
     }
 
-    //private PluginAssemblyConfig? ParseJsonInputFile(string inputFileName, string inputFileContent)
-    //{
-    //    try
-    //    {
-    //        return inputFileContent.DeserializeJson<PluginAssemblyConfig>();
-    //    }
-    //    catch (Exception ex)
-    //    {
-    //        Logger.LogError(ex, Strings.PluginGenerator_DeserializationError, inputFileName);
-    //    }
-    //    return null;
-    //}
-
-    private async Task<string?> GetTemplateFilePathAsync(PluginAssemblyConfig config)
+    private async Task<string?> GetTemplateFilePathAsync(PluginAssemblyConfig config, Project project)
     {
         if (config == null) return null;
         bool isTemplatePlugin = config.PluginTypes?.Any() ?? false;
@@ -222,12 +210,9 @@ public class PluginCodeGenerator : BaseCodeGeneratorWithSite
 
         Logger.LogTrace("No template found for " + (isTemplatePlugin ? "plugin code generation." : "entity code generation."));
         Logger.LogInformation("Atempting to create plugin default templates.");
-        //ThreadHelper.JoinableTaskFactory.Run(async () =>
-        //{
-        //    await TemplateFileGenerator.GenerateTemplatesAsync();
-        //    await SettingsProvider.ProjectSettings.EntityTemplateFilePathAsync();
-        //});
-        ThreadHelper.JoinableTaskFactory.Run(TemplateFileGenerator.GenerateTemplatesAsync);
+
+        await TemplateFileGenerator.GenerateTemplatesAsync(project, false);
+
         Logger.LogInformation("Default template generation completed.");
 
         if (isTemplatePlugin)
