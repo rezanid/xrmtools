@@ -1,5 +1,5 @@
 {{~for image in step.images~}}
-{{~base_class_name = (plugintype.steps | array.size > 1 ? step.message_name : '') + image.name + (step.primary_entity_definition.display_name.localized_labels[0].label | tokenize)~}}
+{{~base_class_name = (plugintype.steps | array.size > 1 ? step.message_name : '') + image.image_type + (step.primary_entity_definition.schema_name)~}}
 [EntityLogicalName("{{step.primary_entity_definition.logical_name}}")]
 public class {{base_class_name}} : Entity
 {

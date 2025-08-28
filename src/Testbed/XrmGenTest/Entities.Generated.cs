@@ -13,7 +13,7 @@ namespace XrmGenTest
 	/// <summary>
 	/// Display Name: Contact
 	/// </summary>
-	[GeneratedCode("TemplatedCodeGenerator", "1.3.3.0")]
+	[GeneratedCode("TemplatedCodeGenerator", "1.4.0.0")]
 	[EntityLogicalName("contact")]
 	[global::System.Diagnostics.CodeAnalysis.ExcludeFromCodeCoverage]
 	public partial class Contact : Entity
@@ -30,19 +30,14 @@ namespace XrmGenTest
 			{
 				public const string AccountId = "accountid";
 				public static readonly ReadOnlyCollection<string> AccountIdTargets = new ReadOnlyCollection<string>(new string[] { "account" });
-				public const string AccountIdName = "accountidname";
-				public const string AccountIdYomiName = "accountidyominame";
 				public const string AccountRoleCode = "accountrolecode";
-				public const string AccountRoleCodeName = "accountrolecodename";
 				public const string Address1_AddressTypeCode = "address1_addresstypecode";
-				public const string Address1_AddressTypeCodeName = "address1_addresstypecodename";
 				public const string Address1_City = "address1_city";
 				public const string Address1_Composite = "address1_composite";
 				public const string Address1_Country = "address1_country";
 				public const string Address1_County = "address1_county";
 				public const string Address1_Fax = "address1_fax";
 				public const string Address1_FreightTermsCode = "address1_freighttermscode";
-				public const string Address1_FreightTermsCodeName = "address1_freighttermscodename";
 				public const string Address1_Latitude = "address1_latitude";
 				public const string Address1_Line1 = "address1_line1";
 				public const string Address1_Line2 = "address1_line2";
@@ -53,7 +48,6 @@ namespace XrmGenTest
 				public const string Address1_PostOfficeBox = "address1_postofficebox";
 				public const string Address1_PrimaryContactName = "address1_primarycontactname";
 				public const string Address1_ShippingMethodCode = "address1_shippingmethodcode";
-				public const string Address1_ShippingMethodCodeName = "address1_shippingmethodcodename";
 				public const string Address1_StateOrProvince = "address1_stateorprovince";
 				public const string Address1_Telephone1 = "address1_telephone1";
 				public const string Address1_Telephone2 = "address1_telephone2";
@@ -61,14 +55,12 @@ namespace XrmGenTest
 				public const string Address1_UPSZone = "address1_upszone";
 				public const string Address1_UTCOffset = "address1_utcoffset";
 				public const string Address2_AddressTypeCode = "address2_addresstypecode";
-				public const string Address2_AddressTypeCodeName = "address2_addresstypecodename";
 				public const string Address2_City = "address2_city";
 				public const string Address2_Composite = "address2_composite";
 				public const string Address2_Country = "address2_country";
 				public const string Address2_County = "address2_county";
 				public const string Address2_Fax = "address2_fax";
 				public const string Address2_FreightTermsCode = "address2_freighttermscode";
-				public const string Address2_FreightTermsCodeName = "address2_freighttermscodename";
 				public const string Address2_Latitude = "address2_latitude";
 				public const string Address2_Line1 = "address2_line1";
 				public const string Address2_Line2 = "address2_line2";
@@ -79,7 +71,6 @@ namespace XrmGenTest
 				public const string Address2_PostOfficeBox = "address2_postofficebox";
 				public const string Address2_PrimaryContactName = "address2_primarycontactname";
 				public const string Address2_ShippingMethodCode = "address2_shippingmethodcode";
-				public const string Address2_ShippingMethodCodeName = "address2_shippingmethodcodename";
 				public const string Address2_StateOrProvince = "address2_stateorprovince";
 				public const string Address2_Telephone1 = "address2_telephone1";
 				public const string Address2_Telephone2 = "address2_telephone2";
@@ -87,14 +78,12 @@ namespace XrmGenTest
 				public const string Address2_UPSZone = "address2_upszone";
 				public const string Address2_UTCOffset = "address2_utcoffset";
 				public const string Address3_AddressTypeCode = "address3_addresstypecode";
-				public const string Address3_AddressTypeCodeName = "address3_addresstypecodename";
 				public const string Address3_City = "address3_city";
 				public const string Address3_Composite = "address3_composite";
 				public const string Address3_Country = "address3_country";
 				public const string Address3_County = "address3_county";
 				public const string Address3_Fax = "address3_fax";
 				public const string Address3_FreightTermsCode = "address3_freighttermscode";
-				public const string Address3_FreightTermsCodeName = "address3_freighttermscodename";
 				public const string Address3_Latitude = "address3_latitude";
 				public const string Address3_Line1 = "address3_line1";
 				public const string Address3_Line2 = "address3_line2";
@@ -105,7 +94,6 @@ namespace XrmGenTest
 				public const string Address3_PostOfficeBox = "address3_postofficebox";
 				public const string Address3_PrimaryContactName = "address3_primarycontactname";
 				public const string Address3_ShippingMethodCode = "address3_shippingmethodcode";
-				public const string Address3_ShippingMethodCodeName = "address3_shippingmethodcodename";
 				public const string Address3_StateOrProvince = "address3_stateorprovince";
 				public const string Address3_Telephone1 = "address3_telephone1";
 				public const string Address3_Telephone2 = "address3_telephone2";
@@ -113,27 +101,20 @@ namespace XrmGenTest
 				public const string Address3_UPSZone = "address3_upszone";
 				public const string Address3_UTCOffset = "address3_utcoffset";
 				public const string Adx_ConfirmRemovePassword = "adx_confirmremovepassword";
-				public const string Adx_confirmremovepasswordName = "adx_confirmremovepasswordname";
 				public const string Adx_CreatedByIPAddress = "adx_createdbyipaddress";
 				public const string Adx_CreatedByUsername = "adx_createdbyusername";
 				public const string Adx_identity_accessfailedcount = "adx_identity_accessfailedcount";
 				public const string Adx_identity_emailaddress1confirmed = "adx_identity_emailaddress1confirmed";
-				public const string Adx_identity_emailaddress1confirmedName = "adx_identity_emailaddress1confirmedname";
 				public const string Adx_identity_lastsuccessfullogin = "adx_identity_lastsuccessfullogin";
 				public const string Adx_identity_locallogindisabled = "adx_identity_locallogindisabled";
-				public const string Adx_identity_locallogindisabledName = "adx_identity_locallogindisabledname";
 				public const string Adx_identity_lockoutenabled = "adx_identity_lockoutenabled";
-				public const string Adx_identity_lockoutenabledName = "adx_identity_lockoutenabledname";
 				public const string Adx_identity_lockoutenddate = "adx_identity_lockoutenddate";
 				public const string Adx_identity_logonenabled = "adx_identity_logonenabled";
-				public const string Adx_identity_logonenabledName = "adx_identity_logonenabledname";
 				public const string Adx_identity_mobilephoneconfirmed = "adx_identity_mobilephoneconfirmed";
-				public const string Adx_identity_mobilephoneconfirmedName = "adx_identity_mobilephoneconfirmedname";
 				public const string Adx_identity_newpassword = "adx_identity_newpassword";
 				public const string Adx_identity_passwordhash = "adx_identity_passwordhash";
 				public const string Adx_identity_securitystamp = "adx_identity_securitystamp";
 				public const string Adx_identity_twofactorenabled = "adx_identity_twofactorenabled";
-				public const string Adx_identity_twofactorenabledName = "adx_identity_twofactorenabledname";
 				public const string Adx_identity_username = "adx_identity_username";
 				public const string Adx_ModifiedByIPAddress = "adx_modifiedbyipaddress";
 				public const string Adx_ModifiedByUsername = "adx_modifiedbyusername";
@@ -142,9 +123,7 @@ namespace XrmGenTest
 				public const string Adx_profilealert = "adx_profilealert";
 				public const string Adx_profilealertdate = "adx_profilealertdate";
 				public const string Adx_profilealertinstructions = "adx_profilealertinstructions";
-				public const string Adx_profilealertName = "adx_profilealertname";
 				public const string Adx_ProfileIsAnonymous = "adx_profileisanonymous";
-				public const string Adx_profileisanonymousName = "adx_profileisanonymousname";
 				public const string Adx_ProfileLastActivity = "adx_profilelastactivity";
 				public const string Adx_profilemodifiedon = "adx_profilemodifiedon";
 				public const string Adx_PublicProfileCopy = "adx_publicprofilecopy";
@@ -169,125 +148,78 @@ namespace XrmGenTest
 				public static readonly ReadOnlyCollection<string> CreatedByTargets = new ReadOnlyCollection<string>(new string[] { "systemuser" });
 				public const string CreatedByExternalParty = "createdbyexternalparty";
 				public static readonly ReadOnlyCollection<string> CreatedByExternalPartyTargets = new ReadOnlyCollection<string>(new string[] { "externalparty" });
-				public const string CreatedByExternalPartyName = "createdbyexternalpartyname";
-				public const string CreatedByExternalPartyYomiName = "createdbyexternalpartyyominame";
-				public const string CreatedByName = "createdbyname";
-				public const string CreatedByYomiName = "createdbyyominame";
 				public const string CreatedOn = "createdon";
 				public const string CreatedOnBehalfBy = "createdonbehalfby";
 				public static readonly ReadOnlyCollection<string> CreatedOnBehalfByTargets = new ReadOnlyCollection<string>(new string[] { "systemuser" });
-				public const string CreatedOnBehalfByName = "createdonbehalfbyname";
-				public const string CreatedOnBehalfByYomiName = "createdonbehalfbyyominame";
 				public const string CreditLimit = "creditlimit";
 				public const string CreditLimit_Base = "creditlimit_base";
 				public const string CreditOnHold = "creditonhold";
-				public const string CreditOnHoldName = "creditonholdname";
 				public const string CustomerSizeCode = "customersizecode";
-				public const string CustomerSizeCodeName = "customersizecodename";
 				public const string CustomerTypeCode = "customertypecode";
-				public const string CustomerTypeCodeName = "customertypecodename";
 				public const string Department = "department";
 				public const string Description = "description";
 				public const string DoNotBulkEMail = "donotbulkemail";
-				public const string DoNotBulkEMailName = "donotbulkemailname";
 				public const string DoNotBulkPostalMail = "donotbulkpostalmail";
-				public const string DoNotBulkPostalMailName = "donotbulkpostalmailname";
 				public const string DoNotEMail = "donotemail";
-				public const string DoNotEMailName = "donotemailname";
 				public const string DoNotFax = "donotfax";
-				public const string DoNotFaxName = "donotfaxname";
 				public const string DoNotPhone = "donotphone";
-				public const string DoNotPhoneName = "donotphonename";
 				public const string DoNotPostalMail = "donotpostalmail";
-				public const string DoNotPostalMailName = "donotpostalmailname";
-				public const string DoNotSendMarketingMaterialName = "donotsendmarketingmaterialname";
 				public const string DoNotSendMM = "donotsendmm";
 				public const string EducationCode = "educationcode";
-				public const string EducationCodeName = "educationcodename";
 				public const string EMailAddress1 = "emailaddress1";
 				public const string EMailAddress2 = "emailaddress2";
 				public const string EMailAddress3 = "emailaddress3";
 				public const string EmployeeId = "employeeid";
-				public const string EntityImage = "entityimage";
-				public const string EntityImage_Timestamp = "entityimage_timestamp";
-				public const string EntityImage_URL = "entityimage_url";
 				public const string EntityImageId = "entityimageid";
 				public const string ExchangeRate = "exchangerate";
 				public const string ExternalUserIdentifier = "externaluseridentifier";
 				public const string FamilyStatusCode = "familystatuscode";
-				public const string FamilyStatusCodeName = "familystatuscodename";
 				public const string Fax = "fax";
 				public const string FirstName = "firstname";
 				public const string FollowEmail = "followemail";
-				public const string FollowEmailName = "followemailname";
 				public const string FtpSiteUrl = "ftpsiteurl";
 				public const string FullName = "fullname";
 				public const string GenderCode = "gendercode";
-				public const string GenderCodeName = "gendercodename";
 				public const string GovernmentId = "governmentid";
 				public const string HasChildrenCode = "haschildrencode";
-				public const string HasChildrenCodeName = "haschildrencodename";
 				public const string Home2 = "home2";
 				public const string ImportSequenceNumber = "importsequencenumber";
 				public const string IsBackofficeCustomer = "isbackofficecustomer";
-				public const string IsBackofficeCustomerName = "isbackofficecustomername";
-				public const string IsPrivateName = "isprivatename";
 				public const string JobTitle = "jobtitle";
 				public const string LastName = "lastname";
 				public const string LastOnHoldTime = "lastonholdtime";
 				public const string LastUsedInCampaign = "lastusedincampaign";
 				public const string LeadSourceCode = "leadsourcecode";
-				public const string LeadSourceCodeName = "leadsourcecodename";
 				public const string ManagerName = "managername";
 				public const string ManagerPhone = "managerphone";
 				public const string MarketingOnly = "marketingonly";
-				public const string MarketingOnlyName = "marketingonlyname";
-				public const string MasterContactIdName = "mastercontactidname";
-				public const string MasterContactIdYomiName = "mastercontactidyominame";
 				public const string MasterId = "masterid";
 				public static readonly ReadOnlyCollection<string> MasterIdTargets = new ReadOnlyCollection<string>(new string[] { "contact" });
 				public const string Merged = "merged";
-				public const string MergedName = "mergedname";
 				public const string MiddleName = "middlename";
 				public const string MobilePhone = "mobilephone";
 				public const string ModifiedBy = "modifiedby";
 				public static readonly ReadOnlyCollection<string> ModifiedByTargets = new ReadOnlyCollection<string>(new string[] { "systemuser" });
 				public const string ModifiedByExternalParty = "modifiedbyexternalparty";
 				public static readonly ReadOnlyCollection<string> ModifiedByExternalPartyTargets = new ReadOnlyCollection<string>(new string[] { "externalparty" });
-				public const string ModifiedByExternalPartyName = "modifiedbyexternalpartyname";
-				public const string ModifiedByExternalPartyYomiName = "modifiedbyexternalpartyyominame";
-				public const string ModifiedByName = "modifiedbyname";
-				public const string ModifiedByYomiName = "modifiedbyyominame";
 				public const string ModifiedOn = "modifiedon";
 				public const string ModifiedOnBehalfBy = "modifiedonbehalfby";
 				public static readonly ReadOnlyCollection<string> ModifiedOnBehalfByTargets = new ReadOnlyCollection<string>(new string[] { "systemuser" });
-				public const string ModifiedOnBehalfByName = "modifiedonbehalfbyname";
-				public const string ModifiedOnBehalfByYomiName = "modifiedonbehalfbyyominame";
 				public const string Msa_managingpartnerid = "msa_managingpartnerid";
 				public static readonly ReadOnlyCollection<string> Msa_managingpartneridTargets = new ReadOnlyCollection<string>(new string[] { "account" });
-				public const string Msa_managingpartneridName = "msa_managingpartneridname";
-				public const string Msa_managingpartneridYomiName = "msa_managingpartneridyominame";
 				public const string Msdyn_disablewebtracking = "msdyn_disablewebtracking";
-				public const string Msdyn_disablewebtrackingName = "msdyn_disablewebtrackingname";
 				public const string Msdyn_isminor = "msdyn_isminor";
-				public const string Msdyn_isminorName = "msdyn_isminorname";
 				public const string Msdyn_isminorwithparentalconsent = "msdyn_isminorwithparentalconsent";
-				public const string Msdyn_isminorwithparentalconsentName = "msdyn_isminorwithparentalconsentname";
 				public const string Msdyn_portaltermsagreementdate = "msdyn_portaltermsagreementdate";
 				public const string Msft_DataState = "msft_datastate";
-				public const string Msft_datastateName = "msft_datastatename";
 				public const string Mspp_userpreferredlcid = "mspp_userpreferredlcid";
-				public const string Mspp_userpreferredlcidName = "mspp_userpreferredlcidname";
 				public const string NickName = "nickname";
 				public const string NumberOfChildren = "numberofchildren";
 				public const string OnHoldTime = "onholdtime";
 				public const string OverriddenCreatedOn = "overriddencreatedon";
 				public const string OwnerId = "ownerid";
-				public const string OwnerIdName = "owneridname";
-				public const string OwnerIdYomiName = "owneridyominame";
 				public const string OwningBusinessUnit = "owningbusinessunit";
 				public static readonly ReadOnlyCollection<string> OwningBusinessUnitTargets = new ReadOnlyCollection<string>(new string[] { "businessunit" });
-				public const string OwningBusinessUnitName = "owningbusinessunitname";
 				public const string OwningTeam = "owningteam";
 				public static readonly ReadOnlyCollection<string> OwningTeamTargets = new ReadOnlyCollection<string>(new string[] { "team" });
 				public const string OwningUser = "owninguser";
@@ -295,54 +227,35 @@ namespace XrmGenTest
 				public const string Pager = "pager";
 				public const string ParentContactId = "parentcontactid";
 				public static readonly ReadOnlyCollection<string> ParentContactIdTargets = new ReadOnlyCollection<string>(new string[] { "contact" });
-				public const string ParentContactIdName = "parentcontactidname";
-				public const string ParentContactIdYomiName = "parentcontactidyominame";
 				public const string ParentCustomerId = "parentcustomerid";
 				public static readonly ReadOnlyCollection<string> ParentCustomerIdTargets = new ReadOnlyCollection<string>(new string[] { "account","contact" });
-				public const string ParentCustomerIdName = "parentcustomeridname";
-				public const string ParentCustomerIdYomiName = "parentcustomeridyominame";
 				public const string ParticipatesInWorkflow = "participatesinworkflow";
-				public const string ParticipatesInWorkflowName = "participatesinworkflowname";
 				public const string PaymentTermsCode = "paymenttermscode";
-				public const string PaymentTermsCodeName = "paymenttermscodename";
 				public const string PreferredAppointmentDayCode = "preferredappointmentdaycode";
-				public const string PreferredAppointmentDayCodeName = "preferredappointmentdaycodename";
 				public const string PreferredAppointmentTimeCode = "preferredappointmenttimecode";
-				public const string PreferredAppointmentTimeCodeName = "preferredappointmenttimecodename";
 				public const string PreferredContactMethodCode = "preferredcontactmethodcode";
-				public const string PreferredContactMethodCodeName = "preferredcontactmethodcodename";
 				public const string PreferredSystemUserId = "preferredsystemuserid";
 				public static readonly ReadOnlyCollection<string> PreferredSystemUserIdTargets = new ReadOnlyCollection<string>(new string[] { "systemuser" });
-				public const string PreferredSystemUserIdName = "preferredsystemuseridname";
-				public const string PreferredSystemUserIdYomiName = "preferredsystemuseridyominame";
 				public const string ProcessId = "processid";
 				public const string Salutation = "salutation";
 				public const string ShippingMethodCode = "shippingmethodcode";
-				public const string ShippingMethodCodeName = "shippingmethodcodename";
 				public const string SLAId = "slaid";
 				public static readonly ReadOnlyCollection<string> SLAIdTargets = new ReadOnlyCollection<string>(new string[] { "sla" });
 				public const string SLAInvokedId = "slainvokedid";
 				public static readonly ReadOnlyCollection<string> SLAInvokedIdTargets = new ReadOnlyCollection<string>(new string[] { "sla" });
-				public const string SLAInvokedIdName = "slainvokedidname";
-				public const string SLAName = "slaname";
 				public const string SpousesName = "spousesname";
 				public const string StageId = "stageid";
 				public const string StateCode = "statecode";
-				public const string StateCodeName = "statecodename";
 				public const string StatusCode = "statuscode";
-				public const string StatusCodeName = "statuscodename";
-				public const string SubscriptionId = "subscriptionid";
 				public const string Suffix = "suffix";
 				public const string Telephone1 = "telephone1";
 				public const string Telephone2 = "telephone2";
 				public const string Telephone3 = "telephone3";
 				public const string TerritoryCode = "territorycode";
-				public const string TerritoryCodeName = "territorycodename";
 				public const string TimeSpentByMeOnEmailAndMeetings = "timespentbymeonemailandmeetings";
 				public const string TimeZoneRuleVersionNumber = "timezoneruleversionnumber";
 				public const string TransactionCurrencyId = "transactioncurrencyid";
 				public static readonly ReadOnlyCollection<string> TransactionCurrencyIdTargets = new ReadOnlyCollection<string>(new string[] { "transactioncurrency" });
-				public const string TransactionCurrencyIdName = "transactioncurrencyidname";
 				public const string TraversedPath = "traversedpath";
 				public const string UTCConversionTimeZoneCode = "utcconversiontimezonecode";
 				public const string VersionNumber = "versionnumber";
@@ -355,19 +268,14 @@ namespace XrmGenTest
 				private static readonly Dictionary<string, string> _fieldMap = new Dictionary<string, string>
 				{
 					[nameof(AccountId)] = AccountId,
-					[nameof(AccountIdName)] = AccountIdName,
-					[nameof(AccountIdYomiName)] = AccountIdYomiName,
 					[nameof(AccountRoleCode)] = AccountRoleCode,
-					[nameof(AccountRoleCodeName)] = AccountRoleCodeName,
 					[nameof(Address1_AddressTypeCode)] = Address1_AddressTypeCode,
-					[nameof(Address1_AddressTypeCodeName)] = Address1_AddressTypeCodeName,
 					[nameof(Address1_City)] = Address1_City,
 					[nameof(Address1_Composite)] = Address1_Composite,
 					[nameof(Address1_Country)] = Address1_Country,
 					[nameof(Address1_County)] = Address1_County,
 					[nameof(Address1_Fax)] = Address1_Fax,
 					[nameof(Address1_FreightTermsCode)] = Address1_FreightTermsCode,
-					[nameof(Address1_FreightTermsCodeName)] = Address1_FreightTermsCodeName,
 					[nameof(Address1_Latitude)] = Address1_Latitude,
 					[nameof(Address1_Line1)] = Address1_Line1,
 					[nameof(Address1_Line2)] = Address1_Line2,
@@ -378,7 +286,6 @@ namespace XrmGenTest
 					[nameof(Address1_PostOfficeBox)] = Address1_PostOfficeBox,
 					[nameof(Address1_PrimaryContactName)] = Address1_PrimaryContactName,
 					[nameof(Address1_ShippingMethodCode)] = Address1_ShippingMethodCode,
-					[nameof(Address1_ShippingMethodCodeName)] = Address1_ShippingMethodCodeName,
 					[nameof(Address1_StateOrProvince)] = Address1_StateOrProvince,
 					[nameof(Address1_Telephone1)] = Address1_Telephone1,
 					[nameof(Address1_Telephone2)] = Address1_Telephone2,
@@ -386,14 +293,12 @@ namespace XrmGenTest
 					[nameof(Address1_UPSZone)] = Address1_UPSZone,
 					[nameof(Address1_UTCOffset)] = Address1_UTCOffset,
 					[nameof(Address2_AddressTypeCode)] = Address2_AddressTypeCode,
-					[nameof(Address2_AddressTypeCodeName)] = Address2_AddressTypeCodeName,
 					[nameof(Address2_City)] = Address2_City,
 					[nameof(Address2_Composite)] = Address2_Composite,
 					[nameof(Address2_Country)] = Address2_Country,
 					[nameof(Address2_County)] = Address2_County,
 					[nameof(Address2_Fax)] = Address2_Fax,
 					[nameof(Address2_FreightTermsCode)] = Address2_FreightTermsCode,
-					[nameof(Address2_FreightTermsCodeName)] = Address2_FreightTermsCodeName,
 					[nameof(Address2_Latitude)] = Address2_Latitude,
 					[nameof(Address2_Line1)] = Address2_Line1,
 					[nameof(Address2_Line2)] = Address2_Line2,
@@ -404,7 +309,6 @@ namespace XrmGenTest
 					[nameof(Address2_PostOfficeBox)] = Address2_PostOfficeBox,
 					[nameof(Address2_PrimaryContactName)] = Address2_PrimaryContactName,
 					[nameof(Address2_ShippingMethodCode)] = Address2_ShippingMethodCode,
-					[nameof(Address2_ShippingMethodCodeName)] = Address2_ShippingMethodCodeName,
 					[nameof(Address2_StateOrProvince)] = Address2_StateOrProvince,
 					[nameof(Address2_Telephone1)] = Address2_Telephone1,
 					[nameof(Address2_Telephone2)] = Address2_Telephone2,
@@ -412,14 +316,12 @@ namespace XrmGenTest
 					[nameof(Address2_UPSZone)] = Address2_UPSZone,
 					[nameof(Address2_UTCOffset)] = Address2_UTCOffset,
 					[nameof(Address3_AddressTypeCode)] = Address3_AddressTypeCode,
-					[nameof(Address3_AddressTypeCodeName)] = Address3_AddressTypeCodeName,
 					[nameof(Address3_City)] = Address3_City,
 					[nameof(Address3_Composite)] = Address3_Composite,
 					[nameof(Address3_Country)] = Address3_Country,
 					[nameof(Address3_County)] = Address3_County,
 					[nameof(Address3_Fax)] = Address3_Fax,
 					[nameof(Address3_FreightTermsCode)] = Address3_FreightTermsCode,
-					[nameof(Address3_FreightTermsCodeName)] = Address3_FreightTermsCodeName,
 					[nameof(Address3_Latitude)] = Address3_Latitude,
 					[nameof(Address3_Line1)] = Address3_Line1,
 					[nameof(Address3_Line2)] = Address3_Line2,
@@ -430,7 +332,6 @@ namespace XrmGenTest
 					[nameof(Address3_PostOfficeBox)] = Address3_PostOfficeBox,
 					[nameof(Address3_PrimaryContactName)] = Address3_PrimaryContactName,
 					[nameof(Address3_ShippingMethodCode)] = Address3_ShippingMethodCode,
-					[nameof(Address3_ShippingMethodCodeName)] = Address3_ShippingMethodCodeName,
 					[nameof(Address3_StateOrProvince)] = Address3_StateOrProvince,
 					[nameof(Address3_Telephone1)] = Address3_Telephone1,
 					[nameof(Address3_Telephone2)] = Address3_Telephone2,
@@ -438,27 +339,20 @@ namespace XrmGenTest
 					[nameof(Address3_UPSZone)] = Address3_UPSZone,
 					[nameof(Address3_UTCOffset)] = Address3_UTCOffset,
 					[nameof(Adx_ConfirmRemovePassword)] = Adx_ConfirmRemovePassword,
-					[nameof(Adx_confirmremovepasswordName)] = Adx_confirmremovepasswordName,
 					[nameof(Adx_CreatedByIPAddress)] = Adx_CreatedByIPAddress,
 					[nameof(Adx_CreatedByUsername)] = Adx_CreatedByUsername,
 					[nameof(Adx_identity_accessfailedcount)] = Adx_identity_accessfailedcount,
 					[nameof(Adx_identity_emailaddress1confirmed)] = Adx_identity_emailaddress1confirmed,
-					[nameof(Adx_identity_emailaddress1confirmedName)] = Adx_identity_emailaddress1confirmedName,
 					[nameof(Adx_identity_lastsuccessfullogin)] = Adx_identity_lastsuccessfullogin,
 					[nameof(Adx_identity_locallogindisabled)] = Adx_identity_locallogindisabled,
-					[nameof(Adx_identity_locallogindisabledName)] = Adx_identity_locallogindisabledName,
 					[nameof(Adx_identity_lockoutenabled)] = Adx_identity_lockoutenabled,
-					[nameof(Adx_identity_lockoutenabledName)] = Adx_identity_lockoutenabledName,
 					[nameof(Adx_identity_lockoutenddate)] = Adx_identity_lockoutenddate,
 					[nameof(Adx_identity_logonenabled)] = Adx_identity_logonenabled,
-					[nameof(Adx_identity_logonenabledName)] = Adx_identity_logonenabledName,
 					[nameof(Adx_identity_mobilephoneconfirmed)] = Adx_identity_mobilephoneconfirmed,
-					[nameof(Adx_identity_mobilephoneconfirmedName)] = Adx_identity_mobilephoneconfirmedName,
 					[nameof(Adx_identity_newpassword)] = Adx_identity_newpassword,
 					[nameof(Adx_identity_passwordhash)] = Adx_identity_passwordhash,
 					[nameof(Adx_identity_securitystamp)] = Adx_identity_securitystamp,
 					[nameof(Adx_identity_twofactorenabled)] = Adx_identity_twofactorenabled,
-					[nameof(Adx_identity_twofactorenabledName)] = Adx_identity_twofactorenabledName,
 					[nameof(Adx_identity_username)] = Adx_identity_username,
 					[nameof(Adx_ModifiedByIPAddress)] = Adx_ModifiedByIPAddress,
 					[nameof(Adx_ModifiedByUsername)] = Adx_ModifiedByUsername,
@@ -467,9 +361,7 @@ namespace XrmGenTest
 					[nameof(Adx_profilealert)] = Adx_profilealert,
 					[nameof(Adx_profilealertdate)] = Adx_profilealertdate,
 					[nameof(Adx_profilealertinstructions)] = Adx_profilealertinstructions,
-					[nameof(Adx_profilealertName)] = Adx_profilealertName,
 					[nameof(Adx_ProfileIsAnonymous)] = Adx_ProfileIsAnonymous,
-					[nameof(Adx_profileisanonymousName)] = Adx_profileisanonymousName,
 					[nameof(Adx_ProfileLastActivity)] = Adx_ProfileLastActivity,
 					[nameof(Adx_profilemodifiedon)] = Adx_profilemodifiedon,
 					[nameof(Adx_PublicProfileCopy)] = Adx_PublicProfileCopy,
@@ -492,165 +384,99 @@ namespace XrmGenTest
 					[nameof(Company)] = Company,
 					[nameof(CreatedBy)] = CreatedBy,
 					[nameof(CreatedByExternalParty)] = CreatedByExternalParty,
-					[nameof(CreatedByExternalPartyName)] = CreatedByExternalPartyName,
-					[nameof(CreatedByExternalPartyYomiName)] = CreatedByExternalPartyYomiName,
-					[nameof(CreatedByName)] = CreatedByName,
-					[nameof(CreatedByYomiName)] = CreatedByYomiName,
 					[nameof(CreatedOn)] = CreatedOn,
 					[nameof(CreatedOnBehalfBy)] = CreatedOnBehalfBy,
-					[nameof(CreatedOnBehalfByName)] = CreatedOnBehalfByName,
-					[nameof(CreatedOnBehalfByYomiName)] = CreatedOnBehalfByYomiName,
 					[nameof(CreditLimit)] = CreditLimit,
 					[nameof(CreditLimit_Base)] = CreditLimit_Base,
 					[nameof(CreditOnHold)] = CreditOnHold,
-					[nameof(CreditOnHoldName)] = CreditOnHoldName,
 					[nameof(CustomerSizeCode)] = CustomerSizeCode,
-					[nameof(CustomerSizeCodeName)] = CustomerSizeCodeName,
 					[nameof(CustomerTypeCode)] = CustomerTypeCode,
-					[nameof(CustomerTypeCodeName)] = CustomerTypeCodeName,
 					[nameof(Department)] = Department,
 					[nameof(Description)] = Description,
 					[nameof(DoNotBulkEMail)] = DoNotBulkEMail,
-					[nameof(DoNotBulkEMailName)] = DoNotBulkEMailName,
 					[nameof(DoNotBulkPostalMail)] = DoNotBulkPostalMail,
-					[nameof(DoNotBulkPostalMailName)] = DoNotBulkPostalMailName,
 					[nameof(DoNotEMail)] = DoNotEMail,
-					[nameof(DoNotEMailName)] = DoNotEMailName,
 					[nameof(DoNotFax)] = DoNotFax,
-					[nameof(DoNotFaxName)] = DoNotFaxName,
 					[nameof(DoNotPhone)] = DoNotPhone,
-					[nameof(DoNotPhoneName)] = DoNotPhoneName,
 					[nameof(DoNotPostalMail)] = DoNotPostalMail,
-					[nameof(DoNotPostalMailName)] = DoNotPostalMailName,
-					[nameof(DoNotSendMarketingMaterialName)] = DoNotSendMarketingMaterialName,
 					[nameof(DoNotSendMM)] = DoNotSendMM,
 					[nameof(EducationCode)] = EducationCode,
-					[nameof(EducationCodeName)] = EducationCodeName,
 					[nameof(EMailAddress1)] = EMailAddress1,
 					[nameof(EMailAddress2)] = EMailAddress2,
 					[nameof(EMailAddress3)] = EMailAddress3,
 					[nameof(EmployeeId)] = EmployeeId,
-					[nameof(EntityImage)] = EntityImage,
-					[nameof(EntityImage_Timestamp)] = EntityImage_Timestamp,
-					[nameof(EntityImage_URL)] = EntityImage_URL,
 					[nameof(EntityImageId)] = EntityImageId,
 					[nameof(ExchangeRate)] = ExchangeRate,
 					[nameof(ExternalUserIdentifier)] = ExternalUserIdentifier,
 					[nameof(FamilyStatusCode)] = FamilyStatusCode,
-					[nameof(FamilyStatusCodeName)] = FamilyStatusCodeName,
 					[nameof(Fax)] = Fax,
 					[nameof(FirstName)] = FirstName,
 					[nameof(FollowEmail)] = FollowEmail,
-					[nameof(FollowEmailName)] = FollowEmailName,
 					[nameof(FtpSiteUrl)] = FtpSiteUrl,
 					[nameof(FullName)] = FullName,
 					[nameof(GenderCode)] = GenderCode,
-					[nameof(GenderCodeName)] = GenderCodeName,
 					[nameof(GovernmentId)] = GovernmentId,
 					[nameof(HasChildrenCode)] = HasChildrenCode,
-					[nameof(HasChildrenCodeName)] = HasChildrenCodeName,
 					[nameof(Home2)] = Home2,
 					[nameof(ImportSequenceNumber)] = ImportSequenceNumber,
 					[nameof(IsBackofficeCustomer)] = IsBackofficeCustomer,
-					[nameof(IsBackofficeCustomerName)] = IsBackofficeCustomerName,
-					[nameof(IsPrivateName)] = IsPrivateName,
 					[nameof(JobTitle)] = JobTitle,
 					[nameof(LastName)] = LastName,
 					[nameof(LastOnHoldTime)] = LastOnHoldTime,
 					[nameof(LastUsedInCampaign)] = LastUsedInCampaign,
 					[nameof(LeadSourceCode)] = LeadSourceCode,
-					[nameof(LeadSourceCodeName)] = LeadSourceCodeName,
 					[nameof(ManagerName)] = ManagerName,
 					[nameof(ManagerPhone)] = ManagerPhone,
 					[nameof(MarketingOnly)] = MarketingOnly,
-					[nameof(MarketingOnlyName)] = MarketingOnlyName,
-					[nameof(MasterContactIdName)] = MasterContactIdName,
-					[nameof(MasterContactIdYomiName)] = MasterContactIdYomiName,
 					[nameof(MasterId)] = MasterId,
 					[nameof(Merged)] = Merged,
-					[nameof(MergedName)] = MergedName,
 					[nameof(MiddleName)] = MiddleName,
 					[nameof(MobilePhone)] = MobilePhone,
 					[nameof(ModifiedBy)] = ModifiedBy,
 					[nameof(ModifiedByExternalParty)] = ModifiedByExternalParty,
-					[nameof(ModifiedByExternalPartyName)] = ModifiedByExternalPartyName,
-					[nameof(ModifiedByExternalPartyYomiName)] = ModifiedByExternalPartyYomiName,
-					[nameof(ModifiedByName)] = ModifiedByName,
-					[nameof(ModifiedByYomiName)] = ModifiedByYomiName,
 					[nameof(ModifiedOn)] = ModifiedOn,
 					[nameof(ModifiedOnBehalfBy)] = ModifiedOnBehalfBy,
-					[nameof(ModifiedOnBehalfByName)] = ModifiedOnBehalfByName,
-					[nameof(ModifiedOnBehalfByYomiName)] = ModifiedOnBehalfByYomiName,
 					[nameof(Msa_managingpartnerid)] = Msa_managingpartnerid,
-					[nameof(Msa_managingpartneridName)] = Msa_managingpartneridName,
-					[nameof(Msa_managingpartneridYomiName)] = Msa_managingpartneridYomiName,
 					[nameof(Msdyn_disablewebtracking)] = Msdyn_disablewebtracking,
-					[nameof(Msdyn_disablewebtrackingName)] = Msdyn_disablewebtrackingName,
 					[nameof(Msdyn_isminor)] = Msdyn_isminor,
-					[nameof(Msdyn_isminorName)] = Msdyn_isminorName,
 					[nameof(Msdyn_isminorwithparentalconsent)] = Msdyn_isminorwithparentalconsent,
-					[nameof(Msdyn_isminorwithparentalconsentName)] = Msdyn_isminorwithparentalconsentName,
 					[nameof(Msdyn_portaltermsagreementdate)] = Msdyn_portaltermsagreementdate,
 					[nameof(Msft_DataState)] = Msft_DataState,
-					[nameof(Msft_datastateName)] = Msft_datastateName,
 					[nameof(Mspp_userpreferredlcid)] = Mspp_userpreferredlcid,
-					[nameof(Mspp_userpreferredlcidName)] = Mspp_userpreferredlcidName,
 					[nameof(NickName)] = NickName,
 					[nameof(NumberOfChildren)] = NumberOfChildren,
 					[nameof(OnHoldTime)] = OnHoldTime,
 					[nameof(OverriddenCreatedOn)] = OverriddenCreatedOn,
 					[nameof(OwnerId)] = OwnerId,
-					[nameof(OwnerIdName)] = OwnerIdName,
-					[nameof(OwnerIdYomiName)] = OwnerIdYomiName,
 					[nameof(OwningBusinessUnit)] = OwningBusinessUnit,
-					[nameof(OwningBusinessUnitName)] = OwningBusinessUnitName,
 					[nameof(OwningTeam)] = OwningTeam,
 					[nameof(OwningUser)] = OwningUser,
 					[nameof(Pager)] = Pager,
 					[nameof(ParentContactId)] = ParentContactId,
-					[nameof(ParentContactIdName)] = ParentContactIdName,
-					[nameof(ParentContactIdYomiName)] = ParentContactIdYomiName,
 					[nameof(ParentCustomerId)] = ParentCustomerId,
-					[nameof(ParentCustomerIdName)] = ParentCustomerIdName,
-					[nameof(ParentCustomerIdYomiName)] = ParentCustomerIdYomiName,
 					[nameof(ParticipatesInWorkflow)] = ParticipatesInWorkflow,
-					[nameof(ParticipatesInWorkflowName)] = ParticipatesInWorkflowName,
 					[nameof(PaymentTermsCode)] = PaymentTermsCode,
-					[nameof(PaymentTermsCodeName)] = PaymentTermsCodeName,
 					[nameof(PreferredAppointmentDayCode)] = PreferredAppointmentDayCode,
-					[nameof(PreferredAppointmentDayCodeName)] = PreferredAppointmentDayCodeName,
 					[nameof(PreferredAppointmentTimeCode)] = PreferredAppointmentTimeCode,
-					[nameof(PreferredAppointmentTimeCodeName)] = PreferredAppointmentTimeCodeName,
 					[nameof(PreferredContactMethodCode)] = PreferredContactMethodCode,
-					[nameof(PreferredContactMethodCodeName)] = PreferredContactMethodCodeName,
 					[nameof(PreferredSystemUserId)] = PreferredSystemUserId,
-					[nameof(PreferredSystemUserIdName)] = PreferredSystemUserIdName,
-					[nameof(PreferredSystemUserIdYomiName)] = PreferredSystemUserIdYomiName,
 					[nameof(ProcessId)] = ProcessId,
 					[nameof(Salutation)] = Salutation,
 					[nameof(ShippingMethodCode)] = ShippingMethodCode,
-					[nameof(ShippingMethodCodeName)] = ShippingMethodCodeName,
 					[nameof(SLAId)] = SLAId,
 					[nameof(SLAInvokedId)] = SLAInvokedId,
-					[nameof(SLAInvokedIdName)] = SLAInvokedIdName,
-					[nameof(SLAName)] = SLAName,
 					[nameof(SpousesName)] = SpousesName,
 					[nameof(StageId)] = StageId,
 					[nameof(StateCode)] = StateCode,
-					[nameof(StateCodeName)] = StateCodeName,
 					[nameof(StatusCode)] = StatusCode,
-					[nameof(StatusCodeName)] = StatusCodeName,
-					[nameof(SubscriptionId)] = SubscriptionId,
 					[nameof(Suffix)] = Suffix,
 					[nameof(Telephone1)] = Telephone1,
 					[nameof(Telephone2)] = Telephone2,
 					[nameof(Telephone3)] = Telephone3,
 					[nameof(TerritoryCode)] = TerritoryCode,
-					[nameof(TerritoryCodeName)] = TerritoryCodeName,
 					[nameof(TimeSpentByMeOnEmailAndMeetings)] = TimeSpentByMeOnEmailAndMeetings,
 					[nameof(TimeZoneRuleVersionNumber)] = TimeZoneRuleVersionNumber,
 					[nameof(TransactionCurrencyId)] = TransactionCurrencyId,
-					[nameof(TransactionCurrencyIdName)] = TransactionCurrencyIdName,
 					[nameof(TraversedPath)] = TraversedPath,
 					[nameof(UTCConversionTimeZoneCode)] = UTCConversionTimeZoneCode,
 					[nameof(VersionNumber)] = VersionNumber,
@@ -828,6 +654,64 @@ namespace XrmGenTest
 				{
 					[EnumMember] DefaultValue = 1,
 				}
+				[DataContract]
+				public enum Datastate
+				{
+					[EnumMember] Default = 0,
+					[EnumMember] Retain = 1,
+				}
+				/// <summary>
+				/// Power Pages Languages
+				/// </summary>
+				[DataContract]
+				public enum PowerPagesLanguages
+				{
+					[EnumMember] Arabic = 1025,
+					[EnumMember] BasqueBasque = 1069,
+					[EnumMember] BulgarianBulgaria = 1026,
+					[EnumMember] CatalanCatalan = 1027,
+					[EnumMember] ChineseChina = 2052,
+					[EnumMember] ChineseHongKongSar = 3076,
+					[EnumMember] ChineseTraditional = 1028,
+					[EnumMember] CroatianCroatia = 1050,
+					[EnumMember] CzechCzechRepublic = 1029,
+					[EnumMember] DanishDenmark = 1030,
+					[EnumMember] DutchNetherlands = 1043,
+					[EnumMember] English = 1033,
+					[EnumMember] EstonianEstonia = 1061,
+					[EnumMember] FinnishFinland = 1035,
+					[EnumMember] FrenchFrance = 1036,
+					[EnumMember] GalicianSpain = 1110,
+					[EnumMember] GermanGermany = 1031,
+					[EnumMember] GreekGreece = 1032,
+					[EnumMember] Hebrew = 1037,
+					[EnumMember] HindiIndia = 1081,
+					[EnumMember] HungarianHungary = 1038,
+					[EnumMember] IndonesianIndonesia = 1057,
+					[EnumMember] ItalianItaly = 1040,
+					[EnumMember] JapaneseJapan = 1041,
+					[EnumMember] KazakhKazakhstan = 1087,
+					[EnumMember] KoreanKorea = 1042,
+					[EnumMember] LatvianLatvia = 1062,
+					[EnumMember] LithuanianLithuania = 1063,
+					[EnumMember] MalayMalaysia = 1086,
+					[EnumMember] NorwegianBokmalNorway = 1044,
+					[EnumMember] PolishPoland = 1045,
+					[EnumMember] PortugueseBrazil = 1046,
+					[EnumMember] PortuguesePortugal = 2070,
+					[EnumMember] RomanianRomania = 1048,
+					[EnumMember] RussianRussia = 1049,
+					[EnumMember] SerbianCyrillicSerbia = 3098,
+					[EnumMember] SerbianLatinSerbia = 2074,
+					[EnumMember] SlovakSlovakia = 1051,
+					[EnumMember] SlovenianSlovenia = 1060,
+					[EnumMember] SpanishTraditionalSortSpain = 3082,
+					[EnumMember] SwedishSweden = 1053,
+					[EnumMember] ThaiThailand = 1054,
+					[EnumMember] TurkishTurkiye = 1055,
+					[EnumMember] UkrainianUkraine = 1058,
+					[EnumMember] VietnameseVietnam = 1066,
+				}
 				/// <summary>
 				/// Payment terms for the contact.
 				/// </summary>
@@ -923,30 +807,6 @@ namespace XrmGenTest
 			get => TryGetAttributeValue("accountid", out EntityReference value) ? value : null;
 		}
 		/// <summary>
-		/// Attribute of: accountid<br/>
-		/// Max Length: 100<br/>
-		/// Required Level: None<br/>
-		/// Valid for: Read<br/>
-		/// </summary>
-		[AttributeLogicalName("accountidname")]
-		public string AccountIdName
-		{
-			get => FormattedValues.Contains("accountid") ? FormattedValues["accountid"] : null;
-		
-		}
-		/// <summary>
-		/// Attribute of: accountid<br/>
-		/// Max Length: 100<br/>
-		/// Required Level: None<br/>
-		/// Valid for: Read<br/>
-		/// </summary>
-		[AttributeLogicalName("accountidyominame")]
-		public string AccountIdYomiName
-		{
-			get => FormattedValues.Contains("accountid") ? FormattedValues["accountid"] : null;
-		
-		}
-		/// <summary>
 		/// Required Level: None<br/>
 		/// Valid for: Create Update Read<br/>
 		/// </summary>
@@ -957,17 +817,6 @@ namespace XrmGenTest
 			set => this["accountrolecode"] = value == null ? null : new OptionSetValue((int)value);
 		}
 		/// <summary>
-		/// Attribute of: accountrolecode<br/>
-		/// Required Level: None<br/>
-		/// Valid for: Read<br/>
-		/// </summary>
-		[AttributeLogicalName("accountrolecodename")]
-		public string AccountRoleCodeName
-		{
-			get => FormattedValues.Contains("accountrolecode") ? FormattedValues["accountrolecodename"] : null;
-		}
-
-		/// <summary>
 		/// Required Level: None<br/>
 		/// Valid for: Create Update Read<br/>
 		/// </summary>
@@ -977,17 +826,6 @@ namespace XrmGenTest
 			get => TryGetAttributeValue("address1_addresstypecode", out OptionSetValue opt) && opt != null ? (Contact.Meta.OptionSets.Address1AddressType?)opt.Value : null;
 			set => this["address1_addresstypecode"] = value == null ? null : new OptionSetValue((int)value);
 		}
-		/// <summary>
-		/// Attribute of: address1_addresstypecode<br/>
-		/// Required Level: None<br/>
-		/// Valid for: Read<br/>
-		/// </summary>
-		[AttributeLogicalName("address1_addresstypecodename")]
-		public string Address1_AddressTypeCodeName
-		{
-			get => FormattedValues.Contains("address1_addresstypecode") ? FormattedValues["address1_addresstypecodename"] : null;
-		}
-
 		/// <summary>
 		/// Max Length: 80<br/>
 		/// Required Level: None<br/>
@@ -1052,17 +890,6 @@ namespace XrmGenTest
 			get => TryGetAttributeValue("address1_freighttermscode", out OptionSetValue opt) && opt != null ? (Contact.Meta.OptionSets.Address1FreightTerms?)opt.Value : null;
 			set => this["address1_freighttermscode"] = value == null ? null : new OptionSetValue((int)value);
 		}
-		/// <summary>
-		/// Attribute of: address1_freighttermscode<br/>
-		/// Required Level: None<br/>
-		/// Valid for: Read<br/>
-		/// </summary>
-		[AttributeLogicalName("address1_freighttermscodename")]
-		public string Address1_FreightTermsCodeName
-		{
-			get => FormattedValues.Contains("address1_freighttermscode") ? FormattedValues["address1_freighttermscodename"] : null;
-		}
-
 		/// <summary>
 		/// Required Level: None<br/>
 		/// Valid for: Create Update Read<br/>
@@ -1171,17 +998,6 @@ namespace XrmGenTest
 			set => this["address1_shippingmethodcode"] = value == null ? null : new OptionSetValue((int)value);
 		}
 		/// <summary>
-		/// Attribute of: address1_shippingmethodcode<br/>
-		/// Required Level: None<br/>
-		/// Valid for: Read<br/>
-		/// </summary>
-		[AttributeLogicalName("address1_shippingmethodcodename")]
-		public string Address1_ShippingMethodCodeName
-		{
-			get => FormattedValues.Contains("address1_shippingmethodcode") ? FormattedValues["address1_shippingmethodcodename"] : null;
-		}
-
-		/// <summary>
 		/// Max Length: 50<br/>
 		/// Required Level: None<br/>
 		/// Valid for: Create Update Read<br/>
@@ -1257,17 +1073,6 @@ namespace XrmGenTest
 			set => this["address2_addresstypecode"] = value == null ? null : new OptionSetValue((int)value);
 		}
 		/// <summary>
-		/// Attribute of: address2_addresstypecode<br/>
-		/// Required Level: None<br/>
-		/// Valid for: Read<br/>
-		/// </summary>
-		[AttributeLogicalName("address2_addresstypecodename")]
-		public string Address2_AddressTypeCodeName
-		{
-			get => FormattedValues.Contains("address2_addresstypecode") ? FormattedValues["address2_addresstypecodename"] : null;
-		}
-
-		/// <summary>
 		/// Max Length: 80<br/>
 		/// Required Level: None<br/>
 		/// Valid for: Create Update Read<br/>
@@ -1331,17 +1136,6 @@ namespace XrmGenTest
 			get => TryGetAttributeValue("address2_freighttermscode", out OptionSetValue opt) && opt != null ? (Contact.Meta.OptionSets.Address2FreightTerms?)opt.Value : null;
 			set => this["address2_freighttermscode"] = value == null ? null : new OptionSetValue((int)value);
 		}
-		/// <summary>
-		/// Attribute of: address2_freighttermscode<br/>
-		/// Required Level: None<br/>
-		/// Valid for: Read<br/>
-		/// </summary>
-		[AttributeLogicalName("address2_freighttermscodename")]
-		public string Address2_FreightTermsCodeName
-		{
-			get => FormattedValues.Contains("address2_freighttermscode") ? FormattedValues["address2_freighttermscodename"] : null;
-		}
-
 		/// <summary>
 		/// Required Level: None<br/>
 		/// Valid for: Create Update Read<br/>
@@ -1450,17 +1244,6 @@ namespace XrmGenTest
 			set => this["address2_shippingmethodcode"] = value == null ? null : new OptionSetValue((int)value);
 		}
 		/// <summary>
-		/// Attribute of: address2_shippingmethodcode<br/>
-		/// Required Level: None<br/>
-		/// Valid for: Read<br/>
-		/// </summary>
-		[AttributeLogicalName("address2_shippingmethodcodename")]
-		public string Address2_ShippingMethodCodeName
-		{
-			get => FormattedValues.Contains("address2_shippingmethodcode") ? FormattedValues["address2_shippingmethodcodename"] : null;
-		}
-
-		/// <summary>
 		/// Max Length: 50<br/>
 		/// Required Level: None<br/>
 		/// Valid for: Create Update Read<br/>
@@ -1536,17 +1319,6 @@ namespace XrmGenTest
 			set => this["address3_addresstypecode"] = value == null ? null : new OptionSetValue((int)value);
 		}
 		/// <summary>
-		/// Attribute of: address3_addresstypecode<br/>
-		/// Required Level: None<br/>
-		/// Valid for: Read<br/>
-		/// </summary>
-		[AttributeLogicalName("address3_addresstypecodename")]
-		public string Address3_AddressTypeCodeName
-		{
-			get => FormattedValues.Contains("address3_addresstypecode") ? FormattedValues["address3_addresstypecodename"] : null;
-		}
-
-		/// <summary>
 		/// Max Length: 80<br/>
 		/// Required Level: None<br/>
 		/// Valid for: Create Update Read<br/>
@@ -1610,17 +1382,6 @@ namespace XrmGenTest
 			get => TryGetAttributeValue("address3_freighttermscode", out OptionSetValue opt) && opt != null ? (Contact.Meta.OptionSets.Address3FreightTerms?)opt.Value : null;
 			set => this["address3_freighttermscode"] = value == null ? null : new OptionSetValue((int)value);
 		}
-		/// <summary>
-		/// Attribute of: address3_freighttermscode<br/>
-		/// Required Level: None<br/>
-		/// Valid for: Read<br/>
-		/// </summary>
-		[AttributeLogicalName("address3_freighttermscodename")]
-		public string Address3_FreightTermsCodeName
-		{
-			get => FormattedValues.Contains("address3_freighttermscode") ? FormattedValues["address3_freighttermscodename"] : null;
-		}
-
 		/// <summary>
 		/// Required Level: None<br/>
 		/// Valid for: Create Update Read<br/>
@@ -1729,17 +1490,6 @@ namespace XrmGenTest
 			set => this["address3_shippingmethodcode"] = value == null ? null : new OptionSetValue((int)value);
 		}
 		/// <summary>
-		/// Attribute of: address3_shippingmethodcode<br/>
-		/// Required Level: None<br/>
-		/// Valid for: Read<br/>
-		/// </summary>
-		[AttributeLogicalName("address3_shippingmethodcodename")]
-		public string Address3_ShippingMethodCodeName
-		{
-			get => FormattedValues.Contains("address3_shippingmethodcode") ? FormattedValues["address3_shippingmethodcodename"] : null;
-		}
-
-		/// <summary>
 		/// Max Length: 50<br/>
 		/// Required Level: None<br/>
 		/// Valid for: Create Update Read<br/>
@@ -1815,17 +1565,6 @@ namespace XrmGenTest
 			set => this["adx_confirmremovepassword"] = value;
 		}
 		/// <summary>
-		/// Attribute of: adx_confirmremovepassword<br/>
-		/// Required Level: None<br/>
-		/// Valid for: Read<br/>
-		/// </summary>
-		[AttributeLogicalName("adx_confirmremovepasswordname")]
-		public string Adx_confirmremovepasswordName
-		{
-			get => FormattedValues.Contains("adx_confirmremovepassword") ? FormattedValues["adx_confirmremovepasswordname"] : null;
-		}
-
-		/// <summary>
 		/// Max Length: 100<br/>
 		/// Required Level: None<br/>
 		/// Valid for: Create Update Read<br/>
@@ -1868,17 +1607,6 @@ namespace XrmGenTest
 			set => this["adx_identity_emailaddress1confirmed"] = value;
 		}
 		/// <summary>
-		/// Attribute of: adx_identity_emailaddress1confirmed<br/>
-		/// Required Level: None<br/>
-		/// Valid for: Read<br/>
-		/// </summary>
-		[AttributeLogicalName("adx_identity_emailaddress1confirmedname")]
-		public string Adx_identity_emailaddress1confirmedName
-		{
-			get => FormattedValues.Contains("adx_identity_emailaddress1confirmed") ? FormattedValues["adx_identity_emailaddress1confirmedname"] : null;
-		}
-
-		/// <summary>
 		/// Required Level: None<br/>
 		/// Valid for: Create Update Read<br/>
 		/// </summary>
@@ -1899,17 +1627,6 @@ namespace XrmGenTest
 			set => this["adx_identity_locallogindisabled"] = value;
 		}
 		/// <summary>
-		/// Attribute of: adx_identity_locallogindisabled<br/>
-		/// Required Level: None<br/>
-		/// Valid for: Read<br/>
-		/// </summary>
-		[AttributeLogicalName("adx_identity_locallogindisabledname")]
-		public string Adx_identity_locallogindisabledName
-		{
-			get => FormattedValues.Contains("adx_identity_locallogindisabled") ? FormattedValues["adx_identity_locallogindisabledname"] : null;
-		}
-
-		/// <summary>
 		/// Required Level: None<br/>
 		/// Valid for: Create Update Read<br/>
 		/// </summary>
@@ -1919,17 +1636,6 @@ namespace XrmGenTest
 			get => TryGetAttributeValue("adx_identity_lockoutenabled", out bool? value) ? value : null;
 			set => this["adx_identity_lockoutenabled"] = value;
 		}
-		/// <summary>
-		/// Attribute of: adx_identity_lockoutenabled<br/>
-		/// Required Level: None<br/>
-		/// Valid for: Read<br/>
-		/// </summary>
-		[AttributeLogicalName("adx_identity_lockoutenabledname")]
-		public string Adx_identity_lockoutenabledName
-		{
-			get => FormattedValues.Contains("adx_identity_lockoutenabled") ? FormattedValues["adx_identity_lockoutenabledname"] : null;
-		}
-
 		/// <summary>
 		/// Required Level: None<br/>
 		/// Valid for: Create Update Read<br/>
@@ -1951,17 +1657,6 @@ namespace XrmGenTest
 			set => this["adx_identity_logonenabled"] = value;
 		}
 		/// <summary>
-		/// Attribute of: adx_identity_logonenabled<br/>
-		/// Required Level: None<br/>
-		/// Valid for: Read<br/>
-		/// </summary>
-		[AttributeLogicalName("adx_identity_logonenabledname")]
-		public string Adx_identity_logonenabledName
-		{
-			get => FormattedValues.Contains("adx_identity_logonenabled") ? FormattedValues["adx_identity_logonenabledname"] : null;
-		}
-
-		/// <summary>
 		/// Required Level: None<br/>
 		/// Valid for: Create Update Read<br/>
 		/// </summary>
@@ -1971,17 +1666,6 @@ namespace XrmGenTest
 			get => TryGetAttributeValue("adx_identity_mobilephoneconfirmed", out bool? value) ? value : null;
 			set => this["adx_identity_mobilephoneconfirmed"] = value;
 		}
-		/// <summary>
-		/// Attribute of: adx_identity_mobilephoneconfirmed<br/>
-		/// Required Level: None<br/>
-		/// Valid for: Read<br/>
-		/// </summary>
-		[AttributeLogicalName("adx_identity_mobilephoneconfirmedname")]
-		public string Adx_identity_mobilephoneconfirmedName
-		{
-			get => FormattedValues.Contains("adx_identity_mobilephoneconfirmed") ? FormattedValues["adx_identity_mobilephoneconfirmedname"] : null;
-		}
-
 		/// <summary>
 		/// Max Length: 100<br/>
 		/// Required Level: None<br/>
@@ -2025,17 +1709,6 @@ namespace XrmGenTest
 			get => TryGetAttributeValue("adx_identity_twofactorenabled", out bool? value) ? value : null;
 			set => this["adx_identity_twofactorenabled"] = value;
 		}
-		/// <summary>
-		/// Attribute of: adx_identity_twofactorenabled<br/>
-		/// Required Level: None<br/>
-		/// Valid for: Read<br/>
-		/// </summary>
-		[AttributeLogicalName("adx_identity_twofactorenabledname")]
-		public string Adx_identity_twofactorenabledName
-		{
-			get => FormattedValues.Contains("adx_identity_twofactorenabled") ? FormattedValues["adx_identity_twofactorenabledname"] : null;
-		}
-
 		/// <summary>
 		/// Max Length: 100<br/>
 		/// Required Level: None<br/>
@@ -2122,17 +1795,6 @@ namespace XrmGenTest
 			set => this["adx_profilealertinstructions"] = value;
 		}
 		/// <summary>
-		/// Attribute of: adx_profilealert<br/>
-		/// Required Level: None<br/>
-		/// Valid for: Read<br/>
-		/// </summary>
-		[AttributeLogicalName("adx_profilealertname")]
-		public string Adx_profilealertName
-		{
-			get => FormattedValues.Contains("adx_profilealert") ? FormattedValues["adx_profilealertname"] : null;
-		}
-
-		/// <summary>
 		/// Required Level: None<br/>
 		/// Valid for: Create Update Read<br/>
 		/// </summary>
@@ -2142,17 +1804,6 @@ namespace XrmGenTest
 			get => TryGetAttributeValue("adx_profileisanonymous", out bool? value) ? value : null;
 			set => this["adx_profileisanonymous"] = value;
 		}
-		/// <summary>
-		/// Attribute of: adx_profileisanonymous<br/>
-		/// Required Level: None<br/>
-		/// Valid for: Read<br/>
-		/// </summary>
-		[AttributeLogicalName("adx_profileisanonymousname")]
-		public string Adx_profileisanonymousName
-		{
-			get => FormattedValues.Contains("adx_profileisanonymous") ? FormattedValues["adx_profileisanonymousname"] : null;
-		}
-
 		/// <summary>
 		/// Required Level: None<br/>
 		/// Valid for: Create Update Read<br/>
@@ -2374,54 +2025,6 @@ namespace XrmGenTest
 			get => TryGetAttributeValue("createdbyexternalparty", out EntityReference value) ? value : null;
 		}
 		/// <summary>
-		/// Attribute of: createdbyexternalparty<br/>
-		/// Max Length: 100<br/>
-		/// Required Level: None<br/>
-		/// Valid for: Read<br/>
-		/// </summary>
-		[AttributeLogicalName("createdbyexternalpartyname")]
-		public string CreatedByExternalPartyName
-		{
-			get => FormattedValues.Contains("createdbyexternalparty") ? FormattedValues["createdbyexternalparty"] : null;
-		
-		}
-		/// <summary>
-		/// Attribute of: createdbyexternalparty<br/>
-		/// Max Length: 100<br/>
-		/// Required Level: None<br/>
-		/// Valid for: Read<br/>
-		/// </summary>
-		[AttributeLogicalName("createdbyexternalpartyyominame")]
-		public string CreatedByExternalPartyYomiName
-		{
-			get => FormattedValues.Contains("createdbyexternalparty") ? FormattedValues["createdbyexternalparty"] : null;
-		
-		}
-		/// <summary>
-		/// Attribute of: createdby<br/>
-		/// Max Length: 100<br/>
-		/// Required Level: None<br/>
-		/// Valid for: Read<br/>
-		/// </summary>
-		[AttributeLogicalName("createdbyname")]
-		public string CreatedByName
-		{
-			get => FormattedValues.Contains("createdby") ? FormattedValues["createdby"] : null;
-		
-		}
-		/// <summary>
-		/// Attribute of: createdby<br/>
-		/// Max Length: 100<br/>
-		/// Required Level: None<br/>
-		/// Valid for: Read<br/>
-		/// </summary>
-		[AttributeLogicalName("createdbyyominame")]
-		public string CreatedByYomiName
-		{
-			get => FormattedValues.Contains("createdby") ? FormattedValues["createdby"] : null;
-		
-		}
-		/// <summary>
 		/// Required Level: None<br/>
 		/// Valid for: Read<br/>
 		/// </summary>
@@ -2439,30 +2042,6 @@ namespace XrmGenTest
 		public EntityReference CreatedOnBehalfBy
 		{
 			get => TryGetAttributeValue("createdonbehalfby", out EntityReference value) ? value : null;
-		}
-		/// <summary>
-		/// Attribute of: createdonbehalfby<br/>
-		/// Max Length: 100<br/>
-		/// Required Level: None<br/>
-		/// Valid for: Read<br/>
-		/// </summary>
-		[AttributeLogicalName("createdonbehalfbyname")]
-		public string CreatedOnBehalfByName
-		{
-			get => FormattedValues.Contains("createdonbehalfby") ? FormattedValues["createdonbehalfby"] : null;
-		
-		}
-		/// <summary>
-		/// Attribute of: createdonbehalfby<br/>
-		/// Max Length: 100<br/>
-		/// Required Level: None<br/>
-		/// Valid for: Read<br/>
-		/// </summary>
-		[AttributeLogicalName("createdonbehalfbyyominame")]
-		public string CreatedOnBehalfByYomiName
-		{
-			get => FormattedValues.Contains("createdonbehalfby") ? FormattedValues["createdonbehalfby"] : null;
-		
 		}
 		/// <summary>
 		/// Required Level: None<br/>
@@ -2494,17 +2073,6 @@ namespace XrmGenTest
 			set => this["creditonhold"] = value;
 		}
 		/// <summary>
-		/// Attribute of: creditonhold<br/>
-		/// Required Level: None<br/>
-		/// Valid for: Read<br/>
-		/// </summary>
-		[AttributeLogicalName("creditonholdname")]
-		public string CreditOnHoldName
-		{
-			get => FormattedValues.Contains("creditonhold") ? FormattedValues["creditonholdname"] : null;
-		}
-
-		/// <summary>
 		/// Required Level: None<br/>
 		/// Valid for: Create Update Read<br/>
 		/// </summary>
@@ -2515,17 +2083,6 @@ namespace XrmGenTest
 			set => this["customersizecode"] = value == null ? null : new OptionSetValue((int)value);
 		}
 		/// <summary>
-		/// Attribute of: customersizecode<br/>
-		/// Required Level: None<br/>
-		/// Valid for: Read<br/>
-		/// </summary>
-		[AttributeLogicalName("customersizecodename")]
-		public string CustomerSizeCodeName
-		{
-			get => FormattedValues.Contains("customersizecode") ? FormattedValues["customersizecodename"] : null;
-		}
-
-		/// <summary>
 		/// Required Level: None<br/>
 		/// Valid for: Create Update Read<br/>
 		/// </summary>
@@ -2535,17 +2092,6 @@ namespace XrmGenTest
 			get => TryGetAttributeValue("customertypecode", out OptionSetValue opt) && opt != null ? (Contact.Meta.OptionSets.RelationshipType?)opt.Value : null;
 			set => this["customertypecode"] = value == null ? null : new OptionSetValue((int)value);
 		}
-		/// <summary>
-		/// Attribute of: customertypecode<br/>
-		/// Required Level: None<br/>
-		/// Valid for: Read<br/>
-		/// </summary>
-		[AttributeLogicalName("customertypecodename")]
-		public string CustomerTypeCodeName
-		{
-			get => FormattedValues.Contains("customertypecode") ? FormattedValues["customertypecodename"] : null;
-		}
-
 		/// <summary>
 		/// Max Length: 100<br/>
 		/// Required Level: None<br/>
@@ -2579,17 +2125,6 @@ namespace XrmGenTest
 			set => this["donotbulkemail"] = value;
 		}
 		/// <summary>
-		/// Attribute of: donotbulkemail<br/>
-		/// Required Level: None<br/>
-		/// Valid for: Read<br/>
-		/// </summary>
-		[AttributeLogicalName("donotbulkemailname")]
-		public string DoNotBulkEMailName
-		{
-			get => FormattedValues.Contains("donotbulkemail") ? FormattedValues["donotbulkemailname"] : null;
-		}
-
-		/// <summary>
 		/// Required Level: None<br/>
 		/// Valid for: Create Update Read<br/>
 		/// </summary>
@@ -2599,17 +2134,6 @@ namespace XrmGenTest
 			get => TryGetAttributeValue("donotbulkpostalmail", out bool? value) ? value : null;
 			set => this["donotbulkpostalmail"] = value;
 		}
-		/// <summary>
-		/// Attribute of: donotbulkpostalmail<br/>
-		/// Required Level: None<br/>
-		/// Valid for: Read<br/>
-		/// </summary>
-		[AttributeLogicalName("donotbulkpostalmailname")]
-		public string DoNotBulkPostalMailName
-		{
-			get => FormattedValues.Contains("donotbulkpostalmail") ? FormattedValues["donotbulkpostalmailname"] : null;
-		}
-
 		/// <summary>
 		/// Required Level: None<br/>
 		/// Valid for: Create Update Read<br/>
@@ -2621,17 +2145,6 @@ namespace XrmGenTest
 			set => this["donotemail"] = value;
 		}
 		/// <summary>
-		/// Attribute of: donotemail<br/>
-		/// Required Level: None<br/>
-		/// Valid for: Read<br/>
-		/// </summary>
-		[AttributeLogicalName("donotemailname")]
-		public string DoNotEMailName
-		{
-			get => FormattedValues.Contains("donotemail") ? FormattedValues["donotemailname"] : null;
-		}
-
-		/// <summary>
 		/// Required Level: None<br/>
 		/// Valid for: Create Update Read<br/>
 		/// </summary>
@@ -2641,17 +2154,6 @@ namespace XrmGenTest
 			get => TryGetAttributeValue("donotfax", out bool? value) ? value : null;
 			set => this["donotfax"] = value;
 		}
-		/// <summary>
-		/// Attribute of: donotfax<br/>
-		/// Required Level: None<br/>
-		/// Valid for: Read<br/>
-		/// </summary>
-		[AttributeLogicalName("donotfaxname")]
-		public string DoNotFaxName
-		{
-			get => FormattedValues.Contains("donotfax") ? FormattedValues["donotfaxname"] : null;
-		}
-
 		/// <summary>
 		/// Required Level: None<br/>
 		/// Valid for: Create Update Read<br/>
@@ -2663,17 +2165,6 @@ namespace XrmGenTest
 			set => this["donotphone"] = value;
 		}
 		/// <summary>
-		/// Attribute of: donotphone<br/>
-		/// Required Level: None<br/>
-		/// Valid for: Read<br/>
-		/// </summary>
-		[AttributeLogicalName("donotphonename")]
-		public string DoNotPhoneName
-		{
-			get => FormattedValues.Contains("donotphone") ? FormattedValues["donotphonename"] : null;
-		}
-
-		/// <summary>
 		/// Required Level: None<br/>
 		/// Valid for: Create Update Read<br/>
 		/// </summary>
@@ -2683,28 +2174,6 @@ namespace XrmGenTest
 			get => TryGetAttributeValue("donotpostalmail", out bool? value) ? value : null;
 			set => this["donotpostalmail"] = value;
 		}
-		/// <summary>
-		/// Attribute of: donotpostalmail<br/>
-		/// Required Level: None<br/>
-		/// Valid for: Read<br/>
-		/// </summary>
-		[AttributeLogicalName("donotpostalmailname")]
-		public string DoNotPostalMailName
-		{
-			get => FormattedValues.Contains("donotpostalmail") ? FormattedValues["donotpostalmailname"] : null;
-		}
-
-		/// <summary>
-		/// Attribute of: donotsendmm<br/>
-		/// Required Level: None<br/>
-		/// Valid for: Read<br/>
-		/// </summary>
-		[AttributeLogicalName("donotsendmarketingmaterialname")]
-		public string DoNotSendMarketingMaterialName
-		{
-			get => FormattedValues.Contains("donotsendmm") ? FormattedValues["donotsendmarketingmaterialname"] : null;
-		}
-
 		/// <summary>
 		/// Required Level: None<br/>
 		/// Valid for: Create Update Read<br/>
@@ -2725,17 +2194,6 @@ namespace XrmGenTest
 			get => TryGetAttributeValue("educationcode", out OptionSetValue opt) && opt != null ? (Contact.Meta.OptionSets.Education?)opt.Value : null;
 			set => this["educationcode"] = value == null ? null : new OptionSetValue((int)value);
 		}
-		/// <summary>
-		/// Attribute of: educationcode<br/>
-		/// Required Level: None<br/>
-		/// Valid for: Read<br/>
-		/// </summary>
-		[AttributeLogicalName("educationcodename")]
-		public string EducationCodeName
-		{
-			get => FormattedValues.Contains("educationcode") ? FormattedValues["educationcodename"] : null;
-		}
-
 		/// <summary>
 		/// Max Length: 100<br/>
 		/// Required Level: None<br/>
@@ -2781,39 +2239,6 @@ namespace XrmGenTest
 			set => this["employeeid"] = value;
 		}
 		/// <summary>
-		/// Attribute of: entityimageid<br/>
-		/// Required Level: None<br/>
-		/// Valid for: Create Update Read<br/>
-		/// </summary>
-		[AttributeLogicalName("entityimage")]
-		public byte[] EntityImage
-		{
-			get => TryGetAttributeValue("entityimage", out byte[] value) ? value : null;
-			set => this["entityimage"] = value;
-		}
-
-		/// <summary>
-		/// Attribute of: entityimageid<br/>
-		/// Required Level: None<br/>
-		/// Valid for: Read<br/>
-		/// </summary>
-		[AttributeLogicalName("entityimage_timestamp")]
-		public long? EntityImage_Timestamp
-		{
-			get => TryGetAttributeValue("entityimage_timestamp", out long value) ? (long?)value : null;
-		}
-		/// <summary>
-		/// Attribute of: entityimageid<br/>
-		/// Max Length: 200<br/>
-		/// Required Level: None<br/>
-		/// Valid for: Read<br/>
-		/// </summary>
-		[AttributeLogicalName("entityimage_url")]
-		public string EntityImage_URL
-		{
-			get => TryGetAttributeValue("entityimage_url", out string value) ? value : null;
-		}
-		/// <summary>
 		/// Required Level: None<br/>
 		/// Valid for: Read<br/>
 		/// </summary>
@@ -2853,17 +2278,6 @@ namespace XrmGenTest
 			set => this["familystatuscode"] = value == null ? null : new OptionSetValue((int)value);
 		}
 		/// <summary>
-		/// Attribute of: familystatuscode<br/>
-		/// Required Level: None<br/>
-		/// Valid for: Read<br/>
-		/// </summary>
-		[AttributeLogicalName("familystatuscodename")]
-		public string FamilyStatusCodeName
-		{
-			get => FormattedValues.Contains("familystatuscode") ? FormattedValues["familystatuscodename"] : null;
-		}
-
-		/// <summary>
 		/// Max Length: 50<br/>
 		/// Required Level: None<br/>
 		/// Valid for: Create Update Read<br/>
@@ -2896,17 +2310,6 @@ namespace XrmGenTest
 			set => this["followemail"] = value;
 		}
 		/// <summary>
-		/// Attribute of: followemail<br/>
-		/// Required Level: None<br/>
-		/// Valid for: Read<br/>
-		/// </summary>
-		[AttributeLogicalName("followemailname")]
-		public string FollowEmailName
-		{
-			get => FormattedValues.Contains("followemail") ? FormattedValues["followemailname"] : null;
-		}
-
-		/// <summary>
 		/// Max Length: 200<br/>
 		/// Required Level: None<br/>
 		/// Valid for: Create Update Read<br/>
@@ -2938,17 +2341,6 @@ namespace XrmGenTest
 			set => this["gendercode"] = value == null ? null : new OptionSetValue((int)value);
 		}
 		/// <summary>
-		/// Attribute of: gendercode<br/>
-		/// Required Level: None<br/>
-		/// Valid for: Read<br/>
-		/// </summary>
-		[AttributeLogicalName("gendercodename")]
-		public string GenderCodeName
-		{
-			get => FormattedValues.Contains("gendercode") ? FormattedValues["gendercodename"] : null;
-		}
-
-		/// <summary>
 		/// Max Length: 50<br/>
 		/// Required Level: None<br/>
 		/// Valid for: Create Update Read<br/>
@@ -2969,17 +2361,6 @@ namespace XrmGenTest
 			get => TryGetAttributeValue("haschildrencode", out OptionSetValue opt) && opt != null ? (Contact.Meta.OptionSets.HasChildren?)opt.Value : null;
 			set => this["haschildrencode"] = value == null ? null : new OptionSetValue((int)value);
 		}
-		/// <summary>
-		/// Attribute of: haschildrencode<br/>
-		/// Required Level: None<br/>
-		/// Valid for: Read<br/>
-		/// </summary>
-		[AttributeLogicalName("haschildrencodename")]
-		public string HasChildrenCodeName
-		{
-			get => FormattedValues.Contains("haschildrencode") ? FormattedValues["haschildrencodename"] : null;
-		}
-
 		/// <summary>
 		/// Max Length: 50<br/>
 		/// Required Level: None<br/>
@@ -3011,28 +2392,6 @@ namespace XrmGenTest
 			get => TryGetAttributeValue("isbackofficecustomer", out bool? value) ? value : null;
 			set => this["isbackofficecustomer"] = value;
 		}
-		/// <summary>
-		/// Attribute of: isbackofficecustomer<br/>
-		/// Required Level: None<br/>
-		/// Valid for: Read<br/>
-		/// </summary>
-		[AttributeLogicalName("isbackofficecustomername")]
-		public string IsBackofficeCustomerName
-		{
-			get => FormattedValues.Contains("isbackofficecustomer") ? FormattedValues["isbackofficecustomername"] : null;
-		}
-
-		/// <summary>
-		/// Attribute of: isprivate<br/>
-		/// Required Level: None<br/>
-		/// Valid for: Read<br/>
-		/// </summary>
-		[AttributeLogicalName("isprivatename")]
-		public string IsPrivateName
-		{
-			get => FormattedValues.Contains("isprivate") ? FormattedValues["isprivatename"] : null;
-		}
-
 		/// <summary>
 		/// Max Length: 100<br/>
 		/// Required Level: None<br/>
@@ -3086,17 +2445,6 @@ namespace XrmGenTest
 			set => this["leadsourcecode"] = value == null ? null : new OptionSetValue((int)value);
 		}
 		/// <summary>
-		/// Attribute of: leadsourcecode<br/>
-		/// Required Level: None<br/>
-		/// Valid for: Read<br/>
-		/// </summary>
-		[AttributeLogicalName("leadsourcecodename")]
-		public string LeadSourceCodeName
-		{
-			get => FormattedValues.Contains("leadsourcecode") ? FormattedValues["leadsourcecodename"] : null;
-		}
-
-		/// <summary>
 		/// Max Length: 100<br/>
 		/// Required Level: None<br/>
 		/// Valid for: Create Update Read<br/>
@@ -3129,41 +2477,6 @@ namespace XrmGenTest
 			set => this["marketingonly"] = value;
 		}
 		/// <summary>
-		/// Attribute of: marketingonly<br/>
-		/// Required Level: None<br/>
-		/// Valid for: Read<br/>
-		/// </summary>
-		[AttributeLogicalName("marketingonlyname")]
-		public string MarketingOnlyName
-		{
-			get => FormattedValues.Contains("marketingonly") ? FormattedValues["marketingonlyname"] : null;
-		}
-
-		/// <summary>
-		/// Attribute of: masterid<br/>
-		/// Max Length: 100<br/>
-		/// Required Level: None<br/>
-		/// Valid for: Read<br/>
-		/// </summary>
-		[AttributeLogicalName("mastercontactidname")]
-		public string MasterContactIdName
-		{
-			get => FormattedValues.Contains("masterid") ? FormattedValues["masterid"] : null;
-		
-		}
-		/// <summary>
-		/// Attribute of: masterid<br/>
-		/// Max Length: 100<br/>
-		/// Required Level: None<br/>
-		/// Valid for: Read<br/>
-		/// </summary>
-		[AttributeLogicalName("mastercontactidyominame")]
-		public string MasterContactIdYomiName
-		{
-			get => FormattedValues.Contains("masterid") ? FormattedValues["masterid"] : null;
-		
-		}
-		/// <summary>
 		/// Required Level: None<br/>
 		/// Valid for: Read<br/>
 		/// Targets: contact<br/>
@@ -3182,17 +2495,6 @@ namespace XrmGenTest
 		{
 			get => TryGetAttributeValue("merged", out bool? value) ? value : null;
 		}
-		/// <summary>
-		/// Attribute of: merged<br/>
-		/// Required Level: None<br/>
-		/// Valid for: Read<br/>
-		/// </summary>
-		[AttributeLogicalName("mergedname")]
-		public string MergedName
-		{
-			get => FormattedValues.Contains("merged") ? FormattedValues["mergedname"] : null;
-		}
-
 		/// <summary>
 		/// Max Length: 50<br/>
 		/// Required Level: None<br/>
@@ -3236,54 +2538,6 @@ namespace XrmGenTest
 			get => TryGetAttributeValue("modifiedbyexternalparty", out EntityReference value) ? value : null;
 		}
 		/// <summary>
-		/// Attribute of: modifiedbyexternalparty<br/>
-		/// Max Length: 100<br/>
-		/// Required Level: None<br/>
-		/// Valid for: Read<br/>
-		/// </summary>
-		[AttributeLogicalName("modifiedbyexternalpartyname")]
-		public string ModifiedByExternalPartyName
-		{
-			get => FormattedValues.Contains("modifiedbyexternalparty") ? FormattedValues["modifiedbyexternalparty"] : null;
-		
-		}
-		/// <summary>
-		/// Attribute of: modifiedbyexternalparty<br/>
-		/// Max Length: 100<br/>
-		/// Required Level: None<br/>
-		/// Valid for: Read<br/>
-		/// </summary>
-		[AttributeLogicalName("modifiedbyexternalpartyyominame")]
-		public string ModifiedByExternalPartyYomiName
-		{
-			get => FormattedValues.Contains("modifiedbyexternalparty") ? FormattedValues["modifiedbyexternalparty"] : null;
-		
-		}
-		/// <summary>
-		/// Attribute of: modifiedby<br/>
-		/// Max Length: 100<br/>
-		/// Required Level: None<br/>
-		/// Valid for: Read<br/>
-		/// </summary>
-		[AttributeLogicalName("modifiedbyname")]
-		public string ModifiedByName
-		{
-			get => FormattedValues.Contains("modifiedby") ? FormattedValues["modifiedby"] : null;
-		
-		}
-		/// <summary>
-		/// Attribute of: modifiedby<br/>
-		/// Max Length: 100<br/>
-		/// Required Level: None<br/>
-		/// Valid for: Read<br/>
-		/// </summary>
-		[AttributeLogicalName("modifiedbyyominame")]
-		public string ModifiedByYomiName
-		{
-			get => FormattedValues.Contains("modifiedby") ? FormattedValues["modifiedby"] : null;
-		
-		}
-		/// <summary>
 		/// Required Level: None<br/>
 		/// Valid for: Read<br/>
 		/// </summary>
@@ -3301,30 +2555,6 @@ namespace XrmGenTest
 		public EntityReference ModifiedOnBehalfBy
 		{
 			get => TryGetAttributeValue("modifiedonbehalfby", out EntityReference value) ? value : null;
-		}
-		/// <summary>
-		/// Attribute of: modifiedonbehalfby<br/>
-		/// Max Length: 100<br/>
-		/// Required Level: None<br/>
-		/// Valid for: Read<br/>
-		/// </summary>
-		[AttributeLogicalName("modifiedonbehalfbyname")]
-		public string ModifiedOnBehalfByName
-		{
-			get => FormattedValues.Contains("modifiedonbehalfby") ? FormattedValues["modifiedonbehalfby"] : null;
-		
-		}
-		/// <summary>
-		/// Attribute of: modifiedonbehalfby<br/>
-		/// Max Length: 100<br/>
-		/// Required Level: None<br/>
-		/// Valid for: Read<br/>
-		/// </summary>
-		[AttributeLogicalName("modifiedonbehalfbyyominame")]
-		public string ModifiedOnBehalfByYomiName
-		{
-			get => FormattedValues.Contains("modifiedonbehalfby") ? FormattedValues["modifiedonbehalfby"] : null;
-		
 		}
 		/// <summary>
 		/// Required Level: None<br/>
@@ -3345,30 +2575,6 @@ namespace XrmGenTest
 			}
 		}
 		/// <summary>
-		/// Attribute of: msa_managingpartnerid<br/>
-		/// Max Length: 160<br/>
-		/// Required Level: None<br/>
-		/// Valid for: Read<br/>
-		/// </summary>
-		[AttributeLogicalName("msa_managingpartneridname")]
-		public string Msa_managingpartneridName
-		{
-			get => FormattedValues.Contains("msa_managingpartnerid") ? FormattedValues["msa_managingpartnerid"] : null;
-		
-		}
-		/// <summary>
-		/// Attribute of: msa_managingpartnerid<br/>
-		/// Max Length: 160<br/>
-		/// Required Level: None<br/>
-		/// Valid for: Read<br/>
-		/// </summary>
-		[AttributeLogicalName("msa_managingpartneridyominame")]
-		public string Msa_managingpartneridYomiName
-		{
-			get => FormattedValues.Contains("msa_managingpartnerid") ? FormattedValues["msa_managingpartnerid"] : null;
-		
-		}
-		/// <summary>
 		/// Required Level: None<br/>
 		/// Valid for: Create Update Read<br/>
 		/// </summary>
@@ -3378,17 +2584,6 @@ namespace XrmGenTest
 			get => TryGetAttributeValue("msdyn_disablewebtracking", out bool? value) ? value : null;
 			set => this["msdyn_disablewebtracking"] = value;
 		}
-		/// <summary>
-		/// Attribute of: msdyn_disablewebtracking<br/>
-		/// Required Level: None<br/>
-		/// Valid for: Read<br/>
-		/// </summary>
-		[AttributeLogicalName("msdyn_disablewebtrackingname")]
-		public string Msdyn_disablewebtrackingName
-		{
-			get => FormattedValues.Contains("msdyn_disablewebtracking") ? FormattedValues["msdyn_disablewebtrackingname"] : null;
-		}
-
 		/// <summary>
 		/// Required Level: None<br/>
 		/// Valid for: Create Update Read<br/>
@@ -3400,17 +2595,6 @@ namespace XrmGenTest
 			set => this["msdyn_isminor"] = value;
 		}
 		/// <summary>
-		/// Attribute of: msdyn_isminor<br/>
-		/// Required Level: None<br/>
-		/// Valid for: Read<br/>
-		/// </summary>
-		[AttributeLogicalName("msdyn_isminorname")]
-		public string Msdyn_isminorName
-		{
-			get => FormattedValues.Contains("msdyn_isminor") ? FormattedValues["msdyn_isminorname"] : null;
-		}
-
-		/// <summary>
 		/// Required Level: None<br/>
 		/// Valid for: Create Update Read<br/>
 		/// </summary>
@@ -3420,17 +2604,6 @@ namespace XrmGenTest
 			get => TryGetAttributeValue("msdyn_isminorwithparentalconsent", out bool? value) ? value : null;
 			set => this["msdyn_isminorwithparentalconsent"] = value;
 		}
-		/// <summary>
-		/// Attribute of: msdyn_isminorwithparentalconsent<br/>
-		/// Required Level: None<br/>
-		/// Valid for: Read<br/>
-		/// </summary>
-		[AttributeLogicalName("msdyn_isminorwithparentalconsentname")]
-		public string Msdyn_isminorwithparentalconsentName
-		{
-			get => FormattedValues.Contains("msdyn_isminorwithparentalconsent") ? FormattedValues["msdyn_isminorwithparentalconsentname"] : null;
-		}
-
 		/// <summary>
 		/// Required Level: None<br/>
 		/// Valid for: Create Update Read<br/>
@@ -3451,17 +2624,6 @@ namespace XrmGenTest
 			get => TryGetAttributeValue("msft_datastate", out OptionSetValue opt) && opt != null ? (Contact.Meta.OptionSets.Datastate?)opt.Value : null;
 		}
 		/// <summary>
-		/// Attribute of: msft_datastate<br/>
-		/// Required Level: None<br/>
-		/// Valid for: Read<br/>
-		/// </summary>
-		[AttributeLogicalName("msft_datastatename")]
-		public string Msft_datastateName
-		{
-			get => FormattedValues.Contains("msft_datastate") ? FormattedValues["msft_datastatename"] : null;
-		}
-
-		/// <summary>
 		/// Required Level: None<br/>
 		/// Valid for: Create Update Read<br/>
 		/// </summary>
@@ -3471,17 +2633,6 @@ namespace XrmGenTest
 			get => TryGetAttributeValue("mspp_userpreferredlcid", out OptionSetValue opt) && opt != null ? (Contact.Meta.OptionSets.PowerPagesLanguages?)opt.Value : null;
 			set => this["mspp_userpreferredlcid"] = value == null ? null : new OptionSetValue((int)value);
 		}
-		/// <summary>
-		/// Attribute of: mspp_userpreferredlcid<br/>
-		/// Required Level: None<br/>
-		/// Valid for: Read<br/>
-		/// </summary>
-		[AttributeLogicalName("mspp_userpreferredlcidname")]
-		public string Mspp_userpreferredlcidName
-		{
-			get => FormattedValues.Contains("mspp_userpreferredlcid") ? FormattedValues["mspp_userpreferredlcidname"] : null;
-		}
-
 		/// <summary>
 		/// Max Length: 100<br/>
 		/// Required Level: None<br/>
@@ -3535,28 +2686,6 @@ namespace XrmGenTest
 		}
 
 		/// <summary>
-		/// Attribute of: ownerid<br/>
-		/// Max Length: 100<br/>
-		/// Required Level: SystemRequired<br/>
-		/// Valid for: Read<br/>
-		/// </summary>
-		[AttributeLogicalName("owneridname")]
-		public string OwnerIdName
-		{
-			get => TryGetAttributeValue("owneridname", out string value) ? value : null;
-		}
-		/// <summary>
-		/// Attribute of: ownerid<br/>
-		/// Max Length: 100<br/>
-		/// Required Level: SystemRequired<br/>
-		/// Valid for: Read<br/>
-		/// </summary>
-		[AttributeLogicalName("owneridyominame")]
-		public string OwnerIdYomiName
-		{
-			get => TryGetAttributeValue("owneridyominame", out string value) ? value : null;
-		}
-		/// <summary>
 		/// Required Level: None<br/>
 		/// Valid for: Read<br/>
 		/// Targets: businessunit<br/>
@@ -3565,18 +2694,6 @@ namespace XrmGenTest
 		public EntityReference OwningBusinessUnit
 		{
 			get => TryGetAttributeValue("owningbusinessunit", out EntityReference value) ? value : null;
-		}
-		/// <summary>
-		/// Attribute of: owningbusinessunit<br/>
-		/// Max Length: 160<br/>
-		/// Required Level: None<br/>
-		/// Valid for: Read<br/>
-		/// </summary>
-		[AttributeLogicalName("owningbusinessunitname")]
-		public string OwningBusinessUnitName
-		{
-			get => FormattedValues.Contains("owningbusinessunit") ? FormattedValues["owningbusinessunit"] : null;
-		
 		}
 		/// <summary>
 		/// Required Level: None<br/>
@@ -3620,30 +2737,6 @@ namespace XrmGenTest
 			get => TryGetAttributeValue("parentcontactid", out EntityReference value) ? value : null;
 		}
 		/// <summary>
-		/// Attribute of: parentcontactid<br/>
-		/// Max Length: 100<br/>
-		/// Required Level: None<br/>
-		/// Valid for: Read<br/>
-		/// </summary>
-		[AttributeLogicalName("parentcontactidname")]
-		public string ParentContactIdName
-		{
-			get => FormattedValues.Contains("parentcontactid") ? FormattedValues["parentcontactid"] : null;
-		
-		}
-		/// <summary>
-		/// Attribute of: parentcontactid<br/>
-		/// Max Length: 100<br/>
-		/// Required Level: None<br/>
-		/// Valid for: Read<br/>
-		/// </summary>
-		[AttributeLogicalName("parentcontactidyominame")]
-		public string ParentContactIdYomiName
-		{
-			get => FormattedValues.Contains("parentcontactid") ? FormattedValues["parentcontactid"] : null;
-		
-		}
-		/// <summary>
 		/// Required Level: None<br/>
 		/// Valid for: Create Update Read<br/>
 		/// Targets: account,contact<br/>
@@ -3662,30 +2755,6 @@ namespace XrmGenTest
 			}
 		}
 		/// <summary>
-		/// Attribute of: parentcustomerid<br/>
-		/// Max Length: 160<br/>
-		/// Required Level: ApplicationRequired<br/>
-		/// Valid for: Read<br/>
-		/// </summary>
-		[AttributeLogicalName("parentcustomeridname")]
-		public string ParentCustomerIdName
-		{
-			get => FormattedValues.Contains("parentcustomerid") ? FormattedValues["parentcustomerid"] : null;
-		
-		}
-		/// <summary>
-		/// Attribute of: parentcustomerid<br/>
-		/// Max Length: 450<br/>
-		/// Required Level: ApplicationRequired<br/>
-		/// Valid for: Read<br/>
-		/// </summary>
-		[AttributeLogicalName("parentcustomeridyominame")]
-		public string ParentCustomerIdYomiName
-		{
-			get => FormattedValues.Contains("parentcustomerid") ? FormattedValues["parentcustomerid"] : null;
-		
-		}
-		/// <summary>
 		/// Required Level: None<br/>
 		/// Valid for: Create Update Read<br/>
 		/// </summary>
@@ -3695,17 +2764,6 @@ namespace XrmGenTest
 			get => TryGetAttributeValue("participatesinworkflow", out bool? value) ? value : null;
 			set => this["participatesinworkflow"] = value;
 		}
-		/// <summary>
-		/// Attribute of: participatesinworkflow<br/>
-		/// Required Level: None<br/>
-		/// Valid for: Read<br/>
-		/// </summary>
-		[AttributeLogicalName("participatesinworkflowname")]
-		public string ParticipatesInWorkflowName
-		{
-			get => FormattedValues.Contains("participatesinworkflow") ? FormattedValues["participatesinworkflowname"] : null;
-		}
-
 		/// <summary>
 		/// Required Level: None<br/>
 		/// Valid for: Create Update Read<br/>
@@ -3717,17 +2775,6 @@ namespace XrmGenTest
 			set => this["paymenttermscode"] = value == null ? null : new OptionSetValue((int)value);
 		}
 		/// <summary>
-		/// Attribute of: paymenttermscode<br/>
-		/// Required Level: None<br/>
-		/// Valid for: Read<br/>
-		/// </summary>
-		[AttributeLogicalName("paymenttermscodename")]
-		public string PaymentTermsCodeName
-		{
-			get => FormattedValues.Contains("paymenttermscode") ? FormattedValues["paymenttermscodename"] : null;
-		}
-
-		/// <summary>
 		/// Required Level: None<br/>
 		/// Valid for: Create Update Read<br/>
 		/// </summary>
@@ -3737,17 +2784,6 @@ namespace XrmGenTest
 			get => TryGetAttributeValue("preferredappointmentdaycode", out OptionSetValue opt) && opt != null ? (Contact.Meta.OptionSets.PreferredDay?)opt.Value : null;
 			set => this["preferredappointmentdaycode"] = value == null ? null : new OptionSetValue((int)value);
 		}
-		/// <summary>
-		/// Attribute of: preferredappointmentdaycode<br/>
-		/// Required Level: None<br/>
-		/// Valid for: Read<br/>
-		/// </summary>
-		[AttributeLogicalName("preferredappointmentdaycodename")]
-		public string PreferredAppointmentDayCodeName
-		{
-			get => FormattedValues.Contains("preferredappointmentdaycode") ? FormattedValues["preferredappointmentdaycodename"] : null;
-		}
-
 		/// <summary>
 		/// Required Level: None<br/>
 		/// Valid for: Create Update Read<br/>
@@ -3759,17 +2795,6 @@ namespace XrmGenTest
 			set => this["preferredappointmenttimecode"] = value == null ? null : new OptionSetValue((int)value);
 		}
 		/// <summary>
-		/// Attribute of: preferredappointmenttimecode<br/>
-		/// Required Level: None<br/>
-		/// Valid for: Read<br/>
-		/// </summary>
-		[AttributeLogicalName("preferredappointmenttimecodename")]
-		public string PreferredAppointmentTimeCodeName
-		{
-			get => FormattedValues.Contains("preferredappointmenttimecode") ? FormattedValues["preferredappointmenttimecodename"] : null;
-		}
-
-		/// <summary>
 		/// Required Level: None<br/>
 		/// Valid for: Create Update Read<br/>
 		/// </summary>
@@ -3779,17 +2804,6 @@ namespace XrmGenTest
 			get => TryGetAttributeValue("preferredcontactmethodcode", out OptionSetValue opt) && opt != null ? (Contact.Meta.OptionSets.PreferredMethodOfContact?)opt.Value : null;
 			set => this["preferredcontactmethodcode"] = value == null ? null : new OptionSetValue((int)value);
 		}
-		/// <summary>
-		/// Attribute of: preferredcontactmethodcode<br/>
-		/// Required Level: None<br/>
-		/// Valid for: Read<br/>
-		/// </summary>
-		[AttributeLogicalName("preferredcontactmethodcodename")]
-		public string PreferredContactMethodCodeName
-		{
-			get => FormattedValues.Contains("preferredcontactmethodcode") ? FormattedValues["preferredcontactmethodcodename"] : null;
-		}
-
 		/// <summary>
 		/// Required Level: None<br/>
 		/// Valid for: Create Update Read<br/>
@@ -3807,30 +2821,6 @@ namespace XrmGenTest
 				}
 				this["preferredsystemuserid"] = value;
 			}
-		}
-		/// <summary>
-		/// Attribute of: preferredsystemuserid<br/>
-		/// Max Length: 100<br/>
-		/// Required Level: None<br/>
-		/// Valid for: Read<br/>
-		/// </summary>
-		[AttributeLogicalName("preferredsystemuseridname")]
-		public string PreferredSystemUserIdName
-		{
-			get => FormattedValues.Contains("preferredsystemuserid") ? FormattedValues["preferredsystemuserid"] : null;
-		
-		}
-		/// <summary>
-		/// Attribute of: preferredsystemuserid<br/>
-		/// Max Length: 100<br/>
-		/// Required Level: None<br/>
-		/// Valid for: Read<br/>
-		/// </summary>
-		[AttributeLogicalName("preferredsystemuseridyominame")]
-		public string PreferredSystemUserIdYomiName
-		{
-			get => FormattedValues.Contains("preferredsystemuserid") ? FormattedValues["preferredsystemuserid"] : null;
-		
 		}
 		/// <summary>
 		/// Required Level: None<br/>
@@ -3864,17 +2854,6 @@ namespace XrmGenTest
 			set => this["shippingmethodcode"] = value == null ? null : new OptionSetValue((int)value);
 		}
 		/// <summary>
-		/// Attribute of: shippingmethodcode<br/>
-		/// Required Level: None<br/>
-		/// Valid for: Read<br/>
-		/// </summary>
-		[AttributeLogicalName("shippingmethodcodename")]
-		public string ShippingMethodCodeName
-		{
-			get => FormattedValues.Contains("shippingmethodcode") ? FormattedValues["shippingmethodcodename"] : null;
-		}
-
-		/// <summary>
 		/// Required Level: None<br/>
 		/// Valid for: Create Update Read<br/>
 		/// Targets: sla<br/>
@@ -3901,30 +2880,6 @@ namespace XrmGenTest
 		public EntityReference SLAInvokedId
 		{
 			get => TryGetAttributeValue("slainvokedid", out EntityReference value) ? value : null;
-		}
-		/// <summary>
-		/// Attribute of: slainvokedid<br/>
-		/// Max Length: 100<br/>
-		/// Required Level: None<br/>
-		/// Valid for: Read<br/>
-		/// </summary>
-		[AttributeLogicalName("slainvokedidname")]
-		public string SLAInvokedIdName
-		{
-			get => FormattedValues.Contains("slainvokedid") ? FormattedValues["slainvokedid"] : null;
-		
-		}
-		/// <summary>
-		/// Attribute of: slaid<br/>
-		/// Max Length: 100<br/>
-		/// Required Level: None<br/>
-		/// Valid for: Read<br/>
-		/// </summary>
-		[AttributeLogicalName("slaname")]
-		public string SLAName
-		{
-			get => FormattedValues.Contains("slaid") ? FormattedValues["slaid"] : null;
-		
 		}
 		/// <summary>
 		/// Max Length: 100<br/>
@@ -3958,17 +2913,6 @@ namespace XrmGenTest
 			set => this["statecode"] = value == null ? null : new OptionSetValue(((IConvertible)value).ToInt32((IFormatProvider)CultureInfo.InvariantCulture));
 		}
 		/// <summary>
-		/// Attribute of: statecode<br/>
-		/// Required Level: None<br/>
-		/// Valid for: Read<br/>
-		/// </summary>
-		[AttributeLogicalName("statecodename")]
-		public string StateCodeName
-		{
-			get => FormattedValues.Contains("statecode") ? FormattedValues["statecodename"] : null;
-		}
-
-		/// <summary>
 		/// Required Level: None<br/>
 		/// Valid for: Create Update Read<br/>
 		/// </summary>
@@ -3977,26 +2921,6 @@ namespace XrmGenTest
 		{
 			get => TryGetAttributeValue("statuscode", out OptionSetValue opt) && opt != null ? (Contact.Meta.OptionSets.StatusReason?)Enum.ToObject(typeof(Contact.Meta.OptionSets.StatusReason), opt.Value) : null;
 			set => this["statuscode"] = value == null ? null : new OptionSetValue(((IConvertible)value).ToInt32((IFormatProvider)CultureInfo.InvariantCulture));
-		}
-		/// <summary>
-		/// Attribute of: statuscode<br/>
-		/// Required Level: None<br/>
-		/// Valid for: Read<br/>
-		/// </summary>
-		[AttributeLogicalName("statuscodename")]
-		public string StatusCodeName
-		{
-			get => FormattedValues.Contains("statuscode") ? FormattedValues["statuscodename"] : null;
-		}
-
-		/// <summary>
-		/// Required Level: None<br/>
-		/// Valid for: Create<br/>
-		/// </summary>
-		[AttributeLogicalName("subscriptionid")]
-		public Guid? SubscriptionId
-		{
-			set => this["subscriptionid"] = value;
 		}
 		/// <summary>
 		/// Max Length: 10<br/>
@@ -4053,17 +2977,6 @@ namespace XrmGenTest
 			set => this["territorycode"] = value == null ? null : new OptionSetValue((int)value);
 		}
 		/// <summary>
-		/// Attribute of: territorycode<br/>
-		/// Required Level: None<br/>
-		/// Valid for: Read<br/>
-		/// </summary>
-		[AttributeLogicalName("territorycodename")]
-		public string TerritoryCodeName
-		{
-			get => FormattedValues.Contains("territorycode") ? FormattedValues["territorycodename"] : null;
-		}
-
-		/// <summary>
 		/// Max Length: 1250<br/>
 		/// Required Level: None<br/>
 		/// Valid for: Read<br/>
@@ -4100,18 +3013,6 @@ namespace XrmGenTest
 				}
 				this["transactioncurrencyid"] = value;
 			}
-		}
-		/// <summary>
-		/// Attribute of: transactioncurrencyid<br/>
-		/// Max Length: 100<br/>
-		/// Required Level: None<br/>
-		/// Valid for: Read<br/>
-		/// </summary>
-		[AttributeLogicalName("transactioncurrencyidname")]
-		public string TransactionCurrencyIdName
-		{
-			get => FormattedValues.Contains("transactioncurrencyid") ? FormattedValues["transactioncurrencyid"] : null;
-		
 		}
 		/// <summary>
 		/// Max Length: 1250<br/>
@@ -4203,9 +3104,9 @@ namespace XrmGenTest
 		public Contact(KeyAttributeCollection keyAttributes) : base(Meta.EntityLogicalName, keyAttributes) { }
 	}
 	/// <summary>
-	/// Display Name: Partner
+	/// Display Name: Account
 	/// </summary>
-	[GeneratedCode("TemplatedCodeGenerator", "1.3.3.0")]
+	[GeneratedCode("TemplatedCodeGenerator", "1.4.0.0")]
 	[EntityLogicalName("account")]
 	[global::System.Diagnostics.CodeAnalysis.ExcludeFromCodeCoverage]
 	public partial class Account : Entity
@@ -4221,21 +3122,16 @@ namespace XrmGenTest
 			public partial class Fields
 			{
 				public const string AccountCategoryCode = "accountcategorycode";
-				public const string AccountCategoryCodeName = "accountcategorycodename";
 				public const string AccountClassificationCode = "accountclassificationcode";
-				public const string AccountClassificationCodeName = "accountclassificationcodename";
 				public const string AccountNumber = "accountnumber";
 				public const string AccountRatingCode = "accountratingcode";
-				public const string AccountRatingCodeName = "accountratingcodename";
 				public const string Address1_AddressTypeCode = "address1_addresstypecode";
-				public const string Address1_AddressTypeCodeName = "address1_addresstypecodename";
 				public const string Address1_City = "address1_city";
 				public const string Address1_Composite = "address1_composite";
 				public const string Address1_Country = "address1_country";
 				public const string Address1_County = "address1_county";
 				public const string Address1_Fax = "address1_fax";
 				public const string Address1_FreightTermsCode = "address1_freighttermscode";
-				public const string Address1_FreightTermsCodeName = "address1_freighttermscodename";
 				public const string Address1_Latitude = "address1_latitude";
 				public const string Address1_Line1 = "address1_line1";
 				public const string Address1_Line2 = "address1_line2";
@@ -4246,7 +3142,6 @@ namespace XrmGenTest
 				public const string Address1_PostOfficeBox = "address1_postofficebox";
 				public const string Address1_PrimaryContactName = "address1_primarycontactname";
 				public const string Address1_ShippingMethodCode = "address1_shippingmethodcode";
-				public const string Address1_ShippingMethodCodeName = "address1_shippingmethodcodename";
 				public const string Address1_StateOrProvince = "address1_stateorprovince";
 				public const string Address1_Telephone1 = "address1_telephone1";
 				public const string Address1_Telephone2 = "address1_telephone2";
@@ -4254,14 +3149,12 @@ namespace XrmGenTest
 				public const string Address1_UPSZone = "address1_upszone";
 				public const string Address1_UTCOffset = "address1_utcoffset";
 				public const string Address2_AddressTypeCode = "address2_addresstypecode";
-				public const string Address2_AddressTypeCodeName = "address2_addresstypecodename";
 				public const string Address2_City = "address2_city";
 				public const string Address2_Composite = "address2_composite";
 				public const string Address2_Country = "address2_country";
 				public const string Address2_County = "address2_county";
 				public const string Address2_Fax = "address2_fax";
 				public const string Address2_FreightTermsCode = "address2_freighttermscode";
-				public const string Address2_FreightTermsCodeName = "address2_freighttermscodename";
 				public const string Address2_Latitude = "address2_latitude";
 				public const string Address2_Line1 = "address2_line1";
 				public const string Address2_Line2 = "address2_line2";
@@ -4272,7 +3165,6 @@ namespace XrmGenTest
 				public const string Address2_PostOfficeBox = "address2_postofficebox";
 				public const string Address2_PrimaryContactName = "address2_primarycontactname";
 				public const string Address2_ShippingMethodCode = "address2_shippingmethodcode";
-				public const string Address2_ShippingMethodCodeName = "address2_shippingmethodcodename";
 				public const string Address2_StateOrProvince = "address2_stateorprovince";
 				public const string Address2_Telephone1 = "address2_telephone1";
 				public const string Address2_Telephone2 = "address2_telephone2";
@@ -4290,130 +3182,78 @@ namespace XrmGenTest
 				public const string Aging90 = "aging90";
 				public const string Aging90_Base = "aging90_base";
 				public const string BusinessTypeCode = "businesstypecode";
-				public const string BusinessTypeCodeName = "businesstypecodename";
 				public const string Cr22a_SupportedLanguages = "cr22a_supportedlanguages";
-				public const string Cr22a_supportedlanguagesName = "cr22a_supportedlanguagesname";
 				public const string CreatedBy = "createdby";
 				public static readonly ReadOnlyCollection<string> CreatedByTargets = new ReadOnlyCollection<string>(new string[] { "systemuser" });
 				public const string CreatedByExternalParty = "createdbyexternalparty";
 				public static readonly ReadOnlyCollection<string> CreatedByExternalPartyTargets = new ReadOnlyCollection<string>(new string[] { "externalparty" });
-				public const string CreatedByExternalPartyName = "createdbyexternalpartyname";
-				public const string CreatedByExternalPartyYomiName = "createdbyexternalpartyyominame";
-				public const string CreatedByName = "createdbyname";
-				public const string CreatedByYomiName = "createdbyyominame";
 				public const string CreatedOn = "createdon";
 				public const string CreatedOnBehalfBy = "createdonbehalfby";
 				public static readonly ReadOnlyCollection<string> CreatedOnBehalfByTargets = new ReadOnlyCollection<string>(new string[] { "systemuser" });
-				public const string CreatedOnBehalfByName = "createdonbehalfbyname";
-				public const string CreatedOnBehalfByYomiName = "createdonbehalfbyyominame";
 				public const string CreditLimit = "creditlimit";
 				public const string CreditLimit_Base = "creditlimit_base";
 				public const string CreditOnHold = "creditonhold";
-				public const string CreditOnHoldName = "creditonholdname";
 				public const string CustomerSizeCode = "customersizecode";
-				public const string CustomerSizeCodeName = "customersizecodename";
 				public const string CustomerTypeCode = "customertypecode";
-				public const string CustomerTypeCodeName = "customertypecodename";
 				public const string Description = "description";
 				public const string DoNotBulkEMail = "donotbulkemail";
-				public const string DoNotBulkEMailName = "donotbulkemailname";
 				public const string DoNotBulkPostalMail = "donotbulkpostalmail";
-				public const string DoNotBulkPostalMailName = "donotbulkpostalmailname";
 				public const string DoNotEMail = "donotemail";
-				public const string DoNotEMailName = "donotemailname";
 				public const string DoNotFax = "donotfax";
-				public const string DoNotFaxName = "donotfaxname";
 				public const string DoNotPhone = "donotphone";
-				public const string DoNotPhoneName = "donotphonename";
 				public const string DoNotPostalMail = "donotpostalmail";
-				public const string DoNotPostalMailName = "donotpostalmailname";
-				public const string DoNotSendMarketingMaterialName = "donotsendmarketingmaterialname";
 				public const string DoNotSendMM = "donotsendmm";
 				public const string EMailAddress1 = "emailaddress1";
 				public const string EMailAddress2 = "emailaddress2";
 				public const string EMailAddress3 = "emailaddress3";
-				public const string EntityImage = "entityimage";
-				public const string EntityImage_Timestamp = "entityimage_timestamp";
-				public const string EntityImage_URL = "entityimage_url";
 				public const string EntityImageId = "entityimageid";
 				public const string ExchangeRate = "exchangerate";
 				public const string Fax = "fax";
 				public const string FollowEmail = "followemail";
-				public const string FollowEmailName = "followemailname";
 				public const string FtpSiteURL = "ftpsiteurl";
 				public const string ImportSequenceNumber = "importsequencenumber";
 				public const string IndustryCode = "industrycode";
-				public const string IndustryCodeName = "industrycodename";
-				public const string IsPrivateName = "isprivatename";
 				public const string LastOnHoldTime = "lastonholdtime";
 				public const string LastUsedInCampaign = "lastusedincampaign";
 				public const string MarketCap = "marketcap";
 				public const string MarketCap_Base = "marketcap_base";
 				public const string MarketingOnly = "marketingonly";
-				public const string MarketingOnlyName = "marketingonlyname";
-				public const string MasterAccountIdName = "masteraccountidname";
-				public const string MasterAccountIdYomiName = "masteraccountidyominame";
 				public const string MasterId = "masterid";
 				public static readonly ReadOnlyCollection<string> MasterIdTargets = new ReadOnlyCollection<string>(new string[] { "account" });
 				public const string Merged = "merged";
-				public const string MergedName = "mergedname";
 				public const string ModifiedBy = "modifiedby";
 				public static readonly ReadOnlyCollection<string> ModifiedByTargets = new ReadOnlyCollection<string>(new string[] { "systemuser" });
 				public const string ModifiedByExternalParty = "modifiedbyexternalparty";
 				public static readonly ReadOnlyCollection<string> ModifiedByExternalPartyTargets = new ReadOnlyCollection<string>(new string[] { "externalparty" });
-				public const string ModifiedByExternalPartyName = "modifiedbyexternalpartyname";
-				public const string ModifiedByExternalPartyYomiName = "modifiedbyexternalpartyyominame";
-				public const string ModifiedByName = "modifiedbyname";
-				public const string ModifiedByYomiName = "modifiedbyyominame";
 				public const string ModifiedOn = "modifiedon";
 				public const string ModifiedOnBehalfBy = "modifiedonbehalfby";
 				public static readonly ReadOnlyCollection<string> ModifiedOnBehalfByTargets = new ReadOnlyCollection<string>(new string[] { "systemuser" });
-				public const string ModifiedOnBehalfByName = "modifiedonbehalfbyname";
-				public const string ModifiedOnBehalfByYomiName = "modifiedonbehalfbyyominame";
 				public const string Msa_managingpartnerid = "msa_managingpartnerid";
 				public static readonly ReadOnlyCollection<string> Msa_managingpartneridTargets = new ReadOnlyCollection<string>(new string[] { "account" });
-				public const string Msa_managingpartneridName = "msa_managingpartneridname";
-				public const string Msa_managingpartneridYomiName = "msa_managingpartneridyominame";
 				public const string Msft_DataState = "msft_datastate";
-				public const string Msft_datastateName = "msft_datastatename";
 				public const string Name = "name";
 				public const string NumberOfEmployees = "numberofemployees";
 				public const string OnHoldTime = "onholdtime";
 				public const string OverriddenCreatedOn = "overriddencreatedon";
 				public const string OwnerId = "ownerid";
-				public const string OwnerIdName = "owneridname";
-				public const string OwnerIdYomiName = "owneridyominame";
 				public const string OwnershipCode = "ownershipcode";
-				public const string OwnershipCodeName = "ownershipcodename";
 				public const string OwningBusinessUnit = "owningbusinessunit";
 				public static readonly ReadOnlyCollection<string> OwningBusinessUnitTargets = new ReadOnlyCollection<string>(new string[] { "businessunit" });
-				public const string OwningBusinessUnitName = "owningbusinessunitname";
 				public const string OwningTeam = "owningteam";
 				public static readonly ReadOnlyCollection<string> OwningTeamTargets = new ReadOnlyCollection<string>(new string[] { "team" });
 				public const string OwningUser = "owninguser";
 				public static readonly ReadOnlyCollection<string> OwningUserTargets = new ReadOnlyCollection<string>(new string[] { "systemuser" });
 				public const string ParentAccountId = "parentaccountid";
 				public static readonly ReadOnlyCollection<string> ParentAccountIdTargets = new ReadOnlyCollection<string>(new string[] { "account" });
-				public const string ParentAccountIdName = "parentaccountidname";
-				public const string ParentAccountIdYomiName = "parentaccountidyominame";
 				public const string ParticipatesInWorkflow = "participatesinworkflow";
-				public const string ParticipatesInWorkflowName = "participatesinworkflowname";
 				public const string PaymentTermsCode = "paymenttermscode";
-				public const string PaymentTermsCodeName = "paymenttermscodename";
 				public const string PreferredAppointmentDayCode = "preferredappointmentdaycode";
-				public const string PreferredAppointmentDayCodeName = "preferredappointmentdaycodename";
 				public const string PreferredAppointmentTimeCode = "preferredappointmenttimecode";
-				public const string PreferredAppointmentTimeCodeName = "preferredappointmenttimecodename";
 				public const string PreferredContactMethodCode = "preferredcontactmethodcode";
-				public const string PreferredContactMethodCodeName = "preferredcontactmethodcodename";
 				public const string PreferredSystemUserId = "preferredsystemuserid";
 				public static readonly ReadOnlyCollection<string> PreferredSystemUserIdTargets = new ReadOnlyCollection<string>(new string[] { "systemuser" });
-				public const string PreferredSystemUserIdName = "preferredsystemuseridname";
-				public const string PreferredSystemUserIdYomiName = "preferredsystemuseridyominame";
 				public const string PrimaryContactId = "primarycontactid";
 				public static readonly ReadOnlyCollection<string> PrimaryContactIdTargets = new ReadOnlyCollection<string>(new string[] { "contact" });
-				public const string PrimaryContactIdName = "primarycontactidname";
-				public const string PrimaryContactIdYomiName = "primarycontactidyominame";
 				public const string PrimarySatoriId = "primarysatoriid";
 				public const string PrimaryTwitterId = "primarytwitterid";
 				public const string ProcessId = "processid";
@@ -4421,31 +3261,24 @@ namespace XrmGenTest
 				public const string Revenue_Base = "revenue_base";
 				public const string SharesOutstanding = "sharesoutstanding";
 				public const string ShippingMethodCode = "shippingmethodcode";
-				public const string ShippingMethodCodeName = "shippingmethodcodename";
 				public const string SIC = "sic";
 				public const string SLAId = "slaid";
 				public static readonly ReadOnlyCollection<string> SLAIdTargets = new ReadOnlyCollection<string>(new string[] { "sla" });
 				public const string SLAInvokedId = "slainvokedid";
 				public static readonly ReadOnlyCollection<string> SLAInvokedIdTargets = new ReadOnlyCollection<string>(new string[] { "sla" });
-				public const string SLAInvokedIdName = "slainvokedidname";
-				public const string SLAName = "slaname";
 				public const string StageId = "stageid";
 				public const string StateCode = "statecode";
-				public const string StateCodeName = "statecodename";
 				public const string StatusCode = "statuscode";
-				public const string StatusCodeName = "statuscodename";
 				public const string StockExchange = "stockexchange";
 				public const string Telephone1 = "telephone1";
 				public const string Telephone2 = "telephone2";
 				public const string Telephone3 = "telephone3";
 				public const string TerritoryCode = "territorycode";
-				public const string TerritoryCodeName = "territorycodename";
 				public const string TickerSymbol = "tickersymbol";
 				public const string TimeSpentByMeOnEmailAndMeetings = "timespentbymeonemailandmeetings";
 				public const string TimeZoneRuleVersionNumber = "timezoneruleversionnumber";
 				public const string TransactionCurrencyId = "transactioncurrencyid";
 				public static readonly ReadOnlyCollection<string> TransactionCurrencyIdTargets = new ReadOnlyCollection<string>(new string[] { "transactioncurrency" });
-				public const string TransactionCurrencyIdName = "transactioncurrencyidname";
 				public const string TraversedPath = "traversedpath";
 				public const string UTCConversionTimeZoneCode = "utcconversiontimezonecode";
 				public const string VersionNumber = "versionnumber";
@@ -4455,21 +3288,16 @@ namespace XrmGenTest
 				private static readonly Dictionary<string, string> _fieldMap = new Dictionary<string, string>
 				{
 					[nameof(AccountCategoryCode)] = AccountCategoryCode,
-					[nameof(AccountCategoryCodeName)] = AccountCategoryCodeName,
 					[nameof(AccountClassificationCode)] = AccountClassificationCode,
-					[nameof(AccountClassificationCodeName)] = AccountClassificationCodeName,
 					[nameof(AccountNumber)] = AccountNumber,
 					[nameof(AccountRatingCode)] = AccountRatingCode,
-					[nameof(AccountRatingCodeName)] = AccountRatingCodeName,
 					[nameof(Address1_AddressTypeCode)] = Address1_AddressTypeCode,
-					[nameof(Address1_AddressTypeCodeName)] = Address1_AddressTypeCodeName,
 					[nameof(Address1_City)] = Address1_City,
 					[nameof(Address1_Composite)] = Address1_Composite,
 					[nameof(Address1_Country)] = Address1_Country,
 					[nameof(Address1_County)] = Address1_County,
 					[nameof(Address1_Fax)] = Address1_Fax,
 					[nameof(Address1_FreightTermsCode)] = Address1_FreightTermsCode,
-					[nameof(Address1_FreightTermsCodeName)] = Address1_FreightTermsCodeName,
 					[nameof(Address1_Latitude)] = Address1_Latitude,
 					[nameof(Address1_Line1)] = Address1_Line1,
 					[nameof(Address1_Line2)] = Address1_Line2,
@@ -4480,7 +3308,6 @@ namespace XrmGenTest
 					[nameof(Address1_PostOfficeBox)] = Address1_PostOfficeBox,
 					[nameof(Address1_PrimaryContactName)] = Address1_PrimaryContactName,
 					[nameof(Address1_ShippingMethodCode)] = Address1_ShippingMethodCode,
-					[nameof(Address1_ShippingMethodCodeName)] = Address1_ShippingMethodCodeName,
 					[nameof(Address1_StateOrProvince)] = Address1_StateOrProvince,
 					[nameof(Address1_Telephone1)] = Address1_Telephone1,
 					[nameof(Address1_Telephone2)] = Address1_Telephone2,
@@ -4488,14 +3315,12 @@ namespace XrmGenTest
 					[nameof(Address1_UPSZone)] = Address1_UPSZone,
 					[nameof(Address1_UTCOffset)] = Address1_UTCOffset,
 					[nameof(Address2_AddressTypeCode)] = Address2_AddressTypeCode,
-					[nameof(Address2_AddressTypeCodeName)] = Address2_AddressTypeCodeName,
 					[nameof(Address2_City)] = Address2_City,
 					[nameof(Address2_Composite)] = Address2_Composite,
 					[nameof(Address2_Country)] = Address2_Country,
 					[nameof(Address2_County)] = Address2_County,
 					[nameof(Address2_Fax)] = Address2_Fax,
 					[nameof(Address2_FreightTermsCode)] = Address2_FreightTermsCode,
-					[nameof(Address2_FreightTermsCodeName)] = Address2_FreightTermsCodeName,
 					[nameof(Address2_Latitude)] = Address2_Latitude,
 					[nameof(Address2_Line1)] = Address2_Line1,
 					[nameof(Address2_Line2)] = Address2_Line2,
@@ -4506,7 +3331,6 @@ namespace XrmGenTest
 					[nameof(Address2_PostOfficeBox)] = Address2_PostOfficeBox,
 					[nameof(Address2_PrimaryContactName)] = Address2_PrimaryContactName,
 					[nameof(Address2_ShippingMethodCode)] = Address2_ShippingMethodCode,
-					[nameof(Address2_ShippingMethodCodeName)] = Address2_ShippingMethodCodeName,
 					[nameof(Address2_StateOrProvince)] = Address2_StateOrProvince,
 					[nameof(Address2_Telephone1)] = Address2_Telephone1,
 					[nameof(Address2_Telephone2)] = Address2_Telephone2,
@@ -4524,116 +3348,64 @@ namespace XrmGenTest
 					[nameof(Aging90)] = Aging90,
 					[nameof(Aging90_Base)] = Aging90_Base,
 					[nameof(BusinessTypeCode)] = BusinessTypeCode,
-					[nameof(BusinessTypeCodeName)] = BusinessTypeCodeName,
 					[nameof(Cr22a_SupportedLanguages)] = Cr22a_SupportedLanguages,
-					[nameof(Cr22a_supportedlanguagesName)] = Cr22a_supportedlanguagesName,
 					[nameof(CreatedBy)] = CreatedBy,
 					[nameof(CreatedByExternalParty)] = CreatedByExternalParty,
-					[nameof(CreatedByExternalPartyName)] = CreatedByExternalPartyName,
-					[nameof(CreatedByExternalPartyYomiName)] = CreatedByExternalPartyYomiName,
-					[nameof(CreatedByName)] = CreatedByName,
-					[nameof(CreatedByYomiName)] = CreatedByYomiName,
 					[nameof(CreatedOn)] = CreatedOn,
 					[nameof(CreatedOnBehalfBy)] = CreatedOnBehalfBy,
-					[nameof(CreatedOnBehalfByName)] = CreatedOnBehalfByName,
-					[nameof(CreatedOnBehalfByYomiName)] = CreatedOnBehalfByYomiName,
 					[nameof(CreditLimit)] = CreditLimit,
 					[nameof(CreditLimit_Base)] = CreditLimit_Base,
 					[nameof(CreditOnHold)] = CreditOnHold,
-					[nameof(CreditOnHoldName)] = CreditOnHoldName,
 					[nameof(CustomerSizeCode)] = CustomerSizeCode,
-					[nameof(CustomerSizeCodeName)] = CustomerSizeCodeName,
 					[nameof(CustomerTypeCode)] = CustomerTypeCode,
-					[nameof(CustomerTypeCodeName)] = CustomerTypeCodeName,
 					[nameof(Description)] = Description,
 					[nameof(DoNotBulkEMail)] = DoNotBulkEMail,
-					[nameof(DoNotBulkEMailName)] = DoNotBulkEMailName,
 					[nameof(DoNotBulkPostalMail)] = DoNotBulkPostalMail,
-					[nameof(DoNotBulkPostalMailName)] = DoNotBulkPostalMailName,
 					[nameof(DoNotEMail)] = DoNotEMail,
-					[nameof(DoNotEMailName)] = DoNotEMailName,
 					[nameof(DoNotFax)] = DoNotFax,
-					[nameof(DoNotFaxName)] = DoNotFaxName,
 					[nameof(DoNotPhone)] = DoNotPhone,
-					[nameof(DoNotPhoneName)] = DoNotPhoneName,
 					[nameof(DoNotPostalMail)] = DoNotPostalMail,
-					[nameof(DoNotPostalMailName)] = DoNotPostalMailName,
-					[nameof(DoNotSendMarketingMaterialName)] = DoNotSendMarketingMaterialName,
 					[nameof(DoNotSendMM)] = DoNotSendMM,
 					[nameof(EMailAddress1)] = EMailAddress1,
 					[nameof(EMailAddress2)] = EMailAddress2,
 					[nameof(EMailAddress3)] = EMailAddress3,
-					[nameof(EntityImage)] = EntityImage,
-					[nameof(EntityImage_Timestamp)] = EntityImage_Timestamp,
-					[nameof(EntityImage_URL)] = EntityImage_URL,
 					[nameof(EntityImageId)] = EntityImageId,
 					[nameof(ExchangeRate)] = ExchangeRate,
 					[nameof(Fax)] = Fax,
 					[nameof(FollowEmail)] = FollowEmail,
-					[nameof(FollowEmailName)] = FollowEmailName,
 					[nameof(FtpSiteURL)] = FtpSiteURL,
 					[nameof(ImportSequenceNumber)] = ImportSequenceNumber,
 					[nameof(IndustryCode)] = IndustryCode,
-					[nameof(IndustryCodeName)] = IndustryCodeName,
-					[nameof(IsPrivateName)] = IsPrivateName,
 					[nameof(LastOnHoldTime)] = LastOnHoldTime,
 					[nameof(LastUsedInCampaign)] = LastUsedInCampaign,
 					[nameof(MarketCap)] = MarketCap,
 					[nameof(MarketCap_Base)] = MarketCap_Base,
 					[nameof(MarketingOnly)] = MarketingOnly,
-					[nameof(MarketingOnlyName)] = MarketingOnlyName,
-					[nameof(MasterAccountIdName)] = MasterAccountIdName,
-					[nameof(MasterAccountIdYomiName)] = MasterAccountIdYomiName,
 					[nameof(MasterId)] = MasterId,
 					[nameof(Merged)] = Merged,
-					[nameof(MergedName)] = MergedName,
 					[nameof(ModifiedBy)] = ModifiedBy,
 					[nameof(ModifiedByExternalParty)] = ModifiedByExternalParty,
-					[nameof(ModifiedByExternalPartyName)] = ModifiedByExternalPartyName,
-					[nameof(ModifiedByExternalPartyYomiName)] = ModifiedByExternalPartyYomiName,
-					[nameof(ModifiedByName)] = ModifiedByName,
-					[nameof(ModifiedByYomiName)] = ModifiedByYomiName,
 					[nameof(ModifiedOn)] = ModifiedOn,
 					[nameof(ModifiedOnBehalfBy)] = ModifiedOnBehalfBy,
-					[nameof(ModifiedOnBehalfByName)] = ModifiedOnBehalfByName,
-					[nameof(ModifiedOnBehalfByYomiName)] = ModifiedOnBehalfByYomiName,
 					[nameof(Msa_managingpartnerid)] = Msa_managingpartnerid,
-					[nameof(Msa_managingpartneridName)] = Msa_managingpartneridName,
-					[nameof(Msa_managingpartneridYomiName)] = Msa_managingpartneridYomiName,
 					[nameof(Msft_DataState)] = Msft_DataState,
-					[nameof(Msft_datastateName)] = Msft_datastateName,
 					[nameof(Name)] = Name,
 					[nameof(NumberOfEmployees)] = NumberOfEmployees,
 					[nameof(OnHoldTime)] = OnHoldTime,
 					[nameof(OverriddenCreatedOn)] = OverriddenCreatedOn,
 					[nameof(OwnerId)] = OwnerId,
-					[nameof(OwnerIdName)] = OwnerIdName,
-					[nameof(OwnerIdYomiName)] = OwnerIdYomiName,
 					[nameof(OwnershipCode)] = OwnershipCode,
-					[nameof(OwnershipCodeName)] = OwnershipCodeName,
 					[nameof(OwningBusinessUnit)] = OwningBusinessUnit,
-					[nameof(OwningBusinessUnitName)] = OwningBusinessUnitName,
 					[nameof(OwningTeam)] = OwningTeam,
 					[nameof(OwningUser)] = OwningUser,
 					[nameof(ParentAccountId)] = ParentAccountId,
-					[nameof(ParentAccountIdName)] = ParentAccountIdName,
-					[nameof(ParentAccountIdYomiName)] = ParentAccountIdYomiName,
 					[nameof(ParticipatesInWorkflow)] = ParticipatesInWorkflow,
-					[nameof(ParticipatesInWorkflowName)] = ParticipatesInWorkflowName,
 					[nameof(PaymentTermsCode)] = PaymentTermsCode,
-					[nameof(PaymentTermsCodeName)] = PaymentTermsCodeName,
 					[nameof(PreferredAppointmentDayCode)] = PreferredAppointmentDayCode,
-					[nameof(PreferredAppointmentDayCodeName)] = PreferredAppointmentDayCodeName,
 					[nameof(PreferredAppointmentTimeCode)] = PreferredAppointmentTimeCode,
-					[nameof(PreferredAppointmentTimeCodeName)] = PreferredAppointmentTimeCodeName,
 					[nameof(PreferredContactMethodCode)] = PreferredContactMethodCode,
-					[nameof(PreferredContactMethodCodeName)] = PreferredContactMethodCodeName,
 					[nameof(PreferredSystemUserId)] = PreferredSystemUserId,
-					[nameof(PreferredSystemUserIdName)] = PreferredSystemUserIdName,
-					[nameof(PreferredSystemUserIdYomiName)] = PreferredSystemUserIdYomiName,
 					[nameof(PrimaryContactId)] = PrimaryContactId,
-					[nameof(PrimaryContactIdName)] = PrimaryContactIdName,
-					[nameof(PrimaryContactIdYomiName)] = PrimaryContactIdYomiName,
 					[nameof(PrimarySatoriId)] = PrimarySatoriId,
 					[nameof(PrimaryTwitterId)] = PrimaryTwitterId,
 					[nameof(ProcessId)] = ProcessId,
@@ -4641,28 +3413,21 @@ namespace XrmGenTest
 					[nameof(Revenue_Base)] = Revenue_Base,
 					[nameof(SharesOutstanding)] = SharesOutstanding,
 					[nameof(ShippingMethodCode)] = ShippingMethodCode,
-					[nameof(ShippingMethodCodeName)] = ShippingMethodCodeName,
 					[nameof(SIC)] = SIC,
 					[nameof(SLAId)] = SLAId,
 					[nameof(SLAInvokedId)] = SLAInvokedId,
-					[nameof(SLAInvokedIdName)] = SLAInvokedIdName,
-					[nameof(SLAName)] = SLAName,
 					[nameof(StageId)] = StageId,
 					[nameof(StateCode)] = StateCode,
-					[nameof(StateCodeName)] = StateCodeName,
 					[nameof(StatusCode)] = StatusCode,
-					[nameof(StatusCodeName)] = StatusCodeName,
 					[nameof(StockExchange)] = StockExchange,
 					[nameof(Telephone1)] = Telephone1,
 					[nameof(Telephone2)] = Telephone2,
 					[nameof(Telephone3)] = Telephone3,
 					[nameof(TerritoryCode)] = TerritoryCode,
-					[nameof(TerritoryCodeName)] = TerritoryCodeName,
 					[nameof(TickerSymbol)] = TickerSymbol,
 					[nameof(TimeSpentByMeOnEmailAndMeetings)] = TimeSpentByMeOnEmailAndMeetings,
 					[nameof(TimeZoneRuleVersionNumber)] = TimeZoneRuleVersionNumber,
 					[nameof(TransactionCurrencyId)] = TransactionCurrencyId,
-					[nameof(TransactionCurrencyIdName)] = TransactionCurrencyIdName,
 					[nameof(TraversedPath)] = TraversedPath,
 					[nameof(UTCConversionTimeZoneCode)] = UTCConversionTimeZoneCode,
 					[nameof(VersionNumber)] = VersionNumber,
@@ -4776,6 +3541,15 @@ namespace XrmGenTest
 				{
 					[EnumMember] DefaultValue = 1,
 				}
+				[DataContract]
+				public enum Supportedlanguages
+				{
+					[EnumMember] Fr = 125410000,
+					[EnumMember] Nl = 125410001,
+					[EnumMember] En = 125410002,
+					[EnumMember] Es = 125410003,
+					[EnumMember] De = 125410004,
+				}
 				/// <summary>
 				/// Size of the account.
 				/// </summary>
@@ -4842,6 +3616,12 @@ namespace XrmGenTest
 					[EnumMember] UtilityCreationAndDistribution = 31,
 					[EnumMember] VehicleRetail = 32,
 					[EnumMember] Wholesale = 33,
+				}
+				[DataContract]
+				public enum Datastate
+				{
+					[EnumMember] Default = 0,
+					[EnumMember] Retain = 1,
 				}
 				/// <summary>
 				/// Type of company ownership, such as public or private.
@@ -4949,17 +3729,6 @@ namespace XrmGenTest
 			set => this["accountcategorycode"] = value == null ? null : new OptionSetValue((int)value);
 		}
 		/// <summary>
-		/// Attribute of: accountcategorycode<br/>
-		/// Required Level: None<br/>
-		/// Valid for: Read<br/>
-		/// </summary>
-		[AttributeLogicalName("accountcategorycodename")]
-		public string AccountCategoryCodeName
-		{
-			get => FormattedValues.Contains("accountcategorycode") ? FormattedValues["accountcategorycodename"] : null;
-		}
-
-		/// <summary>
 		/// Required Level: None<br/>
 		/// Valid for: Create Update Read<br/>
 		/// </summary>
@@ -4969,17 +3738,6 @@ namespace XrmGenTest
 			get => TryGetAttributeValue("accountclassificationcode", out OptionSetValue opt) && opt != null ? (Account.Meta.OptionSets.Classification?)opt.Value : null;
 			set => this["accountclassificationcode"] = value == null ? null : new OptionSetValue((int)value);
 		}
-		/// <summary>
-		/// Attribute of: accountclassificationcode<br/>
-		/// Required Level: None<br/>
-		/// Valid for: Read<br/>
-		/// </summary>
-		[AttributeLogicalName("accountclassificationcodename")]
-		public string AccountClassificationCodeName
-		{
-			get => FormattedValues.Contains("accountclassificationcode") ? FormattedValues["accountclassificationcodename"] : null;
-		}
-
 		/// <summary>
 		/// Max Length: 20<br/>
 		/// Required Level: None<br/>
@@ -5002,17 +3760,6 @@ namespace XrmGenTest
 			set => this["accountratingcode"] = value == null ? null : new OptionSetValue((int)value);
 		}
 		/// <summary>
-		/// Attribute of: accountratingcode<br/>
-		/// Required Level: None<br/>
-		/// Valid for: Read<br/>
-		/// </summary>
-		[AttributeLogicalName("accountratingcodename")]
-		public string AccountRatingCodeName
-		{
-			get => FormattedValues.Contains("accountratingcode") ? FormattedValues["accountratingcodename"] : null;
-		}
-
-		/// <summary>
 		/// Required Level: None<br/>
 		/// Valid for: Create Update Read<br/>
 		/// </summary>
@@ -5022,17 +3769,6 @@ namespace XrmGenTest
 			get => TryGetAttributeValue("address1_addresstypecode", out OptionSetValue opt) && opt != null ? (Account.Meta.OptionSets.Address1AddressType?)opt.Value : null;
 			set => this["address1_addresstypecode"] = value == null ? null : new OptionSetValue((int)value);
 		}
-		/// <summary>
-		/// Attribute of: address1_addresstypecode<br/>
-		/// Required Level: None<br/>
-		/// Valid for: Read<br/>
-		/// </summary>
-		[AttributeLogicalName("address1_addresstypecodename")]
-		public string Address1_AddressTypeCodeName
-		{
-			get => FormattedValues.Contains("address1_addresstypecode") ? FormattedValues["address1_addresstypecodename"] : null;
-		}
-
 		/// <summary>
 		/// Max Length: 80<br/>
 		/// Required Level: None<br/>
@@ -5097,17 +3833,6 @@ namespace XrmGenTest
 			get => TryGetAttributeValue("address1_freighttermscode", out OptionSetValue opt) && opt != null ? (Account.Meta.OptionSets.Address1FreightTerms?)opt.Value : null;
 			set => this["address1_freighttermscode"] = value == null ? null : new OptionSetValue((int)value);
 		}
-		/// <summary>
-		/// Attribute of: address1_freighttermscode<br/>
-		/// Required Level: None<br/>
-		/// Valid for: Read<br/>
-		/// </summary>
-		[AttributeLogicalName("address1_freighttermscodename")]
-		public string Address1_FreightTermsCodeName
-		{
-			get => FormattedValues.Contains("address1_freighttermscode") ? FormattedValues["address1_freighttermscodename"] : null;
-		}
-
 		/// <summary>
 		/// Required Level: None<br/>
 		/// Valid for: Create Update Read<br/>
@@ -5216,17 +3941,6 @@ namespace XrmGenTest
 			set => this["address1_shippingmethodcode"] = value == null ? null : new OptionSetValue((int)value);
 		}
 		/// <summary>
-		/// Attribute of: address1_shippingmethodcode<br/>
-		/// Required Level: None<br/>
-		/// Valid for: Read<br/>
-		/// </summary>
-		[AttributeLogicalName("address1_shippingmethodcodename")]
-		public string Address1_ShippingMethodCodeName
-		{
-			get => FormattedValues.Contains("address1_shippingmethodcode") ? FormattedValues["address1_shippingmethodcodename"] : null;
-		}
-
-		/// <summary>
 		/// Max Length: 50<br/>
 		/// Required Level: None<br/>
 		/// Valid for: Create Update Read<br/>
@@ -5302,17 +4016,6 @@ namespace XrmGenTest
 			set => this["address2_addresstypecode"] = value == null ? null : new OptionSetValue((int)value);
 		}
 		/// <summary>
-		/// Attribute of: address2_addresstypecode<br/>
-		/// Required Level: None<br/>
-		/// Valid for: Read<br/>
-		/// </summary>
-		[AttributeLogicalName("address2_addresstypecodename")]
-		public string Address2_AddressTypeCodeName
-		{
-			get => FormattedValues.Contains("address2_addresstypecode") ? FormattedValues["address2_addresstypecodename"] : null;
-		}
-
-		/// <summary>
 		/// Max Length: 80<br/>
 		/// Required Level: None<br/>
 		/// Valid for: Create Update Read<br/>
@@ -5376,17 +4079,6 @@ namespace XrmGenTest
 			get => TryGetAttributeValue("address2_freighttermscode", out OptionSetValue opt) && opt != null ? (Account.Meta.OptionSets.Address2FreightTerms?)opt.Value : null;
 			set => this["address2_freighttermscode"] = value == null ? null : new OptionSetValue((int)value);
 		}
-		/// <summary>
-		/// Attribute of: address2_freighttermscode<br/>
-		/// Required Level: None<br/>
-		/// Valid for: Read<br/>
-		/// </summary>
-		[AttributeLogicalName("address2_freighttermscodename")]
-		public string Address2_FreightTermsCodeName
-		{
-			get => FormattedValues.Contains("address2_freighttermscode") ? FormattedValues["address2_freighttermscodename"] : null;
-		}
-
 		/// <summary>
 		/// Required Level: None<br/>
 		/// Valid for: Create Update Read<br/>
@@ -5494,17 +4186,6 @@ namespace XrmGenTest
 			get => TryGetAttributeValue("address2_shippingmethodcode", out OptionSetValue opt) && opt != null ? (Account.Meta.OptionSets.Address2ShippingMethod?)opt.Value : null;
 			set => this["address2_shippingmethodcode"] = value == null ? null : new OptionSetValue((int)value);
 		}
-		/// <summary>
-		/// Attribute of: address2_shippingmethodcode<br/>
-		/// Required Level: None<br/>
-		/// Valid for: Read<br/>
-		/// </summary>
-		[AttributeLogicalName("address2_shippingmethodcodename")]
-		public string Address2_ShippingMethodCodeName
-		{
-			get => FormattedValues.Contains("address2_shippingmethodcode") ? FormattedValues["address2_shippingmethodcodename"] : null;
-		}
-
 		/// <summary>
 		/// Max Length: 50<br/>
 		/// Required Level: None<br/>
@@ -5679,36 +4360,14 @@ namespace XrmGenTest
 			set => this["businesstypecode"] = value == null ? null : new OptionSetValue((int)value);
 		}
 		/// <summary>
-		/// Attribute of: businesstypecode<br/>
-		/// Required Level: None<br/>
-		/// Valid for: Read<br/>
-		/// </summary>
-		[AttributeLogicalName("businesstypecodename")]
-		public string BusinessTypeCodeName
-		{
-			get => FormattedValues.Contains("businesstypecode") ? FormattedValues["businesstypecodename"] : null;
-		}
-
-		/// <summary>
 		/// Required Level: None<br/>
 		/// Valid for: Create Update Read<br/>
 		/// </summary>
 		[AttributeLogicalName("cr22a_supportedlanguages")]
-		public IEnumerable<Account.OptionSets.Supportedlanguages> Cr22a_SupportedLanguages
+		public IEnumerable<Account.Meta.OptionSets.Supportedlanguages> Cr22a_SupportedLanguages
 		{
-			get => TryGetAttributeValue("cr22a_supportedlanguages", out OptionSetValueCollection opts) && opts != null ? opts.Select(opt => (Account.OptionSets.Supportedlanguages)opt.Value) : [];
+			get => TryGetAttributeValue("cr22a_supportedlanguages", out OptionSetValueCollection opts) && opts != null ? opts.Select(opt => (Account.Meta.OptionSets.Supportedlanguages)opt.Value) : Array.Empty<Account.Meta.OptionSets.Supportedlanguages>();
 			set => this["cr22a_supportedlanguages"] = value == null || !value.Any() ? null : new OptionSetValueCollection(value.Select(each => new OptionSetValue((int)each)).ToList());
-		}
-
-		/// <summary>
-		/// Attribute of: cr22a_supportedlanguages<br/>
-		/// Required Level: None<br/>
-		/// Valid for: Read<br/>
-		/// </summary>
-		[AttributeLogicalName("cr22a_supportedlanguagesname")]
-		public string Cr22a_supportedlanguagesName
-		{
-			get => FormattedValues.Contains("cr22a_supportedlanguages") ? FormattedValues["cr22a_supportedlanguagesname"] : null;
 		}
 
 		/// <summary>
@@ -5732,54 +4391,6 @@ namespace XrmGenTest
 			get => TryGetAttributeValue("createdbyexternalparty", out EntityReference value) ? value : null;
 		}
 		/// <summary>
-		/// Attribute of: createdbyexternalparty<br/>
-		/// Max Length: 100<br/>
-		/// Required Level: None<br/>
-		/// Valid for: Read<br/>
-		/// </summary>
-		[AttributeLogicalName("createdbyexternalpartyname")]
-		public string CreatedByExternalPartyName
-		{
-			get => FormattedValues.Contains("createdbyexternalparty") ? FormattedValues["createdbyexternalparty"] : null;
-		
-		}
-		/// <summary>
-		/// Attribute of: createdbyexternalparty<br/>
-		/// Max Length: 100<br/>
-		/// Required Level: None<br/>
-		/// Valid for: Read<br/>
-		/// </summary>
-		[AttributeLogicalName("createdbyexternalpartyyominame")]
-		public string CreatedByExternalPartyYomiName
-		{
-			get => FormattedValues.Contains("createdbyexternalparty") ? FormattedValues["createdbyexternalparty"] : null;
-		
-		}
-		/// <summary>
-		/// Attribute of: createdby<br/>
-		/// Max Length: 100<br/>
-		/// Required Level: None<br/>
-		/// Valid for: Read<br/>
-		/// </summary>
-		[AttributeLogicalName("createdbyname")]
-		public string CreatedByName
-		{
-			get => FormattedValues.Contains("createdby") ? FormattedValues["createdby"] : null;
-		
-		}
-		/// <summary>
-		/// Attribute of: createdby<br/>
-		/// Max Length: 100<br/>
-		/// Required Level: None<br/>
-		/// Valid for: Read<br/>
-		/// </summary>
-		[AttributeLogicalName("createdbyyominame")]
-		public string CreatedByYomiName
-		{
-			get => FormattedValues.Contains("createdby") ? FormattedValues["createdby"] : null;
-		
-		}
-		/// <summary>
 		/// Required Level: None<br/>
 		/// Valid for: Read<br/>
 		/// </summary>
@@ -5797,30 +4408,6 @@ namespace XrmGenTest
 		public EntityReference CreatedOnBehalfBy
 		{
 			get => TryGetAttributeValue("createdonbehalfby", out EntityReference value) ? value : null;
-		}
-		/// <summary>
-		/// Attribute of: createdonbehalfby<br/>
-		/// Max Length: 100<br/>
-		/// Required Level: None<br/>
-		/// Valid for: Read<br/>
-		/// </summary>
-		[AttributeLogicalName("createdonbehalfbyname")]
-		public string CreatedOnBehalfByName
-		{
-			get => FormattedValues.Contains("createdonbehalfby") ? FormattedValues["createdonbehalfby"] : null;
-		
-		}
-		/// <summary>
-		/// Attribute of: createdonbehalfby<br/>
-		/// Max Length: 100<br/>
-		/// Required Level: None<br/>
-		/// Valid for: Read<br/>
-		/// </summary>
-		[AttributeLogicalName("createdonbehalfbyyominame")]
-		public string CreatedOnBehalfByYomiName
-		{
-			get => FormattedValues.Contains("createdonbehalfby") ? FormattedValues["createdonbehalfby"] : null;
-		
 		}
 		/// <summary>
 		/// Required Level: None<br/>
@@ -5852,17 +4439,6 @@ namespace XrmGenTest
 			set => this["creditonhold"] = value;
 		}
 		/// <summary>
-		/// Attribute of: creditonhold<br/>
-		/// Required Level: None<br/>
-		/// Valid for: Read<br/>
-		/// </summary>
-		[AttributeLogicalName("creditonholdname")]
-		public string CreditOnHoldName
-		{
-			get => FormattedValues.Contains("creditonhold") ? FormattedValues["creditonholdname"] : null;
-		}
-
-		/// <summary>
 		/// Required Level: None<br/>
 		/// Valid for: Create Update Read<br/>
 		/// </summary>
@@ -5873,17 +4449,6 @@ namespace XrmGenTest
 			set => this["customersizecode"] = value == null ? null : new OptionSetValue((int)value);
 		}
 		/// <summary>
-		/// Attribute of: customersizecode<br/>
-		/// Required Level: None<br/>
-		/// Valid for: Read<br/>
-		/// </summary>
-		[AttributeLogicalName("customersizecodename")]
-		public string CustomerSizeCodeName
-		{
-			get => FormattedValues.Contains("customersizecode") ? FormattedValues["customersizecodename"] : null;
-		}
-
-		/// <summary>
 		/// Required Level: None<br/>
 		/// Valid for: Create Update Read<br/>
 		/// </summary>
@@ -5893,17 +4458,6 @@ namespace XrmGenTest
 			get => TryGetAttributeValue("customertypecode", out OptionSetValue opt) && opt != null ? (Account.Meta.OptionSets.RelationshipType?)opt.Value : null;
 			set => this["customertypecode"] = value == null ? null : new OptionSetValue((int)value);
 		}
-		/// <summary>
-		/// Attribute of: customertypecode<br/>
-		/// Required Level: None<br/>
-		/// Valid for: Read<br/>
-		/// </summary>
-		[AttributeLogicalName("customertypecodename")]
-		public string CustomerTypeCodeName
-		{
-			get => FormattedValues.Contains("customertypecode") ? FormattedValues["customertypecodename"] : null;
-		}
-
 		/// <summary>
 		/// Max Length: 2000<br/>
 		/// Required Level: None<br/>
@@ -5926,17 +4480,6 @@ namespace XrmGenTest
 			set => this["donotbulkemail"] = value;
 		}
 		/// <summary>
-		/// Attribute of: donotbulkemail<br/>
-		/// Required Level: None<br/>
-		/// Valid for: Read<br/>
-		/// </summary>
-		[AttributeLogicalName("donotbulkemailname")]
-		public string DoNotBulkEMailName
-		{
-			get => FormattedValues.Contains("donotbulkemail") ? FormattedValues["donotbulkemailname"] : null;
-		}
-
-		/// <summary>
 		/// Required Level: None<br/>
 		/// Valid for: Create Update Read<br/>
 		/// </summary>
@@ -5946,17 +4489,6 @@ namespace XrmGenTest
 			get => TryGetAttributeValue("donotbulkpostalmail", out bool? value) ? value : null;
 			set => this["donotbulkpostalmail"] = value;
 		}
-		/// <summary>
-		/// Attribute of: donotbulkpostalmail<br/>
-		/// Required Level: None<br/>
-		/// Valid for: Read<br/>
-		/// </summary>
-		[AttributeLogicalName("donotbulkpostalmailname")]
-		public string DoNotBulkPostalMailName
-		{
-			get => FormattedValues.Contains("donotbulkpostalmail") ? FormattedValues["donotbulkpostalmailname"] : null;
-		}
-
 		/// <summary>
 		/// Required Level: None<br/>
 		/// Valid for: Create Update Read<br/>
@@ -5968,17 +4500,6 @@ namespace XrmGenTest
 			set => this["donotemail"] = value;
 		}
 		/// <summary>
-		/// Attribute of: donotemail<br/>
-		/// Required Level: None<br/>
-		/// Valid for: Read<br/>
-		/// </summary>
-		[AttributeLogicalName("donotemailname")]
-		public string DoNotEMailName
-		{
-			get => FormattedValues.Contains("donotemail") ? FormattedValues["donotemailname"] : null;
-		}
-
-		/// <summary>
 		/// Required Level: None<br/>
 		/// Valid for: Create Update Read<br/>
 		/// </summary>
@@ -5988,17 +4509,6 @@ namespace XrmGenTest
 			get => TryGetAttributeValue("donotfax", out bool? value) ? value : null;
 			set => this["donotfax"] = value;
 		}
-		/// <summary>
-		/// Attribute of: donotfax<br/>
-		/// Required Level: None<br/>
-		/// Valid for: Read<br/>
-		/// </summary>
-		[AttributeLogicalName("donotfaxname")]
-		public string DoNotFaxName
-		{
-			get => FormattedValues.Contains("donotfax") ? FormattedValues["donotfaxname"] : null;
-		}
-
 		/// <summary>
 		/// Required Level: None<br/>
 		/// Valid for: Create Update Read<br/>
@@ -6010,17 +4520,6 @@ namespace XrmGenTest
 			set => this["donotphone"] = value;
 		}
 		/// <summary>
-		/// Attribute of: donotphone<br/>
-		/// Required Level: None<br/>
-		/// Valid for: Read<br/>
-		/// </summary>
-		[AttributeLogicalName("donotphonename")]
-		public string DoNotPhoneName
-		{
-			get => FormattedValues.Contains("donotphone") ? FormattedValues["donotphonename"] : null;
-		}
-
-		/// <summary>
 		/// Required Level: None<br/>
 		/// Valid for: Create Update Read<br/>
 		/// </summary>
@@ -6030,28 +4529,6 @@ namespace XrmGenTest
 			get => TryGetAttributeValue("donotpostalmail", out bool? value) ? value : null;
 			set => this["donotpostalmail"] = value;
 		}
-		/// <summary>
-		/// Attribute of: donotpostalmail<br/>
-		/// Required Level: None<br/>
-		/// Valid for: Read<br/>
-		/// </summary>
-		[AttributeLogicalName("donotpostalmailname")]
-		public string DoNotPostalMailName
-		{
-			get => FormattedValues.Contains("donotpostalmail") ? FormattedValues["donotpostalmailname"] : null;
-		}
-
-		/// <summary>
-		/// Attribute of: donotsendmm<br/>
-		/// Required Level: None<br/>
-		/// Valid for: Read<br/>
-		/// </summary>
-		[AttributeLogicalName("donotsendmarketingmaterialname")]
-		public string DoNotSendMarketingMaterialName
-		{
-			get => FormattedValues.Contains("donotsendmm") ? FormattedValues["donotsendmarketingmaterialname"] : null;
-		}
-
 		/// <summary>
 		/// Required Level: None<br/>
 		/// Valid for: Create Update Read<br/>
@@ -6096,39 +4573,6 @@ namespace XrmGenTest
 			set => this["emailaddress3"] = value;
 		}
 		/// <summary>
-		/// Attribute of: entityimageid<br/>
-		/// Required Level: None<br/>
-		/// Valid for: Create Update Read<br/>
-		/// </summary>
-		[AttributeLogicalName("entityimage")]
-		public byte[] EntityImage
-		{
-			get => TryGetAttributeValue("entityimage", out byte[] value) ? value : null;
-			set => this["entityimage"] = value;
-		}
-
-		/// <summary>
-		/// Attribute of: entityimageid<br/>
-		/// Required Level: None<br/>
-		/// Valid for: Read<br/>
-		/// </summary>
-		[AttributeLogicalName("entityimage_timestamp")]
-		public long? EntityImage_Timestamp
-		{
-			get => TryGetAttributeValue("entityimage_timestamp", out long value) ? (long?)value : null;
-		}
-		/// <summary>
-		/// Attribute of: entityimageid<br/>
-		/// Max Length: 200<br/>
-		/// Required Level: None<br/>
-		/// Valid for: Read<br/>
-		/// </summary>
-		[AttributeLogicalName("entityimage_url")]
-		public string EntityImage_URL
-		{
-			get => TryGetAttributeValue("entityimage_url", out string value) ? value : null;
-		}
-		/// <summary>
 		/// Required Level: None<br/>
 		/// Valid for: Read<br/>
 		/// </summary>
@@ -6168,17 +4612,6 @@ namespace XrmGenTest
 			set => this["followemail"] = value;
 		}
 		/// <summary>
-		/// Attribute of: followemail<br/>
-		/// Required Level: None<br/>
-		/// Valid for: Read<br/>
-		/// </summary>
-		[AttributeLogicalName("followemailname")]
-		public string FollowEmailName
-		{
-			get => FormattedValues.Contains("followemail") ? FormattedValues["followemailname"] : null;
-		}
-
-		/// <summary>
 		/// Max Length: 200<br/>
 		/// Required Level: None<br/>
 		/// Valid for: Create Update Read<br/>
@@ -6209,28 +4642,6 @@ namespace XrmGenTest
 			get => TryGetAttributeValue("industrycode", out OptionSetValue opt) && opt != null ? (Account.Meta.OptionSets.Industry?)opt.Value : null;
 			set => this["industrycode"] = value == null ? null : new OptionSetValue((int)value);
 		}
-		/// <summary>
-		/// Attribute of: industrycode<br/>
-		/// Required Level: None<br/>
-		/// Valid for: Read<br/>
-		/// </summary>
-		[AttributeLogicalName("industrycodename")]
-		public string IndustryCodeName
-		{
-			get => FormattedValues.Contains("industrycode") ? FormattedValues["industrycodename"] : null;
-		}
-
-		/// <summary>
-		/// Attribute of: isprivate<br/>
-		/// Required Level: None<br/>
-		/// Valid for: Read<br/>
-		/// </summary>
-		[AttributeLogicalName("isprivatename")]
-		public string IsPrivateName
-		{
-			get => FormattedValues.Contains("isprivate") ? FormattedValues["isprivatename"] : null;
-		}
-
 		/// <summary>
 		/// Required Level: None<br/>
 		/// Valid for: Create Update Read<br/>
@@ -6281,41 +4692,6 @@ namespace XrmGenTest
 			set => this["marketingonly"] = value;
 		}
 		/// <summary>
-		/// Attribute of: marketingonly<br/>
-		/// Required Level: None<br/>
-		/// Valid for: Read<br/>
-		/// </summary>
-		[AttributeLogicalName("marketingonlyname")]
-		public string MarketingOnlyName
-		{
-			get => FormattedValues.Contains("marketingonly") ? FormattedValues["marketingonlyname"] : null;
-		}
-
-		/// <summary>
-		/// Attribute of: masterid<br/>
-		/// Max Length: 100<br/>
-		/// Required Level: None<br/>
-		/// Valid for: Read<br/>
-		/// </summary>
-		[AttributeLogicalName("masteraccountidname")]
-		public string MasterAccountIdName
-		{
-			get => FormattedValues.Contains("masterid") ? FormattedValues["masterid"] : null;
-		
-		}
-		/// <summary>
-		/// Attribute of: masterid<br/>
-		/// Max Length: 100<br/>
-		/// Required Level: None<br/>
-		/// Valid for: Read<br/>
-		/// </summary>
-		[AttributeLogicalName("masteraccountidyominame")]
-		public string MasterAccountIdYomiName
-		{
-			get => FormattedValues.Contains("masterid") ? FormattedValues["masterid"] : null;
-		
-		}
-		/// <summary>
 		/// Required Level: None<br/>
 		/// Valid for: Read<br/>
 		/// Targets: account<br/>
@@ -6334,17 +4710,6 @@ namespace XrmGenTest
 		{
 			get => TryGetAttributeValue("merged", out bool? value) ? value : null;
 		}
-		/// <summary>
-		/// Attribute of: merged<br/>
-		/// Required Level: None<br/>
-		/// Valid for: Read<br/>
-		/// </summary>
-		[AttributeLogicalName("mergedname")]
-		public string MergedName
-		{
-			get => FormattedValues.Contains("merged") ? FormattedValues["mergedname"] : null;
-		}
-
 		/// <summary>
 		/// Required Level: None<br/>
 		/// Valid for: Read<br/>
@@ -6366,54 +4731,6 @@ namespace XrmGenTest
 			get => TryGetAttributeValue("modifiedbyexternalparty", out EntityReference value) ? value : null;
 		}
 		/// <summary>
-		/// Attribute of: modifiedbyexternalparty<br/>
-		/// Max Length: 100<br/>
-		/// Required Level: None<br/>
-		/// Valid for: Read<br/>
-		/// </summary>
-		[AttributeLogicalName("modifiedbyexternalpartyname")]
-		public string ModifiedByExternalPartyName
-		{
-			get => FormattedValues.Contains("modifiedbyexternalparty") ? FormattedValues["modifiedbyexternalparty"] : null;
-		
-		}
-		/// <summary>
-		/// Attribute of: modifiedbyexternalparty<br/>
-		/// Max Length: 100<br/>
-		/// Required Level: None<br/>
-		/// Valid for: Read<br/>
-		/// </summary>
-		[AttributeLogicalName("modifiedbyexternalpartyyominame")]
-		public string ModifiedByExternalPartyYomiName
-		{
-			get => FormattedValues.Contains("modifiedbyexternalparty") ? FormattedValues["modifiedbyexternalparty"] : null;
-		
-		}
-		/// <summary>
-		/// Attribute of: modifiedby<br/>
-		/// Max Length: 100<br/>
-		/// Required Level: None<br/>
-		/// Valid for: Read<br/>
-		/// </summary>
-		[AttributeLogicalName("modifiedbyname")]
-		public string ModifiedByName
-		{
-			get => FormattedValues.Contains("modifiedby") ? FormattedValues["modifiedby"] : null;
-		
-		}
-		/// <summary>
-		/// Attribute of: modifiedby<br/>
-		/// Max Length: 100<br/>
-		/// Required Level: None<br/>
-		/// Valid for: Read<br/>
-		/// </summary>
-		[AttributeLogicalName("modifiedbyyominame")]
-		public string ModifiedByYomiName
-		{
-			get => FormattedValues.Contains("modifiedby") ? FormattedValues["modifiedby"] : null;
-		
-		}
-		/// <summary>
 		/// Required Level: None<br/>
 		/// Valid for: Read<br/>
 		/// </summary>
@@ -6431,30 +4748,6 @@ namespace XrmGenTest
 		public EntityReference ModifiedOnBehalfBy
 		{
 			get => TryGetAttributeValue("modifiedonbehalfby", out EntityReference value) ? value : null;
-		}
-		/// <summary>
-		/// Attribute of: modifiedonbehalfby<br/>
-		/// Max Length: 100<br/>
-		/// Required Level: None<br/>
-		/// Valid for: Read<br/>
-		/// </summary>
-		[AttributeLogicalName("modifiedonbehalfbyname")]
-		public string ModifiedOnBehalfByName
-		{
-			get => FormattedValues.Contains("modifiedonbehalfby") ? FormattedValues["modifiedonbehalfby"] : null;
-		
-		}
-		/// <summary>
-		/// Attribute of: modifiedonbehalfby<br/>
-		/// Max Length: 100<br/>
-		/// Required Level: None<br/>
-		/// Valid for: Read<br/>
-		/// </summary>
-		[AttributeLogicalName("modifiedonbehalfbyyominame")]
-		public string ModifiedOnBehalfByYomiName
-		{
-			get => FormattedValues.Contains("modifiedonbehalfby") ? FormattedValues["modifiedonbehalfby"] : null;
-		
 		}
 		/// <summary>
 		/// Required Level: None<br/>
@@ -6475,30 +4768,6 @@ namespace XrmGenTest
 			}
 		}
 		/// <summary>
-		/// Attribute of: msa_managingpartnerid<br/>
-		/// Max Length: 160<br/>
-		/// Required Level: None<br/>
-		/// Valid for: Read<br/>
-		/// </summary>
-		[AttributeLogicalName("msa_managingpartneridname")]
-		public string Msa_managingpartneridName
-		{
-			get => FormattedValues.Contains("msa_managingpartnerid") ? FormattedValues["msa_managingpartnerid"] : null;
-		
-		}
-		/// <summary>
-		/// Attribute of: msa_managingpartnerid<br/>
-		/// Max Length: 160<br/>
-		/// Required Level: None<br/>
-		/// Valid for: Read<br/>
-		/// </summary>
-		[AttributeLogicalName("msa_managingpartneridyominame")]
-		public string Msa_managingpartneridYomiName
-		{
-			get => FormattedValues.Contains("msa_managingpartnerid") ? FormattedValues["msa_managingpartnerid"] : null;
-		
-		}
-		/// <summary>
 		/// Required Level: None<br/>
 		/// Valid for: Read<br/>
 		/// </summary>
@@ -6507,17 +4776,6 @@ namespace XrmGenTest
 		{
 			get => TryGetAttributeValue("msft_datastate", out OptionSetValue opt) && opt != null ? (Account.Meta.OptionSets.Datastate?)opt.Value : null;
 		}
-		/// <summary>
-		/// Attribute of: msft_datastate<br/>
-		/// Required Level: None<br/>
-		/// Valid for: Read<br/>
-		/// </summary>
-		[AttributeLogicalName("msft_datastatename")]
-		public string Msft_datastateName
-		{
-			get => FormattedValues.Contains("msft_datastate") ? FormattedValues["msft_datastatename"] : null;
-		}
-
 		/// <summary>
 		/// Max Length: 160<br/>
 		/// Required Level: ApplicationRequired<br/>
@@ -6571,28 +4829,6 @@ namespace XrmGenTest
 		}
 
 		/// <summary>
-		/// Attribute of: ownerid<br/>
-		/// Max Length: 100<br/>
-		/// Required Level: SystemRequired<br/>
-		/// Valid for: Read<br/>
-		/// </summary>
-		[AttributeLogicalName("owneridname")]
-		public string OwnerIdName
-		{
-			get => TryGetAttributeValue("owneridname", out string value) ? value : null;
-		}
-		/// <summary>
-		/// Attribute of: ownerid<br/>
-		/// Max Length: 100<br/>
-		/// Required Level: SystemRequired<br/>
-		/// Valid for: Read<br/>
-		/// </summary>
-		[AttributeLogicalName("owneridyominame")]
-		public string OwnerIdYomiName
-		{
-			get => TryGetAttributeValue("owneridyominame", out string value) ? value : null;
-		}
-		/// <summary>
 		/// Required Level: None<br/>
 		/// Valid for: Create Update Read<br/>
 		/// </summary>
@@ -6603,17 +4839,6 @@ namespace XrmGenTest
 			set => this["ownershipcode"] = value == null ? null : new OptionSetValue((int)value);
 		}
 		/// <summary>
-		/// Attribute of: ownershipcode<br/>
-		/// Required Level: None<br/>
-		/// Valid for: Read<br/>
-		/// </summary>
-		[AttributeLogicalName("ownershipcodename")]
-		public string OwnershipCodeName
-		{
-			get => FormattedValues.Contains("ownershipcode") ? FormattedValues["ownershipcodename"] : null;
-		}
-
-		/// <summary>
 		/// Required Level: None<br/>
 		/// Valid for: Read<br/>
 		/// Targets: businessunit<br/>
@@ -6622,18 +4847,6 @@ namespace XrmGenTest
 		public EntityReference OwningBusinessUnit
 		{
 			get => TryGetAttributeValue("owningbusinessunit", out EntityReference value) ? value : null;
-		}
-		/// <summary>
-		/// Attribute of: owningbusinessunit<br/>
-		/// Max Length: 160<br/>
-		/// Required Level: None<br/>
-		/// Valid for: Read<br/>
-		/// </summary>
-		[AttributeLogicalName("owningbusinessunitname")]
-		public string OwningBusinessUnitName
-		{
-			get => FormattedValues.Contains("owningbusinessunit") ? FormattedValues["owningbusinessunit"] : null;
-		
 		}
 		/// <summary>
 		/// Required Level: None<br/>
@@ -6674,30 +4887,6 @@ namespace XrmGenTest
 			}
 		}
 		/// <summary>
-		/// Attribute of: parentaccountid<br/>
-		/// Max Length: 100<br/>
-		/// Required Level: None<br/>
-		/// Valid for: Read<br/>
-		/// </summary>
-		[AttributeLogicalName("parentaccountidname")]
-		public string ParentAccountIdName
-		{
-			get => FormattedValues.Contains("parentaccountid") ? FormattedValues["parentaccountid"] : null;
-		
-		}
-		/// <summary>
-		/// Attribute of: parentaccountid<br/>
-		/// Max Length: 100<br/>
-		/// Required Level: None<br/>
-		/// Valid for: Read<br/>
-		/// </summary>
-		[AttributeLogicalName("parentaccountidyominame")]
-		public string ParentAccountIdYomiName
-		{
-			get => FormattedValues.Contains("parentaccountid") ? FormattedValues["parentaccountid"] : null;
-		
-		}
-		/// <summary>
 		/// Required Level: None<br/>
 		/// Valid for: Create Update Read<br/>
 		/// </summary>
@@ -6707,17 +4896,6 @@ namespace XrmGenTest
 			get => TryGetAttributeValue("participatesinworkflow", out bool? value) ? value : null;
 			set => this["participatesinworkflow"] = value;
 		}
-		/// <summary>
-		/// Attribute of: participatesinworkflow<br/>
-		/// Required Level: None<br/>
-		/// Valid for: Read<br/>
-		/// </summary>
-		[AttributeLogicalName("participatesinworkflowname")]
-		public string ParticipatesInWorkflowName
-		{
-			get => FormattedValues.Contains("participatesinworkflow") ? FormattedValues["participatesinworkflowname"] : null;
-		}
-
 		/// <summary>
 		/// Required Level: None<br/>
 		/// Valid for: Create Update Read<br/>
@@ -6729,17 +4907,6 @@ namespace XrmGenTest
 			set => this["paymenttermscode"] = value == null ? null : new OptionSetValue((int)value);
 		}
 		/// <summary>
-		/// Attribute of: paymenttermscode<br/>
-		/// Required Level: None<br/>
-		/// Valid for: Read<br/>
-		/// </summary>
-		[AttributeLogicalName("paymenttermscodename")]
-		public string PaymentTermsCodeName
-		{
-			get => FormattedValues.Contains("paymenttermscode") ? FormattedValues["paymenttermscodename"] : null;
-		}
-
-		/// <summary>
 		/// Required Level: None<br/>
 		/// Valid for: Create Update Read<br/>
 		/// </summary>
@@ -6749,17 +4916,6 @@ namespace XrmGenTest
 			get => TryGetAttributeValue("preferredappointmentdaycode", out OptionSetValue opt) && opt != null ? (Account.Meta.OptionSets.PreferredDay?)opt.Value : null;
 			set => this["preferredappointmentdaycode"] = value == null ? null : new OptionSetValue((int)value);
 		}
-		/// <summary>
-		/// Attribute of: preferredappointmentdaycode<br/>
-		/// Required Level: None<br/>
-		/// Valid for: Read<br/>
-		/// </summary>
-		[AttributeLogicalName("preferredappointmentdaycodename")]
-		public string PreferredAppointmentDayCodeName
-		{
-			get => FormattedValues.Contains("preferredappointmentdaycode") ? FormattedValues["preferredappointmentdaycodename"] : null;
-		}
-
 		/// <summary>
 		/// Required Level: None<br/>
 		/// Valid for: Create Update Read<br/>
@@ -6771,17 +4927,6 @@ namespace XrmGenTest
 			set => this["preferredappointmenttimecode"] = value == null ? null : new OptionSetValue((int)value);
 		}
 		/// <summary>
-		/// Attribute of: preferredappointmenttimecode<br/>
-		/// Required Level: None<br/>
-		/// Valid for: Read<br/>
-		/// </summary>
-		[AttributeLogicalName("preferredappointmenttimecodename")]
-		public string PreferredAppointmentTimeCodeName
-		{
-			get => FormattedValues.Contains("preferredappointmenttimecode") ? FormattedValues["preferredappointmenttimecodename"] : null;
-		}
-
-		/// <summary>
 		/// Required Level: None<br/>
 		/// Valid for: Create Update Read<br/>
 		/// </summary>
@@ -6791,17 +4936,6 @@ namespace XrmGenTest
 			get => TryGetAttributeValue("preferredcontactmethodcode", out OptionSetValue opt) && opt != null ? (Account.Meta.OptionSets.PreferredMethodOfContact?)opt.Value : null;
 			set => this["preferredcontactmethodcode"] = value == null ? null : new OptionSetValue((int)value);
 		}
-		/// <summary>
-		/// Attribute of: preferredcontactmethodcode<br/>
-		/// Required Level: None<br/>
-		/// Valid for: Read<br/>
-		/// </summary>
-		[AttributeLogicalName("preferredcontactmethodcodename")]
-		public string PreferredContactMethodCodeName
-		{
-			get => FormattedValues.Contains("preferredcontactmethodcode") ? FormattedValues["preferredcontactmethodcodename"] : null;
-		}
-
 		/// <summary>
 		/// Required Level: None<br/>
 		/// Valid for: Create Update Read<br/>
@@ -6821,30 +4955,6 @@ namespace XrmGenTest
 			}
 		}
 		/// <summary>
-		/// Attribute of: preferredsystemuserid<br/>
-		/// Max Length: 100<br/>
-		/// Required Level: None<br/>
-		/// Valid for: Read<br/>
-		/// </summary>
-		[AttributeLogicalName("preferredsystemuseridname")]
-		public string PreferredSystemUserIdName
-		{
-			get => FormattedValues.Contains("preferredsystemuserid") ? FormattedValues["preferredsystemuserid"] : null;
-		
-		}
-		/// <summary>
-		/// Attribute of: preferredsystemuserid<br/>
-		/// Max Length: 100<br/>
-		/// Required Level: None<br/>
-		/// Valid for: Read<br/>
-		/// </summary>
-		[AttributeLogicalName("preferredsystemuseridyominame")]
-		public string PreferredSystemUserIdYomiName
-		{
-			get => FormattedValues.Contains("preferredsystemuserid") ? FormattedValues["preferredsystemuserid"] : null;
-		
-		}
-		/// <summary>
 		/// Required Level: None<br/>
 		/// Valid for: Create Update Read<br/>
 		/// Targets: contact<br/>
@@ -6861,30 +4971,6 @@ namespace XrmGenTest
 				}
 				this["primarycontactid"] = value;
 			}
-		}
-		/// <summary>
-		/// Attribute of: primarycontactid<br/>
-		/// Max Length: 100<br/>
-		/// Required Level: None<br/>
-		/// Valid for: Read<br/>
-		/// </summary>
-		[AttributeLogicalName("primarycontactidname")]
-		public string PrimaryContactIdName
-		{
-			get => FormattedValues.Contains("primarycontactid") ? FormattedValues["primarycontactid"] : null;
-		
-		}
-		/// <summary>
-		/// Attribute of: primarycontactid<br/>
-		/// Max Length: 100<br/>
-		/// Required Level: None<br/>
-		/// Valid for: Read<br/>
-		/// </summary>
-		[AttributeLogicalName("primarycontactidyominame")]
-		public string PrimaryContactIdYomiName
-		{
-			get => FormattedValues.Contains("primarycontactid") ? FormattedValues["primarycontactid"] : null;
-		
 		}
 		/// <summary>
 		/// Max Length: 200<br/>
@@ -6958,17 +5044,6 @@ namespace XrmGenTest
 			set => this["shippingmethodcode"] = value == null ? null : new OptionSetValue((int)value);
 		}
 		/// <summary>
-		/// Attribute of: shippingmethodcode<br/>
-		/// Required Level: None<br/>
-		/// Valid for: Read<br/>
-		/// </summary>
-		[AttributeLogicalName("shippingmethodcodename")]
-		public string ShippingMethodCodeName
-		{
-			get => FormattedValues.Contains("shippingmethodcode") ? FormattedValues["shippingmethodcodename"] : null;
-		}
-
-		/// <summary>
 		/// Max Length: 20<br/>
 		/// Required Level: None<br/>
 		/// Valid for: Create Update Read<br/>
@@ -7008,30 +5083,6 @@ namespace XrmGenTest
 			get => TryGetAttributeValue("slainvokedid", out EntityReference value) ? value : null;
 		}
 		/// <summary>
-		/// Attribute of: slainvokedid<br/>
-		/// Max Length: 100<br/>
-		/// Required Level: None<br/>
-		/// Valid for: Read<br/>
-		/// </summary>
-		[AttributeLogicalName("slainvokedidname")]
-		public string SLAInvokedIdName
-		{
-			get => FormattedValues.Contains("slainvokedid") ? FormattedValues["slainvokedid"] : null;
-		
-		}
-		/// <summary>
-		/// Attribute of: slaid<br/>
-		/// Max Length: 100<br/>
-		/// Required Level: None<br/>
-		/// Valid for: Read<br/>
-		/// </summary>
-		[AttributeLogicalName("slaname")]
-		public string SLAName
-		{
-			get => FormattedValues.Contains("slaid") ? FormattedValues["slaid"] : null;
-		
-		}
-		/// <summary>
 		/// Required Level: None<br/>
 		/// Valid for: Create Update Read<br/>
 		/// </summary>
@@ -7052,17 +5103,6 @@ namespace XrmGenTest
 			set => this["statecode"] = value == null ? null : new OptionSetValue(((IConvertible)value).ToInt32((IFormatProvider)CultureInfo.InvariantCulture));
 		}
 		/// <summary>
-		/// Attribute of: statecode<br/>
-		/// Required Level: None<br/>
-		/// Valid for: Read<br/>
-		/// </summary>
-		[AttributeLogicalName("statecodename")]
-		public string StateCodeName
-		{
-			get => FormattedValues.Contains("statecode") ? FormattedValues["statecodename"] : null;
-		}
-
-		/// <summary>
 		/// Required Level: None<br/>
 		/// Valid for: Create Update Read<br/>
 		/// </summary>
@@ -7072,17 +5112,6 @@ namespace XrmGenTest
 			get => TryGetAttributeValue("statuscode", out OptionSetValue opt) && opt != null ? (Account.Meta.OptionSets.StatusReason?)Enum.ToObject(typeof(Account.Meta.OptionSets.StatusReason), opt.Value) : null;
 			set => this["statuscode"] = value == null ? null : new OptionSetValue(((IConvertible)value).ToInt32((IFormatProvider)CultureInfo.InvariantCulture));
 		}
-		/// <summary>
-		/// Attribute of: statuscode<br/>
-		/// Required Level: None<br/>
-		/// Valid for: Read<br/>
-		/// </summary>
-		[AttributeLogicalName("statuscodename")]
-		public string StatusCodeName
-		{
-			get => FormattedValues.Contains("statuscode") ? FormattedValues["statuscodename"] : null;
-		}
-
 		/// <summary>
 		/// Max Length: 20<br/>
 		/// Required Level: None<br/>
@@ -7138,17 +5167,6 @@ namespace XrmGenTest
 			set => this["territorycode"] = value == null ? null : new OptionSetValue((int)value);
 		}
 		/// <summary>
-		/// Attribute of: territorycode<br/>
-		/// Required Level: None<br/>
-		/// Valid for: Read<br/>
-		/// </summary>
-		[AttributeLogicalName("territorycodename")]
-		public string TerritoryCodeName
-		{
-			get => FormattedValues.Contains("territorycode") ? FormattedValues["territorycodename"] : null;
-		}
-
-		/// <summary>
 		/// Max Length: 10<br/>
 		/// Required Level: None<br/>
 		/// Valid for: Create Update Read<br/>
@@ -7196,18 +5214,6 @@ namespace XrmGenTest
 				}
 				this["transactioncurrencyid"] = value;
 			}
-		}
-		/// <summary>
-		/// Attribute of: transactioncurrencyid<br/>
-		/// Max Length: 100<br/>
-		/// Required Level: None<br/>
-		/// Valid for: Read<br/>
-		/// </summary>
-		[AttributeLogicalName("transactioncurrencyidname")]
-		public string TransactionCurrencyIdName
-		{
-			get => FormattedValues.Contains("transactioncurrencyid") ? FormattedValues["transactioncurrencyid"] : null;
-		
 		}
 		/// <summary>
 		/// Max Length: 1250<br/>

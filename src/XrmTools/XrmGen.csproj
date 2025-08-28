@@ -326,7 +326,9 @@
     <Content Include="CodeGenTemplates\InjectDependencies.sbncs">
       <IncludeInVSIX>true</IncludeInVSIX>
     </Content>
-    <None Include="CodeGenTemplates\GlobalOptionSets.sbncs" />
+    <Content Include="CodeGenTemplates\GlobalOptionSets.sbncs">
+      <IncludeInVSIX>true</IncludeInVSIX>
+    </Content>
     <None Include="PrepareImageManifest.targets" />
     <None Include="source.extension.vsixmanifest">
       <SubType>Designer</SubType>

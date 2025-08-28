@@ -1,6 +1,7 @@
 ﻿using Microsoft.Xrm.Sdk;
 using Microsoft.Xrm.Sdk.Extensions;
 using System;
+using XrmTools;
 using XrmTools.Meta.Attributes;
 
 namespace XrmGenTest;

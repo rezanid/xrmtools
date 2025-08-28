@@ -47,9 +47,9 @@ namespace {{ first_plugin_type?.namespace ?? config.default_namespace }}
         }
 
 	    {{~for image in step.images~}}
-        {{~image_type_name = (plugintype.steps | array.size > 1 ? step.message_name : '') + image.name + (step.primary_entity_definition.schema_name)~}}
+        {{~image_type_name = (plugintype.steps | array.size > 1 ? step.message_name : '') + image.image_type + (step.primary_entity_definition.schema_name)~}}
         {{~image_collection_name = image.image_type == 'PreImage' ? 'PreEntityImages' : 'PostEntityImages'~}}
-	    public {{image_type_name}} {{image.name}} { get => EntityOrDefault<{{image_type_name}}>(Require<IPluginExecutionContext>().{{image_collection_name}}, "{{image.name}}"); }
+	    public {{image_type_name}} {{image.name}} { get => EntityOrDefault<{{image_type_name}}>(DependencyScope<{{plugintype.type_name | last_segment }}>.Current.Require<IPluginExecutionContext>().{{image_collection_name}}, "{{image.name}}"); }
 	    {{~end~}}
     {{~end~}}
     {{~end~}}

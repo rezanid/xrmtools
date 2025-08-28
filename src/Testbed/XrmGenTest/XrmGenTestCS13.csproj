@@ -14,8 +14,6 @@
     <Deterministic>true</Deterministic>
     <LangVersion>13</LangVersion>
     <TargetFrameworkProfile />
-    <DataverseEntityTemplateFilePath>\CodeGenTemplates\Entity.sbncs</DataverseEntityTemplateFilePath>
-    <DataversePluginTemplateFilePath>\CodeGenTemplates\Plugin.sbncs</DataversePluginTemplateFilePath>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
     <PlatformTarget>AnyCPU</PlatformTarget>
@@ -128,31 +126,6 @@
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
       <PrivateAssets>all</PrivateAssets>
     </PackageReference>
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="CodeGenTemplates\BigInt.sbncs" />
-    <None Include="CodeGenTemplates\Boolean.sbncs" />
-    <None Include="CodeGenTemplates\Customer.sbncs" />
-    <None Include="CodeGenTemplates\DateTime.sbncs" />
-    <None Include="CodeGenTemplates\Decimal.sbncs" />
-    <None Include="CodeGenTemplates\Double.sbncs" />
-    <None Include="CodeGenTemplates\Entity.sbncs" />
-    <None Include="CodeGenTemplates\EntityName.sbncs" />
-    <None Include="CodeGenTemplates\Images.sbncs" />
-    <None Include="CodeGenTemplates\InjectDependencies.sbncs" />
-    <None Include="CodeGenTemplates\Integer.sbncs" />
-    <None Include="CodeGenTemplates\Lookup.sbncs" />
-    <None Include="CodeGenTemplates\Memo.sbncs" />
-    <None Include="CodeGenTemplates\Money.sbncs" />
-    <None Include="CodeGenTemplates\Owner.sbncs" />
-    <None Include="CodeGenTemplates\Picklist.sbncs" />
-    <None Include="CodeGenTemplates\Plugin.sbncs" />
-    <None Include="CodeGenTemplates\State.sbncs" />
-    <None Include="CodeGenTemplates\Status.sbncs" />
-    <None Include="CodeGenTemplates\String.sbncs" />
-    <None Include="CodeGenTemplates\Target.sbncs" />
-    <None Include="CodeGenTemplates\UniqueIdentifier.sbncs" />
-    <None Include="CodeGenTemplates\Virtual.sbncs" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <ProjectExtensions />

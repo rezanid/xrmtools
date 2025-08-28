@@ -171,6 +171,7 @@ internal class EntityCodeGenerator : BaseCodeGeneratorWithSite
             }
 
             var inputFile = await PhysicalFile.FromFileAsync(inputFileName);
+            string? generatedCode = null;
             if (inputFile is not null && inputFile.FindParent(SolutionItemType.Project) is Project project && project.IsSdkStyle())
             {
                 var lastGenFileName = await inputFile.GetAttributeAsync("LastGenOutput");
@@ -180,10 +181,11 @@ internal class EntityCodeGenerator : BaseCodeGeneratorWithSite
                     await inputFile.TrySetAttributeAsync(PhysicalFileAttribute.LastGenOutput, lastGenFileName);
                 }
                 var lastGenFilePath = Path.Combine(Path.GetDirectoryName(inputFileName), lastGenFileName);
-                File.WriteAllText(lastGenFilePath, "// SDK-Style Code Gen\r\n" + Generator.GenerateCode(inputModel));
+                generatedCode = Generator.GenerateCode(inputModel);
+                File.WriteAllText(lastGenFilePath, "// SDK-Style Code Gen\r\n" + generatedCode);
             }
-
-            return Encoding.UTF8.GetBytes(Generator.GenerateCode(inputModel));
+            generatedCode ??= Generator.GenerateCode(inputModel);
+            return Encoding.UTF8.GetBytes(generatedCode);
         });
     }
 

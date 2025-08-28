@@ -51,7 +51,7 @@ public partial class EchoApi : IPlugin
         public EntityCollection? EntityCollectionParameter { get; set; }
         public IEnumerable<CustomEntity> CustomEntitiesParameter { get; set; }
         public EntityReference EntityReferenceParameter { get; set; }
-        public float FloatParameter { get; set; }
+        public double FloatParameter { get; set; }
         public int IntegerParameter { get; set; }
         public Money MoneyParameter { get; set; }
         public OptionSetValue PicklistParameter { get; set; }
@@ -73,7 +73,7 @@ public partial class EchoApi : IPlugin
         public required EntityCollection EntityCollectionParameter { get; set; }
         public required IEnumerable<CustomEntity> CustomEntitiesParameter { get; set; }
         public required EntityReference EntityReferenceParameter { get; set; }
-        public required float FloatParameter { get; set; }
+        public required double FloatParameter { get; set; }
         public required int IntegerParameter { get; set; }
         public required Money MoneyParameter { get; set; }
         public required OptionSetValue PicklistParameter { get; set; }

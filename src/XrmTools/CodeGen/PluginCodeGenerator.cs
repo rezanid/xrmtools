@@ -157,6 +157,7 @@ public class PluginCodeGenerator : BaseCodeGeneratorWithSite
                 return Encoding.UTF8.GetBytes("// " + validation.ErrorMessage);
             }
 
+            string? generatedCode = null;
             if (project.IsSdkStyle())
             {
                 var lastGenFileName = await inputFile.GetAttributeAsync("LastGenOutput");
@@ -166,9 +167,10 @@ public class PluginCodeGenerator : BaseCodeGeneratorWithSite
                     await inputFile.TrySetAttributeAsync(PhysicalFileAttribute.LastGenOutput, lastGenFileName);
                 }
                 var lastGenFilePath = Path.Combine(Path.GetDirectoryName(inputFileName), lastGenFileName);
-                File.WriteAllText(lastGenFilePath, "// SDK-Style Code Gen\r\n" + Generator.GenerateCode(inputModel));
+                generatedCode = Generator.GenerateCode(inputModel);
+                File.WriteAllText(lastGenFilePath, "// SDK-Style Code Gen\r\n" + generatedCode);
             }
-
+            generatedCode ??= Generator.GenerateCode(inputModel);
             return Encoding.UTF8.GetBytes(Generator.GenerateCode(inputModel));
         });
     }

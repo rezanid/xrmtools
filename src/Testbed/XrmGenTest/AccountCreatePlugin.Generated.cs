@@ -12,18 +12,17 @@ using XrmTools;
 
 namespace XrmGenTest
 {
-    [GeneratedCode("TemplatedCodeGenerator", "1.3.3.0")]
+    [GeneratedCode("TemplatedCodeGenerator", "1.4.0.0")]
     public partial class AccountCreatePlugin
     {
         /// <summary>
-        /// This method should be called in <see cref="PluginBase.Execute(IServiceProvider)"/> before
-        /// any target, image or other dependencies are used.
+        /// This method should be called before accessing any target, image or any of your dependencies.
         /// </summary>
         protected IDisposable CreateScope(IServiceProvider serviceProvider)
         {
             var scope = new DependencyScope<AccountCreatePlugin>();
             scope.Set<IServiceProvider>(serviceProvider);
-            scope.Set<IPluginExecutionContext>(serviceProvider.GetService(typeof(IPluginExecutionContext)) as IPluginExecutionContext);
+            scope.Set<IPluginExecutionContext>((IPluginExecutionContext)serviceProvider.GetService(typeof(IPluginExecutionContext)));
         
         
             return scope;
@@ -122,7 +121,7 @@ namespace XrmGenTest
 	    	}
 	    }
 	    [EntityLogicalName("account")]
-	    public class AccountPostImagePartner : Entity
+	    public class PostImageAccount : Entity
 	    {
 	    	public static class Meta
 	    	{
@@ -207,9 +206,9 @@ namespace XrmGenTest
 	    	/// Valid for: Create Update Read
 	    	/// </summary>
 	    	[AttributeLogicalName("accountcategorycode")]
-	    	public AccountPostImagePartner.Meta.OptionSets.Category? AccountCategoryCode
+	    	public PostImageAccount.Meta.OptionSets.Category? AccountCategoryCode
 	    	{
-	    		get => TryGetAttributeValue("accountcategorycode", out OptionSetValue opt) && opt != null ? (AccountPostImagePartner.Meta.OptionSets.Category?)opt.Value : null;
+	    		get => TryGetAttributeValue("accountcategorycode", out OptionSetValue opt) && opt != null ? (PostImageAccount.Meta.OptionSets.Category?)opt.Value : null;
 	    	}
 	    	/// <summary>
 	    	/// Max Length: 20
@@ -226,24 +225,27 @@ namespace XrmGenTest
 	    	/// Valid for: Create Update Read
 	    	/// </summary>
 	    	[AttributeLogicalName("address1_addresstypecode")]
-	    	public AccountPostImagePartner.Meta.OptionSets.Address1AddressType? Address1_AddressTypeCode
+	    	public PostImageAccount.Meta.OptionSets.Address1AddressType? Address1_AddressTypeCode
 	    	{
-	    		get => TryGetAttributeValue("address1_addresstypecode", out OptionSetValue opt) && opt != null ? (AccountPostImagePartner.Meta.OptionSets.Address1AddressType?)opt.Value : null;
+	    		get => TryGetAttributeValue("address1_addresstypecode", out OptionSetValue opt) && opt != null ? (PostImageAccount.Meta.OptionSets.Address1AddressType?)opt.Value : null;
 	    	}
 	    	/// <summary>
 	    	/// Required Level: None
 	    	/// Valid for: Create Update Read
 	    	/// </summary>
 	    	[AttributeLogicalName("address1_freighttermscode")]
-	    	public AccountPostImagePartner.Meta.OptionSets.Address1FreightTerms? Address1_FreightTermsCode
+	    	public PostImageAccount.Meta.OptionSets.Address1FreightTerms? Address1_FreightTermsCode
 	    	{
-	    		get => TryGetAttributeValue("address1_freighttermscode", out OptionSetValue opt) && opt != null ? (AccountPostImagePartner.Meta.OptionSets.Address1FreightTerms?)opt.Value : null;
+	    		get => TryGetAttributeValue("address1_freighttermscode", out OptionSetValue opt) && opt != null ? (PostImageAccount.Meta.OptionSets.Address1FreightTerms?)opt.Value : null;
 	    	}
 	    }
 	    
-	    public TargetAccount Target { get => EntityOrDefault<TargetAccount>(Require<IPluginExecutionContext>().InputParameters, "Target"); }
+	    public TargetAccount Target
+        {
+            get => EntityOrDefault<TargetAccount>(DependencyScope<AccountCreatePlugin>.Current.Require<IPluginExecutionContext>().InputParameters, "Target");
+        }
 
-	    public AccountPostImageAccount AccountPostImage { get => EntityOrDefault<AccountPostImageAccount>(Require<IPluginExecutionContext>().PostEntityImages, "AccountPostImage"); }
+	    public PostImageAccount AccountPostImage { get => EntityOrDefault<PostImageAccount>(DependencyScope<AccountCreatePlugin>.Current.Require<IPluginExecutionContext>().PostEntityImages, "AccountPostImage"); }
 
 	    protected static T EntityOrDefault<T>(DataCollection<string, object> keyValues, string key) where T : Entity
         {

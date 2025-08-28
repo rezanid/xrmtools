@@ -21,6 +21,7 @@ using System.Linq;
 using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Threading;
+using XrmTools.CodeGen;
 using XrmTools.Commands;
 using XrmTools.Environments;
 using XrmTools.Helpers;
@@ -63,17 +64,16 @@ using Task = System.Threading.Tasks.Task;
     expression: "(Yaml | CSEntity) & CSharp & (SingleProj | MultiProj)",
     termNames: ["Yaml", "CSEntity", "CSharp", "SingleProj", "MultiProj"],
     termValues: [
-        "HierSingleSelectionName:\\.yaml$|\\.yml$",
+        "HierSingleSelectionName:\\.(?:yaml|yml)$",
         "HierSingleSelectionName:\\.cs$",
         "ActiveProjectCapability:CSharp",
         VSConstants.UICONTEXT.SolutionHasSingleProject_string,
         VSConstants.UICONTEXT.SolutionHasMultipleProjects_string])]
 [ProvideUIContextRule(PackageGuids.SetCustomToolPluginDefitionCmdUIRuleString,
     name: "UI Context Plugin Definition",
-    expression: "(Json | CSPlugin) & CSharp & (SingleProj | MultiProj)",
-    termNames: ["Json", "CSPlugin", "CSharp", "SingleProj", "MultiProj"],
+    expression: "CSPlugin & CSharp & (SingleProj | MultiProj)",
+    termNames: ["CSPlugin", "CSharp", "SingleProj", "MultiProj"],
     termValues: [
-        "HierSingleSelectionName:\\.def\\.json$",
         "HierSingleSelectionName:\\.cs$",
         "ActiveProjectCapability:CSharp",
         VSConstants.UICONTEXT.SolutionHasSingleProject_string,
@@ -83,17 +83,17 @@ using Task = System.Threading.Tasks.Task;
     expression: "Sbn & CSharp & (SingleProj | MultiProj)",
     termNames: ["Sbn", "CSharp", "SingleProj", "MultiProj"],
     termValues: [
-        "HierSingleSelectionName:.sbncs$", 
+        "HierSingleSelectionName:\\.sbncs$", 
         "ActiveProjectCapability:CSharp", 
         VSConstants.UICONTEXT.SolutionHasSingleProject_string, 
         VSConstants.UICONTEXT.SolutionHasMultipleProjects_string])]
 [ProvideUIContextRule(PackageGuids.CSProjOrCodeGenerationTemplateCmdUIRuleString,
-    name: "UI Context Code Generator Template or Project",
-    expression: "(Sbn|CSProj) & CSharp & (SingleProj | MultiProj)",
-    termNames: ["Sbn", "CSProj" , "CSharp", "SingleProj", "MultiProj"],
+    name: "UI Context Code Generator Template or Project or Solution",
+    expression: "(TemplateFolder|CSProj) & CSharp & (SingleProj | MultiProj)",
+    termNames: ["TemplateFolder", "CSProj" , "CSharp", "SingleProj", "MultiProj"],
     termValues: [
-        "HierSingleSelectionName:.sbncs$",
-        "HierSingleSelectionName:.csproj$",
+        "HierSingleSelectionName:" + CodeGen.Constants.ScribanTemplatesFolderName + "$",
+        "HierSingleSelectionName:\\.(?:csproj|sln|sbncs)$",
         "ActiveProjectCapability:CSharp",
         VSConstants.UICONTEXT.SolutionHasSingleProject_string,
         VSConstants.UICONTEXT.SolutionHasMultipleProjects_string])]

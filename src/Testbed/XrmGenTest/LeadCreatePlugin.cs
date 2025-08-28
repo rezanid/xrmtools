@@ -14,6 +14,6 @@ public partial class LeadCreatePlugin : IPlugin
         {
             throw new InvalidPluginExecutionException(nameof(serviceProvider));
         }
-        Initialize(serviceProvider);
+        using var scope = CreateScope(serviceProvider);
     }
 }
