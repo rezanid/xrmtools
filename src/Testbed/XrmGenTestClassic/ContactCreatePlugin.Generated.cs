@@ -16,14 +16,13 @@ namespace XrmGenTest
     public partial class ContactCreatePlugin
     {
         /// <summary>
-        /// This method should be called in <see cref="PluginBase.Execute(IServiceProvider)"/> before
-        /// any target, image or other dependencies are used.
+        /// This method should be called before accessing any target, image or any of your dependencies.
         /// </summary>
         protected IDisposable CreateScope(IServiceProvider serviceProvider)
         {
             var scope = new DependencyScope<ContactCreatePlugin>();
             scope.Set<IServiceProvider>(serviceProvider);
-            scope.Set<IPluginExecutionContext>(serviceProvider.GetService(typeof(IPluginExecutionContext)) as IPluginExecutionContext);
+            scope.Set<IPluginExecutionContext>((IPluginExecutionContext)serviceProvider.GetService(typeof(IPluginExecutionContext)));
         
             var iContactPersister = new XrmGenTest.ContactPersister(this.OrganizationServiceFactory, this.TracingService);
         

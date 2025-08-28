@@ -8,19 +8,30 @@ using System.Collections.ObjectModel;
 using System.Globalization;
 using System.Linq;
 using System.Runtime.Serialization;
+using XrmTools;
 
 namespace XrmGenTest
 {
-    [GeneratedCode("TemplatedCodeGenerator", "1.3.3.0")]
+    [GeneratedCode("TemplatedCodeGenerator", "1.4.0.0")]
     public partial class ContactCreatePlugin
     {
-        protected void InjectDependencies(IServiceProvider serviceProvider)
+        /// <summary>
+        /// This method should be called before accessing any target, image or any of your dependencies.
+        /// </summary>
+        protected IDisposable CreateScope(IServiceProvider serviceProvider)
         {
-            this.ServiceProvider = serviceProvider;
-            this.ServiceFactory = new XrmGenTest.SomeService(serviceProvider);
-            this.ContactPersister = new XrmGenTest.ContactPersister(this.OrganizationService);
+            var scope = new DependencyScope<ContactCreatePlugin>();
+            scope.Set<IServiceProvider>(serviceProvider);
+            scope.Set<IPluginExecutionContext>((IPluginExecutionContext)serviceProvider.GetService(typeof(IPluginExecutionContext)));
+        
+            var iServiceProvider = serviceProvider;
+        
+            scope.Set<System.IServiceProvider>(serviceProvider);
+            scope.Set<XrmGenTest.SomeService>(scope.Set(new XrmGenTest.SomeService(serviceProvider)));
+            scope.Set<XrmGenTest.IContactPersister>(scope.Set(new XrmGenTest.ContactPersister(this.OrganizationService)));
+        
+            return scope;
         }
-	    [GeneratedCode("TemplatedCodeGenerator", "1.3.3.0")]
 	    [EntityLogicalName("contact")]
 	    public class CreateTargetContact : Entity
 	    {
@@ -38,9 +49,28 @@ namespace XrmGenTest
 	    			public const string Description = "description";
 	    			public const string FirstName = "firstname";
 	    			public const string LastName = "lastname";
+	    		
+	    			public static bool TryGet(string logicalName, out string attribute)
+	    			{
+	    				switch (logicalName)
+	    				{
+	    					case nameof(AccountRoleCode): attribute = AccountRoleCode; return true;
+	    					case nameof(Description): attribute = Description; return true;
+	    					case nameof(FirstName): attribute = FirstName; return true;
+	    					case nameof(LastName): attribute = LastName; return true;
+	    					default: attribute = null; return false;
+	    				}
+	    			}
+	    
+	    			public string this[string logicalName]
+	    			{
+	    				get => TryGet(logicalName, out var value)
+	    					? value
+	    					: throw new ArgumentException("Invalid attribute logical name.", nameof(logicalName));
+	    			}
 	    		}
 	    
-	    		public partial class Choices
+	    		public partial class OptionSets
 	    		{
 	    			/// <summary>
 	    			/// Account role of the contact.
@@ -63,9 +93,9 @@ namespace XrmGenTest
 	    	/// Valid for: Create Update Read</br>
 	    	/// </summary>
 	    	[AttributeLogicalName("accountrolecode")]
-	    	public CreateTargetContact.Meta.Choices.Role? AccountRoleCode
+	    	public CreateTargetContact.Meta.OptionSets.Role? AccountRoleCode
 	    	{
-	    		get => TryGetAttributeValue("accountrolecode", out OptionSetValue opt) && opt != null ? (CreateTargetContact.Meta.Choices.Role?)opt.Value : null;
+	    		get => TryGetAttributeValue("accountrolecode", out OptionSetValue opt) && opt != null ? (CreateTargetContact.Meta.OptionSets.Role?)opt.Value : null;
 	    		set => this["accountrolecode"] = value == null ? null : new OptionSetValue((int)value);
 	    	}
 	    	/// <summary>
@@ -103,9 +133,11 @@ namespace XrmGenTest
 	    	}
 	    }
 	    
-	    public CreateTargetContact CreateTarget { get; set; }
+	    public CreateTargetContact CreateTarget
+        {
+            get => EntityOrDefault<CreateTargetContact>(DependencyScope<ContactCreatePlugin>.Current.Require<IPluginExecutionContext>().InputParameters, "Target");
+        }
 
-	    [GeneratedCode("TemplatedCodeGenerator", "1.3.3.0")]
 	    [EntityLogicalName("contact")]
 	    public class UpdateTargetContact : Entity
 	    {
@@ -123,9 +155,28 @@ namespace XrmGenTest
 	    			public const string Description = "description";
 	    			public const string FirstName = "firstname";
 	    			public const string LastName = "lastname";
+	    		
+	    			public static bool TryGet(string logicalName, out string attribute)
+	    			{
+	    				switch (logicalName)
+	    				{
+	    					case nameof(AccountRoleCode): attribute = AccountRoleCode; return true;
+	    					case nameof(Description): attribute = Description; return true;
+	    					case nameof(FirstName): attribute = FirstName; return true;
+	    					case nameof(LastName): attribute = LastName; return true;
+	    					default: attribute = null; return false;
+	    				}
+	    			}
+	    
+	    			public string this[string logicalName]
+	    			{
+	    				get => TryGet(logicalName, out var value)
+	    					? value
+	    					: throw new ArgumentException("Invalid attribute logical name.", nameof(logicalName));
+	    			}
 	    		}
 	    
-	    		public partial class Choices
+	    		public partial class OptionSets
 	    		{
 	    			/// <summary>
 	    			/// Account role of the contact.
@@ -148,9 +199,9 @@ namespace XrmGenTest
 	    	/// Valid for: Create Update Read</br>
 	    	/// </summary>
 	    	[AttributeLogicalName("accountrolecode")]
-	    	public UpdateTargetContact.Meta.Choices.Role? AccountRoleCode
+	    	public UpdateTargetContact.Meta.OptionSets.Role? AccountRoleCode
 	    	{
-	    		get => TryGetAttributeValue("accountrolecode", out OptionSetValue opt) && opt != null ? (UpdateTargetContact.Meta.Choices.Role?)opt.Value : null;
+	    		get => TryGetAttributeValue("accountrolecode", out OptionSetValue opt) && opt != null ? (UpdateTargetContact.Meta.OptionSets.Role?)opt.Value : null;
 	    		set => this["accountrolecode"] = value == null ? null : new OptionSetValue((int)value);
 	    	}
 	    	/// <summary>
@@ -187,9 +238,8 @@ namespace XrmGenTest
 	    		set => this["lastname"] = value;
 	    	}
 	    }
-	    [GeneratedCode("TemplatedCodeGenerator", "1.3.3.0")]
 	    [EntityLogicalName("contact")]
-	    public class UpdatecontactPreImageContact : Entity
+	    public class UpdatePreImageContact : Entity
 	    {
 	    	public static class Meta
 	    	{
@@ -205,9 +255,28 @@ namespace XrmGenTest
 	    			public const string Description = "description";
 	    			public const string FirstName = "firstname";
 	    			public const string LastName = "lastname";
+	    		
+	    			public static bool TryGet(string logicalName, out string attribute)
+	    			{
+	    				switch (logicalName)
+	    				{
+	    					case nameof(AccountRoleCode): attribute = AccountRoleCode; return true;
+	    					case nameof(Description): attribute = Description; return true;
+	    					case nameof(FirstName): attribute = FirstName; return true;
+	    					case nameof(LastName): attribute = LastName; return true;
+	    					default: attribute = null; return false;
+	    				}
+	    			}
+	    
+	    			public string this[string logicalName]
+	    			{
+	    				get => TryGet(logicalName, out var value)
+	    					? value
+	    					: throw new ArgumentException("Invalid attribute logical name.", nameof(logicalName));
+	    			}
 	    		}
 	    
-	    		public partial class Choices
+	    		public partial class OptionSets
 	    		{
 	    			/// <summary>
 	    			/// Account role of the contact.
@@ -230,9 +299,9 @@ namespace XrmGenTest
 	    	/// Valid for: Create Update Read
 	    	/// </summary>
 	    	[AttributeLogicalName("accountrolecode")]
-	    	public UpdatecontactPreImageContact.Meta.Choices.Role? AccountRoleCode
+	    	public UpdatePreImageContact.Meta.OptionSets.Role? AccountRoleCode
 	    	{
-	    		get => TryGetAttributeValue("accountrolecode", out OptionSetValue opt) && opt != null ? (UpdatecontactPreImageContact.Meta.Choices.Role?)opt.Value : null;
+	    		get => TryGetAttributeValue("accountrolecode", out OptionSetValue opt) && opt != null ? (UpdatePreImageContact.Meta.OptionSets.Role?)opt.Value : null;
 	    	}
 	    	/// <summary>
 	    	/// Max Length: 2000
@@ -266,26 +335,12 @@ namespace XrmGenTest
 	    	}
 	    }
 	    
-	    public UpdateTargetContact UpdateTarget { get; set; }
-
-	    public UpdatecontactPreImageContact contactPreImage { get; set; }
-
-	    /// <summary>
-	    /// This method should be called on every <see cref="XrmGenTest.ContactCreatePlugin.Execute(IServiceProvider)"/> execution.
-	    /// </summary>
-	    /// <param name="serviceProvider"></param>
-	    /// <exception cref="InvalidPluginExecutionException"></exception>
-        internal void Initialize(IServiceProvider serviceProvider)
+	    public UpdateTargetContact UpdateTarget
         {
-            if (serviceProvider == null)
-            {
-                throw new InvalidPluginExecutionException(nameof(serviceProvider) + " argument is null.");
-            }
-            var executionContext = serviceProvider.Get<IPluginExecutionContext7>();
-            CreateTarget = EntityOrDefault<CreateTargetContact>(executionContext.InputParameters, "Target");
-            UpdateTarget = EntityOrDefault<UpdateTargetContact>(executionContext.InputParameters, "Target");
-            contactPreImage = EntityOrDefault<UpdatecontactPreImageContact>(executionContext.PreEntityImages, "contactPreImage");
+            get => EntityOrDefault<UpdateTargetContact>(DependencyScope<ContactCreatePlugin>.Current.Require<IPluginExecutionContext>().InputParameters, "Target");
         }
+
+	    public UpdatePreImageContact ContactPreImage { get => EntityOrDefault<UpdatePreImageContact>(DependencyScope<ContactCreatePlugin>.Current.Require<IPluginExecutionContext>().PreEntityImages, "ContactPreImage"); }
 
 	    protected static T EntityOrDefault<T>(DataCollection<string, object> keyValues, string key) where T : Entity
         {
@@ -298,6 +353,5 @@ namespace XrmGenTest
             if (keyValues is null) return default;
             return keyValues.TryGetValue(key, out var entity) ? entity?.ToEntity<T>() : default;
         }
-
     }
 }
