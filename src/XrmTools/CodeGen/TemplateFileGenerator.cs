@@ -9,11 +9,14 @@ using Community.VisualStudio.Toolkit;
 using System.Threading.Tasks;
 using System.Reflection;
 using XrmTools.CodeGen;
+using System.Linq;
 
 public interface ITemplateFileGenerator
 {
     Task GenerateTemplatesAsync(bool overwrite = false);
     Task GenerateTemplatesAsync(Project project, bool overwrite = false);
+    Task GenerateTemplatesAsync(Solution solution, bool overwrite = false);
+    void GenerateTemplate(PhysicalFile file, bool overwrite = false);
 }
 
 [Export(typeof(ITemplateFileGenerator))]
@@ -34,10 +37,10 @@ public class TemplateFileGenerator(ISettingsProvider settings, ILogger<TemplateF
     public async Task GenerateTemplatesAsync(Project project, bool overwrite = false)
     {
         var projDirectory = Path.GetDirectoryName(project.FullPath);
-        var templatesDirectory = Path.Combine(projDirectory, "CodeGenTemplates");
+        var templatesDirectory = Path.Combine(projDirectory, Constants.ScribanTemplatesFolderName);
         var templateSourceDirectory = Path.Combine(
             Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location),
-            "CodeGenTemplates");
+            Constants.ScribanTemplatesFolderName);
         Directory.CreateDirectory(templatesDirectory);
         foreach (var sourceFile in Directory.EnumerateFiles(templateSourceDirectory, $"*.{Constants.ScribanTemplateExtension}"))
         {
@@ -52,8 +55,51 @@ public class TemplateFileGenerator(ISettingsProvider settings, ILogger<TemplateF
                 await project.AddExistingFilesAsync(targetFile);
             }
         }
-        await settings.ProjectSettings.EntityTemplateFilePathAsync(Path.Combine(Path.DirectorySeparatorChar + "CodeGenTemplates", Constants.ScribanEntityTemplateFileName));
-        await settings.ProjectSettings.PluginTemplateFilePathAsync(Path.Combine(Path.DirectorySeparatorChar + "CodeGenTemplates", Constants.ScribanPluginTemplateFileName));
+    }
+
+    public async Task GenerateTemplatesAsync(Solution solution, bool overwrite = false)
+    {
+        var solutionDirectory = Path.GetDirectoryName(solution.FullPath);
+        var templatesDirectory = Path.Combine(solutionDirectory, Constants.ScribanTemplatesFolderName);
+        var templateSourceDirectory = Path.Combine(
+            Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location),
+            Constants.ScribanTemplatesFolderName);
+        Directory.CreateDirectory(templatesDirectory);
+        SolutionFolder? templateSolutionFolder = solution.Children.FirstOrDefault(i => i?.Name == Constants.ScribanTemplatesFolderName && i?.Type == SolutionItemType.SolutionFolder) as SolutionFolder;
+        if (templateSolutionFolder is null)
+        {
+            templateSolutionFolder = await solution.AddSolutionFolderAsync(Constants.ScribanTemplatesFolderName);
+        }
+        foreach (var sourceFile in Directory.EnumerateFiles(templateSourceDirectory, $"*.{Constants.ScribanTemplateExtension}"))
+        {
+            var targetFile = Path.Combine(templatesDirectory, Path.GetFileName(sourceFile));
+            var existedBefore = File.Exists(targetFile);
+            if (!existedBefore || overwrite)
+            {
+                File.Copy(sourceFile, targetFile, overwrite);
+            }
+            templateSolutionFolder?.AddExistingFilesAsync(targetFile);
+        }
+    }
+
+    public void GenerateTemplate(PhysicalFile file, bool overwrite = false)
+    {
+        var templateSourceDirectory = Path.Combine(
+            Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location),
+            Constants.ScribanTemplatesFolderName);
+
+        var searchResult = Directory.GetFiles(templateSourceDirectory, Path.GetFileName(file.FullPath), SearchOption.TopDirectoryOnly);
+
+        if (searchResult.Length == 0) return;
+
+        var sourceFile = searchResult[0];
+
+        var targetFile = file.FullPath;
+        var existedBefore = File.Exists(targetFile);
+        if (!existedBefore || overwrite)
+        {
+            File.Copy(sourceFile, targetFile, overwrite);
+        }
     }
 }
 #nullable restore
