@@ -56,6 +56,8 @@ public interface ISettingsProvider
     /// </summary>
     /// <returns>Full file path or null if the setting is not set.</returns>
     Task<string?> GlobalOptionSetsFilePathAsync();
+    Task DeleteEntityTemplateFilePathSettingAsync();
+    Task DeletePluginTemplateFilePathSettingAsync();
 }
 
 [ComVisible(true)]
@@ -97,6 +99,55 @@ public class SettingsProvider : ISettingsProvider
         ?? await ResolveFilePathAsync(await ProjectSettings.GlobalOptionSetsTemplateFilePathAsync(), true, false)
         ?? await ResolveFilePathAsync(SolutionUserSettings.GlobalOptionSetsTemplateFilePath(), false, true)
         ?? await ResolveFilePathAsync(SolutionSettings.GlobalOptionSetsTemplateFilePath(), false, true);
+
+    public async Task DeleteEntityTemplateFilePathSettingAsync()
+    {
+        var value = await ProjectUserSettings.EntityTemplateFilePathAsync();
+        if (!string.IsNullOrWhiteSpace(value))
+        {
+            await ProjectUserSettings.EntityTemplateFilePathAsync(null);
+        }
+        value = await ProjectSettings.EntityTemplateFilePathAsync();
+        if (!string.IsNullOrWhiteSpace(value))
+        {
+            await ProjectSettings.EntityTemplateFilePathAsync(null);
+        }
+        value = SolutionUserSettings.EntityTemplateFilePath();
+        if (!string.IsNullOrWhiteSpace(value))
+        {
+            SolutionUserSettings.EntityTemplateFilePath(null);
+        }
+        value = SolutionSettings.EntityTemplateFilePath();
+        if (!string.IsNullOrWhiteSpace(value))
+        {
+            SolutionSettings.EntityTemplateFilePath(null);
+        }
+    }
+
+    public async Task DeletePluginTemplateFilePathSettingAsync()
+    {
+        var value = await ProjectUserSettings.PluginTemplateFilePathAsync();
+        if (!string.IsNullOrWhiteSpace(value))
+        {
+            await ProjectUserSettings.PluginTemplateFilePathAsync(null);
+        }
+        value = await ProjectSettings.PluginTemplateFilePathAsync();
+        if (!string.IsNullOrWhiteSpace(value))
+        {
+            await ProjectSettings.PluginTemplateFilePathAsync(null);
+        }
+        value = SolutionUserSettings.PluginTemplateFilePath();
+        if (!string.IsNullOrWhiteSpace(value))
+        {
+            SolutionUserSettings.PluginTemplateFilePath(null);
+        }
+        value = SolutionSettings.PluginTemplateFilePath();
+        if (!string.IsNullOrWhiteSpace(value))
+        {
+            SolutionSettings.PluginTemplateFilePath(null);
+        }
+    }
+
     public async Task<string?> GlobalOptionSetsFilePathAsync()
     {
         var path = await ProjectSettings.GlobalOptionSetsFilePathAsync();
@@ -106,7 +157,6 @@ public class SettingsProvider : ISettingsProvider
         }
         return await ResolveFilePathAsync(path, true, false);
     }
-
 
     private async Task<string?> ResolveFilePathAsync(string? filePath, bool atProjectLevel, bool atSolutionLevel)
     {

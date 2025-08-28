@@ -2,7 +2,6 @@
 namespace XrmTools;
 
 using Community.VisualStudio.Toolkit;
-using Microsoft.VisualStudio.Shell;
 using System;
 using System.ComponentModel.Composition;
 using System.IO;
@@ -23,8 +22,6 @@ public interface ITemplateFinder
 [method: ImportingConstructor]
 public class TemplatePathFinder(ISettingsProvider settings, ILogger<TemplatePathFinder> logger) : ITemplateFinder
 {
-    private readonly ISettingsProvider settings = settings ?? throw new ArgumentNullException(nameof(settings));
-
     private static bool FileExists(string? path) => !string.IsNullOrWhiteSpace(path) && File.Exists(path);
 
     private async Task<string?> ResolveTemplatePathAsync(
@@ -70,6 +67,20 @@ public class TemplatePathFinder(ISettingsProvider settings, ILogger<TemplatePath
         var fallback = Path.Combine(templateSourceDirectory, templateFileName);
         if (File.Exists(fallback))
         {
+            // Remove settings from previous versions if any
+            if (templateFileName.StartsWith(Constants.ScribanPluginTemplateFileName))
+            {
+                await settings.DeletePluginTemplateFilePathSettingAsync();
+            }
+            else if (templateFileName.StartsWith(Constants.ScribanEntityTemplateFileName))
+            {
+                await settings.DeleteEntityTemplateFilePathSettingAsync();
+            }
+            else
+            {
+                // Nothing to clean up for global option sets template.
+            }
+
             return fallback;
         }
 
@@ -108,5 +119,4 @@ public class TemplatePathFinder(ISettingsProvider settings, ILogger<TemplatePath
             notFoundWarning: "Failed to find any template for global option sets code generation.");
     }
 }
-
 #nullable restore
