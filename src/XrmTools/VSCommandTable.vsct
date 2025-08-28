@@ -141,6 +141,7 @@
         <Icon guid="ImageCatalogGuid" id="CleanData" />
         <CommandFlag>IconIsMoniker</CommandFlag>
         <CommandFlag>DynamicVisibility</CommandFlag>
+        <CommandFlag>TextChanges</CommandFlag>
         <CommandFlag>AllowParams</CommandFlag>
         <Strings>
           <ButtonText>Reset code generation templates</ButtonText>
@@ -242,6 +243,9 @@
     </CommandPlacement>-->
     <CommandPlacement guid="XrmToolsCmdSetId" id="ResetCodeGenTemplatesCmdId" priority="0x0200">
       <Parent guid="XrmToolsCmdSetId" id="XrmToolsProjectContextMenuGroup"/>
+    </CommandPlacement>
+    <CommandPlacement guid="XrmToolsCmdSetId" id="ResetCodeGenTemplatesCmdId" priority="0x200">
+      <Parent guid="XrmToolsCmdSetId" id="XrmToolsSolutionContextMenuGroup" />
     </CommandPlacement>
   </CommandPlacements>
 
