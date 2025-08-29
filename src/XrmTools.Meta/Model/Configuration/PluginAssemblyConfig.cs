@@ -47,7 +47,7 @@ public sealed class PluginAssemblyConfig : PluginAssembly//, IPluginAssemblyConf
     public string? FilePath { get; set; }
 
     [JsonPropertyOrder(1)]
-    public CodeGenReplacePrefixConfig ReplacePrefixes { get; set; } = new();
+    public CodeGenReplacePrefixConfig[] ReplacePrefixes { get; set; } = [];
 
     [JsonPropertyOrder(2)]
     public CodeGenGlobalOptionSetsConfig GlobalOptionSetCodeGen { get; set; } = new();

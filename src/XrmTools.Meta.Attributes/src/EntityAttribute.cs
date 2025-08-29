@@ -21,7 +21,7 @@
         /// </summary>
         public string AttributeNames { get; set; } = string.Empty;
 
-        public EntityAttribute() { }
+        public Type BaseType { get; set; }
 
         public EntityAttribute(string logicalName)
         {

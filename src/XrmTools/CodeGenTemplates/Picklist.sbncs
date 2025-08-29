@@ -2,7 +2,11 @@
 ret
 end~}}
 {{~prop_name = attribute.schema_name ~}}
-{{~enum_name = (base_class_name ?? target_type_name) + '.Meta.OptionSets.' + (attribute.option_set.display_name | get_label 1033 | tokenize)~}}
+{{~if attribute.option_set?.is_global == true && model.global_option_set_code_gen.mode == 'GlobalOptionSetFile'
+		enum_name = config.default_namespace + '.OptionSets.' + (attribute.option_set?.display_name | get_label 1033 | tokenize)
+   else
+		enum_name = (base_class_name ?? entity_definition.schema_name) + '.Meta.OptionSets.' + (attribute.option_set?.display_name | get_label 1033 | tokenize)
+   end~}}
 [AttributeLogicalName("{{attribute.logical_name}}")]
 public {{enum_name}}? {{prop_name}}
 {

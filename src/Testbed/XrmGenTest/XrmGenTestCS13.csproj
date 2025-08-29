@@ -78,6 +78,8 @@
       <DesignTime>True</DesignTime>
       <DependentUpon>Entities.cs</DependentUpon>
     </Compile>
+    <Compile Include="GlobalOptionSets.cs" />
+    <Compile Include="QueryExpressionExtensions.cs" />
     <Compile Include="TypedSdkMessages\EchoRequest.cs" />
     <Compile Include="TypedSdkMessages\EchoResponse.cs" />
     <Compile Include="ContactCreatePlugin.cs">
@@ -122,7 +124,7 @@
       <PrivateAssets>all</PrivateAssets>
     </PackageReference>
     <PackageReference Include="XrmTools.Meta.Attributes">
-      <Version>1.0.53</Version>
+      <Version>1.0.54</Version>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
       <PrivateAssets>all</PrivateAssets>
     </PackageReference>
