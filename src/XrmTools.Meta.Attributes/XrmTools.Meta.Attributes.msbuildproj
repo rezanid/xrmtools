@@ -4,7 +4,7 @@
     <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
     <ImplicitUsings>disable</ImplicitUsings>
     <DevelopmentDependency>true</DevelopmentDependency>
-    <VersionPrefix>1.0.53</VersionPrefix>
+    <VersionPrefix>1.0.54</VersionPrefix>
     <Description>Attributes to be used by Xrm Tools for source generation, registration and other features in Visual Studio. This is a source only package with no assemblies included.</Description>
     <Authors>Reza Niroomand</Authors>
     <PackageIcon>XrmTools_256.png</PackageIcon>

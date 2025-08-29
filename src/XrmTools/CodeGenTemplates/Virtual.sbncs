@@ -27,7 +27,11 @@ public byte[] {{prop_name}}
 }
 {{~else~}}
 {{~if attribute.option_set
-    enum_type = attribute.option_set.display_name.localized_labels[0].label | tokenize | do; ret base_class_name + '.Meta.OptionSets.' + $0;end;
+	if attribute.option_set?.is_global == true && model.global_option_set_code_gen.mode == 'GlobalOptionSetFile'
+		enum_type = config.default_namespace + '.OptionSets.' + (attribute.option_set.display_name | get_label 1033 | tokenize);
+	else
+		enum_type = attribute.option_set.display_name | get_label 1033 | tokenize | do; ret base_class_name + '.Meta.OptionSets.' + $0;end;
+	end
 else
 	enum_type = int
 end~}}

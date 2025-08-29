@@ -17,6 +17,7 @@ By installing this nuget packge, you will be able to use attributes to decorate 
 - `DependencyConstructor`: Decorate a constructor method as depdency so that code generator can generate code to inject this dependency.
 - `EntityAttribute`: Assembly scoped attribute that instructs the code generator to generate a typed entity with the given attributes.
 - `CodeGenReplacePrefixesAttribute`: Assembly scoped attribute that instructs the code generator to replace the prefixes of the entity names with the given values. This is useful when you want to use a different prefix for your entities in the generated code.
+- `CodeGenGlobalOptionSetAttribute`: Assembly scoped attribute that lets the developer decide if global option sets should be generated in the GlobalOptionSets.cs file or as enums in the typed entity files. By default, global option sets are generated locally.
 
 Let's look at some examples:
 

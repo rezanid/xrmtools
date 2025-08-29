@@ -230,7 +230,7 @@ public class PluginCodeGenerator : BaseCodeGeneratorWithSite
         return null;
     }
 
-    private EntityMetadata? GetEntityMetadata(string logicalName, IEnumerable<string> attributeNames, CodeGenReplacePrefixConfig prefixReplacement)
+    private EntityMetadata? GetEntityMetadata(string logicalName, IEnumerable<string> attributeNames, CodeGenReplacePrefixConfig[] prefixReplacements)
     {
         var entityMetadataRepo = ThreadHelper.JoinableTaskFactory.Run(async () => await RepositoryFactory.CreateRepositoryAsync<IEntityMetadataRepository>());
         if (entityMetadataRepo is null) return null;
@@ -247,8 +247,8 @@ public class PluginCodeGenerator : BaseCodeGeneratorWithSite
         //    entityDefinition.Attributes.Where(a => a.AttributeType != AttributeTypeCode.EntityName && a.IsLogical != true).ToArray() :
         //    entityDefinition.Attributes.Where(a => a.AttributeType != AttributeTypeCode.EntityName && attributes.Contains(a.LogicalName)).ToArray();
 
-        FormatAttributeSchemaNames(filteredAttributes ?? entityDefinition.Attributes, prefixReplacement);
-        FormatEntitySchemaName(entityDefinition, prefixReplacement);
+        FormatAttributeSchemaNames(filteredAttributes ?? entityDefinition.Attributes, prefixReplacements);
+        FormatEntitySchemaName(entityDefinition, prefixReplacements);
 
         // The cloning is done because we don't want to modify the object in the cache.
         // In future when we load from local storage this might not be required.
@@ -262,47 +262,45 @@ public class PluginCodeGenerator : BaseCodeGeneratorWithSite
         return entityDefinition;
     }
 
-    private static void FormatEntitySchemaName(EntityMetadata entityDefinition, CodeGenReplacePrefixConfig prefixReplacement)
+    private static void FormatEntitySchemaName(EntityMetadata entityDefinition, CodeGenReplacePrefixConfig[] prefixReplacements)
     {
         // Remove prefixes.
-        foreach (var prefix in prefixReplacement.PrefixList)
-        {
-            if (entityDefinition.SchemaName.StartsWith(prefix, StringComparison.OrdinalIgnoreCase))
-            {
-                entityDefinition.SchemaName = entityDefinition.SchemaName[prefix.Length..];
-                if (!string.IsNullOrWhiteSpace(prefixReplacement.ReplaceWith))
+        foreach (var prefixReplacement in prefixReplacements)
+            foreach (var prefix in prefixReplacement.PrefixList)
+                if (entityDefinition.SchemaName!.StartsWith(prefix, StringComparison.OrdinalIgnoreCase))
                 {
-                    entityDefinition.SchemaName = prefixReplacement.ReplaceWith + entityDefinition.SchemaName;
+                    entityDefinition.SchemaName = entityDefinition.SchemaName[prefix.Length..];
+                    if (!string.IsNullOrWhiteSpace(prefixReplacement.ReplaceWith))
+                    {
+                        entityDefinition.SchemaName = prefixReplacement.ReplaceWith + entityDefinition.SchemaName;
+                    }
+                    break;
                 }
-                break;
-            }
-        }
         // Capitalize first letter.
-        if (char.IsLower(entityDefinition.SchemaName[0]))
+        if (char.IsLower(entityDefinition.SchemaName![0]))
         {
             entityDefinition.SchemaName = char.ToUpper(entityDefinition.SchemaName[0]) + entityDefinition.SchemaName[1..];
         }
     }
 
-    private static void FormatAttributeSchemaNames(IEnumerable<AttributeMetadata> attributes, CodeGenReplacePrefixConfig prefixReplacement)
+    private static void FormatAttributeSchemaNames(IEnumerable<AttributeMetadata> attributes, CodeGenReplacePrefixConfig[] prefixReplacements)
     {
         foreach (var attribute in attributes)
         {
             // Remove prefixes.
-            foreach (var prefix in prefixReplacement.PrefixList)
-            {
-                if (attribute.SchemaName.StartsWith(prefix, StringComparison.OrdinalIgnoreCase))
-                {
-                    attribute.SchemaName = attribute.SchemaName[prefix.Length..];
-                    if (!string.IsNullOrWhiteSpace(prefixReplacement.ReplaceWith))
+            foreach (var prefixReplacement in prefixReplacements)
+                foreach (var prefix in prefixReplacement.PrefixList)
+                    if (attribute.SchemaName!.StartsWith(prefix, StringComparison.OrdinalIgnoreCase))
                     {
-                        attribute.SchemaName = prefixReplacement.ReplaceWith + attribute.SchemaName;
+                        attribute.SchemaName = attribute.SchemaName[prefix.Length..];
+                        if (!string.IsNullOrWhiteSpace(prefixReplacement.ReplaceWith))
+                        {
+                            attribute.SchemaName = prefixReplacement.ReplaceWith + attribute.SchemaName;
+                        }
+                        break;
                     }
-                    break;
-                }
-            }
             // Capitalize first letter.
-            if (char.IsLower(attribute.SchemaName[0]))
+            if (char.IsLower(attribute.SchemaName![0]))
             {
                 attribute.SchemaName = char.ToUpper(attribute.SchemaName[0]) + attribute.SchemaName[1..];
             }
@@ -316,8 +314,6 @@ public class PluginCodeGenerator : BaseCodeGeneratorWithSite
         {
             // Get the current item ID
             hierarchy.ParseCanonicalName(InputFilePath, out var itemId);
-
-            hierarchy.SetProperty(itemId, (int)__VSHPROPID.VSHPROPID_DefaultNamespace, "XrmGenTest");
 
             if (hierarchy.GetProperty(itemId, (int)__VSHPROPID.VSHPROPID_DefaultNamespace, out object defaultNamespace) == VSConstants.S_OK)
             {

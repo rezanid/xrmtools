@@ -3,6 +3,7 @@ namespace XrmTools.Settings;
 using Community.VisualStudio.Toolkit;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Runtime.InteropServices;
 using System.Threading.Tasks;
@@ -63,6 +64,8 @@ public interface ISettingsProvider
 [ComVisible(true)]
 public class SettingsProvider : ISettingsProvider
 {
+    enum ResolveScope { Project, Solution }
+
     // NOTE!
     // * Solution settings (.sln, .suo) are kept in dictionaries, then loaded and replaced from the package.
     // * Project settings are directly written to and read from the project (and project user) file.
@@ -83,22 +86,22 @@ public class SettingsProvider : ISettingsProvider
         ?? SolutionSettings.ConnectionString();
     /// <inheritdoc cref="ISettingsProvider.EntityTemplateFilePathAsync"/>
     public async Task<string?> EntityTemplateFilePathAsync()
-        => await ResolveFilePathAsync(await ProjectUserSettings.EntityTemplateFilePathAsync(), true, false)
-        ?? await ResolveFilePathAsync(await ProjectSettings.EntityTemplateFilePathAsync(), true, false)
-        ?? await ResolveFilePathAsync(SolutionUserSettings.EntityTemplateFilePath(), false, true)
-        ?? await ResolveFilePathAsync(SolutionSettings.EntityTemplateFilePath(), false, true);
+        => await ResolveFilePathAsync(await ProjectUserSettings.EntityTemplateFilePathAsync(), ResolveScope.Project)
+        ?? await ResolveFilePathAsync(await ProjectSettings.EntityTemplateFilePathAsync(), ResolveScope.Project)
+        ?? await ResolveFilePathAsync(SolutionUserSettings.EntityTemplateFilePath(), ResolveScope.Solution)
+        ?? await ResolveFilePathAsync(SolutionSettings.EntityTemplateFilePath(), ResolveScope.Solution);
     /// <inheritdoc cref="ISettingsProvider.PluginTemplateFilePathAsync"/>
     public async Task<string?> PluginTemplateFilePathAsync()
-        => await ResolveFilePathAsync(await ProjectUserSettings.PluginTemplateFilePathAsync(), true, false)
-        ?? await ResolveFilePathAsync(await ProjectSettings.PluginTemplateFilePathAsync(), true, false)
-        ?? await ResolveFilePathAsync(SolutionUserSettings.PluginTemplateFilePath(), false, true)
-        ?? await ResolveFilePathAsync(SolutionSettings.PluginTemplateFilePath(), false, true);
+        => await ResolveFilePathAsync(await ProjectUserSettings.PluginTemplateFilePathAsync(), ResolveScope.Project)
+        ?? await ResolveFilePathAsync(await ProjectSettings.PluginTemplateFilePathAsync(), ResolveScope.Project)
+        ?? await ResolveFilePathAsync(SolutionUserSettings.PluginTemplateFilePath(), ResolveScope.Solution)
+        ?? await ResolveFilePathAsync(SolutionSettings.PluginTemplateFilePath(), ResolveScope.Solution);
     /// <inheritdoc cref="ISettingsProvider.GlobalOptionSetsTemplateFilePathAsync"/>
     public async Task<string?> GlobalOptionSetsTemplateFilePathAsync()
-        => await ResolveFilePathAsync(await ProjectUserSettings.GlobalOptionSetsTemplateFilePathAsync(), true, false)
-        ?? await ResolveFilePathAsync(await ProjectSettings.GlobalOptionSetsTemplateFilePathAsync(), true, false)
-        ?? await ResolveFilePathAsync(SolutionUserSettings.GlobalOptionSetsTemplateFilePath(), false, true)
-        ?? await ResolveFilePathAsync(SolutionSettings.GlobalOptionSetsTemplateFilePath(), false, true);
+        => await ResolveFilePathAsync(await ProjectUserSettings.GlobalOptionSetsTemplateFilePathAsync(), ResolveScope.Project)
+        ?? await ResolveFilePathAsync(await ProjectSettings.GlobalOptionSetsTemplateFilePathAsync(), ResolveScope.Project)
+        ?? await ResolveFilePathAsync(SolutionUserSettings.GlobalOptionSetsTemplateFilePath(), ResolveScope.Solution)
+        ?? await ResolveFilePathAsync(SolutionSettings.GlobalOptionSetsTemplateFilePath(), ResolveScope.Solution);
 
     public async Task DeleteEntityTemplateFilePathSettingAsync()
     {
@@ -155,10 +158,11 @@ public class SettingsProvider : ISettingsProvider
         {
             path = "GlobalOptionSets.cs";
         }
-        return await ResolveFilePathAsync(path, true, false);
+        return await ResolveFilePathAsync(path, ResolveScope.Project);
     }
 
-    private async Task<string?> ResolveFilePathAsync(string? filePath, bool atProjectLevel, bool atSolutionLevel)
+    [return: NotNullIfNotNull(nameof(filePath))]
+    private async Task<string?> ResolveFilePathAsync(string? filePath, ResolveScope resolveScope)
     {
         if (string.IsNullOrWhiteSpace(filePath)) return null;
 
@@ -168,7 +172,7 @@ public class SettingsProvider : ISettingsProvider
         }
         if (Path.IsPathRooted(filePath)) return filePath;
 
-        if (atProjectLevel)
+        if (resolveScope == ResolveScope.Project)
         {
             var proj = await VS.Solutions.GetActiveProjectAsync();
             if (proj != null)
@@ -176,15 +180,12 @@ public class SettingsProvider : ISettingsProvider
                 return Path.Combine(Path.GetDirectoryName(proj.FullPath), filePath);
             }
         }
-        if (atSolutionLevel)
+        var solution = await VS.Solutions.GetCurrentSolutionAsync();
+        if (solution != null)
         {
-            var solution = await VS.Solutions.GetCurrentSolutionAsync();
-            if (solution != null)
-            {
-                return Path.Combine(Path.GetDirectoryName(solution.FullPath), filePath);
-            }
+            return Path.Combine(Path.GetDirectoryName(solution.FullPath), filePath);
         }
-        return null;
+        return filePath;
     }
 }
 #nullable restore

@@ -19,11 +19,11 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using XrmTools.Analyzers;
-using XrmTools.Core.Helpers;
 using XrmTools.Core.Repositories;
 using XrmTools.Environments;
 using XrmTools.Helpers;
 using XrmTools.Logging.Compatibility;
+using XrmTools.Meta.Model;
 using XrmTools.Meta.Model.Configuration;
 using XrmTools.Options;
 using XrmTools.Resources;
@@ -121,6 +121,13 @@ internal class EntityCodeGenerator : BaseCodeGeneratorWithSite
 
             AddEntityMetadataToEntityConfig(inputModel);
 
+            var inputFile = await PhysicalFile.FromFileAsync(inputFileName);
+            if (inputFile is null || inputFile.FindParent(SolutionItemType.Project) is not Project project)
+            {
+                return Encoding.UTF8.GetBytes(
+                    "// Xrm Tools Entity Code Generator was not able to find the parent project of the input file " +
+                    InputFilePath);
+            }
             if (inputModel.GlobalOptionSetCodeGen.Mode == Meta.Attributes.GlobalOptionSetGenerationMode.GlobalOptionSetFile)
             {
                 inputModel.GlobalOptionSetDefinitions = inputModel.EntityDefinitions.Union(inputModel.OtherEntityDefinitions ?? [])
@@ -143,6 +150,7 @@ internal class EntityCodeGenerator : BaseCodeGeneratorWithSite
                     var globalOptionSetFileName = await SettingsProvider.GlobalOptionSetsFilePathAsync();
                     var globalOptionSetCode = Generator.GenerateCode(inputModel);
                     File.WriteAllText(globalOptionSetFileName, globalOptionSetCode);
+                    await project.AddExistingFilesAsync(globalOptionSetFileName!);
                 }
             }
 
@@ -170,9 +178,8 @@ internal class EntityCodeGenerator : BaseCodeGeneratorWithSite
                 return Encoding.UTF8.GetBytes("// " + validation.ErrorMessage);
             }
 
-            var inputFile = await PhysicalFile.FromFileAsync(inputFileName);
             string? generatedCode = null;
-            if (inputFile is not null && inputFile.FindParent(SolutionItemType.Project) is Project project && project.IsSdkStyle())
+            if (project.IsSdkStyle())
             {
                 var lastGenFileName = await inputFile.GetAttributeAsync("LastGenOutput");
                 if (string.IsNullOrWhiteSpace(lastGenFileName))
@@ -239,7 +246,7 @@ internal class EntityCodeGenerator : BaseCodeGeneratorWithSite
             .Where(c => !string.IsNullOrWhiteSpace(c.LogicalName))
             .Select(e => GetEntityMetadata(e.LogicalName!, e.AttributeNames?.Split(',') ?? [], config.ReplacePrefixes))];
 
-    private EntityMetadata GetEntityMetadata(string logicalName, IEnumerable<string> attributeNames, Meta.Model.CodeGenReplacePrefixConfig prefixReplacement)
+    private EntityMetadata GetEntityMetadata(string logicalName, IEnumerable<string> attributeNames, Meta.Model.CodeGenReplacePrefixConfig[] prefixReplacements)
     {
         var entityMetadataRepo = ThreadHelper.JoinableTaskFactory.Run(RepositoryFactory.CreateRepositoryAsync<IEntityMetadataRepository>);
         if (entityMetadataRepo is null) return null;
@@ -256,8 +263,8 @@ internal class EntityCodeGenerator : BaseCodeGeneratorWithSite
         //    entityDefinition.Attributes.Where(a => a.AttributeType != AttributeTypeCode.EntityName && a.IsLogical != true).ToArray() :
         //    entityDefinition.Attributes.Where(a => a.AttributeType != AttributeTypeCode.EntityName && attributes.Contains(a.LogicalName)).ToArray();
 
-        FormatAttributeSchemNames(filteredAttributes ?? entityDefinition.Attributes, prefixReplacement);
-        FormatEntitySchemaName(entityDefinition, prefixReplacement);
+        FormatAttributeSchemaNames(filteredAttributes ?? entityDefinition.Attributes, prefixReplacements);
+        FormatEntitySchemaName(entityDefinition, prefixReplacements);
 
         // The cloning is done because we don't want to modify the object in the cache.
         // In future when we load from local storage this might not be required.
@@ -271,48 +278,45 @@ internal class EntityCodeGenerator : BaseCodeGeneratorWithSite
         return entityDefinition;
     }
 
-    private static void FormatEntitySchemaName(EntityMetadata entityDefinition, Meta.Model.CodeGenReplacePrefixConfig prefixReplacement)
+    private static void FormatEntitySchemaName(EntityMetadata entityDefinition, CodeGenReplacePrefixConfig[] prefixReplacements)
     {
         // Remove prefixes.
-        foreach (var prefix in prefixReplacement.PrefixList)
-        {
-            if (entityDefinition.SchemaName.StartsWith(prefix, StringComparison.OrdinalIgnoreCase))
-            {
-                entityDefinition.SchemaName = entityDefinition.SchemaName[prefix.Length..];
-                if (!string.IsNullOrWhiteSpace(prefixReplacement.ReplaceWith))
+        foreach (var prefixReplacement in prefixReplacements)
+            foreach (var prefix in prefixReplacement.PrefixList)
+                if (entityDefinition.SchemaName!.StartsWith(prefix, StringComparison.OrdinalIgnoreCase))
                 {
-                    entityDefinition.SchemaName = prefixReplacement.ReplaceWith + entityDefinition.SchemaName;
+                    entityDefinition.SchemaName = entityDefinition.SchemaName[prefix.Length..];
+                    if (!string.IsNullOrWhiteSpace(prefixReplacement.ReplaceWith))
+                    {
+                        entityDefinition.SchemaName = prefixReplacement.ReplaceWith + entityDefinition.SchemaName;
+                    }
+                    break;
                 }
-                break;
-            }
-        }
         // Capitalize first letter.
-        if (char.IsLower(entityDefinition.SchemaName[0]))
+        if (char.IsLower(entityDefinition.SchemaName![0]))
         {
             entityDefinition.SchemaName = char.ToUpper(entityDefinition.SchemaName[0]) + entityDefinition.SchemaName[1..];
         }
     }
 
-    private static void FormatAttributeSchemNames(IEnumerable<AttributeMetadata> attributes, Meta.Model.CodeGenReplacePrefixConfig prefixReplacement)
+    private static void FormatAttributeSchemaNames(IEnumerable<AttributeMetadata> attributes, CodeGenReplacePrefixConfig[] prefixReplacements)
     {
-        var prefixList = prefixReplacement.Prefixes.SplitAndTrim(',') ?? [];
         foreach (var attribute in attributes)
         {
             // Remove prefixes.
-            foreach (var prefix in prefixList)
-            {
-                if (attribute.SchemaName.StartsWith(prefix, StringComparison.OrdinalIgnoreCase))
-                {
-                    attribute.SchemaName = attribute.SchemaName[prefix.Length..];
-                    if (!string.IsNullOrWhiteSpace(prefixReplacement.ReplaceWith))
+            foreach (var prefixReplacement in prefixReplacements)
+                foreach (var prefix in prefixReplacement.PrefixList)
+                    if (attribute.SchemaName!.StartsWith(prefix, StringComparison.OrdinalIgnoreCase))
                     {
-                        attribute.SchemaName = prefixReplacement.ReplaceWith + attribute.SchemaName;
+                        attribute.SchemaName = attribute.SchemaName[prefix.Length..];
+                        if (!string.IsNullOrWhiteSpace(prefixReplacement.ReplaceWith))
+                        {
+                            attribute.SchemaName = prefixReplacement.ReplaceWith + attribute.SchemaName;
+                        }
+                        break;
                     }
-                    break;
-                }
-            }
             // Capitalize first letter.
-            if (char.IsLower(attribute.SchemaName[0]))
+            if (char.IsLower(attribute.SchemaName![0]))
             {
                 attribute.SchemaName = char.ToUpper(attribute.SchemaName[0]) + attribute.SchemaName[1..];
             }

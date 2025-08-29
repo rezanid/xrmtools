@@ -113,6 +113,10 @@ public static class ReflectionHelper
             {
                 property.SetValue(instance, value.Value);
             }
+            else if (value.Kind == TypedConstantKind.Type)
+            {
+                property.SetValue(instance, (value.Value as INamedTypeSymbol)?.ToDisplayString());
+            }
             else
             {
                 try

@@ -8,6 +8,7 @@ using System.ComponentModel.Composition;
 using System.Linq;
 using XrmTools.Helpers;
 using XrmTools.Meta.Attributes;
+using XrmTools.Meta.Model;
 using XrmTools.Meta.Model.Configuration;
 using XrmTools.Model.Configuration;
 
@@ -49,7 +50,7 @@ internal class CSharpXrmMetaParser(
         IAssemblySymbol assemblySymbol = compilation.Assembly;
         AttributeData? assemblyAttribute = null;
         AttributeData? solutionAttribute = null;
-        AttributeData? codeGenPrefixAttribute = null;
+        List<AttributeData> codeGenPrefixAttribute = [];
         AttributeData? codeGenGlobalOptionSetsAttribute = null;
         //List<EntityConfig> entityConfigs = [];
         foreach (var attr in assemblySymbol.GetAttributes())
@@ -64,7 +65,7 @@ internal class CSharpXrmMetaParser(
             }
             else if (attr.AttributeClass?.ToDisplayString() == typeof(CodeGenReplacePrefixesAttribute).FullName)
             {
-                codeGenPrefixAttribute = attr;
+                codeGenPrefixAttribute.Add(attr);
             }
             else if (attr.AttributeClass?.ToDisplayString() == typeof(CodeGenGlobalOptionSetAttribute).FullName)
             {
@@ -97,9 +98,14 @@ internal class CSharpXrmMetaParser(
             pluginAssemblyConfig.Solution = solution;
         }
 
-        if (codeGenPrefixAttribute != null)
+        if (codeGenPrefixAttribute.Count > 0)
         {
-            pluginAssemblyConfig.ReplacePrefixes.SetPropertiesFromAttribute(codeGenPrefixAttribute);
+            pluginAssemblyConfig.ReplacePrefixes = new CodeGenReplacePrefixConfig[codeGenPrefixAttribute.Count];
+            for (int i = 0; i < codeGenPrefixAttribute.Count; i++)
+            {
+                pluginAssemblyConfig.ReplacePrefixes[i] = new ();
+                pluginAssemblyConfig.ReplacePrefixes[i].SetPropertiesFromAttribute(codeGenPrefixAttribute[i]);
+            }
         }
 
         if (codeGenGlobalOptionSetsAttribute != null)

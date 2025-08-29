@@ -23,7 +23,7 @@ namespace {{ first_plugin_type?.namespace ?? config.default_namespace }}
 	{{codegen_attribute}}
 	[EntityLogicalName("{{entity_definition.logical_name}}")]
 	[global::System.Diagnostics.CodeAnalysis.ExcludeFromCodeCoverage]
-	public partial class {{base_class_name}} : Entity
+	public partial class {{base_class_name}} : {{model.entities[for.index].base_type}}
 	{
 		public partial class Meta 
 		{
