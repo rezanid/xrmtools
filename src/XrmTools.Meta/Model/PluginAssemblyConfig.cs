@@ -10,15 +10,16 @@ using System.ComponentModel;
 using System.Runtime.Serialization;
 using System.Text.Json.Serialization;
 using XrmTools.Meta.Attributes.Serialization;
-using XrmTools.Meta.Serialization;
 using XrmTools.Meta.Attributes;
+using XrmTools.Meta.Model;
+using XrmTools.Meta.Model.Configuration;
 
 public interface IPluginAssemblyConfig : IPluginAssemblyEntity
 {
     WebApi.Entities.Solution? Solution { get; set; }
     ICollection<EntityConfig> Entities { get; set; }
     ICollection<EntityMetadata>? EntityDefinitions { get; set; }
-    List<string> RemovePrefixes { get; set; }
+    CodeGenReplacePrefixConfig ReplacePrefixes { get; set; }
     string? FilePath { get; set; }
 }
 
@@ -59,8 +60,7 @@ public class PluginAssemblyConfig : TypedEntity<PluginAssemblyConfig>, IPluginAs
 
     [JsonPropertyOrder(2)]
     [JsonProperty(Order = 1)]
-    [Newtonsoft.Json.JsonConverter(typeof(CommaDelimitedStringConverter))]
-    public List<string> RemovePrefixes { get; set; } = [];
+    public CodeGenReplacePrefixConfig ReplacePrefixes { get; set; } = new();
 
     [IgnoreDataMember]
     public string? FilePath { get; set; }
@@ -146,11 +146,5 @@ public class PluginAssemblyConfig : TypedEntity<PluginAssemblyConfig>, IPluginAs
 
     public PluginAssemblyConfig() : base(EntityLogicalName) { }
     public PluginAssemblyConfig(string filePath) : base(EntityLogicalName) => FilePath = filePath;
-}
-
-public class EntityConfig
-{
-    public string? LogicalName { get; set; }
-    public string? AttributeNames { get; set; }
 }
 #nullable restore

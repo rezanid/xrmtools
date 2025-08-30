@@ -1,8 +1,8 @@
 ﻿#nullable enable
 namespace XrmTools.Helpers;
 
-using Microsoft.Xrm.Sdk.Metadata;
 using System.Reflection;
+using XrmTools.WebApi.Entities;
 
 internal static class EntityMetadataExtensions
 {

@@ -1,104 +1,168 @@
 {{~func non_logical; ret ($0?.is_logical != true); end~}}
 {{~func logical; ret ($0?.is_logical == true); end~}}
-{{~func supported_attribute; ret ($0?.attribute_type != 'EntityName'); end~}}
+{{~func supported_attribute; ret ($0 && !$0?.is_primary_id && $0.attribute_type != 'EntityName') && ($0.is_valid_for_create || $0.is_valid_for_update || $0.is_valid_for_read); end~}}
+{{~func text_between;
+index1 = ($0 | string.index_of $1) + 1;
+index2 = $0 | string.index_of $2 index1 + 1;
+length = index2 - index1;
+ret $0 | string.slice index1 length
+end~}}
 {{~quote(text) = '"' + text + '"'~}}
+{{-first_plugin_type = model.plugin_types | array.first~}}
+{{~if first_plugin_type.is_nullable_enabled ~}}
+#nullable enable
+{{~end~}}
 using Microsoft.Xrm.Sdk;
 using Microsoft.Xrm.Sdk.Client;
 using Microsoft.Xrm.Sdk.Extensions;
 using System;
 using System.CodeDom.Compiler;
+using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Globalization;
+using System.Linq;
 using System.Runtime.Serialization;
+using XrmTools;
 
-{{-first_plugin_type = model.plugin_types | array.first~}}
-
-namespace {{ first_plugin_type?.namespace ?? config.default_namespace }};
-
-{{~for plugintype in model.plugin_types~}}
-{{codegen_attribute}}
-public partial class {{plugintype.type_name | last_segment }}
+namespace {{ first_plugin_type?.namespace ?? config.default_namespace }}
 {
-    {{~dependencies = plugintype.dependency_graph?.dependencies~}}
-    {{~include 'InjectDepdendencies.sbncs'~}}
-
-{{~for step in plugintype.steps~}}
-	{{include 'Target.sbncs'}}
-	{{~if step.images~}}
-	{{include 'Images.sbncs'~}}
-	{{~end~}}
-
-	{{~target_type_name='Target' + (step.primary_entity_definition.display_name.localized_labels[0].label | tokenize)~}}
-	public {{target_type_name}} Target { get; set; }
-	{{~for image in step.images~}}
-	public {{image.name}}{{step.primary_entity_definition.display_name.localized_labels[0].label | tokenize}} {{image.name}} { get; set; }
-	{{~end~}}
-
-	/// <summary>
-	/// This method should be called on every <see cref="{{plugintype.base_type_name == 'Object' ? plugintype.type_name : plugintype.base_type_name}}.Execute(IServiceProvider)"/> execution.
-	/// </summary>
-	/// <param name="serviceProvider"></param>
-	/// <exception cref="InvalidPluginExecutionException"></exception>
-	internal {{plugintype.base_type_name == 'Object' ? '' : 'override '}}void Initialize(IServiceProvider serviceProvider)
+    {{~for plugintype in model.plugin_types~}}
+    {{codegen_attribute}}
+    public partial class {{plugintype.type_name | last_segment }}
     {
-        if (serviceProvider == null)
+        {{~dependencies = plugintype.dependency_graph?.dependencies~}}
+        {{include 'InjectDependencies.sbncs'~}}
+    {{~if plugintype.steps.size > 0~}}
+
+    {{~for step in plugintype.steps~}}
+	    {{~target_type_name = (plugintype.steps | array.size > 1 ? step.message_name : '') + 'Target' + step.primary_entity_definition.schema_name~}}
+        {{~target_name = (plugintype.steps | array.size > 1 ? step.message_name : '') + 'Target'~}}
+	    {{include 'Target.sbncs' target_type_name}}
+	    {{~if step.images~}}
+	    {{include 'Images.sbncs'~}}
+	    {{~end~}}
+	    public {{target_type_name}} {{target_name}}
         {
-            throw new InvalidPluginExecutionException(nameof(serviceProvider) + " argument is null.");
+            get => EntityOrDefault<{{target_type_name}}>(DependencyScope<{{plugintype.type_name | last_segment }}>.Current.Require<IPluginExecutionContext>().InputParameters, "Target");
         }
-        var executionContext = serviceProvider.Get<IPluginExecutionContext7>();
-        Target = EntityOrDefault<{{target_type_name}}>(executionContext.InputParameters, "Target");
-	{{~for image in step.images~}}
-        {{image.name}} = EntityOrDefault<{{image.name}}{{step.primary_entity_definition.display_name.localized_labels[0].label | tokenize}}>(executionContext.PreEntityImages, "{{image.name}}");
-	{{~end~}}
-    }
-{{~end~}}
 
-	protected static T EntityOrDefault<T>(DataCollection<string, object> keyValues, string key) where T : Entity
-    {
-        if (keyValues is null) return default;
-        return keyValues.TryGetValue(key, out var obj) ? obj is Entity entity ? entity.ToEntity<T>() : default : default;
-    }
+	    {{~for image in step.images~}}
+        {{~image_type_name = (plugintype.steps | array.size > 1 ? step.message_name : '') + image.image_type + (step.primary_entity_definition.schema_name)~}}
+        {{~image_collection_name = image.image_type == 'PreImage' ? 'PreEntityImages' : 'PostEntityImages'~}}
+	    public {{image_type_name}} {{image.name}} { get => EntityOrDefault<{{image_type_name}}>(DependencyScope<{{plugintype.type_name | last_segment }}>.Current.Require<IPluginExecutionContext>().{{image_collection_name}}, "{{image.name}}"); }
+	    {{~end~}}
+    {{~end~}}
+    {{~end~}}
 
-    protected static T EntityOrDefault<T>(DataCollection<string, Entity> keyValues, string key) where T : Entity
-    {
-        if (keyValues is null) return default;
-        return keyValues.TryGetValue(key, out var entity) ? entity?.ToEntity<T>() : default;
-    }
-
-{{~if plugintype.custom_api ~}}
-    protected static {{plugintype.custom_api.request_type_name}} GetRequest(IExecutionContext context)
-        => new()
+	    protected static T{{plugintype.is_nullable_enabled ? "?" : ""}} EntityOrDefault<T>(DataCollection<string, object> keyValues, string key) where T : Entity
         {
+            if (keyValues is null) return default;
+            return keyValues.TryGetValue(key, out var obj) ? obj is Entity entity ? entity.ToEntity<T>() : default : default;
+        }
+
+        protected static T{{plugintype.is_nullable_enabled ? "?" : ""}} EntityOrDefault<T>(DataCollection<string, Entity> keyValues, string key) where T : Entity
+        {
+            if (keyValues is null) return default;
+            return keyValues.TryGetValue(key, out var entity) ? entity?.ToEntity<T>() : default;
+        }
+    {{~if plugintype.custom_api ~}}
+    {{~if plugintype.custom_api.request_parameters.size > 0~}}
+
+        protected static {{plugintype.custom_api.request_type_name}} GetRequest(IExecutionContext context)
+        {
+            var request = new {{plugintype.custom_api.request_type_name}}();
             {{~for param in plugintype.custom_api.request_parameters~}}
             {{~case param.type~}}
-            {{~when 'Boolean'~}}
-            {{param.name}} = context.InputParameters.TryGetValue("{{param.name}}", out var {{param.name}}) && Convert.To{{param.type_name}}({{param.name}}),
-            {{~when 'DateTime', 'Decimal', 'Float', 'Integer', 'String'~}}
-            {{param.name}} = context.InputParameters.TryGetValue("{{param.name}}", out var {{param.name}}) ? Convert.To{{param.type_name}}({{param.name}}) : default,
+            {{~when 'Boolean', 'DateTime', 'Decimal', 'Float', 'Integer'~}}
+            request.{{param.name}} = context.InputParameters.TryGetValue("{{param.name}}", out {{param.full_type_name}} {{param.name | string.downcase}}) ? {{param.name | string.downcase}} : default;
+            {{~when 'String'~}}
+            request.{{param.name}} = context.InputParameters.TryGetValue("{{param.name}}", out {{plugintype.is_nullable_enabled ? param.full_type_name : param.full_type_name | string.replace_first '?' '' true}} {{param.name | string.downcase}}) ? {{param.name | string.downcase}} : string.Empty;
             {{~when 'StringArray'~}}
-            {{param.name}} = context.InputParameters.TryGetValue("{{param.name}}", out var {{param.name}}) ? (string[]){{param.name}} : default,
+            request.{{param.name}} = context.InputParameters.TryGetValue("{{param.name}}", out string[] {{param.name | string.downcase}}) ? {{param.name | string.downcase}} : default;
             {{~when 'Picklist'~}}
-            {{~converter = param.type_name == 'OptionSetValue' ? '(OptionSetValue)' + param.name : '(' + param.full_type_name + ')((OptionSetValue)' + param.name + ').Value' ~}}
-            {{param.name}} = context.InputParameters.TryGetValue("{{param.name}}", out var {{param.name}}) ? {{converter}} : default,
+            {{~converter = param.type_name == 'OptionSetValue' ? (param.name | string.downcase) : '(' + param.full_type_name + ')' + (param.name | string.downcase) + '.Value' ~}}
+            request.{{param.name}} = context.InputParameters.TryGetValue("{{param.name}}", out OptionSetValue {{param.name | string.downcase}}) ? {{converter}} : default;
+            {{~when 'EntityCollection'~}}
+            if (context.InputParameters.TryGetValue("{{param.name}}", out EntityCollection {{param.name | string.downcase}})
+                && {{param.name | string.downcase}} != null)
+            {
+                {{~if param.type != (param.type_name | string.replace_first '?' '' true)~}}
+                request.{{param.name}} = {{param.name | string.downcase}}.Entities
+                    .Select(e => new {{param.full_type_name | text_between '<' '>'}}(e.Id)
+                    {
+                        Attributes = e.Attributes
+                    }).ToList();
+                {{~else~}}
+                request.{{param.name}} = {{param.name | string.downcase}};
+                {{~end~}}
+            }
+            {{~when 'Entity'~}}
+            if (context.InputParameters.TryGetValue("{{param.name}}", out Entity {{param.name | string.downcase}})
+                && {{param.name | string.downcase}} != null)
+            {
+                {{~if param.type != (param.type_name | string.replace_first "?" "" true)~}}
+                request.{{param.name}} = new {{param.full_type_name | string.replace_first '?' ''}}({{param.name | string.downcase}}.Id)
+                { 
+                    Attributes = {{param.name | string.downcase}}.Attributes
+                };
+                {{~else~}}
+                request.{{param.name}} = {{param.name | string.downcase}};
+                {{~end~}}
+            }
             {{~else~}}
-            {{param.name}} = context.InputParameters.TryGetValue("{{param.name}}", out var {{param.name}}) ? ({{param.type_name}}){{param.name}} : default,
+            request.{{param.name}} = context.InputParameters.TryGetValue("{{param.name}}", out {{plugintype.is_nullable_enabled ? param.full_type_name : param.full_type_name | string.replace_first '?' '' true}} {{param.name | string.downcase}}) ? {{param.name | string.downcase}} : default;
             {{~end~}}
             {{~end~}}
-        };
-    
-    protected static void SetResponse(IExecutionContext context, {{plugintype.custom_api.response_type_name}} response)
-    {
-        {{~for param in plugintype.custom_api.response_properties~}}
-        {{~case param.type~}}
-        {{~when 'Picklist'~}}
-        {{~converter = param.type_name == 'OptionSetValue' ? (param.type_name | string.downcase) + 'Value' : 'new OptionSetValue((int)' + (param.type_name | string.downcase) + 'Value)' ~}}
-        if (response.{{param.name}} is {{param.full_type_name}} {{param.type_name | string.downcase}}Value) context.OutputParameters["{{param.name}}"] = {{converter}};
-        {{~when 'StringArray'~}}
-        if (response.{{param.name}} is {{param.full_type_name}} stringArrayValue) context.OutputParameters["{{param.name}}"] = stringArrayValue;
-        {{~else~}}
-        if (response.{{param.name}} is {{param.type_name}} {{param.type_name | string.downcase}}Value) context.OutputParameters["{{param.name}}"] = {{param.type_name | string.downcase}}Value;
-        {{~end~}}
-        {{~end~}}
+            return request;
+        }
+    {{~end~}}
+    {{~if plugintype.custom_api.response_properties.size > 0~}}
+
+        protected static void SetResponse(IExecutionContext context, {{plugintype.custom_api.response_type_name}} response)
+        {
+            {{~for param in plugintype.custom_api.response_properties~}}
+            {{~case param.type~}}
+            {{~when 'Picklist'~}}
+            {{~converter = param.type_name == 'OptionSetValue' ? (param.name | string.downcase) + 'Value' : 'new OptionSetValue((int)' + (param.name | string.downcase) + 'Value)' ~}}
+            if (response.{{param.name}} is {{param.full_type_name}} {{param.name | string.downcase}}Value) context.OutputParameters["{{param.name}}"] = {{converter}};
+            {{~when 'StringArray'~}}
+            if (response.{{param.name}} is {{param.type_name | string.replace_first '?' '' true}} {{param.name | string.downcase}}Value) context.OutputParameters["{{param.name}}"] = {{param.name | string.downcase}}Value;
+            {{~when 'EntityCollection'~}}
+            {{~if param.type != (param.type_name | string.replace_first '?' '' true)~}}
+            if (response.{{param.name}} is {{param.full_type_name | string.replace_first '?' '' true}} {{param.name | string.downcase}}Value)
+            {
+                context.OutputParameters["{{param.name}}"] =
+                    new EntityCollection({{param.name | string.downcase}}Value.Select(e => e.ToEntity<Entity>()).ToList());
+            }
+            {{~else~}}
+            if (response.{{param.name}} is EntityCollection {{param.name | string.downcase}}Value)
+            {
+                context.OutputParameters["{{param.name}}"] = {{param.name | string.downcase}}Value;
+            }
+            {{~end~}}
+            {{~when 'Entity'~}}
+            {{~if param.type != (param.type_name | string.replace_first '?' '' true)~}}
+            if (response.{{param.name}} is {{param.full_type_name | string.replace_first '?' '' true}} {{param.name | string.downcase}}Value)
+            {
+                context.OutputParameters["{{param.name}}"] = new Entity({{param.name | string.downcase}}Value.LogicalName, {{param.name | string.downcase}}Value.Id)
+                {
+                    Attributes = {{param.name | string.downcase}}Value.Attributes
+                };
+            }
+            {{~else~}}
+            if (response.{{param.name}} is Entity {{param.name | string.downcase}}Value)
+            {
+                context.OutputParameters["{{param.name}}"] = {{param.name | string.downcase}}Value;
+            }
+            {{~end~}}
+            {{~else~}}
+            if (response.{{param.name}} is {{param.type_name | string.replace_first "?" "" true}} {{param.name | string.downcase}}Value) context.OutputParameters["{{param.name}}"] = {{param.name | string.downcase}}Value;
+            {{~end~}}
+            {{~end~}}
+        }
+    {{~end~}}
+    {{~end~}}
     }
-{{~end~}}
+    {{~end~}}
 }
-{{~end~}}
+{{~if first_plugin_type.is_nullable_enabled ~}}#nullable restore{{~end~}}

@@ -1,12 +1,12 @@
 ﻿namespace XrmTools.Xrm;
-using Microsoft.Xrm.Sdk.Metadata;
 using System;
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
-using XrmTools.Xrm.Model;
+using XrmTools.Meta.Model.Configuration;
+using XrmTools.WebApi.Entities;
 
-public interface IXrmSchemaProvider : IDisposable
+internal interface IXrmSchemaProvider : IDisposable
 {
     DataverseEnvironment Environment { get; }
     bool IsReady { get; }

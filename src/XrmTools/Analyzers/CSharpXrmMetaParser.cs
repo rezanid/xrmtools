@@ -9,7 +9,8 @@ using System.Linq;
 using XrmTools.Helpers;
 using XrmTools.Meta.Attributes;
 using XrmTools.Meta.Model;
-using XrmTools.Xrm.Model;
+using XrmTools.Meta.Model.Configuration;
+using XrmTools.Model.Configuration;
 
 internal interface ICSharpXrmMetaParser
 {
@@ -25,7 +26,7 @@ internal interface ICSharpXrmMetaParser
 [method: ImportingConstructor]
 internal class CSharpXrmMetaParser(
     ICSharpDependencyAnalyzer dependencyAnalyzer,
-    IDependencyPreparation dependencyPreparation) : ICSharpXrmMetaParser
+    Meta.Model.IDependencyPreparation dependencyPreparation) : ICSharpXrmMetaParser
 {
     private static readonly Dictionary<string, WebApi.Types.CustomApiFieldType> CustomApiFieldTypeMapping = new()
     {
@@ -35,7 +36,7 @@ internal class CSharpXrmMetaParser(
         ["Entity"] = WebApi.Types.CustomApiFieldType.Entity,
         ["EntityCollection"] = WebApi.Types.CustomApiFieldType.EntityCollection,
         ["EntityReference"] = WebApi.Types.CustomApiFieldType.EntityReference,
-        ["float"] = WebApi.Types.CustomApiFieldType.Float,
+        ["double"] = WebApi.Types.CustomApiFieldType.Float,
         ["int"] = WebApi.Types.CustomApiFieldType.Integer, 
         ["Money"] = WebApi.Types.CustomApiFieldType.Money,
         ["OptionSetValue"] = WebApi.Types.CustomApiFieldType.Picklist,
@@ -49,6 +50,8 @@ internal class CSharpXrmMetaParser(
         IAssemblySymbol assemblySymbol = compilation.Assembly;
         AttributeData? assemblyAttribute = null;
         AttributeData? solutionAttribute = null;
+        List<AttributeData> codeGenPrefixAttribute = [];
+        AttributeData? codeGenGlobalOptionSetsAttribute = null;
         //List<EntityConfig> entityConfigs = [];
         foreach (var attr in assemblySymbol.GetAttributes())
         {
@@ -60,6 +63,18 @@ internal class CSharpXrmMetaParser(
             {
                 solutionAttribute = attr;
             }
+            else if (attr.AttributeClass?.ToDisplayString() == typeof(CodeGenReplacePrefixesAttribute).FullName)
+            {
+                codeGenPrefixAttribute.Add(attr);
+            }
+            else if (attr.AttributeClass?.ToDisplayString() == typeof(CodeGenGlobalOptionSetAttribute).FullName)
+            {
+                codeGenGlobalOptionSetsAttribute = attr;
+            }
+            //else if (attr.AttributeClass?.ToDisplayString() == typeof(EntityAttribute).FullName)
+            //{
+            //    entityConfigs.Add(ParseEntityConfig(attr));
+            //}
             else
             {
                 // Not interested in other attributes.
@@ -83,6 +98,21 @@ internal class CSharpXrmMetaParser(
             pluginAssemblyConfig.Solution = solution;
         }
 
+        if (codeGenPrefixAttribute.Count > 0)
+        {
+            pluginAssemblyConfig.ReplacePrefixes = new CodeGenReplacePrefixConfig[codeGenPrefixAttribute.Count];
+            for (int i = 0; i < codeGenPrefixAttribute.Count; i++)
+            {
+                pluginAssemblyConfig.ReplacePrefixes[i] = new ();
+                pluginAssemblyConfig.ReplacePrefixes[i].SetPropertiesFromAttribute(codeGenPrefixAttribute[i]);
+            }
+        }
+
+        if (codeGenGlobalOptionSetsAttribute != null)
+        {
+            pluginAssemblyConfig.GlobalOptionSetCodeGen.SetPropertiesFromAttribute(codeGenGlobalOptionSetsAttribute);
+        }
+
         if (assemblyAttribute == null) return pluginAssemblyConfig;
 
         return pluginAssemblyConfig.SetPropertiesFromAttribute(assemblyAttribute);
@@ -99,7 +129,11 @@ internal class CSharpXrmMetaParser(
     }
 
     public EntityConfig ParseEntityConfig(AttributeData entityAttribute)
-        => new EntityConfig().SetPropertiesFromAttribute(entityAttribute);
+    {
+        var entity = new EntityConfig().SetPropertiesFromAttribute(entityAttribute);
+        entity.AttributeNames = entity.AttributeNames?.Replace(" ", "");
+        return entity;
+    }
 
     public PluginTypeConfig? ParsePluginConfig(INamedTypeSymbol typeSymbol, Compilation compilation)
     {
@@ -162,7 +196,7 @@ internal class CSharpXrmMetaParser(
                         {
                             if (string.IsNullOrWhiteSpace(imageConfig.Name))
                             {
-                                imageConfig.Name = lastStepConfig.PrimaryEntityName
+                                imageConfig.Name = char.ToUpper(lastStepConfig.PrimaryEntityName?[0] ?? 'X') + lastStepConfig.PrimaryEntityName?[1..].Replace("_", "")
                                     + (imageConfig.ImageType.HasValue ? Enum.GetName(typeof(ImageTypes), imageConfig.ImageType) : "");
                             }
                             if (string.IsNullOrWhiteSpace(imageConfig.EntityAlias))
@@ -200,11 +234,15 @@ internal class CSharpXrmMetaParser(
                                 UniqueName = innerProperty.Name,
                                 DisplayName = innerProperty.Name,
                                 Type = CustomApiFieldTypeMapping.TryGetValue(innerProperty.Type.ToDisplayString(SymbolDisplayFormat.CSharpShortErrorMessageFormat).TrimEnd('?'), out var fieldType)
-                                    ? fieldType 
-                                    : innerProperty.Type.TypeKind == TypeKind.Enum 
-                                        ? WebApi.Types.CustomApiFieldType.Picklist 
-                                        : WebApi.Types.CustomApiFieldType.String,
-                                TypeName = innerProperty.Type.Name,
+                                    ? fieldType
+                                    : innerProperty.Type.TypeKind == TypeKind.Enum
+                                        ? WebApi.Types.CustomApiFieldType.Picklist
+                                        : innerProperty.Type.IsEnumerableOfXrmEntityLike(compilation, out var elementType)
+                                            ? WebApi.Types.CustomApiFieldType.EntityCollection
+                                            : innerProperty.Type.IsXrmEntityLike(compilation)
+                                                ? WebApi.Types.CustomApiFieldType.Entity
+                                                : WebApi.Types.CustomApiFieldType.String,
+                                TypeName = innerProperty.Type.ToDisplayString(SymbolDisplayFormat.MinimallyQualifiedFormat),
                                 FullTypeName = innerProperty.Type.ToDisplayString(SymbolDisplayFormat.CSharpErrorMessageFormat),
                                 IsOptional = innerProperty.Type.NullableAnnotation == NullableAnnotation.Annotated
                             };
@@ -227,6 +265,9 @@ internal class CSharpXrmMetaParser(
                                             break;
                                         case nameof(CustomApiRequestParameterAttribute.Description) when namedArg.Value.Value is string description:
                                             requestParameter.Description = description;
+                                            break;
+                                        case nameof(CustomApiRequestParameterAttribute.LogicalEntityName) when namedArg.Value.Value is string logicalEntityName:
+                                            requestParameter.LogicalEntityName = logicalEntityName;
                                             break;
                                     }
                                 }
@@ -254,12 +295,16 @@ internal class CSharpXrmMetaParser(
                                 Name = innerProperty.Name,
                                 UniqueName = innerProperty.Name,
                                 DisplayName = innerProperty.Name,
-                                Type = CustomApiFieldTypeMapping.TryGetValue(innerProperty.Type.ToDisplayString(SymbolDisplayFormat.CSharpShortErrorMessageFormat), out var fieldType)
+                                Type = CustomApiFieldTypeMapping.TryGetValue(innerProperty.Type.ToDisplayString(SymbolDisplayFormat.CSharpShortErrorMessageFormat).TrimEnd('?'), out var fieldType)
                                     ? fieldType 
                                     : innerProperty.Type.TypeKind == TypeKind.Enum 
-                                        ? WebApi.Types.CustomApiFieldType.Picklist 
-                                        : WebApi.Types.CustomApiFieldType.String,
-                                TypeName = innerProperty.Type.Name,
+                                        ? WebApi.Types.CustomApiFieldType.Picklist
+                                        : innerProperty.Type.IsEnumerableOfXrmEntityLike(compilation, out var elementType)
+                                            ? WebApi.Types.CustomApiFieldType.EntityCollection
+                                            : innerProperty.Type.IsXrmEntityLike(compilation)
+                                                ? WebApi.Types.CustomApiFieldType.Entity
+                                                : WebApi.Types.CustomApiFieldType.String,
+                                TypeName = innerProperty.Type.ToDisplayString(SymbolDisplayFormat.MinimallyQualifiedFormat),
                                 FullTypeName = innerProperty.Type.ToDisplayString(SymbolDisplayFormat.CSharpErrorMessageFormat),
                             };
 
@@ -278,6 +323,9 @@ internal class CSharpXrmMetaParser(
                                             break;
                                         case nameof(CustomApiResponsePropertyAttribute.Description) when namedArg.Value.Value is string description:
                                             responseProperty.Description = description;
+                                            break;
+                                        case nameof(CustomApiResponsePropertyAttribute.LogicalEntityName) when namedArg.Value.Value is string logicalEntityName:
+                                            responseProperty.LogicalEntityName = logicalEntityName;
                                             break;
                                     }
                                 }
@@ -312,6 +360,9 @@ internal class CSharpXrmMetaParser(
             Namespace = typeSymbol.ContainingNamespace.ToDisplayString(),
             BaseTypeName = typeSymbol.BaseType?.Name,
             BaseTypeNamespace = typeSymbol.BaseType?.ContainingNamespace.ToDisplayString(),
+            BaseTypeMethodNames = typeSymbol.BaseType?.GetMembers()
+                .Where(m => m.Kind == SymbolKind.Method && m.DeclaredAccessibility is Accessibility.Public or Accessibility.ProtectedAndInternal or Accessibility.Internal)
+                .Select(m => m.Name).ToList() ?? [],
             TypeName = typeName,
             // Default values:
             Name = typeName,
@@ -321,9 +372,29 @@ internal class CSharpXrmMetaParser(
     }
 
     private PluginStepConfig CreatePluginStepConfig(AttributeData attributeData)
-        => ReflectionHelper.SetPropertiesFromAttribute(new PluginStepConfig(), attributeData);
+    {
+        var pluginStep = ReflectionHelper.SetPropertiesFromAttribute(new PluginStepConfig(), attributeData);
+        pluginStep.FilteringAttributes = pluginStep.FilteringAttributes?.Replace(" ", "");
+        return pluginStep;
+    }
 
     private PluginStepImageConfig CreatePluginImageConfig(AttributeData attributeData)
-        => ReflectionHelper.SetPropertiesFromAttribute(new PluginStepImageConfig(), attributeData);
+    {
+        var imageConfig = ReflectionHelper.SetPropertiesFromAttribute(new PluginStepImageConfig(), attributeData);
+
+        // TODO: This extra code is because ImageAttribute.Attributes name does not match ImageConfig.ImageAttribute property, so
+        // ReflectionHelper.SetPropertiesFromAttribute is not able to set it automatically. In future when we completely move to
+        // Web API, this code can be removed and the method becomes just one line.
+        if (attributeData.ConstructorArguments.Length > 1)
+        {
+            //var attributes = attributeData.ConstructorArguments[1].Value;
+            imageConfig.Attributes = attributeData.ConstructorArguments[1].Value as string;
+            return imageConfig;
+        }
+
+        imageConfig.Attributes = attributeData.NamedArguments.FirstOrDefault(a => a.Key == "Attributes").Value.Value as string;
+
+        return imageConfig;
+    }
 }
 #nullable restore

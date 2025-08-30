@@ -90,7 +90,7 @@ internal sealed class SetCustomToolEntityGeneratorCommand : BaseCommand<SetCusto
             Command.Supported = true;
             Command.Visible = await IsVisibleAsync(item).ConfigureAwait(false);
             Command.Checked = await IsEntityFileAsync(item).ConfigureAwait(false);
-            Command.Text = Command.Checked ? "Disable Xrm Entity Code Generation" : "Enable Xrm Entity Code Generation";
+            Command.Text = Command.Checked ? "Disable Entity Code Generation" : "Enable Entity Code Generation";
         });
 
         static async Task<bool> IsVisibleAsync(SolutionItem? item)

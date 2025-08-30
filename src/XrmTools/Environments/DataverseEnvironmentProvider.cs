@@ -5,9 +5,9 @@ using System.Threading.Tasks;
 using XrmTools.Options;
 using System.ComponentModel.Composition;
 using XrmTools.Settings;
-using Microsoft.VisualStudio.Shell;
 using XrmTools.Environments;
 using System;
+using System.Collections.Generic;
 
 internal class DataverseEnvironmentProvider : IEnvironmentProvider
 {
@@ -18,11 +18,7 @@ internal class DataverseEnvironmentProvider : IEnvironmentProvider
     [ImportingConstructor]
     public DataverseEnvironmentProvider([Import] ISettingsProvider settingsProvider)
     {
-        this.settingsProvider = settingsProvider; 
-        GeneralOptions.Saved += (options) =>
-        {
-            ThreadHelper.JoinableTaskFactory.Run(async () => await SetActiveEnvironmentAsync(options.CurrentEnvironment));
-        };
+        this.settingsProvider = settingsProvider;
     }
 
     public async Task<DataverseEnvironment?> GetActiveEnvironmentAsync()
@@ -49,12 +45,14 @@ internal class DataverseEnvironmentProvider : IEnvironmentProvider
 
     public async Task SetActiveEnvironmentAsync(DataverseEnvironment environment)
     {
-        if (!environment.IsValid) return;
+        if (environment?.IsValid != true) return;
 
         var options = await GeneralOptions.GetLiveInstanceAsync();
         switch (options.CurrentEnvironmentStorage)
         {
             case SettingsStorageTypes.Options:
+                options.CurrentEnvironment = environment;
+                await options.SaveAsync();
                 SetEnvironmentInSolution(null);
                 SetEnvironmentInSolutionUserFile(null);
                 await SetEnvironmentInProjectAsync(null);
@@ -81,6 +79,12 @@ internal class DataverseEnvironmentProvider : IEnvironmentProvider
                 break;
         }
         EnvironmentChanged?.Invoke(environment);
+    }
+
+    public async Task<IList<DataverseEnvironment>> GetAvailableEnvironmentsAsync() 
+    {
+        var options = await GeneralOptions.GetLiveInstanceAsync();
+        return options?.Environments ?? [];
     }
 
     private DataverseEnvironment? GetEnvironmentFromSolution()

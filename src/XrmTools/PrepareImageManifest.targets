@@ -1,0 +1,75 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+    <Target Name="PrepareImageManifests"
+            AfterTargets="CopyFilesToOutputDirectory"
+            BeforeTargets="GeneratePkgDef">
+        <GetAssemblyIdentity AssemblyFiles="$(TargetPath)">
+            <Output TaskParameter="Assemblies"
+                    ItemName="AssemblyInfo" />
+        </GetAssemblyIdentity>
+        <ItemGroup>
+            <ImageManifests Include="**\*.imagemanifest">
+                <AssemblyVersion>%(AssemblyInfo.Version)</AssemblyVersion>
+            </ImageManifests>
+        </ItemGroup>
+    </Target>
+    <Target Name="PrepareSingleImageManifest"
+            AfterTargets="PrepareImageManifests"
+            Outputs="%(ImageManifests.Identity)">
+        <PropertyGroup>
+            <Namespace>
+                <Namespace Prefix="x"
+                           Uri="http://schemas.microsoft.com/VisualStudio/ImageManifestSchema/2014" />
+            </Namespace>
+            <XPathQuery>/x:ImageManifest/x:Symbols/x:String[@Name='Resources']/@Value</XPathQuery>
+        </PropertyGroup>
+        <Error Text="The AssemblyVersion is not set. imagemanifest cannot be updated."
+               Condition="'%(ImageManifests.AssemblyVersion)' == ''" />
+        <XmlPeek Namespaces="$(Namespace)"
+                 XmlInputPath="%(ImageManifests.FullPath)"
+                 Query="$(XPathQuery)">
+            <Output TaskParameter="Result"
+                    PropertyName="ResourcesValue" />
+        </XmlPeek>
+        <Error File="%(ImageManifests.FullPath)"
+               Text="Cannot find the Value attribute of the Resources element. imagemanifest cannot be updated."
+               Condition="'$(ResourcesValue)' == ''" />
+      <PropertyGroup>
+        <SegmentsCount>$([System.String]::Copy('$(ResourcesValue)').Split(';').Length)</SegmentsCount>
+        <LastComponent Condition="'$(SegmentsCount)' == '4'">$([System.String]::Copy('$(ResourcesValue)').Split(';')[3])</LastComponent>
+        <LastComponent Condition="'$(SegmentsCount)' == '3'">$([System.String]::Copy('$(ResourcesValue)').Split(';')[2])</LastComponent>
+        <PublicKey Condition="'$(SegmentsCount)' == '4'">$([System.String]::Copy('$(ResourcesValue)').Split(';')[2])</PublicKey>
+        <PublicKey Condition="'$(SegmentsCount)' != '4'"></PublicKey>
+        <SemiPublicKey Condition="'$(PublicKey)' != ''">;$(PublicKey)</SemiPublicKey>
+        <SemiPublicKey Condition="'$(PublicKey)' == ''"></SemiPublicKey>
+        <ValueToSet>
+          $([System.String]::Concat(/$(AssemblyName);v%(ImageManifests.AssemblyVersion)$(SemiPublicKey);$(LastComponent)))
+        </ValueToSet>
+      </PropertyGroup>
+        <XmlPoke Namespaces="$(Namespace)"
+                 XmlInputPath="%(ImageManifests.FullPath)"
+                 Query="$(XPathQuery)"
+                 Value="$(ValueToSet)" />
+        <Message Importance="High"
+                 Text="The Resources value in the imagemanifest has been updated to $(ValueToSet) - File: $(ManifestFile)" />
+    </Target>
+    <Target Name="CheckStringInFile"
+            AfterTargets="Build">
+        <PropertyGroup>
+            <FilePath>$(TargetDir)$(TargetName).pkgdef</FilePath>
+            <SearchString>RuntimeConfiguration\dependentAssembly\codeBase</SearchString>
+        </PropertyGroup>
+        <ReadLinesFromFile File="$(FilePath)">
+            <Output TaskParameter="Lines"
+                    ItemName="FileLines" />
+        </ReadLinesFromFile>
+        <FindInList List="@(FileLines)"
+                    ItemSpecToFind="$(SearchString)">
+            <Output TaskParameter="ItemFound"
+                    ItemName="FoundItem" />
+        </FindInList>
+        <PropertyGroup>
+            <FileContent>@(FileLines)</FileContent>
+        </PropertyGroup>
+    </Target>
+</Project>

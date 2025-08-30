@@ -7,7 +7,7 @@ using Microsoft.VisualStudio.ComponentModelHost;
 using Microsoft.VisualStudio.Shell;
 using Microsoft.VisualStudio.Shell.Interop;
 using Microsoft.VisualStudio.TextTemplating.VSHost;
-using Microsoft.Xrm.Sdk.Metadata;
+using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel.Composition;
@@ -24,11 +24,14 @@ using XrmTools.Core.Repositories;
 using XrmTools.Environments;
 using XrmTools.Helpers;
 using XrmTools.Logging.Compatibility;
+using XrmTools.Meta.Model;
+using XrmTools.Meta.Model.Configuration;
 using XrmTools.Options;
 using XrmTools.Resources;
+using XrmTools.Serialization;
 using XrmTools.Settings;
+using XrmTools.WebApi.Entities;
 using XrmTools.Xrm.Generators;
-using XrmTools.Xrm.Model;
 using XrmTools.Xrm.Repositories;
 using static XrmTools.Helpers.ProjectExtensions;
 
@@ -46,7 +49,7 @@ public class PluginCodeGenerator : BaseCodeGeneratorWithSite
     internal IRepositoryFactory RepositoryFactory { get; set; }
 
     [Import]
-    public IEnvironmentProvider? EnvironmentProvider { get; set; }
+    public IEnvironmentProvider EnvironmentProvider { get; set; }
 
     [Import]
     internal ISettingsProvider SettingsProvider { get; set; }
@@ -88,7 +91,7 @@ public class PluginCodeGenerator : BaseCodeGeneratorWithSite
     {
         if (string.IsNullOrWhiteSpace(inputFileContent)) { return null; }
         if (Generator is null) { return Encoding.UTF8.GetBytes("// No generator found."); }
-
+        
         return ThreadHelper.JoinableTaskFactory.Run(async () =>
         {
             PluginAssemblyConfig? inputModel = null;
@@ -106,7 +109,13 @@ public class PluginCodeGenerator : BaseCodeGeneratorWithSite
                 return null;
             }
 
-            var templateFilePath = GetTemplateFilePath(inputModel);
+            var inputFile = await PhysicalFile.FromFileAsync(inputFileName);
+            if (inputFile is null || inputFile.FindParent(SolutionItemType.Project) is not Project project)
+            {
+                return Encoding.UTF8.GetBytes("// Unable to find the project for the input file.");
+            }
+
+            var templateFilePath = await GetTemplateFilePathAsync(inputModel, project);
 
             if (string.IsNullOrEmpty(templateFilePath))
             {
@@ -119,7 +128,6 @@ public class PluginCodeGenerator : BaseCodeGeneratorWithSite
 
             Generator.Config = new XrmCodeGenConfig
             {
-                //TODO: The GetDefaultNamespace is not required. The FileNamespace is never empty even when not set.
                 DefaultNamespace = string.IsNullOrWhiteSpace(FileNamespace) ? GetDefaultNamespace() : FileNamespace,
                 TemplateFilePath = templateFilePath
             };
@@ -136,9 +144,10 @@ public class PluginCodeGenerator : BaseCodeGeneratorWithSite
 
             if (GeneralOptions.Instance.LogLevel == LogLevel.Trace)
             {
-                // We use Newtonsoft for serialization because it supports polymorphic types
-                // Probably through old serialization attributes set on Xrm.Sdk types.
-                var serializedConfig = inputModel.SerializeJson(useNewtonsoft: true);
+                var serializedConfig = JsonConvert.SerializeObject(inputModel, new JsonSerializerSettings
+                {
+                    ContractResolver = new PolymorphicContractResolver()
+                });
                 File.WriteAllText(Path.ChangeExtension(inputFileName, ".model.json"), serializedConfig);
             }
 
@@ -148,8 +157,8 @@ public class PluginCodeGenerator : BaseCodeGeneratorWithSite
                 return Encoding.UTF8.GetBytes("// " + validation.ErrorMessage);
             }
 
-            var inputFile = await PhysicalFile.FromFileAsync(inputFileName);
-            if (inputFile is not null && inputFile.FindParent(SolutionItemType.Project) is Project project && project.IsSdkStyle())
+            string? generatedCode = null;
+            if (project.IsSdkStyle())
             {
                 var lastGenFileName = await inputFile.GetAttributeAsync("LastGenOutput");
                 if (string.IsNullOrWhiteSpace(lastGenFileName))
@@ -158,9 +167,10 @@ public class PluginCodeGenerator : BaseCodeGeneratorWithSite
                     await inputFile.TrySetAttributeAsync(PhysicalFileAttribute.LastGenOutput, lastGenFileName);
                 }
                 var lastGenFilePath = Path.Combine(Path.GetDirectoryName(inputFileName), lastGenFileName);
-                File.WriteAllText(lastGenFilePath, "// SDK-Style Code Gen\r\n" + Generator.GenerateCode(inputModel));
+                generatedCode = Generator.GenerateCode(inputModel);
+                File.WriteAllText(lastGenFilePath, "// SDK-Style Code Gen\r\n" + generatedCode);
             }
-
+            generatedCode ??= Generator.GenerateCode(inputModel);
             return Encoding.UTF8.GetBytes(Generator.GenerateCode(inputModel));
         });
     }
@@ -171,27 +181,14 @@ public class PluginCodeGenerator : BaseCodeGeneratorWithSite
         {
             return await XrmMetaDataService.ParsePluginsAsync(inputFileName);
         }
-        else if (".json".Equals(Path.GetExtension(inputFileName), StringComparison.OrdinalIgnoreCase))
-        {
-            return ParseJsonInputFile(inputFileName, inputFileContent);
-        }
+        //else if (".json".Equals(Path.GetExtension(inputFileName), StringComparison.OrdinalIgnoreCase))
+        //{
+        //    return ParseJsonInputFile(inputFileName, inputFileContent);
+        //}
         return null;
     }
 
-    private PluginAssemblyConfig? ParseJsonInputFile(string inputFileName, string inputFileContent)
-    {
-        try
-        {
-            return inputFileContent.DeserializeJson<PluginAssemblyConfig>();
-        }
-        catch (Exception ex)
-        {
-            Logger.LogError(ex, Strings.PluginGenerator_DeserializationError, inputFileName);
-        }
-        return null;
-    }
-
-    private string? GetTemplateFilePath(PluginAssemblyConfig config)
+    private async Task<string?> GetTemplateFilePathAsync(PluginAssemblyConfig config, Project project)
     {
         if (config == null) return null;
         bool isTemplatePlugin = config.PluginTypes?.Any() ?? false;
@@ -202,26 +199,38 @@ public class PluginCodeGenerator : BaseCodeGeneratorWithSite
             return null;
         }
 
-        var templateFilePath = isTemplatePlugin ? TemplateFinder.FindPluginTemplatePath(InputFilePath) : TemplateFinder.FindEntityTemplatePath(InputFilePath);
+        string? templateFilePath;
+        if (isTemplatePlugin)
+        {
+            templateFilePath = await TemplateFinder.FindPluginTemplatePathAsync(InputFilePath);
+        }
+        else
+        {
+            templateFilePath = await TemplateFinder.FindEntityTemplatePathAsync(InputFilePath);
+        }
         if (templateFilePath != null) return templateFilePath;
 
         Logger.LogTrace("No template found for " + (isTemplatePlugin ? "plugin code generation." : "entity code generation."));
         Logger.LogInformation("Atempting to create plugin default templates.");
-        //ThreadHelper.JoinableTaskFactory.Run(async () =>
-        //{
-        //    await TemplateFileGenerator.GenerateTemplatesAsync();
-        //    await SettingsProvider.ProjectSettings.EntityTemplateFilePathAsync();
-        //});
-        ThreadHelper.JoinableTaskFactory.Run(TemplateFileGenerator.GenerateTemplatesAsync);
+
+        await TemplateFileGenerator.GenerateTemplatesAsync(project, false);
+
         Logger.LogInformation("Default template generation completed.");
 
-        templateFilePath = isTemplatePlugin ? TemplateFinder.FindPluginTemplatePath(InputFilePath) : TemplateFinder.FindEntityTemplatePath(InputFilePath);
+        if (isTemplatePlugin)
+        {
+            templateFilePath = await TemplateFinder.FindPluginTemplatePathAsync(InputFilePath);
+        }
+        else
+        {
+            templateFilePath = await TemplateFinder.FindEntityTemplatePathAsync(InputFilePath);
+        }
         if (templateFilePath != null) return templateFilePath;
         Logger.LogCritical("Still, no template found for " + (isTemplatePlugin ? "plugin generation." : "entity generation."));
         return null;
     }
 
-    private EntityMetadata? GetEntityMetadata(string logicalName, IEnumerable<string> attributeNames, IEnumerable<string> prefixesToRemove)
+    private EntityMetadata? GetEntityMetadata(string logicalName, IEnumerable<string> attributeNames, CodeGenReplacePrefixConfig[] prefixReplacements)
     {
         var entityMetadataRepo = ThreadHelper.JoinableTaskFactory.Run(async () => await RepositoryFactory.CreateRepositoryAsync<IEntityMetadataRepository>());
         if (entityMetadataRepo is null) return null;
@@ -238,12 +247,12 @@ public class PluginCodeGenerator : BaseCodeGeneratorWithSite
         //    entityDefinition.Attributes.Where(a => a.AttributeType != AttributeTypeCode.EntityName && a.IsLogical != true).ToArray() :
         //    entityDefinition.Attributes.Where(a => a.AttributeType != AttributeTypeCode.EntityName && attributes.Contains(a.LogicalName)).ToArray();
 
-        FormatSchemNames(filteredAttributes ?? entityDefinition.Attributes, prefixesToRemove);
-        FormatSchemaName(entityDefinition, prefixesToRemove);
+        FormatAttributeSchemaNames(filteredAttributes ?? entityDefinition.Attributes, prefixReplacements);
+        FormatEntitySchemaName(entityDefinition, prefixReplacements);
 
         // The cloning is done because we don't want to modify the object in the cache.
         // In future when we load from local storage this might not be required.
-        if (filteredAttributes?.Length != entityDefinition.Attributes.Length)
+        if (filteredAttributes?.Length != entityDefinition.Attributes?.Length)
         {
             var clone = entityDefinition.Clone();
             var propertyInfo = typeof(EntityMetadata).GetProperty("Attributes");
@@ -253,37 +262,45 @@ public class PluginCodeGenerator : BaseCodeGeneratorWithSite
         return entityDefinition;
     }
 
-    private static void FormatSchemaName(EntityMetadata entityDefinition, IEnumerable<string> prefixesToRemove)
+    private static void FormatEntitySchemaName(EntityMetadata entityDefinition, CodeGenReplacePrefixConfig[] prefixReplacements)
     {
         // Remove prefixes.
-        foreach (var prefix in prefixesToRemove)
-        {
-            if (entityDefinition.SchemaName.StartsWith(prefix, StringComparison.OrdinalIgnoreCase))
-            {
-                entityDefinition.SchemaName = entityDefinition.SchemaName[prefix.Length..];
-            }
-        }
+        foreach (var prefixReplacement in prefixReplacements)
+            foreach (var prefix in prefixReplacement.PrefixList)
+                if (entityDefinition.SchemaName!.StartsWith(prefix, StringComparison.OrdinalIgnoreCase))
+                {
+                    entityDefinition.SchemaName = entityDefinition.SchemaName[prefix.Length..];
+                    if (!string.IsNullOrWhiteSpace(prefixReplacement.ReplaceWith))
+                    {
+                        entityDefinition.SchemaName = prefixReplacement.ReplaceWith + entityDefinition.SchemaName;
+                    }
+                    break;
+                }
         // Capitalize first letter.
-        if (char.IsLower(entityDefinition.SchemaName[0]))
+        if (char.IsLower(entityDefinition.SchemaName![0]))
         {
             entityDefinition.SchemaName = char.ToUpper(entityDefinition.SchemaName[0]) + entityDefinition.SchemaName[1..];
         }
     }
 
-    private static void FormatSchemNames(IEnumerable<AttributeMetadata> attributes, IEnumerable<string> prefixesToRemove)
+    private static void FormatAttributeSchemaNames(IEnumerable<AttributeMetadata> attributes, CodeGenReplacePrefixConfig[] prefixReplacements)
     {
         foreach (var attribute in attributes)
         {
             // Remove prefixes.
-            foreach (var prefix in prefixesToRemove)
-            {
-                if (attribute.SchemaName.StartsWith(prefix, StringComparison.OrdinalIgnoreCase))
-                {
-                    attribute.SchemaName = attribute.SchemaName[prefix.Length..];
-                }
-            }
+            foreach (var prefixReplacement in prefixReplacements)
+                foreach (var prefix in prefixReplacement.PrefixList)
+                    if (attribute.SchemaName!.StartsWith(prefix, StringComparison.OrdinalIgnoreCase))
+                    {
+                        attribute.SchemaName = attribute.SchemaName[prefix.Length..];
+                        if (!string.IsNullOrWhiteSpace(prefixReplacement.ReplaceWith))
+                        {
+                            attribute.SchemaName = prefixReplacement.ReplaceWith + attribute.SchemaName;
+                        }
+                        break;
+                    }
             // Capitalize first letter.
-            if (char.IsLower(attribute.SchemaName[0]))
+            if (char.IsLower(attribute.SchemaName![0]))
             {
                 attribute.SchemaName = char.ToUpper(attribute.SchemaName[0]) + attribute.SchemaName[1..];
             }
@@ -297,8 +314,6 @@ public class PluginCodeGenerator : BaseCodeGeneratorWithSite
         {
             // Get the current item ID
             hierarchy.ParseCanonicalName(InputFilePath, out var itemId);
-
-            hierarchy.SetProperty(itemId, (int)__VSHPROPID.VSHPROPID_DefaultNamespace, "XrmGenTest");
 
             if (hierarchy.GetProperty(itemId, (int)__VSHPROPID.VSHPROPID_DefaultNamespace, out object defaultNamespace) == VSConstants.S_OK)
             {
@@ -332,7 +347,7 @@ public class PluginCodeGenerator : BaseCodeGeneratorWithSite
                 // We have some attributes already, so we add the new ones too.
                 entitiesAndAttributes[step.PrimaryEntityName!].UnionWith(filteringAttributes);
             }
-            var entityDefinition = GetEntityMetadata(step.PrimaryEntityName!, filteringAttributes, config.RemovePrefixes);
+            var entityDefinition = GetEntityMetadata(step.PrimaryEntityName!, filteringAttributes, config.ReplacePrefixes);
             step.PrimaryEntityDefinition = entityDefinition;
             //if (entityDefinition is not null && !entityDefinitions.ContainsKey(entityDefinition.LogicalName))
             //{
@@ -340,7 +355,7 @@ public class PluginCodeGenerator : BaseCodeGeneratorWithSite
             //}
             foreach (var image in step.Images)
             {
-                var imageAttributes = image.ImageAttributes?.Split(',') ?? [];
+                var imageAttributes = image.Attributes?.Split(',') ?? [];
                 if (!entitiesAndAttributes.ContainsKey(step.PrimaryEntityName!))
                 {
                     entitiesAndAttributes[step.PrimaryEntityName!] = [.. imageAttributes];
@@ -355,7 +370,7 @@ public class PluginCodeGenerator : BaseCodeGeneratorWithSite
                 {
                     entitiesAndAttributes[step.PrimaryEntityName!].UnionWith(imageAttributes);
                 }
-                entityDefinition = GetEntityMetadata(step.PrimaryEntityName!, imageAttributes, config.RemovePrefixes);
+                entityDefinition = GetEntityMetadata(step.PrimaryEntityName!, imageAttributes, config.ReplacePrefixes);
                 image.MessagePropertyDefinition = entityDefinition;
                 //if (entityDefinition is not null && !entityDefinitions.ContainsKey(entityDefinition.LogicalName))
                 //{
@@ -364,19 +379,19 @@ public class PluginCodeGenerator : BaseCodeGeneratorWithSite
             }
         }
         // Now we update entity definitions with the attributes used in the plugin definitions.
-        foreach(var entityEntry in entitiesAndAttributes)//.Where(e => e.Value.Count > 0))
+        foreach (var entityEntry in entitiesAndAttributes)//.Where(e => e.Value.Count > 0))
         {
             //var entityDefinition = entityDefinitions[entity.Key];
             //var entityDefinition = GetEntityMetadata(entity.Key, entity.Value, config.RemovePrefixesCollection);
             //var attributesUsedInPluginDefinitions = entityDefinition.Attributes.Where(a => entity.Value.Contains(a.LogicalName)).ToArray();
             //typeof(EntityMetadata).GetProperty("Attributes").SetValue(entityDefinition, attributesUsedInPluginDefinitions);
-            entityDefinitions[entityEntry.Key] = GetEntityMetadata(entityEntry.Key, entityEntry.Value, config.RemovePrefixes)!;
+            entityDefinitions[entityEntry.Key] = GetEntityMetadata(entityEntry.Key, entityEntry.Value, config.ReplacePrefixes)!;
         }
         foreach (var entityConfig in config.Entities)
         {
             if (!string.IsNullOrEmpty(entityConfig.LogicalName))
             {
-                entityDefinitions[entityConfig.LogicalName!] = GetEntityMetadata(entityConfig.LogicalName!, entityConfig.AttributeNames?.SplitAndTrim(',') ?? [], config.RemovePrefixes)!;
+                entityDefinitions[entityConfig.LogicalName!] = GetEntityMetadata(entityConfig.LogicalName!, entityConfig.AttributeNames?.SplitAndTrim(',') ?? [], config.ReplacePrefixes)!;
             }
         }
         config.EntityDefinitions = entityDefinitions.Values;

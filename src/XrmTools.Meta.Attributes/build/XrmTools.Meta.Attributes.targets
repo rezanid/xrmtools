@@ -1,0 +1,19 @@
+<Project>
+  <ItemGroup Condition="Exists('$(MSBuildThisFileDirectory)../src')">
+    <Compile Include="$(MSBuildThisFileDirectory)../src/**/*.cs"
+             Visible="false" />
+  </ItemGroup>
+
+  <!-- Conditionally remove files if the consumer project doesn't reference Microsoft.Xrm.Sdk.dll -->
+  <Target Name="ExcludeXrmFilesIfNoReference" BeforeTargets="CoreCompile">
+    <ItemGroup>
+      <!-- Check for Microsoft.Xrm.Sdk.dll in resolved references -->
+      <_XrmReference Include="@(ReferencePath)" Condition=" '%(Filename)%(Extension)' == 'Microsoft.Xrm.Sdk.dll' " />
+    </ItemGroup>
+
+    <!-- If not found, exclude specific file(s) -->
+    <ItemGroup Condition="'@(_XrmReference)' == ''">
+      <Compile Remove="**/DependencyScope.cs" />
+    </ItemGroup>
+  </Target>
+</Project>

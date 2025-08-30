@@ -1,29 +1,27 @@
 ﻿namespace XrmTools.Core.Repositories;
 
 using Humanizer;
-using Microsoft.Xrm.Sdk.Metadata;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Net.Http;
+using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
 using XrmTools.Core.Helpers;
-using XrmTools.Http;
 using XrmTools.Logging.Compatibility;
 using XrmTools.Meta.Model;
 using XrmTools.Serialization;
 using XrmTools.WebApi;
+using XrmTools.WebApi.Entities;
 
 internal interface IEntityMetadataRepository : IXrmRepository
 {
     /// <summary>
     /// Get all the entities metadata.
     /// </summary>
-    /// <param name="cancellationToken">The cancellation token.</param>
-    /// <returns></returns>
     Task<IEnumerable<EntityMetadata>> GetAsync(CancellationToken cancellationToken);
     Task<IEnumerable<EntityMetadata>> GetByMessageNameAsync(string messageName, CancellationToken cancellationToken);
     Task<EntityMetadata> GetAsync(string entityLogicalName, CancellationToken cancellationToken);
@@ -32,7 +30,7 @@ internal interface IEntityMetadataRepository : IXrmRepository
     Task<IEnumerable<string>> GetEntityNamesAsync(string messageName, CancellationToken cancellationToken = default);
 }
 
-internal class EntityMetadataRepository(XrmHttpClient client, IWebApiService service, ILogger logger) : XrmRepository(client, service), IEntityMetadataRepository
+internal class EntityMetadataRepository(IWebApiService service, ILogger logger) : XrmRepository(service), IEntityMetadataRepository
 {
     private const string entityMetadataQueryAll = "RetrieveAllEntities(EntityFilters=@p1,RetrieveAsIfPublished=@p2)?@p1=Microsoft.Dynamics.CRM.EntityFilters'Entity'&@p2=true";
     private const string entityMetadataQuerySingle = "RetrieveEntity(LogicalName=@p1,EntityFilters=@p2,RetrieveAsIfPublished=@p3,MetadataId=@p4)?@p1='{0}'&@p2=Microsoft.Dynamics.CRM.EntityFilters'Attributes'&@p3=true&@p4=00000000-0000-0000-0000-000000000000";
@@ -43,7 +41,7 @@ internal class EntityMetadataRepository(XrmHttpClient client, IWebApiService ser
     private const string entityRelationshipsQuery = "EntityDefinitions(LogicalName='{0}')?$select=MetadataId&$expand=ManyToOneRelationships,OneToManyRelationships,ManyToManyRelationships";
     private const string sdkMessageEntityNamesQuery = "sdkmessagefilters?$filter=sdkmessageid/name eq '{0}'&$select=primaryobjecttypecode";
 
-    private static readonly JsonSerializerSettings serializerSetting = new()
+    private static readonly JsonSerializerSettings SerializerSetting = new()
     {
         ContractResolver = new PolymorphicContractResolver()
     };
@@ -121,7 +119,7 @@ internal class EntityMetadataRepository(XrmHttpClient client, IWebApiService ser
         {
             ContractResolver = new PolymorphicContractResolver(),
         };
-        return JsonConvert.DeserializeObject<EntityMetadata>(jobj.GetValue("EntityMetadata").ToString(), serializerSetting);
+        return JsonConvert.DeserializeObject<EntityMetadata>(jobj.GetValue("EntityMetadata").ToString(), SerializerSetting);
     }
 
     /// <summary>
@@ -144,7 +142,7 @@ internal class EntityMetadataRepository(XrmHttpClient client, IWebApiService ser
             {
                 ContractResolver = new PolymorphicContractResolver(),
             };
-            return JsonConvert.DeserializeObject<EntityMetadata>(jobj.GetValue("EntityMetadata").ToString(), serializerSetting);
+            return JsonConvert.DeserializeObject<EntityMetadata>(jobj.GetValue("EntityMetadata").ToString(), SerializerSetting);
         }
         return null;
     }

@@ -21,8 +21,7 @@ internal class AuthenticationService : IAuthenticationService
     [ImportingConstructor]
     public AuthenticationService(
         ITokenExpanderService tokenExpander,
-        Lazy<IXrmHttpClientFactory> httpClientFactory
-        )
+        Lazy<IXrmHttpClientFactory> httpClientFactory)
     {
         TokenExpander = tokenExpander;
         HttpClientFactory = httpClientFactory;

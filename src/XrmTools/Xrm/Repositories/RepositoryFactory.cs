@@ -31,11 +31,11 @@ internal class RepositoryFactory(IXrmHttpClientFactory httpClientFactory, IWebAp
 
     private static T CreateRepositoryInstance<T>(XrmHttpClient client, IWebApiService service, Type type, ILogger logger) where T : class, IXrmRepository
     {
-        if (type.IsAssignableFrom(typeof(IPluginAssemblyRepository))) return new PluginAssemblyRepository(client, service, logger) as T;
-        if (type.IsAssignableFrom(typeof(IPluginTypeRepository))) return new PluginTypeRepository(client, service, logger) as T;
-        if (type.IsAssignableFrom(typeof(IEntityMetadataRepository))) return new EntityMetadataRepository(client, service, logger) as T;
-        if (type.IsAssignableFrom(typeof(ISystemRepository))) return new SystemRepository(client, service, logger) as T;
-        if (type.IsAssignableFrom(typeof(ISdkMessageRepository))) return new SdkMessageRepository(client, service, logger) as T;
+        if (type.IsAssignableFrom(typeof(IPluginAssemblyRepository))) return new PluginAssemblyRepository(service, logger) as T;
+        if (type.IsAssignableFrom(typeof(IPluginTypeRepository))) return new PluginTypeRepository(service, logger) as T;
+        if (type.IsAssignableFrom(typeof(IEntityMetadataRepository))) return new EntityMetadataRepository(service, logger) as T;
+        if (type.IsAssignableFrom(typeof(ISystemRepository))) return new SystemRepository(service, logger) as T;
+        if (type.IsAssignableFrom(typeof(ISdkMessageRepository))) return new SdkMessageRepository(service, logger) as T;
         throw new NotSupportedException($"{type.Name} is not a supported repository.");
     }
 }

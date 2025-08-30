@@ -1,7 +1,6 @@
 ﻿namespace XrmTools.Http;
 
 using Polly;
-using Polly.Wrap;
 using System;
 using System.Net.Http;
 using System.Threading.Tasks;

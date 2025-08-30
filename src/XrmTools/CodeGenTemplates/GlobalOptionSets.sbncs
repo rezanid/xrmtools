@@ -1,0 +1,21 @@
+namespace {{ config.default_namespace }}
+{
+    using System.Runtime.Serialization;
+	{{~for option_set in model.global_option_set_definitions~}}
+	{{~if option_set != null~}}
+	{{~if !(option_set.description | get_label 1033 | string.empty)~}}
+	/// <summary>
+	/// {{option_set.description | get_label 1033}}
+	/// </summary>
+	{{~end~}}
+	[DataContract]
+	{{~enum_name = option_set.display_name | get_label 1033 | tokenize~}}
+	public enum {{enum_name}}
+	{
+	{{~for option_meta in option_set.options~}}
+		[EnumMember] {{option_meta.label | get_label 1033 | tokenize}} = {{option_meta.value}},
+	{{~end~}}
+	}
+	{{~end~}}
+	{{~end~}}
+}

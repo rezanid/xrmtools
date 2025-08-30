@@ -1,7 +1,7 @@
-﻿using System.Reflection;
-using System.Runtime.CompilerServices;
+﻿using Microsoft.Xrm.Sdk.Client;
+using System.Reflection;
 using System.Runtime.InteropServices;
-using XrmTools.Meta.Attributes;
+using XT = XrmTools.Meta.Attributes;
 
 // General Information about an assembly is controlled through the following
 // set of attributes. Change these attribute values to modify the information
@@ -9,9 +9,9 @@ using XrmTools.Meta.Attributes;
 [assembly: AssemblyTitle("XrmGenTest")]
 [assembly: AssemblyDescription("")]
 [assembly: AssemblyConfiguration("")]
-[assembly: AssemblyCompany("AG Insurance")]
+[assembly: AssemblyCompany("Novovio")]
 [assembly: AssemblyProduct("XrmGenTest")]
-[assembly: AssemblyCopyright("Copyright © AG Insurance 2024")]
+[assembly: AssemblyCopyright("Copyright © Novovio 2025")]
 [assembly: AssemblyTrademark("")]
 [assembly: AssemblyCulture("")]
 
@@ -35,5 +35,7 @@ using XrmTools.Meta.Attributes;
 // [assembly: AssemblyVersion("1.0.*")]
 [assembly: AssemblyVersion("1.0.0.0")]
 [assembly: AssemblyFileVersion("1.0.0.0")]
-[assembly: PluginAssembly]
-[assembly: Solution("Test")]
+[assembly: ProxyTypesAssembly]
+[assembly: XT.PluginAssembly]
+[assembly: XT.Solution("Test")]
+[assembly: XT.CodeGenGlobalOptionSet(XT.GlobalOptionSetGenerationMode.GlobalOptionSetFile)]

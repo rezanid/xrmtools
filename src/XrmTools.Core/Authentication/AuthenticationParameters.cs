@@ -6,8 +6,8 @@ using System.Security.Cryptography.X509Certificates;
 
 internal record AuthenticationParameters
 {
-    private const string DefaultClientId = "51f81489-12ee-4a9e-aaae-a2591f45987d";
-    private const string DefaultRedirectUrl = "app://58145B91-0C36-4500-8554-080854F2AC97";
+    public const string DefaultClientId = "51f81489-12ee-4a9e-aaae-a2591f45987d";
+    public const string DefaultRedirectUrl = "app://58145B91-0C36-4500-8554-080854F2AC97";
 
     public string Authority { get; set; }
     public string Resource { get; set; }
@@ -20,6 +20,18 @@ internal record AuthenticationParameters
     public bool UseDeviceFlow { get; set; }
     public bool UseCurrentUser { get; set; }
     public string RedirectUri { get; set; }
+
+    public static bool TryParse(string connectionString, out AuthenticationParameters authenticationParameters)
+    {
+        try
+        {
+            authenticationParameters = Parse(connectionString);
+            return true;
+        }
+        catch {  }
+        authenticationParameters = null;
+        return false;
+    }
 
     public static AuthenticationParameters Parse(string connectionString)
     {
@@ -99,6 +111,67 @@ internal record AuthenticationParameters
             }
         }
         return StoreName.My;
+    }
+
+    public string Build()
+    {
+        // If only Resource and UseCurrentUser (integrated security) are set, use the simplified form
+        bool isDefaultClientId = string.Equals(ClientId, DefaultClientId, StringComparison.OrdinalIgnoreCase);
+        bool isDefaultRedirect = string.Equals(RedirectUri, DefaultRedirectUrl, StringComparison.OrdinalIgnoreCase);
+        bool hasNoSecret = string.IsNullOrEmpty(ClientSecret) && string.IsNullOrEmpty(CertificateThumbprint);
+        bool hasNoAuthority = string.IsNullOrEmpty(Authority);
+        bool hasNoTenant = string.IsNullOrEmpty(Tenant);
+        bool hasNoScopes = Scopes == null || (Scopes.Count() == 1 && Scopes.First().Equals(new Uri(new Uri(Resource, UriKind.Absolute), ".default").ToString(), StringComparison.OrdinalIgnoreCase));
+        bool isIntegrated = UseCurrentUser && hasNoSecret && hasNoAuthority && hasNoTenant && isDefaultClientId && isDefaultRedirect && hasNoScopes;
+
+        if (!string.IsNullOrEmpty(Resource) && isIntegrated)
+        {
+            // Use the simplified form
+            return Resource.TrimEnd('/');
+        }
+
+        var parts = new List<string>();
+
+        if (!string.IsNullOrEmpty(Authority))
+            parts.Add($"Authority={Authority}");
+
+        if (!string.IsNullOrEmpty(ClientId) && !isDefaultClientId)
+            parts.Add($"ClientId={ClientId}");
+
+        if (!string.IsNullOrEmpty(ClientSecret))
+            parts.Add($"ClientSecret={ClientSecret}");
+
+        if (!string.IsNullOrEmpty(CertificateThumbprint))
+            parts.Add($"Thumbprint={CertificateThumbprint}");
+
+        if (CertificateStoreName != default && CertificateStoreName != StoreName.My)
+            parts.Add($"CertificateStore={CertificateStoreName}");
+
+        if (!string.IsNullOrEmpty(Tenant))
+            parts.Add($"TenantId={Tenant}");
+
+        if (!isDefaultRedirect && !string.IsNullOrEmpty(RedirectUri))
+            parts.Add($"RedirectUri={RedirectUri}");
+
+        if (Scopes != null && !hasNoScopes)
+            parts.Add($"Scopes={string.Join(",", Scopes)}");
+
+        if (UseDeviceFlow)
+            parts.Add("Device=true");
+
+        if (UseCurrentUser)
+            parts.Add("Integrated Security=true");
+
+        if (!string.IsNullOrEmpty(Resource))
+        {
+            if (parts.Count == 0)
+            {
+                return Resource.TrimEnd('/');
+            }
+            parts.Add($"Uri={Resource.TrimEnd('/')}");
+        }
+
+        return string.Join(";", parts);
     }
 
     public bool IsUncertainAuthFlow()

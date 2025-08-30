@@ -9,12 +9,11 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using XrmTools.Helpers;
-using XrmTools.Xrm.Model;
-using XrmTools.Logging.Compatibility;
 using System.ComponentModel.Composition;
-using XrmTools.WebApi;
+using XrmTools.Meta.Model.Configuration;
+using XrmTools.Meta.Attributes;
 
-public interface IXrmMetaDataService
+internal interface IXrmMetaDataService
 {
     /// <summary>
     /// Parses the input file and returns the PluginAssemblyConfig plus the PluginTypeConfigs and EntityConfigs that are found in the document.
@@ -35,13 +34,8 @@ public interface IXrmMetaDataService
 
 [Export(typeof(IXrmMetaDataService))]
 [method: ImportingConstructor]
-internal class CSharpXrmMetaDataService(
-    ILogger<CSharpXrmMetaDataService> logger, 
-    ICSharpXrmMetaParser parser,
-    IWebApiService webApi) : IXrmMetaDataService
+internal class CSharpXrmMetaDataService(ICSharpXrmMetaParser parser) : IXrmMetaDataService
 {
-    private readonly ILogger<CSharpXrmMetaDataService> Logger = logger ?? throw new ArgumentNullException(nameof(logger));
-
     private readonly ICSharpXrmMetaParser AttributeParser = parser ?? throw new ArgumentNullException(nameof(parser));
 
     public async Task<PluginAssemblyConfig?> ParsePluginsAsync(string filePath, CancellationToken cancellationToken = default)
@@ -71,6 +65,11 @@ internal class CSharpXrmMetaDataService(
             if (compilation == null) return null;
             var pluginTypes = await ParsePluginConfigsFromDocumentAsync(document, compilation, processedSymbols, semanticModelCache, cancellationToken).ConfigureAwait(false);
             pluginTypes.ForEach(config.PluginTypes.Add);
+
+            var allPluginsTypes = compilation.GetProjectTypesWithAttribute(typeof(PluginAttribute).FullName);
+            config.OtherPluginTypes = allPluginsTypes.Where(p => !pluginTypes.Any(currentPlugin => currentPlugin.TypeName == p.ToDisplayString()))
+                .Select(p => new PluginTypeConfig { TypeName = p.ToDisplayString() })
+                .ToList();
 
             return config;
         }
@@ -103,8 +102,9 @@ internal class CSharpXrmMetaDataService(
 
             var compilation = await document.Project.GetCompilationAsync(cancellationToken).ConfigureAwait(false);
             if (compilation == null) return null;
-            var entityConfigs = await ParseEntityAttributesFromDocumentAsync(document, compilation, cancellationToken).ConfigureAwait(false);
-            config.Entities = entityConfigs;
+            var (documentEntities, otherEntities) = await ParseEntityAttributesFromDocumentAsync(document, compilation, cancellationToken).ConfigureAwait(false);
+            config.Entities = documentEntities;
+            config.OtherEntities = otherEntities;
             return config;
         }
         catch (Exception ex)
@@ -134,12 +134,12 @@ internal class CSharpXrmMetaDataService(
             var config = await ParseConfigFromProjectAsync(project, cancellationToken).ConfigureAwait(false);
             if (config == null) return null;
 
+            var compilation = await project.GetCompilationAsync(cancellationToken).ConfigureAwait(false);
+            if (compilation == null) return null;
+            
             var processedSymbols = new HashSet<string>();
             var semanticModelCache = new Dictionary<DocumentId, SemanticModel>();
-
             var allPluginTypes = new List<PluginTypeConfig>();
-
-            var compilation = await project.GetCompilationAsync(cancellationToken).ConfigureAwait(false);
 
             foreach (var document in project.Documents.Where(d => d.SourceCodeKind == SourceCodeKind.Regular))
             {
@@ -177,15 +177,13 @@ internal class CSharpXrmMetaDataService(
         Dictionary<DocumentId, SemanticModel> semanticModelCache,
         CancellationToken cancellationToken)
     {
-        var result = new List<PluginTypeConfig>();
-
         var syntaxTree = await document.GetSyntaxTreeAsync(cancellationToken).ConfigureAwait(false);
-        if (syntaxTree == null) return result;
+        if (syntaxTree == null) return [];
 
         if (!semanticModelCache.TryGetValue(document.Id, out var semanticModel))
         {
             semanticModel = await document.GetSemanticModelAsync(cancellationToken).ConfigureAwait(false);
-            if (semanticModel == null) return result;
+            if (semanticModel == null) return [];
 
             semanticModelCache[document.Id] = semanticModel;
         }
@@ -194,6 +192,8 @@ internal class CSharpXrmMetaDataService(
         //var usingDirectives = root.DescendantNodes().OfType<UsingDirectiveSyntax>()
         //    .Select(u => u.ToString());
         var classDeclarations = root.DescendantNodes().OfType<ClassDeclarationSyntax>();
+
+        var result = new List<PluginTypeConfig>();
 
         foreach (var classDeclaration in classDeclarations)
         {
@@ -209,29 +209,35 @@ internal class CSharpXrmMetaDataService(
             if (pluginType != null)
             {
                 result.Add(pluginType);
+                pluginType.IsNullableEnabled = semanticModel.GetNullableContext(classDeclaration.SpanStart).AnnotationsEnabled();
             }
         }
 
         return result;
     }
 
-    private async Task<List<EntityConfig>> ParseEntityAttributesFromDocumentAsync(
+    private async Task<(List<EntityConfig> documentEntities, List<EntityConfig> otherEntities)> ParseEntityAttributesFromDocumentAsync(
         Document document,
         Compilation compilation,
         CancellationToken cancellationToken)
     {
         var syntaxTree = await document.GetSyntaxTreeAsync(cancellationToken).ConfigureAwait(false);
-        if (syntaxTree == null) return [];
+        if (syntaxTree == null) return ([], []);
 
-        var entityConfigs = new List<EntityConfig>();
+        var documentEntities = new List<EntityConfig>();
+        var otherEntities = new List<EntityConfig>();
         var assemblyAttributes = compilation.Assembly.GetAttributes();
         foreach (var assemblyAttribute in assemblyAttributes)
         {
-            if (syntaxTree == assemblyAttribute.ApplicationSyntaxReference!.SyntaxTree)
+            if (assemblyAttribute.AttributeClass?.ToDisplayString() == typeof(EntityAttribute).FullName && syntaxTree == assemblyAttribute.ApplicationSyntaxReference!.SyntaxTree)
             {
-                entityConfigs.Add(parser.ParseEntityConfig(assemblyAttribute));
+                documentEntities.Add(parser.ParseEntityConfig(assemblyAttribute));
+            }
+            else if (assemblyAttribute.AttributeClass?.ToDisplayString() == typeof(EntityAttribute).FullName)
+            {
+                otherEntities.Add(parser.ParseEntityConfig(assemblyAttribute));
             }
         }
-        return entityConfigs;
+        return (documentEntities, otherEntities);
     }
 }

@@ -7,7 +7,6 @@ using System.Reflection;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using XrmTools.Core.Helpers;
-using XrmTools.Xrm.Model;
 
 /// <summary>
 /// This converter is applied to types deriving from <see cref="TypedEntity{T}"/>. All properties inherited from Entity

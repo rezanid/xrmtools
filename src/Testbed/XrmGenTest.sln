@@ -1,0 +1,34 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.14.36401.2
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "XrmGenTestCS13", "XrmGenTest\XrmGenTestCS13.csproj", "{2F08D24A-EAE5-4EE1-9D2B-761B26C7E94A}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "XrmGenTestClassic", "XrmGenTestClassic\XrmGenTestClassic.csproj", "{8AE60F54-0531-43C1-B723-AE88C50285F9}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{2F08D24A-EAE5-4EE1-9D2B-761B26C7E94A}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{2F08D24A-EAE5-4EE1-9D2B-761B26C7E94A}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{2F08D24A-EAE5-4EE1-9D2B-761B26C7E94A}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{2F08D24A-EAE5-4EE1-9D2B-761B26C7E94A}.Release|Any CPU.Build.0 = Release|Any CPU
+		{8AE60F54-0531-43C1-B723-AE88C50285F9}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{8AE60F54-0531-43C1-B723-AE88C50285F9}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{8AE60F54-0531-43C1-B723-AE88C50285F9}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{8AE60F54-0531-43C1-B723-AE88C50285F9}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {BFD49DD2-2CBD-4BD3-8A69-D1F681378B8D}
+	EndGlobalSection
+	GlobalSection(XrmToolsProperies) = preSolution
+		EnvironmentUrl = https://orgd67e4e96.crm4.dynamics.com/
+	EndGlobalSection
+EndGlobal

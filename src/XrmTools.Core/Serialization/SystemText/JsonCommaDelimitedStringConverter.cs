@@ -20,7 +20,7 @@ public class JsonCommaDelimitedStringConverter : JsonConverter<List<string>>
             if (string.IsNullOrWhiteSpace(value))
                 return []; // target-typed new expression
 
-            return value.Split([','], StringSplitOptions.RemoveEmptyEntries)
+            return value?.Split([','], StringSplitOptions.RemoveEmptyEntries)
                         .Select(s => s.Trim())
                         .ToList();
         }

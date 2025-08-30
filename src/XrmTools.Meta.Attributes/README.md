@@ -1,17 +1,23 @@
-# Power Platform Tools - Attributes
+XrmTools.Meta.Attributes brings source only attributes to decorate your Dataverse plugins, custom APIs, and typed entities. There are also contains interfaces like `ITypedOrganizationRequest`, `ITypedOrganizationResponse` and `TResponse ExecuteTyped<TRequest, TResponse>(this IOrganizationService service)` to make it very easy to call Custom API and actions. This package is part of the [Xrm Tools](https://marketplace.visualstudio.com/items?itemName=rezanid.XrmTools) extension for Visual Studio, which provides a set of tools to enhance your development experience with Microsoft Dataverse (formerly known as Common Data Service or Dynamics 365). Although the extension is not required to use this package, it provides a convenient way to manage your Dataverse projects and generate code based on your schema.
+
+If you aren't already using [Xrm Tools](https://marketplace.visualstudio.com/items?itemName=rezanid.XrmTools) for Power Platform development, I suggest checking out [Xrm Tools Wiki](https://github.com/rezanid/xrmtools/wiki) to learn how modern way of Power Platform development can enhance your experience. In short, the extension provides the code generation capabilities for your plugins and custom APIs. By using these attributes, you can easily register your plugins and custom APIs without writing boilerplate code, and you can also generate typed entities, typed requests and responses for your APIs and actions based on your Dataverse schema and keep them up-to-date without ever leaving Visual Studio.
+
+## Attributes
 
 By installing this nuget packge, you will be able to use attributes to decorate your Dataverse plugins with metadata to enable code generation and automatic registration. Supported attributes are:
 - `PluginRegistrationAttribute`: Used to decorate a class that implements `IPlugin` to specify the plugin registration details. This attribute should be the first registration attribute on the class.
 - `PluginStepAttribute`: Used to decorate a class that implements `IPlugin` to specify the step registration details. This attribute comes after the `PluginRegistrationAttribute` and can be used multiple times to register multiple steps for the same plugin.
 - `PluginImageAttribute`: Used to decorate a class that implements `IPlugin` to specify the image registration details. This attribute comes after the `PluginStepAttribute` and can be used multiple times to register multiple images for the same step.
 - `CustomApiAttribute`: Used to decorate a clas that implements `IPlugin` to specify the custom API registration details. This attribute comes after the `PluginRegistrattionAttribute` and can be used only once to register a custom API for the same plugin.
-- `CustomApiRequestAttribute`: Used to decorate a class, INSIDE the calss that implements `IPlugin` to specify the custom API request parameters. By applying this attribute, all properties of the class will become request parameters for your custom API. This attribute can only be applied to a single class within the plugin class.
-- `CustomApiResponseAttribute`: Used to decorate a class, INSIDE the calss that implements `IPlugin` to specify the custom API response properties. By applying this attribute, all properties of the class will become response properties for your custom API. This attribute can only be applied to a single class within the plugin class.
+- `CustomApiRequestAttribute`: Used to decorate a class, **nested** inside the calss that implements `IPlugin` to specify the custom API request parameters. By applying this attribute, all properties of the class will become request parameters for your custom API. This attribute can only be applied to a single class within the plugin class.
+- `CustomApiResponseAttribute`: Used to decorate a class, **nested** inside the calss that implements `IPlugin` to specify the custom API response properties. By applying this attribute, all properties of the class will become response properties for your custom API. This attribute can only be applied to a single class within the plugin class.
 - `CustomApiRequestParameter`: Used to decorate a property of the class that is marked with `CustomApiRequestAttribute` to specify the custom API request parameter details. This attribute can be used to set the parameter name, description, and other details.
 - `CustomApiResponseProperty`: Used to decorate a property of the class that is marked with `CustomApiResponseAttribute` to specify the custom API response property details. This attribute can be used to set the parameter name, description, and other details.
 - `DependencyAttribute`: Decorate a property as a dependency so that code generator can generate code to inject this dependency.
 - `DependencyConstructor`: Decorate a constructor method as depdency so that code generator can generate code to inject this dependency.
 - `EntityAttribute`: Assembly scoped attribute that instructs the code generator to generate a typed entity with the given attributes.
+- `CodeGenReplacePrefixesAttribute`: Assembly scoped attribute that instructs the code generator to replace the prefixes of the entity names with the given values. This is useful when you want to use a different prefix for your entities in the generated code.
+- `CodeGenGlobalOptionSetAttribute`: Assembly scoped attribute that lets the developer decide if global option sets should be generated in the GlobalOptionSets.cs file or as enums in the typed entity files. By default, global option sets are generated locally.
 
 Let's look at some examples:
 
@@ -108,6 +114,8 @@ public partial class MyCustomApiPlugin : IPlugin
         // Marking the type as nullable will make the parameter optional in the Custom API.
         public decimal? DecimalParameter { get; set; }
         public Entity EntityParameter { get; set; }
+        public Contact ContactParameter { get; set; } // This is a typed entity, you can use any entity that is registered in your Dataverse environment.
+        public IEnumerable<Contact> ContactsParameter { get; set; } // This will be converted to an EntityCollection in the Custom API request.
         public EntityCollection EntityCollectionParameter { get; set; }
         public EntityReference EntityReferenceParameter { get; set; }
         // Null annotation makes the parameter optional.

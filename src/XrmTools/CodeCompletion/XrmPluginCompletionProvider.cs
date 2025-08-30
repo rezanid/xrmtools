@@ -34,7 +34,7 @@ internal class XrmPluginCompletionProvider(
         if (textView is null) { return null; }
         if (repositoryFactory is null)
         {
-            throw new InvalidOperationException($"{nameof(RepositoryFactory)} is missing the in {nameof(XrmPluginDefCompletionProvider)}.");
+            throw new InvalidOperationException($"{nameof(RepositoryFactory)} is missing in {nameof(XrmPluginDefCompletionProvider)}.");
         }
         return textView.Properties.GetOrCreateSingletonProperty(() =>
         {

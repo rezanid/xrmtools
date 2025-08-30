@@ -1,62 +1,122 @@
 ﻿#nullable enable
 namespace XrmTools;
-using Microsoft.VisualStudio.Shell;
+
+using Community.VisualStudio.Toolkit;
 using System;
 using System.ComponentModel.Composition;
 using System.IO;
+using System.Reflection;
+using System.Threading.Tasks;
 using XrmTools.CodeGen;
 using XrmTools.Logging.Compatibility;
 using XrmTools.Settings;
 
 public interface ITemplateFinder
 {
-    string? FindEntityTemplatePath(string inputFile);
-    string? FindPluginTemplatePath(string inputFile);
+    Task<string?> FindEntityTemplatePathAsync(string inputFile);
+    Task<string?> FindPluginTemplatePathAsync(string inputFile);
+    Task<string?> FindGlobalOptionSetsTemplatePathAsync();
 }
 
 [Export(typeof(ITemplateFinder))]
 [method: ImportingConstructor]
 public class TemplatePathFinder(ISettingsProvider settings, ILogger<TemplatePathFinder> logger) : ITemplateFinder
 {
-    private readonly ISettingsProvider settings = settings ?? throw new ArgumentNullException(nameof(settings));
+    private static bool FileExists(string? path) => !string.IsNullOrWhiteSpace(path) && File.Exists(path);
 
-    public string? FindEntityTemplatePath(string inputFile)
+    private async Task<string?> ResolveTemplatePathAsync(
+        string? explicitCandidatePath,
+        Func<Task<string?>> settingsPathGetter,
+        string templateFileName,
+        string notFoundWarning)
     {
-        var templateFilePath = inputFile + Constants.ScribanTemplateExtensionWithDot;
-        if (File.Exists(templateFilePath))
+        if (FileExists(explicitCandidatePath))
         {
-            return templateFilePath;
+            return explicitCandidatePath!;
         }
 
-        templateFilePath = ThreadHelper.JoinableTaskFactory.Run(settings.EntityTemplateFilePathAsync);
-        if (!string.IsNullOrWhiteSpace(templateFilePath) && File.Exists(templateFilePath))
+        var configuredPath = await settingsPathGetter();
+        if (FileExists(configuredPath))
         {
-            return templateFilePath!;
+            return configuredPath!;
         }
 
-        logger.LogWarning("Failed to find any template for entity code generation. Consequently default entity generation template will be crearted.");
+        var activeProject = await VS.Solutions.GetActiveProjectAsync();
+        if (activeProject is not null)
+        {
+            var projectDir = Path.GetDirectoryName(activeProject.FullPath);
+            var path = Path.Combine(projectDir, Constants.ScribanTemplatesFolderName, templateFileName);
+            if (File.Exists(path))
+            {
+                return path;
+            }
+        }
 
+        var solution = await VS.Solutions.GetCurrentSolutionAsync();
+        if (solution is not null)
+        {
+            var solutionDir = Path.GetDirectoryName(solution.FullPath);
+            var path = Path.Combine(solutionDir, Constants.ScribanTemplatesFolderName, templateFileName);
+            if (File.Exists(path))
+            {
+                return path;
+            }
+        }
+
+        var templateSourceDirectory = Path.Combine(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location), Constants.ScribanTemplatesFolderName);
+        var fallback = Path.Combine(templateSourceDirectory, templateFileName);
+        if (File.Exists(fallback))
+        {
+            // Remove settings from previous versions if any
+            if (templateFileName.StartsWith(Constants.ScribanPluginTemplateFileName))
+            {
+                await settings.DeletePluginTemplateFilePathSettingAsync();
+            }
+            else if (templateFileName.StartsWith(Constants.ScribanEntityTemplateFileName))
+            {
+                await settings.DeleteEntityTemplateFilePathSettingAsync();
+            }
+            else
+            {
+                // Nothing to clean up for global option sets template.
+            }
+
+            return fallback;
+        }
+
+        logger.LogWarning(notFoundWarning);
         return null;
     }
 
-    public string? FindPluginTemplatePath(string inputFile)
+    public async Task<string?> FindEntityTemplatePathAsync(string inputFile)
     {
-        var templateFilePath = Path.Combine(Path.GetDirectoryName(inputFile), Path.GetFileNameWithoutExtension(inputFile)) + Constants.ScribanTemplateExtensionWithDot;
-        if (File.Exists(templateFilePath))
-        {
-            return templateFilePath;
-        }
+        var candidate = Path.Combine(Path.GetDirectoryName(inputFile), Path.GetFileNameWithoutExtension(inputFile)) + Constants.ScribanTemplateExtensionWithDot;
 
-        templateFilePath = ThreadHelper.JoinableTaskFactory.Run(settings.PluginTemplateFilePathAsync);
-        if (!string.IsNullOrWhiteSpace(templateFilePath) && File.Exists(templateFilePath))
-        {
-            return templateFilePath!;
-        }
+        return await ResolveTemplatePathAsync(
+            explicitCandidatePath: candidate,
+            settingsPathGetter: settings.EntityTemplateFilePathAsync,
+            templateFileName: Constants.ScribanEntityTemplateFileName,
+            notFoundWarning: "Failed to find any template for entity code generation.");
+    }
 
-        logger.LogWarning("Failed to find any template for plugin code generation. Consequently default plugin generation template will be crearted.");
+    public async Task<string?> FindPluginTemplatePathAsync(string inputFile)
+    {
+        var candidate = Path.Combine(Path.GetDirectoryName(inputFile), Path.GetFileNameWithoutExtension(inputFile)) + Constants.ScribanTemplateExtensionWithDot;
 
-        return null;
+        return await ResolveTemplatePathAsync(
+            explicitCandidatePath: candidate,
+            settingsPathGetter: settings.PluginTemplateFilePathAsync,
+            templateFileName: Constants.ScribanPluginTemplateFileName,
+            notFoundWarning: "Failed to find any template for plugin code generation.");
+    }
+
+    public async Task<string?> FindGlobalOptionSetsTemplatePathAsync()
+    {
+        return await ResolveTemplatePathAsync(
+            explicitCandidatePath: null,
+            settingsPathGetter: settings.GlobalOptionSetsTemplateFilePathAsync,
+            templateFileName: Constants.ScribanGlobalOptionSetsFileName,
+            notFoundWarning: "Failed to find any template for global option sets code generation.");
     }
 }
-
 #nullable restore

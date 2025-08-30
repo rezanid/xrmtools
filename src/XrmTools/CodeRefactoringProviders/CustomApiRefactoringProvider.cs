@@ -15,13 +15,14 @@ using Microsoft.CodeAnalysis.CSharp;
 using XrmTools.WebApi.Entities;
 using System.Collections.Generic;
 using CustomApiFieldType = WebApi.Types.CustomApiFieldType;
-using Microsoft.Crm.Sdk.Messages;
 
 [ExportCodeRefactoringProvider(LanguageNames.CSharp, Name = nameof(CustomApiRefactoringProvider)), Shared]
 public class CustomApiRefactoringProvider : CodeRefactoringProvider
 {
     [Import]
     internal IWebApiService WebApiService { get; set; } = null!;
+
+    public bool IsNullableEnabled { get; set; }
 
     public override async Task ComputeRefactoringsAsync(CodeRefactoringContext context)
     {
@@ -48,6 +49,8 @@ public class CustomApiRefactoringProvider : CodeRefactoringProvider
 
         var customApiName = semanticModel.GetConstantValue(firstArgument.Expression).Value as string;
         if (string.IsNullOrWhiteSpace(customApiName)) return;
+
+        IsNullableEnabled = semanticModel.GetNullableContext(classNode.SpanStart).AnnotationsEnabled();
 
         // Register basic action
         var basicAction = CodeAction.Create(
@@ -90,25 +93,28 @@ public class CustomApiRefactoringProvider : CodeRefactoringProvider
         var customApi = await WebApiService.GetCustomApiDefinitionAsync(customApiName);
         if (customApi == null) return document;
 
-        var semanticModel = await document.GetSemanticModelAsync(cancellationToken);
-        var nullableEnabled = semanticModel.GetNullableContext(classNode.SpanStart).AnnotationsEnabled();
-
         var editor = await DocumentEditor.CreateAsync(document, cancellationToken);
 
         UpdateAttribute(editor, classNode, attributeNode, customApi);
-        editor.AddMember(classNode, GenerateRequestClass(classNode.Identifier.Text, customApi.RequestParameters, nullableEnabled));
-        editor.AddMember(classNode, GenerateResponseClass(classNode.Identifier.Text, customApi.ResponseProperties, nullableEnabled));
+        editor.AddMember(classNode, GenerateRequestClass(classNode.Identifier.Text, customApi.RequestParameters));
+        editor.AddMember(classNode, GenerateResponseClass(classNode.Identifier.Text, customApi.ResponseProperties));
 
         return editor.GetChangedDocument();
     }
 
     private void UpdateAttribute(DocumentEditor editor, ClassDeclarationSyntax classNode, AttributeSyntax attributeNode, CustomApi customApi)
     {
+        if (string.IsNullOrWhiteSpace(customApi.UniqueName))
+        {
+            // It is impossible for a CustomApi to not have a UniqueName, but if it does, we remove the attribute.
+            editor.RemoveNode(attributeNode);
+            return;
+        }
         var updatedAttributeSyntax = SyntaxFactory.Attribute(
-            SyntaxFactory.IdentifierName(nameof(CustomApiAttribute)),
+            SyntaxFactory.IdentifierName(nameof(CustomApiAttribute)[..^9]),
             SyntaxFactory.AttributeArgumentList(
                 SyntaxFactory.SeparatedList(
-                    new[] { SyntaxFactory.AttributeArgument(SyntaxFactory.LiteralExpression(SyntaxKind.StringLiteralExpression, SyntaxFactory.Literal(customApi.UniqueName))) }
+                    new[] { SyntaxFactory.AttributeArgument(SyntaxFactory.LiteralExpression(SyntaxKind.StringLiteralExpression, SyntaxFactory.Literal(customApi.UniqueName!))) }
                     .Concat(GetNamedArguments(customApi))
                 )
             )
@@ -116,32 +122,48 @@ public class CustomApiRefactoringProvider : CodeRefactoringProvider
         editor.ReplaceNode(attributeNode, updatedAttributeSyntax);
     }
 
-    private ClassDeclarationSyntax GenerateRequestClass(string className, IEnumerable<CustomApiRequestParameter> parameters, bool nullableEnabled)
-    {
-        return SyntaxFactory.ClassDeclaration($"{className}Request")
+    private ClassDeclarationSyntax GenerateRequestClass(string className, IEnumerable<CustomApiRequestParameter> parameters)
+        => SyntaxFactory.ClassDeclaration($"{className}Request")
             .AddModifiers(SyntaxFactory.Token(SyntaxKind.PublicKeyword))
-            .AddMembers(parameters.Select(p => GenerateProperty(p.UniqueName!, p.Type, p.IsOptional, p.DisplayName, p.Description, nullableEnabled, "CustomApiRequestParameter", true)).ToArray());
-    }
+            .AddAttributeLists(
+                SyntaxFactory.AttributeList(
+                    SyntaxFactory.SingletonSeparatedList(
+                        SyntaxFactory.Attribute(SyntaxFactory.IdentifierName(nameof(CustomApiRequestAttribute)[..^9]))
+                    )
+                )
+            )
+            .AddMembers([.. parameters.Select(GenerateProperty)]);
 
-    private ClassDeclarationSyntax GenerateResponseClass(string className, IEnumerable<CustomApiResponseProperty> properties, bool nullableEnabled)
-    {
-        return SyntaxFactory.ClassDeclaration($"{className}Response")
-            .AddModifiers(SyntaxFactory.Token(SyntaxKind.PublicKeyword))
-            .AddMembers(properties.Select(p => GenerateProperty(p.UniqueName!, p.Type, true, p.DisplayName, p.Description, nullableEnabled, "CustomApiResponseProperty", false)).ToArray());
-    }
+    private ClassDeclarationSyntax GenerateResponseClass(string className, IEnumerable<CustomApiResponseProperty> properties)
+        => SyntaxFactory.ClassDeclaration($"{className}Response")
+        .AddModifiers(SyntaxFactory.Token(SyntaxKind.PublicKeyword))
+        .AddAttributeLists(
+            SyntaxFactory.AttributeList(
+                SyntaxFactory.SingletonSeparatedList(
+                    SyntaxFactory.Attribute(SyntaxFactory.IdentifierName(nameof(CustomApiResponseAttribute)[..^9]))
+                )
+            )
+        )
+        .AddMembers([.. properties.Select(GenerateProperty)]);
+
+    private PropertyDeclarationSyntax GenerateProperty(
+        CustomApiRequestParameter parameter) => GenerateProperty(parameter.UniqueName!, parameter.Type, parameter.LogicalEntityName, parameter.IsOptional, parameter.DisplayName, parameter.Description, nameof(CustomApiRequestParameter), true);
+
+    private PropertyDeclarationSyntax GenerateProperty(
+        CustomApiResponseProperty property) => GenerateProperty(property.UniqueName!, property.Type, property.LogicalEntityName, true, property.DisplayName, property.Description, nameof(CustomApiResponseProperty), false);
 
     private PropertyDeclarationSyntax GenerateProperty(
         string originalName,
         CustomApiFieldType type,
+        string? entityLogicalName,
         bool isOptional,
         string? displayName,
         string? description,
-        bool nullableEnabled,
         string attributeType,
         bool canHaveIsOptional)
     {
         var propertyName = char.IsLower(originalName[0]) ? char.ToUpper(originalName[0]) + originalName.Substring(1) : originalName;
-        var propertyType = MapType(type, nullableEnabled && isOptional);
+        var propertyType = MapType(type, IsNullableEnabled && isOptional);
 
         var propertyDeclaration = SyntaxFactory.PropertyDeclaration(SyntaxFactory.ParseTypeName(propertyType), propertyName)
             .AddModifiers(SyntaxFactory.Token(SyntaxKind.PublicKeyword))
@@ -159,10 +181,16 @@ public class CustomApiRefactoringProvider : CodeRefactoringProvider
                 SyntaxFactory.LiteralExpression(SyntaxKind.StringLiteralExpression, SyntaxFactory.Literal(originalName))));
         }
 
-        if (canHaveIsOptional && isOptional && !nullableEnabled)
+        if (canHaveIsOptional && isOptional && !IsNullableEnabled)
         {
             attributeArguments.Add(SyntaxFactory.AttributeArgument(SyntaxFactory.NameEquals("IsOptional"), null,
                 SyntaxFactory.LiteralExpression(SyntaxKind.TrueLiteralExpression)));
+        }
+
+        if (!string.IsNullOrWhiteSpace(entityLogicalName))
+        {
+            attributeArguments.Add(SyntaxFactory.AttributeArgument(SyntaxFactory.NameEquals("LogicalEntityName"), null,
+                SyntaxFactory.LiteralExpression(SyntaxKind.StringLiteralExpression, SyntaxFactory.Literal(entityLogicalName!))));
         }
 
         if (!string.IsNullOrWhiteSpace(displayName) && displayName != propertyName)
@@ -203,9 +231,9 @@ public class CustomApiRefactoringProvider : CodeRefactoringProvider
             }
         }
 
-        AddArg("Name", api.Name);
-        AddArg("DisplayName", api.DisplayName);
-        AddArg("Description", api.Description);
+        if (api.Name is string name) AddArg("Name", name);
+        if (api.DisplayName is string displayName) AddArg("DisplayName", displayName);
+        if (api.Description is string description) AddArg("Description", description);
 
         if (api.StepType != CustomApi.ProcessingStepTypes.None)
         {
@@ -221,8 +249,8 @@ public class CustomApiRefactoringProvider : CodeRefactoringProvider
                 SyntaxFactory.ParseExpression($"{nameof(CustomApi.BindingTypes)}.{api.BindingType}")));
         }
 
-        AddArg("BoundEntityLogicalName", api.BoundEntityLogicalName);
-        AddArg("ExecutePrivilegeName", api.ExecutePrivilegeName);
+        if (api.BoundEntityLogicalName is string boundEntity) AddArg("BoundEntityLogicalName", boundEntity);
+        if (api.ExecutePrivilegeName is string executePrivilege) AddArg("ExecutePrivilegeName", executePrivilege);
 
         args.Add(SyntaxFactory.AttributeArgument(SyntaxFactory.NameEquals("IsFunction"), null,
             api.IsFunction ? SyntaxFactory.LiteralExpression(SyntaxKind.TrueLiteralExpression) : SyntaxFactory.LiteralExpression(SyntaxKind.FalseLiteralExpression)));
@@ -241,7 +269,7 @@ public class CustomApiRefactoringProvider : CodeRefactoringProvider
         CustomApiFieldType.Entity => isNullable ? "Entity?" : "Entity",
         CustomApiFieldType.EntityCollection => isNullable ? "EntityCollection?" : "EntityCollection",
         CustomApiFieldType.EntityReference => isNullable ? "EntityReference?" : "EntityReference",
-        CustomApiFieldType.Float => isNullable ? "float?" : "float",
+        CustomApiFieldType.Float => isNullable ? "double?" : "double",
         CustomApiFieldType.Integer => isNullable ? "int?" : "int",
         CustomApiFieldType.Money => isNullable ? "Money?" : "Money",
         CustomApiFieldType.Picklist => isNullable ? "OptionSetValue?" : "OptionSetValue",

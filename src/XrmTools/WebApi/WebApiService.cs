@@ -15,7 +15,7 @@ using XrmTools.Logging.Compatibility;
 using XrmTools.Meta.Model;
 using XrmTools.WebApi.Entities;
 
-internal interface IWebApiService
+public interface IWebApiService
 {
     Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken);
     Task<HttpResponseMessage> GetAsync(string uri, CancellationToken cancellationToken);
@@ -25,7 +25,7 @@ internal interface IWebApiService
 
 [Export(typeof(IWebApiService))]
 [method: ImportingConstructor]
-internal class WebApiService(
+public class WebApiService(
     IXrmHttpClientFactory httpClientFactory, IEnvironmentProvider environmentProvider, ILogger<WebApiService> logger) : IWebApiService
 {
     private bool _disposedValue;
@@ -121,7 +121,7 @@ internal class WebApiService(
         if (oDataError != null && oDataError.Error != null)
         {
 
-            var exception = new ServiceException(oDataError.Error.Message)
+            var exception = oDataError.Error.Message is string msg ? new ServiceException(msg) : new ServiceException()
             {
                 ODataError = oDataError,
                 Content = content,
@@ -137,7 +137,7 @@ internal class WebApiService(
             {
                 var oDataException = JsonSerializer.Deserialize<ODataException>(content);
 
-                ServiceException otherException = new(oDataException.Message)
+                ServiceException otherException = oDataException?.Message is string msg ? new(msg) : new()
                 {
                     Content = content,
                     ReasonPhrase = response.ReasonPhrase,
@@ -172,8 +172,7 @@ internal class WebApiService(
     /// <returns>OData response that include deserialized list of records in <see cref="ODataQueryResponse{T}.Value"/> property.</returns>
     public async Task<ODataQueryResponse<T>> QueryAsync<T>(string odataQuery, CancellationToken cancellationToken = default) where T : Entity<T>
     {
-        var request = new HttpRequestMessage(HttpMethod.Get, odataQuery);
-        var response = await SendAsync(request, cancellationToken).ConfigureAwait(false);
+        var response = await GetAsync(odataQuery, cancellationToken).ConfigureAwait(false);
         return await response.CastAsync<ODataQueryResponse<T>>().ConfigureAwait(false);
     }
 

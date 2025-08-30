@@ -182,13 +182,13 @@ Error details: {1}</value>
     <value>No environment selected. Please select an environment from Solution context menu &gt; Set Environment.</value>
   </data>
   <data name="PluginGenerator.TemplateNotSet" xml:space="preserve">
-    <value>No plugin code generation template has been specified. You need to create a Scriban template for the code generator to work. For more information please visit https://rezanid.github.io/xrmtools/docs/howto/write-a-plugin-template</value>
+    <value>Did you forget to add [Plugin] attribute to your plugin class? If not it can be your code generation template is not correctly setup. You need to create a Scriban template for the code generator to work. For more information please visit https://rezanid.github.io/xrmtools/docs/howto/write-a-plugin-template.</value>
   </data>
   <data name="PluginGenerator.TemplateFileNotFound" xml:space="preserve">
     <value>The template file not found. It might have moved to another location. Please make sure that you have set the right template and try again. Missing file: {0}</value>
   </data>
   <data name="MissingServiceDependency" xml:space="preserve">
-    <value>Missing {0} service depndency. {0} is not available.</value>
+    <value>Missing {0} service dependency. {1} is not available.</value>
   </data>
   <data name="NoActiveProject" xml:space="preserve">
     <value>No active project found. Please select a project and try again.</value>

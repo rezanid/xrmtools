@@ -4,7 +4,7 @@ namespace XrmTools.UI;
 using System.ComponentModel;
 using System.Runtime.CompilerServices;
 
-public class ViewModelBase : INotifyPropertyChanged
+public abstract class ViewModelBase : INotifyPropertyChanged
 {
     public event PropertyChangedEventHandler? PropertyChanged;
 

@@ -3,18 +3,17 @@
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
-using XrmTools.Http;
 using XrmTools.Logging.Compatibility;
 using XrmTools.Meta.Model;
+using XrmTools.Meta.Model.Configuration;
 using XrmTools.WebApi;
-using XrmTools.Xrm.Model;
 
 internal interface IPluginAssemblyRepository : IXrmRepository
 {
     Task<IEnumerable<PluginAssemblyConfig>> GetAsync(CancellationToken cancellationToken);
 }
 
-internal class PluginAssemblyRepository(XrmHttpClient client, IWebApiService service, ILogger logger) : XrmRepository(client, service), IPluginAssemblyRepository
+internal class PluginAssemblyRepository(IWebApiService service, ILogger logger) : XrmRepository(service), IPluginAssemblyRepository
 {
     public async Task<IEnumerable<PluginAssemblyConfig>> GetAsync(CancellationToken cancellationToken)
     {

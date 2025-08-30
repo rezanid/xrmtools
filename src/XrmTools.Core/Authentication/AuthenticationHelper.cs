@@ -26,7 +26,7 @@ internal static class AuthenticationHelper
             .WithCertificate(clientCert)
             .WithAuthority(authority)
             .Build();
-        return confidentialClient.AcquireTokenForClient(new string[] { $"{resource}/.default" }).ExecuteAsync().ConfigureAwait(false).GetAwaiter().GetResult();
+        return confidentialClient.AcquireTokenForClient([$"{resource}/.default"]).ExecuteAsync().ConfigureAwait(false).GetAwaiter().GetResult();
     }
 
     public static AuthenticationResult Authenticate(string authority, string clientId, string resource, string clientSecret)
@@ -35,7 +35,7 @@ internal static class AuthenticationHelper
             .WithClientSecret(clientSecret)
             .WithAuthority(authority)
             .Build();
-        return confidentialClient.AcquireTokenForClient(new string[] { $"{resource}/.default" }).ExecuteAsync().ConfigureAwait(false).GetAwaiter().GetResult();
+        return confidentialClient.AcquireTokenForClient([$"{resource}/.default"]).ExecuteAsync().ConfigureAwait(false).GetAwaiter().GetResult();
     }
 
     public static X509Certificate2 FindCertificate(

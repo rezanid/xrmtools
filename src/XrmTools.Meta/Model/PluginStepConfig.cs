@@ -2,7 +2,6 @@
 namespace XrmTools.Xrm.Model;
 using Microsoft.Xrm.Sdk;
 using Microsoft.Xrm.Sdk.Client;
-using Microsoft.Xrm.Sdk.Metadata;
 using Microsoft.Xrm.Sdk.Query;
 using Newtonsoft.Json;
 using System;
@@ -10,13 +9,13 @@ using System.Collections.Generic;
 using System.Linq.Expressions;
 using System.Text.Json.Serialization;
 using XrmTools.Meta.Attributes;
-using XrmTools.Meta.Model;
+using XrmTools.WebApi.Entities;
 
 public interface IMessageProcessingStepEntity
 {
     Guid? PluginStepId { get; set; }
     Guid? SdkMessageId { get; set; }
-    bool AsyncAutoDelete { get; set; }
+    bool? AsyncAutoDelete { get; set; }
     string? Description { get; set; }
     string? FilteringAttributes { get; set; }
     int? InvocationSource { get; set; }
@@ -32,14 +31,13 @@ public interface IMessageProcessingStepEntity
     SupportedDeployments? SupportedDeployment { get; set; }
     EntityReference? ImpersonatingUserId { get; set; }
     public string? ImpersonatingUserFullname { get; set; }
-    string? WorkflowActivityGroupName { get; set; }
     bool? CanBeBypassed { get; set;}
 }
 
 public interface IMessageProcessingStepConfig : IMessageProcessingStepEntity
 {
     ICollection<PluginStepImageConfig> Images { get; set; }
-    EntityMetadata? PrimaryEntityDefinition { get; set; }
+    Microsoft.Xrm.Sdk.Metadata.EntityMetadata? PrimaryEntityDefinition { get; set; }
     string? StageName { get; }
     object? ActionDefinition { get; set; }
     SdkMessage? Message { get; set; } 
@@ -66,7 +64,7 @@ public class PluginStepConfig : TypedEntity<PluginStepConfig>, IMessageProcessin
     /// Contains the metadata for the primary entity. Attributes are filtered to only include the attributes 
     /// that are used in the message processing step.
     /// </summary>
-    public EntityMetadata? PrimaryEntityDefinition { get; set; }
+    public Microsoft.Xrm.Sdk.Metadata.EntityMetadata? PrimaryEntityDefinition { get; set; }
     [JsonProperty("sdkmessageprocessingstepid_sdkmessageprocessingstepimage", Order = 1)]
     [JsonPropertyOrder(1)]
     public ICollection<PluginStepImageConfig> Images { get; set; } = [];
@@ -105,17 +103,11 @@ public class PluginStepConfig : TypedEntity<PluginStepConfig>, IMessageProcessin
         get => TryGetAttributeValue("name", out string value) ? value : null;
         set => this["name"] = value;
     }
-    [AttributeLogicalName("workflowactivitygroupname")]
-    public string? WorkflowActivityGroupName
-    {
-        get => TryGetAttributeValue("workflowactivitygroupname", out string value) ? value : null;
-        set => this["workflowactivitygroupname"] = value;
-    }
     /// <summary>
     /// Required, Boolean
     /// </summary>
     [AttributeLogicalName("asyncautodelete")]
-    public bool AsyncAutoDelete
+    public bool? AsyncAutoDelete
     {
         get => TryGetAttributeValue(FilteringAttributes, out bool value) && value;
         set => this["asyncautodelete"] = value;
@@ -148,23 +140,18 @@ public class PluginStepConfig : TypedEntity<PluginStepConfig>, IMessageProcessin
         set => this["mode"] = value == null ? null : new OptionSetValue((int)value);
     }
 
-    [AttributeLogicalName("executionorder")]
     public int? ExecutionOrder 
     { 
-        get => TryGetAttributeValue("executionorder", out int value) ? value : null;
-        set => this["executionorder"] = value;
+        get => TryGetAttributeValue("rank", out int value) ? value : null;
+        set => this["rank"] = value;
     }
     //[AttributeLogicalName("primaryentityname")]
     public string? PrimaryEntityName { get; set; }
-    //{
-    //    get => TryGetAttributeValue("primaryentityname", out string value) ? value : null;
-    //    set => this["primaryentityname"] = value;
-    //}
     /// <summary>
     /// Required, Integer
     /// </summary>
     [AttributeLogicalName("rank")]
-    public int? Rank 
+    public int? Rank
     { 
         get => TryGetAttributeValue("rank", out int value) ? value : null;
         set => this["rank"] = value;

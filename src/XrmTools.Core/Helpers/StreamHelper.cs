@@ -8,7 +8,6 @@ using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Runtime.Serialization;
-using XrmTools.Core.Serialization;
 
 internal static class StreamHelper
 {
@@ -17,14 +16,14 @@ internal static class StreamHelper
     {
         TypeNameHandling = TypeNameHandling.Auto,
         NullValueHandling = NullValueHandling.Ignore,
-        ContractResolver = new IgnoreEntityPropertiesResolver()
+        //ContractResolver = new IgnoreEntityPropertiesResolver()
     };
 
     private static readonly JsonSerializerSettings jsonSerializerSettingsForFile = new()
     {
         TypeNameHandling = TypeNameHandling.Auto,
         NullValueHandling = NullValueHandling.Ignore,
-        ContractResolver = new EntityResolverForFile()
+        //ContractResolver = new EntityResolverForFile()
     };
 
     internal static T Deserialize<T>(this Stream stream, bool isFile = false)

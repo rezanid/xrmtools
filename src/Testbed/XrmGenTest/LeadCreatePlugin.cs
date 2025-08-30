@@ -1,7 +1,6 @@
 ﻿using Microsoft.Xrm.Sdk;
 using System;
 using XrmTools.Meta.Attributes;
-using XrmTools.Meta.Model;
 
 namespace XrmGenTest;
 
@@ -15,6 +14,6 @@ public partial class LeadCreatePlugin : IPlugin
         {
             throw new InvalidPluginExecutionException(nameof(serviceProvider));
         }
-        Initialize(serviceProvider);
+        using var scope = CreateScope(serviceProvider);
     }
 }

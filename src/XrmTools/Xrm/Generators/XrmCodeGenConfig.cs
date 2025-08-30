@@ -1,7 +1,7 @@
-﻿using Microsoft.Xrm.Sdk.Metadata;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using XrmTools.WebApi.Entities;
 using YamlDotNet.Serialization;
 
 namespace XrmTools.Xrm.Generators;

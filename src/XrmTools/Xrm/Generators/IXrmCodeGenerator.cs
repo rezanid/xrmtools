@@ -1,16 +1,15 @@
 ﻿#nullable enable
-using System.Runtime.InteropServices;
 namespace XrmTools.Xrm.Generators;
-
+using System.Runtime.InteropServices;
 using System.ComponentModel.DataAnnotations;
-using XrmTools.Xrm.Model;
+using XrmTools.Meta.Model.Configuration;
 
 [Guid(PackageGuids.guidXrmPluginCodeGeneratorString)]
 [ComVisible(true)]
-public interface IXrmCodeGenerator
+internal interface IXrmCodeGenerator
 {
     public XrmCodeGenConfig? Config { get; set; }
-    ValidationResult IsValid(PluginAssemblyConfig plugin);
-    string GenerateCode(PluginAssemblyConfig plugin);
+    ValidationResult IsValid(PluginAssemblyConfig inputModel);
+    string GenerateCode(PluginAssemblyConfig inputModel);
 }
 #nullable restore

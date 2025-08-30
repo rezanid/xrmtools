@@ -6,7 +6,7 @@ end~}}
 public decimal? {{prop_name}}
 {
 	{{~if attribute.is_valid_for_read~}}
-	get => TryGetAttributeValue("{{attribute.logical_name}}", out Money money) ? money.Value : null;
+	get => TryGetAttributeValue("{{attribute.logical_name}}", out Money money) ? (decimal?)money.Value : null;
 	{{~end~}}
 	{{~if !force_readonly && (attribute.is_valid_for_create || attribute.is_valid_for_update)~}}
 	set => this["{{attribute.logical_name}}"] = value.HasValue ? new Money(value.Value) : null;

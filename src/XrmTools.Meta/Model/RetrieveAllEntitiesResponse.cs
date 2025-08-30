@@ -2,7 +2,7 @@
 namespace XrmTools.Meta.Model;
 
 using System.Collections.Generic;
-using Microsoft.Xrm.Sdk.Metadata;
+using XrmTools.WebApi.Entities;
 
 public class RetrieveAllEntitiesResponse : ODataResponse
 {

@@ -1,13 +1,14 @@
 ﻿#nullable enable
 namespace XrmTools.Xrm.Generators;
 
-using Microsoft.Xrm.Sdk.Metadata;
 using Nito.Disposables.Internals;
 using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
 using System.Text;
+using XrmTools.WebApi.Entities;
+using XrmTools.WebApi.Types;
 
 public static class ScribanExtensions
 {
@@ -136,8 +137,17 @@ public static class ScribanExtensions
     public static string ToString(object? value) => value?.ToString() ?? string.Empty;
 
     //TODO: Maybe it's faster to rely on IsEnmuAttribute instead of casting?
-    public static IEnumerable<EnumAttributeMetadata> FilterEnumAttributes(IEnumerable<AttributeMetadata>? attributes) => attributes?.OfType<EnumAttributeMetadata>();
+    public static IEnumerable<EnumAttributeMetadata> FilterEnumAttributes(this IEnumerable<AttributeMetadata>? attributes)
+        => attributes?.OfType<EnumAttributeMetadata>().Where(
+            a => a.IsValidForRead && a.OptionSet is not null && a.OptionSet.OptionSetType != OptionSetType.Boolean) ?? [];
+    public static IEnumerable<EnumAttributeMetadata> FilterGlobalEnumAttributes(this IEnumerable<AttributeMetadata>? attributes)
+        => attributes.FilterEnumAttributes().Where(a => a.OptionSet?.IsGlobal == true) ?? [];
+    public static IEnumerable<EnumAttributeMetadata> FilterLocalEnumAttributes(this IEnumerable<AttributeMetadata>? attributes)
+        => attributes.FilterEnumAttributes().Where(a => a.OptionSet?.IsGlobal != true) ?? [];
 
     public static bool IsEnumAttribute(AttributeMetadata a) => (a.AttributeType is AttributeTypeCode.Picklist or AttributeTypeCode.Virtual or AttributeTypeCode.State or AttributeTypeCode.Status or AttributeTypeCode.EntityName) && a.IsLogical == false;
+
+    public static string? GetLabel(Label? label, int language)
+       => label?.LocalizedLabels?.FirstOrDefault(l => l.LanguageCode == language)?.Label;
 }
 #nullable restore

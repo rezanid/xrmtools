@@ -27,6 +27,11 @@ public interface IPluginTypeConfig : IPluginTypeEntity
     string? BaseTypeName { get; set; }
     ICollection<PluginStepConfig> Steps { get; set; }
     Dependency? DependencyGraph { get; set; }
+    /// <summary>
+    /// Indicates if nullable reference types feature is enabled in the definition of the plugin type written in C#. This is filled when
+    /// the source code of plugin is parsed to generate the PluginTypeConfigs in a file.
+    /// </summary>
+    bool IsNullableEnabled { get; set; }
 }
 
 [EntityLogicalName(EntityLogicalName)]
@@ -48,12 +53,6 @@ public class PluginTypeConfig : TypedEntity<PluginTypeConfig>, IPluginTypeConfig
         }
     }
 
-    [AttributeLogicalName("pluginassemblyid")]
-    public EntityReference? PluginAssemblyId
-    {
-        get => TryGetAttributeValue("pluginassemblyid", out EntityReference value) ? value : null;
-        set => this["pluginassemblyid"] = value;
-    }
     [AttributeLogicalName("name")]
     public string? Name
     {
@@ -98,8 +97,12 @@ public class PluginTypeConfig : TypedEntity<PluginTypeConfig>, IPluginTypeConfig
 
     public string? BaseTypeName { get; set; }
     public string? BaseTypeNamespace { get; set; }
+    public List<string> BaseTypeMethodNames { get; set; } = [];
 
     public Dependency? DependencyGraph { get; set; }
+
+    /// <inheritdoc />
+    public bool IsNullableEnabled { get; set; }
 
     public static LinkEntity LinkWithSteps(ColumnSet columns, JoinOperator join = JoinOperator.LeftOuter)
         => new (EntityLogicalName, PluginStepConfig.EntityLogicalName, "plugintypeid", "plugintypeid", join)
