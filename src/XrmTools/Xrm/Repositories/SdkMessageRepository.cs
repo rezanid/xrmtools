@@ -28,7 +28,8 @@ internal class SdkMessageRepository : XrmRepository, ISdkMessageRepository
 {
     private const string sdkMessageQueryForEntities = "sdkmessages?$filter=sdkmessageid_sdkmessagefilter/any(n:({0}) and n/iscustomprocessingstepallowed eq true)&$expand=sdkmessageid_sdkmessagefilter($filter=({1}) and iscustomprocessingstepallowed eq true)";
     private const string sdkMessageQuerySingle = "sdkmessages?$filter=sdkmessageid_sdkmessagefilter/any(n:n/primaryobjecttypecode eq '{0}' and n/iscustomprocessingstepallowed eq true)&$expand=sdkmessageid_sdkmessagefilter($filter=primaryobjecttypecode eq '{0}' and iscustomprocessingstepallowed eq true)";
-    private const string sdkMessageQueryForPlugins = "sdkmessages?$select=name&$filter=sdkmessageid_sdkmessagefilter/any(n:n/iscustomprocessingstepallowed eq true)&$expand=sdkmessageid_sdkmessagefilter($filter=iscustomprocessingstepallowed eq true)";
+    private const string sdkMessageQueryForPlugins_WithExpand = "sdkmessages?$select=name&$filter=sdkmessageid_sdkmessagefilter/any(n:n/iscustomprocessingstepallowed eq true)&$expand=sdkmessageid_sdkmessagefilter($filter=iscustomprocessingstepallowed eq true)";
+    private const string sdkMessageQueryForPlugins = "sdkmessages?$count=true&$select=name&$filter=sdkmessageid_sdkmessagefilter/any(f:f/iscustomprocessingstepallowed eq true)";
     private const string SdkMessageQueryVisible_NoDescendants = "sdkmessages?" +
         "$filter=message_sdkmessagepair/any(p:p/endpoint eq '2011/Organization.svc') and " +
             "sdkmessageid_sdkmessagefilter/any(f:f/isvisible eq true)" +
