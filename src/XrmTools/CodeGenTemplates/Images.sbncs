@@ -1,7 +1,7 @@
 {{~for image in step.images~}}
-{{~base_class_name = (plugintype.steps | array.size > 1 ? step.message_name : '') + image.image_type + (step.primary_entity_definition.schema_name)~}}
+{{~parent_type_name = image_type_name~}}
 [EntityLogicalName("{{step.primary_entity_definition.logical_name}}")]
-public class {{base_class_name}} : Entity
+public class {{parent_type_name}} : Entity
 {
 	public static class Meta
 	{

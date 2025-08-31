@@ -8,12 +8,16 @@ localTypeNames = [] -}}
     ret (name | string.slice 0 1 | string.downcase) + (name | string.slice 1) 
 end -}}
 
+{{- # Helpers for named dependencies -}}
+{{func is_named(dep); ret dep.provided_by_name; end -}}
+{{func dep_name(dep); ret dep.provided_by_name; end -}}
+
 {{- # Recursive function to gather all dependencies that need local variables -}}
 {{func gather_locals(dep) 
     for sub in dep.dependencies 
         gather_locals(sub) 
     end 
-    if dep.is_local_variable_needed && !dep.provided_by_property
+    if dep.is_local_variable_needed && !dep.provided_by_property && !is_named(dep)
         if !(localTypeNames | array.contains dep.full_type_name) 
             localTypeNames = localTypeNames | array.add dep.full_type_name 
             localDeps = localDeps | array.add dep 
@@ -23,6 +27,9 @@ end -}}
 
 {{- # Function to instantiate a dependency (returns the C# expression as string) -}}
 {{func instantiate(dep) 
+    if is_named(dep)
+        ret "DependencyScope<" + (plugintype.type_name | last_segment) + ">.Current.Require<" + dep.full_type_name + ">(\"" + dep_name(dep) + "\")" 
+    end
     if dep.provided_by_property 
         ret "this." + dep.provided_by_property
     end 
@@ -60,6 +67,9 @@ end -}}
 
 {{- # Function to instantiate a dependency *even if* marked local (for local var declarations) -}}
 {{func instantiate_new(dep)
+    if is_named(dep)
+        ret "DependencyScope<" + (plugintype.type_name | last_segment) + ">.Current.Require<" + dep.full_type_name + ">(\"" + dep_name(dep) + "\")" 
+    end
     if dep.provided_by_property 
         ret "this." + dep.provided_by_property
     end 
@@ -89,7 +99,21 @@ end -}}
 {{for dep in dependencies 
     gather_locals(dep) 
 end ~}}
+
+{{- # Detect root-level usage of config/secureconfig by name -}}
+{{ hasConfig = false -}}
+{{ hasSecure = false -}}
+{{ for dep in dependencies -}}
+    {{ n = dep_name(dep) -}}
+    {{ if dep.full_type_name == "string" && n == "Config" -}}
+        {{ hasConfig = true -}}
+    {{ end -}}
+    {{ if dep.full_type_name == "string" && n == "SecureConfig" -}}
+        {{ hasSecure = true -}}
+    {{ end -}}
+{{ end -}}
 {{~initialize_exists = plugintype.base_type_method_names | array.contains "InjectDependencies"~}}
+
 /// <summary>
 /// This method should be called before accessing any target, image or any of your dependencies.
 /// </summary>
@@ -103,12 +127,24 @@ protected {{initialize_exists ? 'override ' : '' }}IDisposable CreateScope(IServ
     scope.Set<IServiceProvider>(serviceProvider);
     scope.Set<IPluginExecutionContext>((IPluginExecutionContext)serviceProvider.GetService(typeof(IPluginExecutionContext)));
 
+    {{- if hasConfig ~}}
+
+    // Store unsecure plugin configuration (named)
+    scope.Set<string>("Config", this.Config);
+    {{~ end ~}}
+    {{~ if hasSecure ~}}
+    // Store secure plugin configuration (named)
+    scope.Set<string>("SecureConfig", this.SecureConfig);
+    {{~ end ~}}
+
 {{~ for local in localDeps ~}}
     var {{ varName(local.short_type_name) }} = {{ instantiate_new(local) }};
 {{~ end ~}}
 {{~ if localDeps.size > 0 && dependencies.size > 0 ~}}{{ "\r\n" }}{{~ end ~}}
 {{~ for dep in dependencies ~}}
+    {{~ if !is_named(dep) && dep.full_type_name != "System.String" ~}}
     scope.Set<{{ dep.full_type_name }}>({{ instantiate(dep) }});
+    {{~ end ~}}
 {{~ end ~}}
 
     return scope;

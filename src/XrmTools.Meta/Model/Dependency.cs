@@ -13,4 +13,5 @@ public class Dependency
     public bool IsLocalVariableNeeded { get; set; }
     public bool IsDisposable { get; set; }
     public string? ProvidedByProperty { get; set; }
+    public string? ProvidedByName { get; set; }
 }

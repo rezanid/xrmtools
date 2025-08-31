@@ -16,14 +16,14 @@ using System.Runtime.Serialization;
 namespace {{ first_plugin_type?.namespace ?? config.default_namespace }}
 {
 {{~for entity_definition in model.entity_definitions~}}
-{{~base_class_name = entity_definition.schema_name~}}
+{{~parent_type_name = entity_definition.schema_name~}}
 	/// <summary>
 	/// Display Name: {{entity_definition.display_name | get_label 1033}}
 	/// </summary>
 	{{codegen_attribute}}
 	[EntityLogicalName("{{entity_definition.logical_name}}")]
 	[global::System.Diagnostics.CodeAnalysis.ExcludeFromCodeCoverage]
-	public partial class {{base_class_name}} : {{model.entities[for.index].base_type}}
+	public partial class {{parent_type_name}} : {{model.entities[for.index].base_type}}
 	{
 		public partial class Meta 
 		{
@@ -126,10 +126,10 @@ namespace {{ first_plugin_type?.namespace ?? config.default_namespace }}
 		{{~prop_name = attribute.schema_name ~}}
 		{{include attribute.attribute_type + '.sbncs' attributes:entity_definition.attributes}}
 		{{~end~}}
-		public {{base_class_name}}() : base(Meta.EntityLogicalName) { }
-		public {{base_class_name}}(Guid id) : base(Meta.EntityLogicalName, id) { }
-		public {{base_class_name}}(string keyName, object keyValue) : base(Meta.EntityLogicalName, keyName, keyValue) { }
-		public {{base_class_name}}(KeyAttributeCollection keyAttributes) : base(Meta.EntityLogicalName, keyAttributes) { }
+		public {{parent_type_name}}() : base(Meta.EntityLogicalName) { }
+		public {{parent_type_name}}(Guid id) : base(Meta.EntityLogicalName, id) { }
+		public {{parent_type_name}}(string keyName, object keyValue) : base(Meta.EntityLogicalName, keyName, keyValue) { }
+		public {{parent_type_name}}(KeyAttributeCollection keyAttributes) : base(Meta.EntityLogicalName, keyAttributes) { }
 	}
 {{~end~}}
 }

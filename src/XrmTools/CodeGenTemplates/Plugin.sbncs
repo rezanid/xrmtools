@@ -31,6 +31,24 @@ namespace {{ first_plugin_type?.namespace ?? config.default_namespace }}
     public partial class {{plugintype.type_name | last_segment }}
     {
         {{~dependencies = plugintype.dependency_graph?.dependencies~}}
+        {{~# detect needs for Config/SecureConfig properties ~}}
+        {{~hasConfig = false~}}
+        {{~hasSecure = false~}}
+        {{~for dep in dependencies~}}
+            {{~if dep.provided_by_name == 'Config' && dep.full_type_name == 'string'~}}
+                {{~hasConfig = true~}}
+            {{~end~}}
+            {{~if dep.provided_by_name == 'SecureConfig' && dep.full_type_name == 'string'~}}
+                {{~hasSecure = true~}}
+            {{~end~}}
+        {{~end~}}
+        {{~ if hasConfig ~}}
+        public string Config => DependencyScope<{{plugintype.type_name | last_segment }}>.Current.Require<string>("Config");
+        {{~ end ~}}
+        {{~ if hasSecure ~}}
+        public string SecureConfig => DependencyScope<{{plugintype.type_name | last_segment }}>.Current.Require<string>("SecureConfig");
+        {{~ end ~}}
+
         {{include 'InjectDependencies.sbncs'~}}
     {{~if plugintype.steps.size > 0~}}
 

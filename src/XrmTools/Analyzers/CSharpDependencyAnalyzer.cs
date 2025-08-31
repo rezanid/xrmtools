@@ -28,6 +28,25 @@ public class CSharpDependencyAnalyzer : ICSharpDependencyAnalyzer
         return BuildNode(rootType, null, null, compilation, implementationMap, dependedOn, providerProperties);
     }
 
+    private static string? TryGetDependencyNameFromAttributes(IEnumerable<AttributeData> attributes)
+    {
+        foreach (var attr in attributes)
+        {
+            if (attr.AttributeClass?.ToDisplayString() != typeof(DependencyAttribute).FullName)
+                continue;
+
+            foreach (var na in attr.NamedArguments)
+            {
+                if (na.Key == "Name" && na.Value.Value is string s)
+                    return s;
+            }
+
+            if (attr.ConstructorArguments.Length > 0 && attr.ConstructorArguments[0].Value is string s2)
+                return s2;
+        }
+        return null;
+    }
+
     private Dependency BuildNode(
         INamedTypeSymbol typeSymbol,
         INamedTypeSymbol? originalTypeSymbol,
@@ -35,7 +54,7 @@ public class CSharpDependencyAnalyzer : ICSharpDependencyAnalyzer
         Compilation compilation,
         Dictionary<ITypeSymbol, INamedTypeSymbol> implementationMap,
         HashSet<INamedTypeSymbol> dependedOn,
-        Dictionary<ITypeSymbol, string> providerProperties
+        ProviderMap providerMap
         )
     {
         var node = new Dependency
@@ -52,9 +71,13 @@ public class CSharpDependencyAnalyzer : ICSharpDependencyAnalyzer
         // Analyze [Dependency] properties
         foreach (var prop in typeSymbol.GetMembers().OfType<IPropertySymbol>())
         {
-            if (!prop.GetAttributes().Any(attr => attr.AttributeClass?.ToDisplayString() == typeof(DependencyAttribute).FullName))
+            var depAttrs = prop.GetAttributes()
+                               .Where(a => a.AttributeClass?.ToDisplayString() == typeof(DependencyAttribute).FullName)
+                               .ToArray();
+            if (depAttrs.Length == 0)
                 continue;
 
+            var depName = TryGetDependencyNameFromAttributes(depAttrs);
             if (SymbolEqualityComparer.Default.Equals(prop.Type, serviceProviderType))
             {
                 node.Dependencies.Add(new()
@@ -65,19 +88,17 @@ public class CSharpDependencyAnalyzer : ICSharpDependencyAnalyzer
                     Dependencies = [],
                     IsProperty = true,
                     IsDisposable = IsDisposable(prop.Type as INamedTypeSymbol),
+                    ProvidedByName = depName
                 });
                 continue;
             }
 
             var propResolvedType = ResolveType(prop.Type, implementationMap);
-
             if (propResolvedType is not INamedTypeSymbol depSymbol || depSymbol.ContainingType != null)
                 continue;
 
-            //var existingPropertyName = FindExistingProperty(classSymbol, propType);
-
-            if (providerProperties.TryGetValue(prop.Type, out var existingPropertyName) ||
-                providerProperties.TryGetValue(propResolvedType, out existingPropertyName))
+            // Try provider property resolution (named preferred)
+            if (providerMap.TryResolve(prop.Type, depName, out var providerPropertyName))
             {
                 node.Dependencies.Add(new Dependency
                 {
@@ -89,12 +110,12 @@ public class CSharpDependencyAnalyzer : ICSharpDependencyAnalyzer
                     Dependencies = [],
                     IsProperty = true,
                     IsDisposable = IsDisposable(depSymbol),
-                    ProvidedByProperty = existingPropertyName
+                    ProvidedByProperty = providerPropertyName,
+                    ProvidedByName = depName
                 });
                 continue;
             }
 
-            // Recursive analysis — per branch copy of dependedOn
             if (!dependedOn.Contains(depSymbol))
             {
                 var newDependedOn = new HashSet<INamedTypeSymbol>(dependedOn, SymbolEqualityComparer.Default)
@@ -102,7 +123,7 @@ public class CSharpDependencyAnalyzer : ICSharpDependencyAnalyzer
                     depSymbol
                 };
 
-                var childNode = BuildNode(depSymbol, prop.Type as INamedTypeSymbol, prop.Name, compilation, implementationMap, newDependedOn, providerProperties);
+                var childNode = BuildNode(depSymbol, prop.Type as INamedTypeSymbol, prop.Name, compilation, implementationMap, newDependedOn, providerMap);
                 childNode.IsProperty = true;
                 node.Dependencies.Add(childNode);
             }
@@ -112,8 +133,11 @@ public class CSharpDependencyAnalyzer : ICSharpDependencyAnalyzer
         var ctor = SelectConstructor(typeSymbol);
         if (ctor is not null)
         {
+            var stringIndex = 0; // root-level string #1 => Config, #2 => SecureConfig
             foreach (var param in ctor.Parameters)
             {
+                var pDepName = TryGetDependencyNameFromAttributes(param.GetAttributes());
+
                 if (SymbolEqualityComparer.Default.Equals(param.Type, serviceProviderType))
                 {
                     node.Dependencies.Add(new Dependency
@@ -123,20 +147,36 @@ public class CSharpDependencyAnalyzer : ICSharpDependencyAnalyzer
                         ShortTypeName = param.Name,
                         IsProperty = false,
                         IsDisposable = IsDisposable(param.Type as INamedTypeSymbol),
+                        ProvidedByName = pDepName
+                    });
+                    continue;
+                }
+
+                if (param.Type.SpecialType == SpecialType.System_String && originalTypeSymbol is null && stringIndex < 2)
+                {
+                    var special = stringIndex == 0 ? "Config" : "SecureConfig";
+                    stringIndex++;
+
+                    node.Dependencies.Add(new Dependency
+                    {
+                        PropertyName = param.Name,
+                        FullTypeName = param.Type.ToDisplayString(),
+                        ShortTypeName = param.Type.Name,
+                        ResolvedFullTypeName = param.Type.ToDisplayString(),
+                        ResolvedShortTypeName = param.Type.Name,
+                        Dependencies = [],
+                        IsProperty = false,
+                        IsDisposable = false,
+                        ProvidedByName = pDepName ?? special
                     });
                     continue;
                 }
 
                 var paramResolvedType = ResolveType(param.Type, implementationMap);
-
-
                 if (paramResolvedType is not INamedTypeSymbol depSymbol || depSymbol.ContainingType != null)
                     continue;
 
-                //var existingPropertyName = FindExistingProperty(classSymbol, paramType);
-
-                if (providerProperties.TryGetValue(param.Type, out var existingPropertyName) ||
-                    providerProperties.TryGetValue(paramResolvedType, out existingPropertyName))
+                if (providerMap.TryResolve(param.Type, pDepName, out var providerPropName))
                 {
                     node.Dependencies.Add(new Dependency
                     {
@@ -148,12 +188,12 @@ public class CSharpDependencyAnalyzer : ICSharpDependencyAnalyzer
                         Dependencies = [],
                         IsProperty = false,
                         IsDisposable = IsDisposable(depSymbol),
-                        ProvidedByProperty = existingPropertyName
+                        ProvidedByProperty = providerPropName,
+                        ProvidedByName = pDepName
                     });
                     continue;
                 }
 
-                // Recursive analysis — per branch copy of dependedOn
                 if (!dependedOn.Contains(depSymbol))
                 {
                     var newDependedOn = new HashSet<INamedTypeSymbol>(dependedOn, SymbolEqualityComparer.Default)
@@ -161,7 +201,7 @@ public class CSharpDependencyAnalyzer : ICSharpDependencyAnalyzer
                         depSymbol
                     };
 
-                    var childNode = BuildNode(depSymbol, param.Type as INamedTypeSymbol, param.Name, compilation, implementationMap, newDependedOn, providerProperties);
+                    var childNode = BuildNode(depSymbol, param.Type as INamedTypeSymbol, param.Name, compilation, implementationMap, newDependedOn, providerMap);
                     childNode.IsProperty = false;
                     node.Dependencies.Add(childNode);
                 }
@@ -189,9 +229,42 @@ public class CSharpDependencyAnalyzer : ICSharpDependencyAnalyzer
         return null;
     }
 
-    private Dictionary<ITypeSymbol, string> DiscoverProviderProperties(INamedTypeSymbol classSymbol)
+    private sealed class ProviderInfo
     {
-        var result = new Dictionary<ITypeSymbol, string>(SymbolEqualityComparer.Default);
+        public string PropertyName { get; set; }
+        public string? Name { get; set; }
+    }
+
+    private sealed class ProviderMap
+    {
+        private readonly Dictionary<ITypeSymbol, List<ProviderInfo>> _byType;
+        public ProviderMap(Dictionary<ITypeSymbol, List<ProviderInfo>> map) { _byType = map; }
+
+        public bool TryResolve(ITypeSymbol type, string? name, out string providerPropertyName)
+        {
+            providerPropertyName = null;
+            if (!_byType.TryGetValue(type, out var list)) return false;
+
+            if (!string.IsNullOrEmpty(name))
+            {
+                var exact = list.FirstOrDefault(p => string.Equals(p.Name, name, System.StringComparison.Ordinal));
+                if (exact != null) { providerPropertyName = exact.PropertyName; return true; }
+            }
+
+            // No name requested or exact not found: prefer unnamed first, otherwise first named
+            var unnamed = list.FirstOrDefault(p => p.Name == null);
+            if (unnamed != null) { providerPropertyName = unnamed.PropertyName; return true; }
+
+            var any = list.FirstOrDefault();
+            if (any != null) { providerPropertyName = any.PropertyName; return true; }
+
+            return false;
+        }
+    }
+
+    private ProviderMap DiscoverProviderProperties(INamedTypeSymbol classSymbol)
+    {
+        var result = new Dictionary<ITypeSymbol, List<ProviderInfo>>(SymbolEqualityComparer.Default);
 
         INamedTypeSymbol? current = classSymbol;
         while (current is not null && current.SpecialType != SpecialType.System_Object)
@@ -202,17 +275,29 @@ public class CSharpDependencyAnalyzer : ICSharpDependencyAnalyzer
                     !member.IsWriteOnly && 
                     member.Type.TypeKind is TypeKind.Class or TypeKind.Interface &&
                     member.Type.SpecialType != SpecialType.System_String &&
-                    !result.ContainsKey(member.Type) &&
-                    member.GetAttributes().Any(attr => attr.AttributeClass?.ToDisplayString() == typeof(DependencyProviderAttribute).FullName)
-                    )
+                    member.GetAttributes().FirstOrDefault(attr => attr.AttributeClass?.ToDisplayString() == typeof(DependencyProviderAttribute).FullName) is AttributeData providerAttr)
                 {
-                    result[member.Type] = member.Name;
+                    string? name = null;
+                    if (providerAttr.ConstructorArguments.Length > 0 && providerAttr.ConstructorArguments[0].Value is string s)
+                        name = s;
+                    else
+                    {
+                        foreach (var na in providerAttr.NamedArguments)
+                            if (na.Key == "Name" && na.Value.Value is string sn) { name = sn; break; }
+                    }
+
+                    if (!result.TryGetValue(member.Type, out var list))
+                    {
+                        list = new List<ProviderInfo>();
+                        result[member.Type] = list;
+                    }
+                    list.Add(new ProviderInfo { PropertyName = member.Name, Name = name });
                 }
             }
             current = current.BaseType;
         }
 
-        return result;
+        return new ProviderMap(result);
     }
 
     private ITypeSymbol? ResolveType(ITypeSymbol originalType, Dictionary<ITypeSymbol, INamedTypeSymbol> implementationMap)
