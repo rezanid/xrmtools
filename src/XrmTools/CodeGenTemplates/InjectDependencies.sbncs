@@ -27,12 +27,13 @@ end -}}
 
 {{- # Function to instantiate a dependency (returns the C# expression as string) -}}
 {{func instantiate(dep) 
-    if is_named(dep)
-        ret "DependencyScope<" + (plugintype.type_name | last_segment) + ">.Current.Require<" + dep.full_type_name + ">(\"" + dep_name(dep) + "\")" 
-    end
+    # Prefer provider property when available (even if the dependency is named)
     if dep.provided_by_property 
         ret "this." + dep.provided_by_property
     end 
+    if is_named(dep)
+        ret "DependencyScope<" + (plugintype.type_name | last_segment) + ">.Current.Require<" + dep.full_type_name + ">(\"" + dep_name(dep) + "\")" 
+    end
     if dep.full_type_name == "System.IServiceProvider" 
         ret "serviceProvider" 
     end
@@ -67,12 +68,13 @@ end -}}
 
 {{- # Function to instantiate a dependency *even if* marked local (for local var declarations) -}}
 {{func instantiate_new(dep)
-    if is_named(dep)
-        ret "DependencyScope<" + (plugintype.type_name | last_segment) + ">.Current.Require<" + dep.full_type_name + ">(\"" + dep_name(dep) + "\")" 
-    end
+    # Prefer provider property when available (even if the dependency is named)
     if dep.provided_by_property 
         ret "this." + dep.provided_by_property
     end 
+    if is_named(dep)
+        ret "DependencyScope<" + (plugintype.type_name | last_segment) + ">.Current.Require<" + dep.full_type_name + ">(\"" + dep_name(dep) + "\")" 
+    end
     if dep.full_type_name == "System.IServiceProvider" 
         ret "serviceProvider" 
     end
@@ -112,7 +114,7 @@ end ~}}
         {{ hasSecure = true -}}
     {{ end -}}
 {{ end -}}
-{{~initialize_exists = plugintype.base_type_method_names | array.contains "InjectDependencies"~}}
+{{~initialize_exists = plugintype.base_type_method_names | array.contains "CreateScope"~}}
 
 /// <summary>
 /// This method should be called before accessing any target, image or any of your dependencies.
@@ -120,7 +122,7 @@ end ~}}
 protected {{initialize_exists ? 'override ' : '' }}IDisposable CreateScope(IServiceProvider serviceProvider)
 {
     {{~if initialize_exists~}}
-    var scope = base.Initialize(serviceProvider);
+    var scope = base.CreateScope(serviceProvider);
     {{~else~}}
     var scope = new DependencyScope<{{plugintype.type_name | last_segment }}>();
     {{~end~}}
