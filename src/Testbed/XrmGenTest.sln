@@ -7,6 +7,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "XrmGenTestCS13", "XrmGenTes
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "XrmGenTestClassic", "XrmGenTestClassic\XrmGenTestClassic.csproj", "{8AE60F54-0531-43C1-B723-AE88C50285F9}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "XrmTraditionalPlugins", "XrmTraditionalPlugins\XrmTraditionalPlugins.csproj", "{0B2C5980-65B4-4BB7-ACB1-1BBC8B8D956F}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -21,6 +23,10 @@ Global
 		{8AE60F54-0531-43C1-B723-AE88C50285F9}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{8AE60F54-0531-43C1-B723-AE88C50285F9}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{8AE60F54-0531-43C1-B723-AE88C50285F9}.Release|Any CPU.Build.0 = Release|Any CPU
+		{0B2C5980-65B4-4BB7-ACB1-1BBC8B8D956F}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{0B2C5980-65B4-4BB7-ACB1-1BBC8B8D956F}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{0B2C5980-65B4-4BB7-ACB1-1BBC8B8D956F}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{0B2C5980-65B4-4BB7-ACB1-1BBC8B8D956F}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

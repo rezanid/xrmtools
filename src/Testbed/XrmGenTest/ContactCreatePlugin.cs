@@ -34,7 +34,23 @@ public partial class ContactCreatePlugin : IPlugin
             return service;
         }
     }
-    
+
+    [DependencyProvider("User")]
+    public IOrganizationService OrganizationServiceUser
+    {
+        get
+        {
+            if (DependencyScope<ContactCreatePlugin>.Current.TryGet<IOrganizationService>(out var service))
+            {
+                return service;
+            }
+            service = DependencyScope<ContactCreatePlugin>.Current.Require<IServiceProvider>().Get<IOrganizationServiceFactory>()
+                .CreateOrganizationService(null);
+            DependencyScope<ContactCreatePlugin>.Current.Set(service);
+            return service;
+        }
+    }
+
     [Dependency]
     public SomeService ServiceFactory
     {
@@ -64,6 +80,9 @@ public interface IContactPersister
 
 public class ContactPersister(IOrganizationService service) : IContactPersister
 {
+    [Dependency("User")]
+    public IOrganizationService OrgService { get; set; }
+    
     public void Persist(Contact contact)
     {
         service.Create(contact);

@@ -12,9 +12,11 @@ using XrmTools;
 
 namespace XrmGenTest
 {
-    [GeneratedCode("TemplatedCodeGenerator", "1.4.0.0")]
+    [GeneratedCode("TemplatedCodeGenerator", "1.4.2.0")]
     public partial class ContactCreatePlugin
     {
+
+        
         /// <summary>
         /// This method should be called before accessing any target, image or any of your dependencies.
         /// </summary>
@@ -23,12 +25,11 @@ namespace XrmGenTest
             var scope = new DependencyScope<ContactCreatePlugin>();
             scope.Set<IServiceProvider>(serviceProvider);
             scope.Set<IPluginExecutionContext>((IPluginExecutionContext)serviceProvider.GetService(typeof(IPluginExecutionContext)));
-        
             var iServiceProvider = serviceProvider;
         
             scope.Set<System.IServiceProvider>(serviceProvider);
             scope.Set<XrmGenTest.SomeService>(scope.Set(new XrmGenTest.SomeService(serviceProvider)));
-            scope.Set<XrmGenTest.IContactPersister>(scope.Set(new XrmGenTest.ContactPersister(this.OrganizationService)));
+            scope.Set<XrmGenTest.IContactPersister>(scope.Set(new XrmGenTest.ContactPersister(this.OrganizationService) { OrgService = this.OrganizationServiceUser }));
         
             return scope;
         }

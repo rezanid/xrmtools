@@ -13,10 +13,10 @@ namespace XrmGenTestClassic
 	/// <summary>
 	/// Display Name: Contact
 	/// </summary>
-	[GeneratedCode("TemplatedCodeGenerator", "1.4.0.0")]
+	[GeneratedCode("TemplatedCodeGenerator", "1.4.2.0")]
 	[EntityLogicalName("contact")]
 	[global::System.Diagnostics.CodeAnalysis.ExcludeFromCodeCoverage]
-	public partial class Contact : Entity
+	public partial class Contact : Microsoft.Xrm.Sdk.Entity
 	{
 		public partial class Meta 
 		{
@@ -93,10 +93,10 @@ namespace XrmGenTestClassic
 	/// <summary>
 	/// Display Name: Account
 	/// </summary>
-	[GeneratedCode("TemplatedCodeGenerator", "1.4.0.0")]
+	[GeneratedCode("TemplatedCodeGenerator", "1.4.2.0")]
 	[EntityLogicalName("account")]
 	[global::System.Diagnostics.CodeAnalysis.ExcludeFromCodeCoverage]
-	public partial class Account : Entity
+	public partial class Account : Microsoft.Xrm.Sdk.Entity
 	{
 		public partial class Meta 
 		{

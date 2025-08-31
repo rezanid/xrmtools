@@ -12,9 +12,11 @@ using XrmTools;
 
 namespace XrmGenTest
 {
-    [GeneratedCode("TemplatedCodeGenerator", "1.4.0.0")]
+    [GeneratedCode("TemplatedCodeGenerator", "1.4.2.0")]
     public partial class AccountCreatePlugin
     {
+
+        
         /// <summary>
         /// This method should be called before accessing any target, image or any of your dependencies.
         /// </summary>
@@ -23,7 +25,6 @@ namespace XrmGenTest
             var scope = new DependencyScope<AccountCreatePlugin>();
             scope.Set<IServiceProvider>(serviceProvider);
             scope.Set<IPluginExecutionContext>((IPluginExecutionContext)serviceProvider.GetService(typeof(IPluginExecutionContext)));
-        
         
             return scope;
         }
