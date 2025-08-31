@@ -52,9 +52,9 @@ public partial class ContactCreatePlugin : IPlugin
     }
 
     [Dependency]
-    public SomeService ServiceFactory
+    public SomeService SomeFactory
     {
-        get;set;
+        get => DependencyScope<ContactCreatePlugin>.Current.Require<SomeService>();
     }
 
     [Dependency]

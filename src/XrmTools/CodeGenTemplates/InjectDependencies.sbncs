@@ -3,21 +3,19 @@ localTypeNames = [] -}}
 {{- localDeps = [] -}}
 {{- knownDeps = ["ITracingService", "IOrganizationServiceFactory", "IServiceEndpointNotificationService", "IManagedIdentityService"] -}}
 
-{{- # Helper function to compute a camel-cased variable name from a short type name -}}
 {{func varName(name) 
     ret (name | string.slice 0 1 | string.downcase) + (name | string.slice 1) 
 end -}}
 
-{{- # Helpers for named dependencies -}}
 {{func is_named(dep); ret dep.provided_by_name; end -}}
 {{func dep_name(dep); ret dep.provided_by_name; end -}}
 
-{{- # Recursive function to gather all dependencies that need local variables -}}
 {{func gather_locals(dep) 
     for sub in dep.dependencies 
         gather_locals(sub) 
     end 
-    if dep.is_local_variable_needed && !dep.provided_by_property && !is_named(dep)
+    # Exclude IServiceProvider from locals; it's provided by CreateScope parameter
+    if dep.is_local_variable_needed && !dep.provided_by_property && !is_named(dep) && dep.full_type_name != "System.IServiceProvider"
         if !(localTypeNames | array.contains dep.full_type_name) 
             localTypeNames = localTypeNames | array.add dep.full_type_name 
             localDeps = localDeps | array.add dep 
@@ -25,7 +23,6 @@ end -}}
     end 
 end -}}
 
-{{- # Function to instantiate a dependency (returns the C# expression as string) -}}
 {{func instantiate(dep) 
     # Prefer provider property when available (even if the dependency is named)
     if dep.provided_by_property 
@@ -41,10 +38,8 @@ end -}}
         ret "(" + dep.full_type_name + ")serviceProvider.GetService(typeof(" + dep.full_type_name + "))"
     end
     if dep.is_local_variable_needed 
-        # Use the shared local variable instead of a new expression
         ret varName(dep.short_type_name) 
     end 
-    # Otherwise, construct a new object with its dependencies
     $ctorList = [] 
     $propList = [] 
     for child in dep.dependencies 
@@ -66,7 +61,6 @@ end -}}
     ret $expr + ")"
 end -}}
 
-{{- # Function to instantiate a dependency *even if* marked local (for local var declarations) -}}
 {{func instantiate_new(dep)
     # Prefer provider property when available (even if the dependency is named)
     if dep.provided_by_property 
@@ -97,24 +91,11 @@ end -}}
     ret $expr 
 end -}}
 
-{{- # Gather all needed local dependencies from the top-level list -}}
 {{for dep in dependencies 
     gather_locals(dep) 
 end ~}}
 
-{{- # Detect root-level usage of config/secureconfig by name -}}
-{{ hasConfig = false -}}
-{{ hasSecure = false -}}
-{{ for dep in dependencies -}}
-    {{ n = dep_name(dep) -}}
-    {{ if dep.full_type_name == "string" && n == "Config" -}}
-        {{ hasConfig = true -}}
-    {{ end -}}
-    {{ if dep.full_type_name == "string" && n == "SecureConfig" -}}
-        {{ hasSecure = true -}}
-    {{ end -}}
-{{ end -}}
-{{~initialize_exists = plugintype.base_type_method_names | array.contains "CreateScope"~}}
+{{-initialize_exists = plugintype.base_type_method_names | array.contains "CreateScope"-}}
 
 /// <summary>
 /// This method should be called before accessing any target, image or any of your dependencies.
@@ -128,16 +109,6 @@ protected {{initialize_exists ? 'override ' : '' }}IDisposable CreateScope(IServ
     {{~end~}}
     scope.Set<IServiceProvider>(serviceProvider);
     scope.Set<IPluginExecutionContext>((IPluginExecutionContext)serviceProvider.GetService(typeof(IPluginExecutionContext)));
-
-    {{- if hasConfig ~}}
-
-    // Store unsecure plugin configuration (named)
-    scope.Set<string>("Config", this.Config);
-    {{~ end ~}}
-    {{~ if hasSecure ~}}
-    // Store secure plugin configuration (named)
-    scope.Set<string>("SecureConfig", this.SecureConfig);
-    {{~ end ~}}
 
 {{~ for local in localDeps ~}}
     var {{ varName(local.short_type_name) }} = {{ instantiate_new(local) }};

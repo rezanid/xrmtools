@@ -3,7 +3,7 @@
 <!-- Version: 17.0.0.4 -->
 <ImageManifest xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns="http://schemas.microsoft.com/VisualStudio/ImageManifestSchema/2014">
   <Symbols>
-    <String Name="Resources" Value="/XrmTools;v1.4.2.0;26be58bdab7122ab;Component/Resources" />
+    <String Name="Resources" Value="/XrmTools;v1.4.3.0;26be58bdab7122ab;Component/Resources" />
     <Guid Name="AssetsGuid" Value="{b11584c1-89bd-47a3-b6a4-05b05dd5fc13}" />
     <ID Name="ApplyToDataverse" Value="10" />
     <ID Name="Dataverse" Value="20" />
