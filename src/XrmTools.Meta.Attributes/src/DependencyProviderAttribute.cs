@@ -9,7 +9,7 @@ namespace XrmTools.Meta.Attributes
     [AttributeUsage(AttributeTargets.Property, Inherited = true, AllowMultiple = false)]
     public sealed class DependencyProviderAttribute : Attribute 
     { 
-        public string? Name { get; }
+        public string Name { get; }
         public DependencyProviderAttribute() { }
         public DependencyProviderAttribute(string name) { Name = name; }
     }

@@ -30,12 +30,11 @@ namespace XrmTools
             return instance;
         }
 
-        // Named registrations
         public T Set<T>(string name, T instance)
         {
             if (name == null) throw new ArgumentNullException(nameof(name));
             var dict = GetNameMap(typeof(T));
-            dict[name] = instance!;
+            dict[name] = instance;
             return instance;
         }
 
