@@ -12,7 +12,7 @@ using XrmTools;
 
 namespace XrmGenTest
 {
-    [GeneratedCode("TemplatedCodeGenerator", "1.4.0.0")]
+    [GeneratedCode("TemplatedCodeGenerator", "1.4.3.0")]
     public partial class ContactCreatePlugin
     {
         /// <summary>
@@ -151,7 +151,6 @@ namespace XrmGenTest
 	    
 	    		public partial class Fields
 	    		{
-	    			public const string AccountRoleCode = "accountrolecode";
 	    			public const string Description = "description";
 	    			public const string FirstName = "firstname";
 	    			public const string LastName = "lastname";
@@ -160,7 +159,6 @@ namespace XrmGenTest
 	    			{
 	    				switch (logicalName)
 	    				{
-	    					case nameof(AccountRoleCode): attribute = AccountRoleCode; return true;
 	    					case nameof(Description): attribute = Description; return true;
 	    					case nameof(FirstName): attribute = FirstName; return true;
 	    					case nameof(LastName): attribute = LastName; return true;
@@ -178,32 +176,9 @@ namespace XrmGenTest
 	    
 	    		public partial class OptionSets
 	    		{
-	    			/// <summary>
-	    			/// Account role of the contact.
-	    			/// </summary>
-	    			[DataContract]
-	    			public enum Role
-	    			{
-	    				[EnumMember]
-	    				DecisionMaker = 1,
-	    				[EnumMember]
-	    				Employee = 2,
-	    				[EnumMember]
-	    				Influencer = 3,
-	    			}
 	    		}
 	    	}
 	    
-	    	/// <summary>
-	    	/// Required Level: None</br>
-	    	/// Valid for: Create Update Read</br>
-	    	/// </summary>
-	    	[AttributeLogicalName("accountrolecode")]
-	    	public UpdateTargetContact.Meta.OptionSets.Role? AccountRoleCode
-	    	{
-	    		get => TryGetAttributeValue("accountrolecode", out OptionSetValue opt) && opt != null ? (UpdateTargetContact.Meta.OptionSets.Role?)opt.Value : null;
-	    		set => this["accountrolecode"] = value == null ? null : new OptionSetValue((int)value);
-	    	}
 	    	/// <summary>
 	    	/// Max Length: 2000</br>
 	    	/// Required Level: None</br>
