@@ -13,7 +13,7 @@ namespace XrmGenTest
 	/// <summary>
 	/// Display Name: Attachment
 	/// </summary>
-	[GeneratedCode("TemplatedCodeGenerator", "1.4.0.0")]
+	[GeneratedCode("TemplatedCodeGenerator", "1.4.3.0")]
 	[EntityLogicalName("attachment")]
 	[global::System.Diagnostics.CodeAnalysis.ExcludeFromCodeCoverage]
 	public partial class Attachment : XrmGenTest.BaseEntity<XrmGenTest.Attachment>
@@ -151,7 +151,7 @@ namespace XrmGenTest
 	/// <summary>
 	/// Display Name: Account
 	/// </summary>
-	[GeneratedCode("TemplatedCodeGenerator", "1.4.0.0")]
+	[GeneratedCode("TemplatedCodeGenerator", "1.4.3.0")]
 	[EntityLogicalName("account")]
 	[global::System.Diagnostics.CodeAnalysis.ExcludeFromCodeCoverage]
 	public partial class Account : XrmGenTest.BaseEntity<XrmGenTest.Account>
@@ -2305,7 +2305,7 @@ namespace XrmGenTest
 	/// <summary>
 	/// Display Name: Contact
 	/// </summary>
-	[GeneratedCode("TemplatedCodeGenerator", "1.4.0.0")]
+	[GeneratedCode("TemplatedCodeGenerator", "1.4.3.0")]
 	[EntityLogicalName("contact")]
 	[global::System.Diagnostics.CodeAnalysis.ExcludeFromCodeCoverage]
 	public partial class Contact : Microsoft.Xrm.Sdk.Entity

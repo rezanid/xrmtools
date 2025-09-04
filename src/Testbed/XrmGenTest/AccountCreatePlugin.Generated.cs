@@ -12,11 +12,9 @@ using XrmTools;
 
 namespace XrmGenTest
 {
-    [GeneratedCode("TemplatedCodeGenerator", "1.4.2.0")]
+    [GeneratedCode("TemplatedCodeGenerator", "1.4.3.0")]
     public partial class AccountCreatePlugin
     {
-
-        
         /// <summary>
         /// This method should be called before accessing any target, image or any of your dependencies.
         /// </summary>

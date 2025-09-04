@@ -119,6 +119,5 @@ protected {{initialize_exists ? 'override ' : '' }}IDisposable CreateScope(IServ
     scope.Set<{{ dep.full_type_name }}>({{ instantiate(dep) }});
     {{~ end ~}}
 {{~ end ~}}
-
     return scope;
 }
