@@ -27,7 +27,6 @@ namespace XrmGenTest
             scope.Set<System.IServiceProvider>(serviceProvider);
             scope.Set<XrmGenTest.SomeService>(scope.Set(new XrmGenTest.SomeService(serviceProvider)));
             scope.Set<XrmGenTest.IContactPersister>(scope.Set(new XrmGenTest.ContactPersister(this.OrganizationService) { OrgService = this.OrganizationServiceUser }));
-        
             return scope;
         }
 	    [EntityLogicalName("contact")]

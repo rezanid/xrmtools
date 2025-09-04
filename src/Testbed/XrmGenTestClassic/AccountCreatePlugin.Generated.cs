@@ -12,7 +12,7 @@ using XrmTools;
 
 namespace XrmGenTestClassic
 {
-    [GeneratedCode("TemplatedCodeGenerator", "1.4.0.0")]
+    [GeneratedCode("TemplatedCodeGenerator", "1.4.3.0")]
     public partial class AccountCreatePlugin
     {
         /// <summary>
@@ -23,7 +23,6 @@ namespace XrmGenTestClassic
             var scope = new DependencyScope<AccountCreatePlugin>();
             scope.Set<IServiceProvider>(serviceProvider);
             scope.Set<IPluginExecutionContext>((IPluginExecutionContext)serviceProvider.GetService(typeof(IPluginExecutionContext)));
-        
         
             return scope;
         }

@@ -13,7 +13,7 @@ using XrmTools;
 
 namespace XrmGenTest
 {
-    [GeneratedCode("TemplatedCodeGenerator", "1.4.0.0")]
+    [GeneratedCode("TemplatedCodeGenerator", "1.4.3.0")]
     public partial class EchoApi
     {
         /// <summary>
@@ -24,7 +24,6 @@ namespace XrmGenTest
             var scope = new DependencyScope<EchoApi>();
             scope.Set<IServiceProvider>(serviceProvider);
             scope.Set<IPluginExecutionContext>((IPluginExecutionContext)serviceProvider.GetService(typeof(IPluginExecutionContext)));
-        
         
             return scope;
         }

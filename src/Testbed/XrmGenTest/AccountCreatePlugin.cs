@@ -29,6 +29,6 @@ public partial class AccountCreatePlugin : PluginBase, IPlugin
 {
     public void ExecuteLocal(IServiceProvider serviceProvider)
     {
-        // It's just business logic!
+        // This is a simple plugin that doesn't use dependency injection
     }
 }
