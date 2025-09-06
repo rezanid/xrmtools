@@ -15,6 +15,7 @@ end~}}
 using Microsoft.Xrm.Sdk;
 using Microsoft.Xrm.Sdk.Client;
 using Microsoft.Xrm.Sdk.Extensions;
+using Microsoft.Xrm.Sdk.PluginTelemetry;
 using System;
 using System.CodeDom.Compiler;
 using System.Collections.Generic;
@@ -54,21 +55,26 @@ namespace {{ first_plugin_type?.namespace ?? config.default_namespace }}
     {{~end~}}
     {{~end~}}
 
-	    protected static T{{plugintype.is_nullable_enabled ? "?" : ""}} EntityOrDefault<T>(DataCollection<string, object> keyValues, string key) where T : Entity
+	    private static T{{plugintype.is_nullable_enabled ? "?" : ""}} EntityOrDefault<T>(DataCollection<string, object> keyValues, string key) where T : Entity
         {
             if (keyValues is null) return default;
             return keyValues.TryGetValue(key, out var obj) ? obj is Entity entity ? entity.ToEntity<T>() : default : default;
         }
 
-        protected static T{{plugintype.is_nullable_enabled ? "?" : ""}} EntityOrDefault<T>(DataCollection<string, Entity> keyValues, string key) where T : Entity
+        private static T{{plugintype.is_nullable_enabled ? "?" : ""}} EntityOrDefault<T>(DataCollection<string, Entity> keyValues, string key) where T : Entity
         {
             if (keyValues is null) return default;
             return keyValues.TryGetValue(key, out var entity) ? entity?.ToEntity<T>() : default;
         }
+
+        private static bool TryGet<T>(out T instance) => DependencyScope<{{plugintype.type_name | last_segment}}>.Current.TryGet(out instance);
+        private static T Require<T>() => DependencyScope<{{plugintype.type_name | last_segment}}>.Current.Require<T>();
+        private static T Set<T>(T instance) => DependencyScope<{{plugintype.type_name | last_segment}}>.Current.Set(instance);
+        private static T SetAndTrack<T>(T instance) where T : IDisposable => DependencyScope<{{plugintype.type_name | last_segment}}>.Current.SetAndTrack(instance);
     {{~if plugintype.custom_api ~}}
     {{~if plugintype.custom_api.request_parameters.size > 0~}}
 
-        protected static {{plugintype.custom_api.request_type_name}} GetRequest(IExecutionContext context)
+        private static {{plugintype.custom_api.request_type_name}} GetRequest(IExecutionContext context)
         {
             var request = new {{plugintype.custom_api.request_type_name}}();
             {{~for param in plugintype.custom_api.request_parameters~}}
@@ -118,7 +124,7 @@ namespace {{ first_plugin_type?.namespace ?? config.default_namespace }}
     {{~end~}}
     {{~if plugintype.custom_api.response_properties.size > 0~}}
 
-        protected static void SetResponse(IExecutionContext context, {{plugintype.custom_api.response_type_name}} response)
+        private static void SetResponse(IExecutionContext context, {{plugintype.custom_api.response_type_name}} response)
         {
             {{~for param in plugintype.custom_api.response_properties~}}
             {{~case param.type~}}

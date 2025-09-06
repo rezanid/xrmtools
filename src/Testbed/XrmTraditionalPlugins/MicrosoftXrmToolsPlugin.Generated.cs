@@ -1,6 +1,7 @@
 using Microsoft.Xrm.Sdk;
 using Microsoft.Xrm.Sdk.Client;
 using Microsoft.Xrm.Sdk.Extensions;
+using Microsoft.Xrm.Sdk.PluginTelemetry;
 using System;
 using System.CodeDom.Compiler;
 using System.Collections.Generic;
@@ -12,13 +13,9 @@ using XrmTools;
 
 namespace XrmTraditionalPlugins
 {
-    [GeneratedCode("TemplatedCodeGenerator", "1.4.2.0")]
+    [GeneratedCode("TemplatedCodeGenerator", "1.4.3.0")]
     public partial class CleanAccountPostOperation
     {
-        public string Config => DependencyScope<CleanAccountPostOperation>.Current.Require<string>("Config");
-        public string SecureConfig => DependencyScope<CleanAccountPostOperation>.Current.Require<string>("SecureConfig");
-
-        
         /// <summary>
         /// This method should be called before accessing any target, image or any of your dependencies.
         /// </summary>
@@ -28,13 +25,10 @@ namespace XrmTraditionalPlugins
             scope.Set<IServiceProvider>(serviceProvider);
             scope.Set<IPluginExecutionContext>((IPluginExecutionContext)serviceProvider.GetService(typeof(IPluginExecutionContext)));
         
-            // Store unsecure plugin configuration (named)
-            scope.Set<string>("Config", this.Config);
-            // Store secure plugin configuration (named)
-            scope.Set<string>("SecureConfig", this.SecureConfig);
-        
-            scope.Set<Microsoft.Xrm.Sdk.IOrganizationServiceFactory>((Microsoft.Xrm.Sdk.IOrganizationServiceFactory)serviceProvider.GetService(typeof(Microsoft.Xrm.Sdk.IOrganizationServiceFactory)));
-        
+            scope.Set<IOrganizationServiceFactory>((IOrganizationServiceFactory)serviceProvider.GetService(typeof(IOrganizationServiceFactory)));
+            scope.Set<ITracingService>((ITracingService)serviceProvider.GetService(typeof(ITracingService)));
+            scope.Set<ILogger>((ILogger)serviceProvider.GetService(typeof(ILogger)));
+            scope.Set<IExecutionContext>(scope.Set(new RemoteExecutionContext()));
             return scope;
         }
 	    [EntityLogicalName("account")]
@@ -50,7 +44,7 @@ namespace XrmTraditionalPlugins
 	    
 	    		public partial class Fields
 	    		{
-	    			public const string AccountCategoryCode = "accountcategorycode";
+	    			public const string AccountNumber = "accountnumber";
 	    			public const string Description = "description";
 	    			public const string Name = "name";
 	    		
@@ -58,7 +52,7 @@ namespace XrmTraditionalPlugins
 	    			{
 	    				switch (logicalName)
 	    				{
-	    					case nameof(AccountCategoryCode): attribute = AccountCategoryCode; return true;
+	    					case nameof(AccountNumber): attribute = AccountNumber; return true;
 	    					case nameof(Description): attribute = Description; return true;
 	    					case nameof(Name): attribute = Name; return true;
 	    					default: attribute = null; return false;
@@ -75,29 +69,19 @@ namespace XrmTraditionalPlugins
 	    
 	    		public partial class OptionSets
 	    		{
-	    			/// <summary>
-	    			/// Drop-down list for selecting the category of the account.
-	    			/// </summary>
-	    			[DataContract]
-	    			public enum Category
-	    			{
-	    				[EnumMember]
-	    				PreferredCustomer = 1,
-	    				[EnumMember]
-	    				Standard = 2,
-	    			}
 	    		}
 	    	}
 	    
 	    	/// <summary>
+	    	/// Max Length: 20</br>
 	    	/// Required Level: None</br>
 	    	/// Valid for: Create Update Read</br>
 	    	/// </summary>
-	    	[AttributeLogicalName("accountcategorycode")]
-	    	public TargetAccount.Meta.OptionSets.Category? AccountCategoryCode
+	    	[AttributeLogicalName("accountnumber")]
+	    	public string AccountNumber
 	    	{
-	    		get => TryGetAttributeValue("accountcategorycode", out OptionSetValue opt) && opt != null ? (TargetAccount.Meta.OptionSets.Category?)opt.Value : null;
-	    		set => this["accountcategorycode"] = value == null ? null : new OptionSetValue((int)value);
+	    		get => TryGetAttributeValue("accountnumber", out string value) ? value : null;
+	    		set => this["accountnumber"] = value;
 	    	}
 	    	/// <summary>
 	    	/// Max Length: 2000</br>
@@ -129,16 +113,21 @@ namespace XrmTraditionalPlugins
         }
 
 
-	    protected static T EntityOrDefault<T>(DataCollection<string, object> keyValues, string key) where T : Entity
+	    private static T EntityOrDefault<T>(DataCollection<string, object> keyValues, string key) where T : Entity
         {
             if (keyValues is null) return default;
             return keyValues.TryGetValue(key, out var obj) ? obj is Entity entity ? entity.ToEntity<T>() : default : default;
         }
 
-        protected static T EntityOrDefault<T>(DataCollection<string, Entity> keyValues, string key) where T : Entity
+        private static T EntityOrDefault<T>(DataCollection<string, Entity> keyValues, string key) where T : Entity
         {
             if (keyValues is null) return default;
             return keyValues.TryGetValue(key, out var entity) ? entity?.ToEntity<T>() : default;
         }
+
+        private static bool TryGet<T>(out T instance) => DependencyScope<CleanAccountPostOperation>.Current.TryGet(out instance);
+        private static T Require<T>() => DependencyScope<CleanAccountPostOperation>.Current.Require<T>();
+        private static T Set<T>(T instance) => DependencyScope<CleanAccountPostOperation>.Current.Set(instance);
+        private static T SetAndTrack<T>(T instance) where T : IDisposable => DependencyScope<CleanAccountPostOperation>.Current.SetAndTrack(instance);
     }
 }
