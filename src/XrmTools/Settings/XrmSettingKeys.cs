@@ -10,6 +10,6 @@ public static class XrmSettingKeys
     public const string DataverseGlobalOptionSetsTemplateFilePath = "DataverseGlobalOptionSetsTemplateFilePath";
     public const string DataverseGlobalOptionSetsFilePath = "DataverseGlobalOptionSetsFilePath";
     public static string[] All = [ 
-        EnvironmentUrl,  DataverseConnectionString, DataversePluginTemplateFilePath, DataverseEntityTemplateFilePath ];
+        EnvironmentUrl,  DataverseConnectionString, DataversePluginTemplateFilePath, DataverseEntityTemplateFilePath, DataverseGlobalOptionSetsTemplateFilePath, DataverseGlobalOptionSetsFilePath ];
 }
 #nullable restore

@@ -91,16 +91,25 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="NewHelloWorldPlugin.cs">
-      <Generator>Xrm Tools Plugin Code Generator</Generator>
-      <LastGenOutput>NewHelloWorldPlugin.Generated.cs</LastGenOutput>
-      <IsXrmPlugin>True</IsXrmPlugin>
+    <Compile Include="Entities.cs">
+      <Generator>XrmTools Entity Generator</Generator>
+      <LastGenOutput>Entities.Generated.cs</LastGenOutput>
     </Compile>
-    <Compile Include="HelloWorldPlugin.cs" />
-    <Compile Include="NewHelloWorldPlugin.Generated.cs">
+    <Compile Include="Entities.Generated.cs">
       <AutoGen>True</AutoGen>
       <DesignTime>True</DesignTime>
-      <DependentUpon>NewHelloWorldPlugin.cs</DependentUpon>
+      <DependentUpon>Entities.cs</DependentUpon>
+    </Compile>
+    <Compile Include="MicrosoftXrmToolsPlugin.cs">
+      <Generator>Xrm Tools Plugin Code Generator</Generator>
+      <LastGenOutput>MicrosoftXrmToolsPlugin.Generated.cs</LastGenOutput>
+      <IsXrmPlugin>True</IsXrmPlugin>
+    </Compile>
+    <Compile Include="MicrosoftPlugin.cs" />
+    <Compile Include="MicrosoftXrmToolsPlugin.Generated.cs">
+      <AutoGen>True</AutoGen>
+      <DesignTime>True</DesignTime>
+      <DependentUpon>MicrosoftXrmToolsPlugin.cs</DependentUpon>
     </Compile>
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>

@@ -1,8 +1,11 @@
 {{- # Initialize collections for local variables
 localTypeNames = [] -}}
 {{- localDeps = [] -}}
-{{- knownDeps = ["ITracingService", "IOrganizationServiceFactory", "IServiceEndpointNotificationService", "IManagedIdentityService"] -}}
+{{- knownDeps = ["Microsoft.Xrm.Sdk.ITracingService", "Microsoft.Xrm.Sdk.IOrganizationServiceFactory", "Microsoft.Xrm.Sdk.IServiceEndpointNotificationService", "Microsoft.Xrm.Sdk.IManagedIdentityService", "Microsoft.Xrm.Sdk.PluginTelemetry.ILogger"] -}}
 
+{{-func remove_known_ns(typeName)
+    ret typeName | string.replace_first "Microsoft.Xrm.Sdk.PluginTelemetry." "" | string.replace_first "Microsoft.Xrm.Sdk." ""
+end -}}
 {{func varName(name) 
     ret (name | string.slice 0 1 | string.downcase) + (name | string.slice 1) 
 end -}}
@@ -34,8 +37,8 @@ end -}}
     if dep.full_type_name == "System.IServiceProvider" 
         ret "serviceProvider" 
     end
-    if (knownDeps | array.contains dep.short_type_name)
-        ret "(" + dep.full_type_name + ")serviceProvider.GetService(typeof(" + dep.full_type_name + "))"
+    if (knownDeps | array.contains dep.full_type_name)
+        ret "(" + dep.full_type_name | remove_known_ns + ")serviceProvider.GetService(typeof(" + dep.full_type_name | remove_known_ns + "))"
     end
     if dep.is_local_variable_needed 
         ret varName(dep.short_type_name) 
@@ -54,7 +57,7 @@ end -}}
     else
         $expr = "scope.Set("
     end
-    $expr += "new " + dep.resolved_full_type_name + "(" + ($ctorList | array.join ", ") + ")" 
+    $expr += "new " + dep.resolved_full_type_name | remove_known_ns + "(" + ($ctorList | array.join ", ") + ")" 
     if $propList.size > 0 
         $expr = $expr + " { " + ($propList | array.join ", ") + " }" 
     end 
@@ -67,13 +70,13 @@ end -}}
         ret "this." + dep.provided_by_property
     end 
     if is_named(dep)
-        ret "DependencyScope<" + (plugintype.type_name | last_segment) + ">.Current.Require<" + dep.full_type_name + ">(\"" + dep_name(dep) + "\")" 
+        ret "DependencyScope<" + (plugintype.type_name | last_segment) + ">.Current.Require<" + dep.full_type_name | remove_known_ns + ">(\"" + dep_name(dep) + "\")" 
     end
     if dep.full_type_name == "System.IServiceProvider" 
         ret "serviceProvider" 
     end
-    if (knownDeps | array.contains dep.short_type_name)
-        ret "(" + dep.full_type_name + ")serviceProvider.GetService(typeof(" + dep.full_type_name + "))"
+    if (knownDeps | array.contains dep.full_type_name)
+        ret "(" + dep.full_type_name | remove_known_ns + ")serviceProvider.GetService(typeof(" + dep.full_type_name | remove_known_ns + "))"
     end
     $ctorList = [] 
     $propList = [] 
@@ -116,7 +119,7 @@ protected {{initialize_exists ? 'override ' : '' }}IDisposable CreateScope(IServ
 {{~ if localDeps.size > 0 && dependencies.size > 0 ~}}{{ "\r\n" }}{{~ end ~}}
 {{~ for dep in dependencies ~}}
     {{~ if !is_named(dep) && dep.full_type_name != "System.String" ~}}
-    scope.Set<{{ dep.full_type_name }}>({{ instantiate(dep) }});
+    scope.Set<{{ dep.full_type_name | remove_known_ns }}>({{ instantiate(dep) }});
     {{~ end ~}}
 {{~ end ~}}
     return scope;
