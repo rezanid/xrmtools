@@ -6,7 +6,7 @@ localTypeNames = [] -}}
 {{-func remove_known_ns(typeName)
     ret typeName | string.replace_first "Microsoft.Xrm.Sdk.PluginTelemetry." "" | string.replace_first "Microsoft.Xrm.Sdk." ""
 end -}}
-{{func varName(name) 
+{{func varName(name)
     ret (name | string.slice 0 1 | string.downcase) + (name | string.slice 1) 
 end -}}
 
@@ -18,7 +18,8 @@ end -}}
         gather_locals(sub) 
     end 
     # Exclude IServiceProvider from locals; it's provided by CreateScope parameter
-    if dep.is_local_variable_needed && !dep.provided_by_property && !is_named(dep) && dep.full_type_name != "System.IServiceProvider"
+    # Also exclude string type due to special treatment by DI.
+    if dep.is_local_variable_needed && !dep.provided_by_property && !is_named(dep) && dep.full_type_name != "System.IServiceProvider" && dep.full_type_name != "string"
         if !(localTypeNames | array.contains dep.full_type_name) 
             localTypeNames = localTypeNames | array.add dep.full_type_name 
             localDeps = localDeps | array.add dep 
@@ -30,7 +31,7 @@ end -}}
     # Prefer provider property when available (even if the dependency is named)
     if dep.provided_by_property 
         ret "this." + dep.provided_by_property
-    end 
+    end
     if is_named(dep)
         ret "DependencyScope<" + (plugintype.type_name | last_segment) + ">.Current.Require<" + dep.full_type_name + ">(\"" + dep_name(dep) + "\")" 
     end

@@ -13,10 +13,16 @@ using XrmTools;
 
 namespace XrmTraditionalPlugins
 {
-    [GeneratedCode("TemplatedCodeGenerator", "1.4.3.0")]
+    [GeneratedCode("TemplatedCodeGenerator", "1.4.4.0")]
     public partial class CleanAccountPostOperation
     {
-        /// <summary>
+        // full_type_name:Microsoft.Xrm.Sdk.IOrganizationServiceFactory | dep_name:  | provided_by_property: 
+            // full_type_name:Microsoft.Xrm.Sdk.ITracingService | dep_name:  | provided_by_property: 
+            // full_type_name:Microsoft.Xrm.Sdk.PluginTelemetry.ILogger | dep_name:  | provided_by_property: 
+            // full_type_name:Microsoft.Xrm.Sdk.IExecutionContext | dep_name:  | provided_by_property: 
+            // full_type_name:XrmTraditionalPlugins.IBusinessService | dep_name:  | provided_by_property: 
+            // full_type_name:string | dep_name: Config | provided_by_property: Config
+            /// <summary>
         /// This method should be called before accessing any target, image or any of your dependencies.
         /// </summary>
         protected IDisposable CreateScope(IServiceProvider serviceProvider)
@@ -25,10 +31,13 @@ namespace XrmTraditionalPlugins
             scope.Set<IServiceProvider>(serviceProvider);
             scope.Set<IPluginExecutionContext>((IPluginExecutionContext)serviceProvider.GetService(typeof(IPluginExecutionContext)));
         
+            var iLogger = (ILogger)serviceProvider.GetService(typeof(ILogger));
+        
             scope.Set<IOrganizationServiceFactory>((IOrganizationServiceFactory)serviceProvider.GetService(typeof(IOrganizationServiceFactory)));
             scope.Set<ITracingService>((ITracingService)serviceProvider.GetService(typeof(ITracingService)));
             scope.Set<ILogger>((ILogger)serviceProvider.GetService(typeof(ILogger)));
             scope.Set<IExecutionContext>(scope.Set(new RemoteExecutionContext()));
+            scope.Set<XrmTraditionalPlugins.IBusinessService>(scope.Set(new XrmTraditionalPlugins.BusinessService((ILogger)serviceProvider.GetService(typeof(ILogger)), this.Config)));
             return scope;
         }
 	    [EntityLogicalName("account")]
@@ -44,7 +53,6 @@ namespace XrmTraditionalPlugins
 	    
 	    		public partial class Fields
 	    		{
-	    			public const string AccountNumber = "accountnumber";
 	    			public const string Description = "description";
 	    			public const string Name = "name";
 	    		
@@ -52,7 +60,6 @@ namespace XrmTraditionalPlugins
 	    			{
 	    				switch (logicalName)
 	    				{
-	    					case nameof(AccountNumber): attribute = AccountNumber; return true;
 	    					case nameof(Description): attribute = Description; return true;
 	    					case nameof(Name): attribute = Name; return true;
 	    					default: attribute = null; return false;
@@ -72,17 +79,6 @@ namespace XrmTraditionalPlugins
 	    		}
 	    	}
 	    
-	    	/// <summary>
-	    	/// Max Length: 20</br>
-	    	/// Required Level: None</br>
-	    	/// Valid for: Create Update Read</br>
-	    	/// </summary>
-	    	[AttributeLogicalName("accountnumber")]
-	    	public string AccountNumber
-	    	{
-	    		get => TryGetAttributeValue("accountnumber", out string value) ? value : null;
-	    		set => this["accountnumber"] = value;
-	    	}
 	    	/// <summary>
 	    	/// Max Length: 2000</br>
 	    	/// Required Level: None</br>
@@ -124,10 +120,5 @@ namespace XrmTraditionalPlugins
             if (keyValues is null) return default;
             return keyValues.TryGetValue(key, out var entity) ? entity?.ToEntity<T>() : default;
         }
-
-        private static bool TryGet<T>(out T instance) => DependencyScope<CleanAccountPostOperation>.Current.TryGet(out instance);
-        private static T Require<T>() => DependencyScope<CleanAccountPostOperation>.Current.Require<T>();
-        private static T Set<T>(T instance) => DependencyScope<CleanAccountPostOperation>.Current.Set(instance);
-        private static T SetAndTrack<T>(T instance) where T : IDisposable => DependencyScope<CleanAccountPostOperation>.Current.SetAndTrack(instance);
     }
 }
