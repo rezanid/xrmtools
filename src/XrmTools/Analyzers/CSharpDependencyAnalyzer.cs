@@ -152,9 +152,9 @@ public class CSharpDependencyAnalyzer : ICSharpDependencyAnalyzer
                     continue;
                 }
 
-                if (param.Type.SpecialType == SpecialType.System_String && originalTypeSymbol is null && stringIndex < 2)
+                if (param.Type.SpecialType == SpecialType.System_String && (pDepName?.EndsWith("config", System.StringComparison.OrdinalIgnoreCase) ?? false || param.Name.StartsWith("config", System.StringComparison.OrdinalIgnoreCase) || param.Name.StartsWith("secureconfig", System.StringComparison.OrdinalIgnoreCase)))
                 {
-                    var special = stringIndex == 0 ? "Config" : "SecureConfig";
+                    var special = pDepName ?? (param.Name.StartsWith("config", System.StringComparison.OrdinalIgnoreCase) ? "Config" : "SecureConfig");
                     stringIndex++;
 
                     node.Dependencies.Add(new Dependency
@@ -167,7 +167,8 @@ public class CSharpDependencyAnalyzer : ICSharpDependencyAnalyzer
                         Dependencies = [],
                         IsProperty = false,
                         IsDisposable = false,
-                        ProvidedByName = pDepName ?? special
+                        ProvidedByName = pDepName ?? special,
+                        ProvidedByProperty = pDepName ?? special
                     });
                     continue;
                 }

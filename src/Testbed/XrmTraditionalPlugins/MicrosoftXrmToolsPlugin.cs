@@ -2,21 +2,36 @@
 using Microsoft.Xrm.Sdk.PluginTelemetry;
 using System;
 using System.Net.Http;
+using XrmTools;
 using XrmTools.Meta.Attributes;
 
 namespace XrmTraditionalPlugins
 {
-  [Plugin]
-  [Step("Create", "account", "accountnumber, name, description", Stages.PostOperation, ExecutionMode.Asynchronous)]
-  public partial class CleanAccountPostOperation : IPlugin
+  public abstract class PluginBase<TPlugin> where TPlugin : IPlugin
   {
+    protected static T Require<T>()
+      => DependencyScope<TPlugin>.Current.Require<T>();
+    protected static T Require<T>(string name)
+      => DependencyScope<TPlugin>.Current.Require<T>(name);
+    protected static bool TryGet<T>(out T instance)
+      => DependencyScope<TPlugin>.Current.TryGet(out instance);
+    protected static bool TryGet<T>(string name, out T instance)
+      => DependencyScope<TPlugin>.Current.TryGet(name, out instance);
+    protected static T Set<T>(T instance)
+      => DependencyScope<TPlugin>.Current.Set(instance);
+  }
+
+  [Plugin]
+  [Step("Create", "account", "name,description", Stages.PostOperation, ExecutionMode.Asynchronous)]
+  public partial class CleanAccountPostOperation : PluginBase<CleanAccountPostOperation>, IPlugin
+  {    
     [Dependency]
     IOrganizationServiceFactory ServiceFactory { get => Require<IOrganizationServiceFactory>(); }
     
     [DependencyProvider]
     IOrganizationService CurrentUserService 
     { 
-        get => TryGet<IOrganizationService>(out var service) ? service : Set(ServiceFactory.CreateOrganizationService(Context.UserId));
+      get => TryGet<IOrganizationService>(out var service) ? service : Set(ServiceFactory.CreateOrganizationService(Context.UserId));
     }
 
     [Dependency]
@@ -27,7 +42,11 @@ namespace XrmTraditionalPlugins
     
     [Dependency]
     IExecutionContext Context { get => Require<IExecutionContext>(); }
+    
+    [Dependency]
+    IBusinessService Business { get => Require<IBusinessService>(); }
 
+    //[DependencyProvider("Config")]
     public string Config { get; set; } = "https://echo.free.beeceptor.com/sample-request?author=XrmTools";
 
     public CleanAccountPostOperation(string config) { Config = config; }
@@ -127,5 +146,22 @@ namespace XrmTraditionalPlugins
         throw new InvalidPluginExecutionException(e.Message, e);
       }
     }
+  }
+  
+  public interface IBusinessService 
+  {
+    void DoWork(Entity entity);  
+  }
+
+  public class BusinessService : IBusinessService
+  {
+    //[Dependency]
+    //public string Config { get; set; }
+    
+    public BusinessService(ILogger logger, string config)
+    {
+            
+    }
+    public void DoWork(Entity entity) { throw new NotImplementedException(); }
   }
 }
