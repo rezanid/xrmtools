@@ -361,7 +361,7 @@ internal class CSharpXrmMetaParser(
             BaseTypeName = typeSymbol.BaseType?.Name,
             BaseTypeNamespace = typeSymbol.BaseType?.ContainingNamespace.ToDisplayString(),
             BaseTypeMethodNames = typeSymbol.BaseType?.GetMembers()
-                .Where(m => m.Kind == SymbolKind.Method && m.DeclaredAccessibility is Accessibility.Public or Accessibility.ProtectedAndInternal or Accessibility.Internal)
+                .Where(m => m.Kind == SymbolKind.Method && m.DeclaredAccessibility is Accessibility.Public or Accessibility.ProtectedAndInternal or Accessibility.Internal or Accessibility.Protected)
                 .Select(m => m.Name).ToList() ?? [],
             TypeName = typeName,
             // Default values:
