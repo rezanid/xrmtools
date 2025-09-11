@@ -186,8 +186,15 @@ internal class XrmPluginDefinitionCompletionSource(
     {
         var entityMetadataRepository = await repositoryFactory.CreateRepositoryAsync<IEntityMetadataRepository>();
         if (entityMetadataRepository == null) return CompletionContext.Empty;
-        var entities = await entityMetadataRepository.GetAsync(cancellationToken).ConfigureAwait(false);
-        return new CompletionContext([.. entities.Select(ToCompletionItem)]);
+        try
+        {
+            var entities = await entityMetadataRepository.GetAsync(cancellationToken).ConfigureAwait(false);
+            return new CompletionContext([.. entities.Select(ToCompletionItem)]);
+        }
+        catch (Exception ex)
+        {
+            return CompletionContext.Empty;
+        }
     }
 
     /// <summary>
@@ -219,7 +226,15 @@ internal class XrmPluginDefinitionCompletionSource(
 
         var entityMetadataRepository = await repositoryFactory.CreateRepositoryAsync<IEntityMetadataRepository>();
         if (entityMetadataRepository == null) return CompletionContext.Empty;
-        var entity = await entityMetadataRepository.GetAsync(entityName, cancellationToken).ConfigureAwait(false);
+        EntityMetadata entity;
+        try
+        {
+            entity = await entityMetadataRepository.GetAsync(entityName, cancellationToken).ConfigureAwait(false);
+        }
+        catch (Exception ex)
+        {
+            return CompletionContext.Empty;
+        }
         var availableAttributes = entity?.Attributes?.Where(IsSupportedAttribute).ToArray();
         if (availableAttributes == null || availableAttributes.Length == 0) return CompletionContext.Empty;
 
@@ -242,7 +257,7 @@ internal class XrmPluginDefinitionCompletionSource(
             .ToList();
 
         return new CompletionContext([.. suggestedAttributes]);
-    }
+        }
 
     private CompletionItem ToCompletionItem(EntityMetadata entity)
     {
