@@ -106,8 +106,9 @@ namespace {{ first_plugin_type?.namespace ?? config.default_namespace }}
             {
                 {{~if param.type != (param.type_name | string.replace_first '?' '' true)~}}
                 request.{{param.name}} = {{param.name | string.downcase}}.Entities
-                    .Select(e => new {{param.full_type_name | text_between '<' '>'}}(e.Id)
+                    .Select(e => new {{param.full_type_name | text_between '<' '>'}}
                     {
+                        Id = e.Id,
                         Attributes = e.Attributes
                     }).ToList();
                 {{~else~}}
@@ -119,8 +120,9 @@ namespace {{ first_plugin_type?.namespace ?? config.default_namespace }}
                 && {{param.name | string.downcase}} != null)
             {
                 {{~if param.type != (param.type_name | string.replace_first "?" "" true)~}}
-                request.{{param.name}} = new {{param.full_type_name | string.replace_first '?' ''}}({{param.name | string.downcase}}.Id)
-                { 
+                request.{{param.name}} = new {{param.full_type_name | string.replace_first '?' ''}}
+                {
+                    Id = {{param.name | string.downcase}}.Id,
                     Attributes = {{param.name | string.downcase}}.Attributes
                 };
                 {{~else~}}
