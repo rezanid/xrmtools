@@ -4,7 +4,7 @@ namespace XrmTools
     using System.Collections.Generic;
     using System.Threading;
 
-    sealed class DependencyScope<TTag> : IDisposable
+    public sealed class DependencyScope<TTag> : IDisposable
     {
         private static readonly AsyncLocal<DependencyScope<TTag>> s_current = new AsyncLocal<DependencyScope<TTag>>();
         public static DependencyScope<TTag> Current { get { return s_current.Value; } }
