@@ -45,7 +45,7 @@ public partial class XrmToolsPackage
     {
         var infoBar = new NugetUpdateInfoBar
         {
-            PromptMessage = $"“XrmTools.Meta.Attributes” is below 1.0.55 in {hits.Count} project(s): " +
+            PromptMessage = $"“XrmTools.Meta.Attributes” is below 1.0.56 in {hits.Count} project(s): " +
             string.Join(", ", hits.Take(5).Select(h => $"{h.ProjectName} ({h.Version})")) +
             (hits.Count > 5 ? ", …" : "")
         };
