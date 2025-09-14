@@ -18,10 +18,12 @@ public interface ICSharpDependencyAnalyzer
 public class CSharpDependencyAnalyzer : ICSharpDependencyAnalyzer
 {
     private INamedTypeSymbol? serviceProviderType;
+    private INamedTypeSymbol? dependencyAttributeSymbol; // cached symbol for [Dependency]
 
     public Dependency Analyze(INamedTypeSymbol rootType, Compilation compilation)
     {
         serviceProviderType = compilation.GetTypeByMetadataName("System.IServiceProvider");
+        dependencyAttributeSymbol = compilation.GetTypeByMetadataName(typeof(DependencyAttribute).FullName!);
         var implementationMap = BuildImplementationMap(compilation);
         var providerProperties = DiscoverProviderProperties(rootType);
         var dependedOn = new HashSet<INamedTypeSymbol>(SymbolEqualityComparer.Default);
@@ -47,6 +49,56 @@ public class CSharpDependencyAnalyzer : ICSharpDependencyAnalyzer
         return null;
     }
 
+    // Enumerate properties (including inherited) that have [Dependency] attribute (base first, override replacement).
+    private IEnumerable<IPropertySymbol> EnumerateDependencyProperties(INamedTypeSymbol typeSymbol)
+    {
+        var ordered = new List<IPropertySymbol>();
+        var indexByName = new Dictionary<string, int>(System.StringComparer.Ordinal);
+        var depAttrSymbol = dependencyAttributeSymbol;
+
+        void Visit(INamedTypeSymbol? t)
+        {
+            if (t is null || t.SpecialType == SpecialType.System_Object) return;
+            Visit(t.BaseType); // ensure base-first ordering
+
+            foreach (var member in t.GetMembers())
+            {
+                if (member.Kind != SymbolKind.Property) continue;
+                var prop = (IPropertySymbol)member;
+
+                // Detect [Dependency] without LINQ
+                bool hasDependency = false;
+                var attrs = prop.GetAttributes();
+                for (int i = 0; i < attrs.Length; i++)
+                {
+                    var ac = attrs[i].AttributeClass;
+                    if (ac != null && depAttrSymbol != null && SymbolEqualityComparer.Default.Equals(ac, depAttrSymbol))
+                    {
+                        hasDependency = true;
+                        break;
+                    }
+                }
+                if (!hasDependency) continue;
+
+                if (indexByName.TryGetValue(prop.Name, out var idx))
+                {
+                    // Override/hide: replace symbol keeping base slot
+                    ordered[idx] = prop;
+                }
+                else
+                {
+                    indexByName[prop.Name] = ordered.Count;
+                    ordered.Add(prop);
+                }
+            }
+        }
+
+        Visit(typeSymbol);
+
+        for (int i = 0; i < ordered.Count; i++)
+            yield return ordered[i];
+    }
+
     private Dependency BuildNode(
         INamedTypeSymbol typeSymbol,
         INamedTypeSymbol? originalTypeSymbol,
@@ -68,22 +120,28 @@ public class CSharpDependencyAnalyzer : ICSharpDependencyAnalyzer
             IsDisposable = IsDisposable(typeSymbol)
         };
 
-        // Analyze [Dependency] properties
-        foreach (var prop in typeSymbol.GetMembers().OfType<IPropertySymbol>())
+        // Analyze [Dependency] properties (including those inherited)
+        foreach (var prop in EnumerateDependencyProperties(typeSymbol))
         {
-            var depAttrs = prop.GetAttributes()
-                               .Where(a => a.AttributeClass?.ToDisplayString() == typeof(DependencyAttribute).FullName)
-                               .ToArray();
-            if (depAttrs.Length == 0)
+            // Collect dependency attributes (avoid LINQ Where)
+            var allAttrs = prop.GetAttributes();
+            var depAttrList = new List<AttributeData>();
+            for (int i = 0; i < allAttrs.Length; i++)
+            {
+                var ac = allAttrs[i].AttributeClass;
+                if (ac != null && SymbolEqualityComparer.Default.Equals(ac, dependencyAttributeSymbol))
+                    depAttrList.Add(allAttrs[i]);
+            }
+            if (depAttrList.Count == 0)
                 continue;
 
-            var depName = TryGetDependencyNameFromAttributes(depAttrs);
+            var depName = TryGetDependencyNameFromAttributes(depAttrList);
             if (SymbolEqualityComparer.Default.Equals(prop.Type, serviceProviderType))
             {
                 node.Dependencies.Add(new()
                 {
                     PropertyName = prop.Name,
-                    FullTypeName = serviceProviderType.ToDisplayString(),
+                    FullTypeName = serviceProviderType!.ToDisplayString(),
                     ShortTypeName = serviceProviderType.Name,
                     Dependencies = [],
                     IsProperty = true,

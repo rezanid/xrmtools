@@ -1,17 +1,30 @@
 {{- # Initialize collections for local variables
 localTypeNames = [] -}}
 {{- localDeps = [] -}}
-{{- knownDeps = ["Microsoft.Xrm.Sdk.ITracingService", "Microsoft.Xrm.Sdk.IOrganizationServiceFactory", "Microsoft.Xrm.Sdk.IServiceEndpointNotificationService", "Microsoft.Xrm.Sdk.IManagedIdentityService", "Microsoft.Xrm.Sdk.PluginTelemetry.ILogger"] -}}
+{{- knownDeps = [
+  "Microsoft.Xrm.Sdk.*"] -}}
 
 {{-func remove_known_ns(typeName)
     ret typeName | string.replace_first "Microsoft.Xrm.Sdk.PluginTelemetry." "" | string.replace_first "Microsoft.Xrm.Sdk." ""
 end -}}
-{{func varName(name)
+
+{{-func varName(name)
     ret (name | string.slice 0 1 | string.downcase) + (name | string.slice 1) 
 end -}}
 
 {{func is_named(dep); ret dep.provided_by_name; end -}}
 {{func dep_name(dep); ret dep.provided_by_name; end -}}
+{{func is_known(dep)
+  for known in knownDeps
+    if (known | string.ends_with "*") && (dep | string.starts_with (known | string.slice 0 math.minus(string.size(known), 1)))
+      ret true
+    end
+    if (known == dep)
+      ret true
+    end
+  end
+  ret false
+end -}}
 
 {{func gather_locals(dep) 
     for sub in dep.dependencies 
@@ -38,11 +51,11 @@ end -}}
     if dep.full_type_name == "System.IServiceProvider" 
         ret "serviceProvider" 
     end
-    if (knownDeps | array.contains dep.full_type_name)
+    if (dep.full_type_name | is_known)
         ret "(" + dep.full_type_name | remove_known_ns + ")serviceProvider.GetService(typeof(" + dep.full_type_name | remove_known_ns + "))"
     end
     if dep.is_local_variable_needed 
-        ret varName(dep.short_type_name) 
+        ret varName(dep.resolved_short_type_name) 
     end 
     $ctorList = [] 
     $propList = [] 
@@ -76,7 +89,7 @@ end -}}
     if dep.full_type_name == "System.IServiceProvider" 
         ret "serviceProvider" 
     end
-    if (knownDeps | array.contains dep.full_type_name)
+    if (dep.full_type_name | is_known)
         ret "(" + dep.full_type_name | remove_known_ns + ")serviceProvider.GetService(typeof(" + dep.full_type_name | remove_known_ns + "))"
     end
     $ctorList = [] 
@@ -99,23 +112,21 @@ end -}}
     gather_locals(dep) 
 end ~}}
 
-{{-initialize_exists = plugintype.base_type_method_names | array.contains "CreateScope"-}}
-
+{{-existing_method = plugintype.base_type_methods | find_method "CreateScope"-}}
 /// <summary>
 /// This method should be called before accessing any target, image or any of your dependencies.
 /// </summary>
-protected {{initialize_exists ? 'override ' : '' }}IDisposable CreateScope(IServiceProvider serviceProvider)
+protected {{existing_method ? 'override ' : '' }}IDisposable CreateScope(IServiceProvider serviceProvider)
 {
-    {{~if initialize_exists~}}
-    var scope = base.CreateScope(serviceProvider);
+    {{~if existing_method && existing_method.is_virtual~}}
+    var scope = (DependencyScope<{{plugintype.type_name | last_segment }}>)base.CreateScope(serviceProvider);
     {{~else~}}
     var scope = new DependencyScope<{{plugintype.type_name | last_segment }}>();
     {{~end~}}
     scope.Set<IServiceProvider>(serviceProvider);
-    scope.Set<IPluginExecutionContext>((IPluginExecutionContext)serviceProvider.GetService(typeof(IPluginExecutionContext)));
 
 {{~ for local in localDeps ~}}
-    var {{ varName(local.short_type_name) }} = {{ instantiate_new(local) }};
+    var {{ varName(local.resolved_short_type_name) }} = {{ instantiate_new(local) }};
 {{~ end ~}}
 {{~ if localDeps.size > 0 && dependencies.size > 0 ~}}{{ "\r\n" }}{{~ end ~}}
 {{~ for dep in dependencies ~}}
