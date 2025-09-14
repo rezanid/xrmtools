@@ -360,9 +360,9 @@ internal class CSharpXrmMetaParser(
             Namespace = typeSymbol.ContainingNamespace.ToDisplayString(),
             BaseTypeName = typeSymbol.BaseType?.Name,
             BaseTypeNamespace = typeSymbol.BaseType?.ContainingNamespace.ToDisplayString(),
-            BaseTypeMethodNames = typeSymbol.BaseType?.GetMembers()
+            BaseTypeMethods = typeSymbol.BaseType?.GetMembers()
                 .Where(m => m.Kind == SymbolKind.Method && m.DeclaredAccessibility is Accessibility.Public or Accessibility.ProtectedAndInternal or Accessibility.Internal or Accessibility.Protected)
-                .Select(m => m.Name).ToList() ?? [],
+                .Select(m => new TypeSymbol { Name = m.Name, IsAbstract = m.IsAbstract, IsVirtual = m.IsVirtual }).ToList() ?? [],
             TypeName = typeName,
             // Default values:
             Name = typeName,

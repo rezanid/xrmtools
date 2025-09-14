@@ -43,36 +43,38 @@ namespace {{ first_plugin_type?.namespace ?? config.default_namespace }}
 			{{~end~}}
 
 			{{~if entity_definition.attributes.size < 32~}}
-				public static bool TryGet(string logicalName, out string attribute)
+				public static bool TryGet(string memberName, out string logicalName)
 				{
-					switch (logicalName)
+					switch (memberName)
 					{
 					{{~for attribute in entity_definition.attributes | array.filter @supported_attribute~}}
-						case nameof({{attribute.schema_name}}): attribute = {{attribute.schema_name}}; return true;
+						case nameof({{attribute.schema_name}}): logicalName = {{attribute.schema_name}}; return true;
 					{{~end~}}
-						default: attribute = null; return false;
+						default: logicalName = null; return false;
 					}
 				}
+				public static IEnumerable<string> GetAll() => 
+					[{{-for attribute in entity_definition.attributes | array.filter @supported_attribute}}
+						{{-attribute.schema_name}},
+					{{-end~}}];
 			{{~else~}}
 				private static readonly Dictionary<string, string> _fieldMap = new Dictionary<string, string>
 				{
 				{{~for attribute in entity_definition.attributes | array.filter @supported_attribute~}}
-					[nameof({{attribute.schema_name}})] = {{attribute.schema_name}},
+					[nameof({{attribute.schema_name}})] = "{{attribute.logical_name}}",
 				{{~end~}}
 				};
 
-				public static bool TryGet(string logicalName, out string attribute)
-				{
-					return _fieldMap.TryGetValue(logicalName, out attribute);
-				}
+				public static bool TryGet(string memberName, out string logicalName)
+					=> _fieldMap.TryGetValue(memberName, out logicalName);
+
+				public static IEnumerable<string> GetAll() => _fieldMap.Values;
 			{{~end~}}
 
-				public string this[string logicalName]
-				{
-					get => TryGet(logicalName, out var value)
-						? value
-						: throw new ArgumentException("Invalid attribute logical name.", nameof(logicalName));
-				}
+				public static string Get(string memberName)
+					=> TryGet(memberName, out var logicalName)
+						? logicalName
+						: throw new ArgumentException("Invalid attribute logical name.", nameof(memberName));
 			}
 			{{~enum_attributes = model.global_option_set_code_gen.mode == 'GlobalOptionSetFile' ? (entity_definition.attributes | filter_local_enum_attributes) : (entity_definition.attributes | filter_enum_attributes)~}}
 			{{~if enum_attributes && !(enum_attributes.empty?)}}
