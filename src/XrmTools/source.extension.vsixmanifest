@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <PackageManifest Version="2.0.0" xmlns="http://schemas.microsoft.com/developer/vsx-schema/2011" xmlns:d="http://schemas.microsoft.com/developer/vsx-schema-design/2011">
     <Metadata>
-        <Identity Id="XrmTools.eba3cd26-ffad-444f-b4ef-771d430bacef" Version="1.4.5" Language="en-US" Publisher="Reza Niroomand" />
+        <Identity Id="XrmTools.eba3cd26-ffad-444f-b4ef-771d430bacef" Version="1.4.6" Language="en-US" Publisher="Reza Niroomand" />
         <DisplayName>Xrm Tools</DisplayName>
         <Description xml:space="preserve">Xrm Tools is a Visual Studio extension that aims to make Power Platform development feel native within Visual Studio. You will get Intellisense support for your Plugins, generate boiler plate code, typed entities and more right from within Visual Studio. You have full control over code generation using Scriban templates.</Description>
         <MoreInfo>https://github.com/rezanid/xrmtools</MoreInfo>
