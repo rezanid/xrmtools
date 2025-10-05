@@ -9,18 +9,18 @@ using System;
 using System.IO;
 using System.Linq;
 using System.Net.Http;
-using global::XrmTools.WebApi;
-using global::XrmTools.Environments;
-using global::XrmTools.Analyzers;
-using global::XrmTools.Xrm.Repositories;
-using global::XrmTools.Logging.Compatibility;
-using global::XrmTools.Meta.Model.Configuration;
-using global::XrmTools.WebApi.Entities;
-using global::XrmTools.Helpers;
+using XrmTools.WebApi;
+using XrmTools.Environments;
+using XrmTools.Analyzers;
+using XrmTools.Xrm.Repositories;
+using XrmTools.Logging.Compatibility;
+using XrmTools.Meta.Model.Configuration;
+using XrmTools.WebApi.Entities;
+using XrmTools.Helpers;
 using XrmTools.WebApi.Methods;
-using global::XrmTools.WebApi.Messages;
-using global::XrmTools.WebApi.Batch;
-using global::XrmTools.Xrm;
+using XrmTools.WebApi.Messages;
+using XrmTools.WebApi.Batch;
+using XrmTools.Xrm;
 using XrmTools.Meta.Attributes;
 using System.ComponentModel.Composition;
 
@@ -210,14 +210,14 @@ internal sealed class PluginRegistrationService(
 
         try
         {
-            var batchResponse = await _webApi.SendAsync<BatchResponse>(batch!);
+            var batchResponse = await _webApi.SendOldAsync<BatchResponse>(batch!);
             var responses = await batchResponse.ParseResponseAsync(cancellationToken);
 
             foreach (var response in responses)
             {
                 if (!response.IsSuccessStatusCode)
                 {
-                    var error = await WebApi.WebApiService.ParseExceptionAsync(response);
+                    var error = await response.AsServiceExceptionAsync();
                     _log.LogCritical(error.ToString());
                     return PluginRegistrationResult.Failure(error.Message);
                 }
@@ -255,14 +255,14 @@ internal sealed class PluginRegistrationService(
                     ChangeSets = [new(upserts)]
                 };
 
-                var followupResponse = await _webApi.SendAsync<BatchResponse>(followupBatch);
+                var followupResponse = await _webApi.SendOldAsync<BatchResponse>(followupBatch);
                 var followupParts = await followupResponse.ParseResponseAsync(cancellationToken);
 
                 foreach (var response in followupParts)
                 {
                     if (!response.IsSuccessStatusCode)
                     {
-                        var error = await WebApi.WebApiService.ParseExceptionAsync(response);
+                        var error = await response.AsServiceExceptionAsync();
                         _log.LogCritical(error.ToString());
                         return PluginRegistrationResult.Failure(error.Message);
                     }
