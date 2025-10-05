@@ -2,62 +2,74 @@
 namespace XrmTools.WebApi.Messages;
 
 using Newtonsoft.Json.Linq;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Net;
 using System.Net.Http;
+using System.Threading;
+using System.Threading.Tasks;
 
 /// <summary>
 /// Contains the response from the FetchXmlRequest
 /// </summary>
-/// <remarks>
-/// This class must be instantiated by either:
-/// - The Service.SendAsync<T> method
-/// - The HttpResponseMessage.As<T> extension in Extensions.cs
-/// </remarks>
-public sealed class FetchXmlResponse : HttpResponseMessage
+public sealed class FetchXmlResponse
 {
+    // Keep what you need from the HTTP layer (status/headers) without holding the raw message.
+    public HttpStatusCode StatusCode { get; private set; }
+    public IReadOnlyDictionary<string, IEnumerable<string>> Headers { get; private set; }
 
-    //cache the async content
-    private string? _content;
+    /// <summary>The records returned.</summary>
+    public JArray Records { get; private set; } = [];
+    /// <summary>How many records returned.</summary>
+    public int? Count { get; private set; }
+    /// <summary>A paging cookie value for subsequent requests (when IncludeAnnotations is true).</summary>
+    public string? FetchxmlPagingCookie { get; private set; }  // empty string when missing
+    /// <summary>
+    /// Total records matching the filter (up to 5000), irrespective of page size (when IncludeAnnotations is true).
+    /// </summary>
+    public int? TotalRecordCount { get; private set; }
+    /// <summary>Whether the total record count limit was exceeded.</summary>
+    public bool TotalRecordCountExceeded { get; private set; }
+    /// <summary>Whether more records match the query filter.</summary>
+    public bool MoreRecords { get; private set; }
 
-    //Provides JObject for property getters
-    private JObject JObject
+    // Private ctor enforces initialization of required non-nullable members
+    private FetchXmlResponse(HttpStatusCode statusCode, IReadOnlyDictionary<string, IEnumerable<string>> headers)
     {
-        get
-        {
-            _content ??= Content.ReadAsStringAsync().GetAwaiter().GetResult();
-
-            return JObject.Parse(_content);
-        }
+        StatusCode = statusCode;
+        Headers = headers;
     }
 
-    /// <summary>
-    /// The records returned.
-    /// </summary>
-    public JArray? Records => (JArray)JObject.GetValue("value");
+    public static async Task<FetchXmlResponse> FromAsync(HttpResponseMessage raw, CancellationToken ct = default)
+    {
+        if (raw == null) throw new ArgumentNullException(nameof(raw));
 
-    /// <summary>
-    /// How many records returned.
-    /// </summary>
-    public int? Count => (int?)JObject.GetValue("@odata.count");
+        if (!raw.IsSuccessStatusCode)
+        {
+            var error = await raw.AsServiceExceptionAsync().ConfigureAwait(false);
+            throw error;
+        }
 
-    /// <summary>
-    /// A paging cookie value to be used for subsequent requests. Only populated if request.IncludeAnnotations is true.
-    /// </summary>
-    public string? FetchxmlPagingCookie => (string?)JObject.GetValue("@Microsoft.Dynamics.CRM.fetchxmlpagingcookie");
+        var headers = raw.Headers.ToDictionary(h => h.Key, h => h.Value, StringComparer.OrdinalIgnoreCase);
 
-    /// <summary>
-    /// The total number of records matching the filter criteria, up to 5000, irrespective of the page size. Only populated if request.IncludeAnnotations is true.
-    /// </summary>
-    public int? TotalRecordCount => (int?)JObject.GetValue("@Microsoft.Dynamics.CRM.totalrecordcount");
+        var root = raw.Content != null
+            ? await raw.Content.ReadRootAsync().ConfigureAwait(false)
+            : new JObject();
 
-    /// <summary>
-    /// Whether the number of records exceeds the total record count
-    /// </summary>
-    public bool TotalRecordCountExceeded => JObject.GetValue("@Microsoft.Dynamics.CRM.totalrecordcountlimitexceeded")?.ToString() == "True";
+        var resp = new FetchXmlResponse(raw.StatusCode, headers)
+        {
+            // Safe, cached lookups (prefer non-null defaults for ergonomics)
+            Records = (root["value"] as JArray) ?? [],
+            Count = (int?)root["@odata.count"],
+            FetchxmlPagingCookie = (string?)root["@Microsoft.Dynamics.CRM.fetchxmlpagingcookie"] ?? string.Empty,
+            TotalRecordCount = (int?)root["@Microsoft.Dynamics.CRM.totalrecordcount"],
+            TotalRecordCountExceeded =
+                (bool?)root["@Microsoft.Dynamics.CRM.totalrecordcountlimitexceeded"] ?? false,
+            MoreRecords = (bool?)root["@Microsoft.Dynamics.CRM.morerecords"] ?? false
+        };
 
-    /// <summary>
-    /// Whether more records match the query filter.
-    /// </summary>
-    public bool MoreRecords => JObject.GetValue("@Microsoft.Dynamics.CRM.morerecords")?.ToString() == "True";
-
+        return resp;
+    }
 }
 #nullable restore
