@@ -31,7 +31,12 @@ internal class EnvironmentEditorViewModel : ViewModelBase
     public EnvironmentModel? SelectedEnvironment
     {
         get => _selectedEnvironment;
-        set => SetProperty(ref _selectedEnvironment, value);
+        set
+        {
+            SetProperty(ref _selectedEnvironment, value);
+            ((RelayCommand)RemoveEnvironmentCommand).NotifyCanExecuteChanged();
+            ((AsyncRelayCommand)TestConnectionCommand).NotifyCanExecuteChanged();
+        }
     }
 
     private string? _testResult;
@@ -108,7 +113,7 @@ internal class EnvironmentEditorViewModel : ViewModelBase
         OnPropertyChanged(nameof(Environments));
         if (Environments.Count == 0)
         {
-            AddEnvironment();
+            //AddEnvironment();
         }
         else
         {

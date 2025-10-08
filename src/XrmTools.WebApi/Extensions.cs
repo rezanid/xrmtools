@@ -1,10 +1,13 @@
 ﻿#nullable enable
 namespace XrmTools.WebApi;
 
+using Newtonsoft.Json.Linq;
 using System;
 using System.Linq;
 using System.Net.Http;
+using System.Security.Cryptography.Xml;
 using System.Text.Json;
+using System.Threading;
 using System.Threading.Tasks;
 using XrmTools.Core.Helpers;
 
@@ -106,6 +109,28 @@ public static partial class Extensions
             };
             return exception;
         }
+    }
+
+    public static async Task<JObject> ReadRootAsync(this HttpContent content)
+    {
+        if (content == null) return [];
+
+        // TODO: Buffer once so we can safely dispose the HttpResponseMessage afterwards.
+        // If LoadIntoBufferAsync isn’t available, I might need to replace with ReadAsByteArrayAsync().
+        try
+        {
+            await content.LoadIntoBufferAsync().ConfigureAwait(false);
+        }
+        catch
+        {
+            // Not fatal; we'll still attempt to read.
+        }
+
+        var json = await content.ReadAsStringAsync().ConfigureAwait(false);
+        if (string.IsNullOrWhiteSpace(json)) return [];
+
+        try { return JObject.Parse(json); }
+        catch { return []; }
     }
 }
 #nullable restore
