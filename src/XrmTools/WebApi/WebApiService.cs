@@ -27,7 +27,6 @@ public interface IWebApiService
 public class WebApiService(
     IXrmHttpClientFactory httpClientFactory, IEnvironmentProvider environmentProvider, ILogger<WebApiService> logger) : IWebApiService
 {
-    private bool _disposedValue;
     private string? _sessionToken = null;
 
     public async Task<Uri?> GetBaseUrlAsync() => (await environmentProvider.GetActiveEnvironmentAsync().ConfigureAwait(false))?.BaseServiceUrl;

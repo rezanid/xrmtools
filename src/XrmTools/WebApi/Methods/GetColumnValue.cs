@@ -13,7 +13,7 @@ internal static partial class Extensions
     /// <param name="entityReference">A reference to the record.</param>
     /// <param name="property">The name of the column.</param>
     /// <returns></returns>
-    public static async Task<T> GetColumnValue<T>(
+    public static async Task<T> GetColumnValueAsync<T>(
         this WebApiService service,
         EntityReference entityReference, 
         string property)
@@ -25,9 +25,7 @@ internal static partial class Extensions
         try
         {
             GetColumnValueResponse<T> response = await service.SendAsync<GetColumnValueResponse<T>>(request: request);
-
             return response.Value;
-
         }
         catch (Exception)
         {
