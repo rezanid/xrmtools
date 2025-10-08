@@ -68,14 +68,14 @@
     </Groups>
 
     <Menus>
-      <Menu guid="XrmToolsCmdSetId" id="XrmToolsContextSubMenu" type="Menu">
+      <Menu guid="XrmToolsCmdSetId" id="XrmToolsContextSubMenu" type="Menu" priority="100">
         <Parent guid="XrmToolsCmdSetId" id="XrmToolsContextMenuGroup" />
         <Strings>
           <ButtonText>Set as template</ButtonText>
           <CommandName>Set as template</CommandName>
         </Strings>
       </Menu>
-      <Menu guid="XrmToolsCmdSetId" id="XrmToolsToolbar" type="Toolbar">
+      <Menu guid="XrmToolsCmdSetId" id="XrmToolsToolbar" type="Toolbar" priority="100">
         <Parent guid="guidSHLMainMenu" id="IDM_VS_CTXT_ITEMNODE" />
         <Strings>
           <ButtonText>Xrm Tools</ButtonText>
@@ -297,7 +297,7 @@
       <IDSymbol name="ManageEnvironmenGetListCmdId" value="0x0511"/>
       <IDSymbol name="RegisterPluginCmdId" value="0x0910"/>
       <IDSymbol name="XrmToolsToolbar" value="0x2000"/>
-      <IDSymbol name="XrmToolsToolbarGroup" value="0x2010"/>"
+      <IDSymbol name="XrmToolsToolbarGroup" value="0x2010"/>
       <IDSymbol name="XrmToolsContextSubMenu" value="0x1000"/>
       <IDSymbol name="XrmToolsContextSubMenuGroup" value="0x1010"/>
     </GuidSymbol>

@@ -1,0 +1,58 @@
+﻿namespace XrmTools.FetchXml.Model;
+/// <summary>
+/// Root of the FetchXML model (represents <fetch ...>).
+/// </summary>
+public sealed class FetchQuery
+{
+    /// <summary>
+    /// e.g. "1.0"
+    /// </summary>
+    public string Version { get; set; }
+    /// <summary>
+    /// distinct="true|false"
+    /// </summary>
+    public bool? Distinct { get; set; }
+    /// <summary>
+    /// no-lock="true|false"
+    /// </summary>
+    public bool? NoLock { get; set; }
+    /// <summary>
+    /// returntotalrecordcount="true|false"
+    /// </summary>
+    public bool? ReturnTotalRecordCount { get; set; }
+    /// <summary>
+    /// aggregate="true|false"
+    /// </summary>
+    public bool? Aggregate { get; set; }
+    /// <summary>
+    /// count="5000"
+    /// </summary>
+    public int? Count { get; set; }
+    /// <summary>
+    /// page="1"
+    /// </summary>
+    public int? Page { get; set; }
+    /// <summary>
+    /// top="10"
+    /// </summary>
+    public int? Top { get; set; }
+    /// <summary>
+    /// paging-cookie="..."
+    /// </summary>
+    public string PagingCookie { get; set; }
+    /// <summary>
+    /// output-format="xml-platform"
+    /// </summary>
+    public string OutputFormat { get; set; }
+    /// <summary>
+    /// mapping="logical" (legacy)
+    /// </summary>
+    public string Mapping { get; set; }
+    /// <summary>
+    /// min-active-row-version="true|false"
+    /// </summary>
+    public string MinActiveRowVersion { get; set; }
+
+    // The root entity
+    public FetchEntity Entity { get; set; }
+}
