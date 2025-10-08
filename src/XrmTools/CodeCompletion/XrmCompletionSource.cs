@@ -77,7 +77,7 @@ internal abstract class XrmCompletionSource(
         {
             entity = await entityMetadataRepository.GetAsync(entityName, cancellationToken).ConfigureAwait(false);
         }
-        catch (Exception ex)
+        catch (Exception)
         {
             return CompletionContext.Empty;
         }

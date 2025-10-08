@@ -210,7 +210,7 @@ internal sealed class PluginRegistrationService(
 
         try
         {
-            var batchResponse = await _webApi.SendOldAsync<BatchResponse>(batch!);
+            var batchResponse = await _webApi.SendAsync<BatchResponse>(batch!);
             var responses = await batchResponse.ParseResponseAsync(cancellationToken);
 
             foreach (var response in responses)
@@ -255,7 +255,7 @@ internal sealed class PluginRegistrationService(
                     ChangeSets = [new(upserts)]
                 };
 
-                var followupResponse = await _webApi.SendOldAsync<BatchResponse>(followupBatch);
+                var followupResponse = await _webApi.SendAsync<BatchResponse>(followupBatch);
                 var followupParts = await followupResponse.ParseResponseAsync(cancellationToken);
 
                 foreach (var response in followupParts)
