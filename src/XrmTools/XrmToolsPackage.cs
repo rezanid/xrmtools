@@ -21,6 +21,7 @@ using System.Runtime.InteropServices;
 using System.Threading;
 using XrmTools.Commands;
 using XrmTools.Environments;
+using XrmTools.FetchXml.Schema;
 using XrmTools.Helpers;
 using XrmTools.Logging;
 using XrmTools.Options;
@@ -44,7 +45,7 @@ using Task = System.Threading.Tasks.Task;
 /// utility what data to put into .pkgdef file.
 /// </para>
 /// <para>
-/// To get loaded into VS, the package must be referred by <Asset Type="Microsoft.VisualStudio.VsPackage" ...> in .vsixmanifest file.
+/// To get loaded into VS, the package must be referred to by <Asset Type="Microsoft.VisualStudio.VsPackage" ...> in .vsixmanifest file.
 /// </para>
 /// </remarks>
 [PackageRegistration(UseManagedResourcesOnly = true, AllowsBackgroundLoading = true)]
@@ -166,6 +167,8 @@ public sealed partial class XrmToolsPackage : ToolkitPackage
         //In the following article, base.InitializeAsync is at the begining.
         // https://learn.microsoft.com/en-us/visualstudio/extensibility/how-to-provide-an-asynchronous-visual-studio-service?view=vs-2022
         await base.InitializeAsync(cancellationToken, progress);
+        // Ensure FetchXml XSD embedded schema is loaded early (non-blocking errors logged only)
+        FetchXmlSchemaLoader.EnsureLoaded(_loggerService);
 
         foreach (var key in SettingsProvider.SolutionUserSettings.Keys)
         {
