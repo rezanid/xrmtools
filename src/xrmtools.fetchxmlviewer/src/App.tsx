@@ -24,6 +24,7 @@ declare global {
     fetchXmlQuery?: (fetchXml: string) => Promise<void>
     setResultTransform?: (fn: ((rows: any[]) => any[]) | null | undefined) => void
     renderFetchXmlResult?: (payloadOrRows: any, meta?: { elapsedMs?: number | null, error?: { code: string, message: string } | null }) => Promise<void>
+    setLoading?: (isLoading: boolean) => void
     setHostTheme?: (mode: 'light' | 'dark') => void
   }
 }
@@ -103,7 +104,8 @@ function App() {
         setError(error)
         setTimeout(autoSizeCols, 0)
       } catch (err) { console.error(err) }
-    }
+      }
+    window.setLoading = setLoading
     window.setHostTheme = (mode: 'light' | 'dark') => {
       setHostThemeState(mode)
       document.documentElement.setAttribute('data-theme', mode)
@@ -112,6 +114,7 @@ function App() {
       if (window.fetchXmlQuery === runFetchXml) delete window.fetchXmlQuery
       delete window.setResultTransform
       delete window.renderFetchXmlResult
+      delete window.setLoading
       delete window.setHostTheme
     }
   }, [runFetchXml, setDataIntoGrid, autoSizeCols])
@@ -129,7 +132,7 @@ function App() {
     return error ? `Error: ${error.message}` : `Records: ${count} | Time: ${time} | `
   }, [rowData.length, lastRunMs, error])
 
-    const gridOptions: any = useMemo(() => ({
+  const gridOptions: any = useMemo(() => ({
     rowSelection: 'multiple',
     suppressFieldDotNotation: true,
     animateRows: true,
@@ -143,7 +146,7 @@ function App() {
       <div className={`toolbar ${error ? 'toolbar--error' : ''}`}>
         <div className="status">{statusText}</div>
         <button className="refresh-btn" onClick={onRefreshClick} disabled={loading}>
-          {loading ? 'Loading…' : 'Refresh'}
+          {loading ? 'Loading...' : 'Refresh'}
         </button>
       </div>
       <div className="content">

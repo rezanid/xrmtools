@@ -95,7 +95,7 @@ public class FetchXmlDocument : IDisposable
                 }
 
                 var doc = Parser.ParseText(text);
-                EntityName = ParseEntityName();
+                EntityName = ParseEntityName(doc);
 
                 if (localToken.IsCancellationRequested)
                 {
@@ -171,7 +171,8 @@ public class FetchXmlDocument : IDisposable
                 }
 
                 var doc = Parser.ParseText(text);
-                EntityName = ParseEntityName();
+
+                EntityName = ParseEntityName(doc);
 
                 if (externalToken.IsCancellationRequested)
                 {
@@ -208,13 +209,13 @@ public class FetchXmlDocument : IDisposable
         }
     }
 
-    private string ParseEntityName()
+    private string ParseEntityName(XmlDocumentSyntax doc)
     {
-        if (XmlDocument is null || XmlDocument.RootSyntax is null)
+        if (doc is null || doc.RootSyntax is null)
         {
             return string.Empty;
         }
-        var fetchElement = XmlDocument.Root;
+        var fetchElement = doc.Root;
         if (fetchElement is null || !string.Equals(fetchElement.Name, "fetch", StringComparison.OrdinalIgnoreCase))
         {
             return string.Empty;

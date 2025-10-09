@@ -14,12 +14,11 @@ internal static class FetchXmlContentTypeDefinitions
 
     [Export]
     [Name(ContentTypeName)]
-    [BaseDefinition("XML")] // Inherit from XML so we get the XML editor stack
-    internal static readonly ContentTypeDefinition FetchXmlContentType = null!; // MEF populated
+    [BaseDefinition("XML")]
+    internal static readonly ContentTypeDefinition FetchXmlContentType = null!;
 
     [Export]
     [FileExtension(".fetch")]
-    //[ContentType("XML")]
     [ContentType(ContentTypeName)]
     internal static readonly FileExtensionToContentTypeDefinition FetchExtensionDefinition = null!;
 

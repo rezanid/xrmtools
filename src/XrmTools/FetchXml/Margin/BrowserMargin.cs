@@ -242,8 +242,10 @@ internal class BrowserMargin : DockPanel, IWpfTextViewMargin
                 var execDebouncer = textView.TextBuffer.GetDebouncer("fetchxml-exec", millisecondsToWait: 350);
                 execDebouncer.Debounce(async (ct) =>
                 {
+                    await Browser.SetLoadingStateAsync(true).ConfigureAwait(false);
                     var result = await ExecuteFetchXmlAsync(document, ct).ConfigureAwait(false);
-                    _ = Browser.RenderFetchXmlResultAsync(result);
+                    await Browser.RenderFetchXmlResultAsync(result);
+                    await Browser.SetLoadingStateAsync(false).ConfigureAwait(false);
                 }, key: "exec");
             }, VsTaskRunContext.UIThreadIdlePriority);
         }

@@ -2,6 +2,7 @@
 namespace XrmTools.FetchXml.Margin;
 
 using Community.VisualStudio.Toolkit;
+using Microsoft.CodeAnalysis.Scripting;
 using Microsoft.VisualStudio.Shell;
 using Microsoft.Web.WebView2.Core;
 using Microsoft.Web.WebView2.Wpf;
@@ -276,6 +277,23 @@ public class Browser : IDisposable
         try
         {
             await webView.ExecuteScriptAsync(script);
+        }
+        catch
+        {
+            // ignore transient script errors
+        }
+    }
+
+    public async Task SetLoadingStateAsync(bool state)
+    {
+        await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync();
+
+        await WaitForAppReadyAsync(15000);
+        if (!_appReady) return;
+
+        try
+        {
+            await webView.ExecuteScriptAsync($"(window.setLoading && window.setLoading({state.ToString().ToLowerInvariant()}))");
         }
         catch
         {

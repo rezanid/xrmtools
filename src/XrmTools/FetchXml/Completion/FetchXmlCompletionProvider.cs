@@ -6,14 +6,12 @@ using System.ComponentModel.Composition;
 using Microsoft.VisualStudio.Utilities;
 using Microsoft.VisualStudio.Language.Intellisense.AsyncCompletion;
 using Microsoft.VisualStudio.Text.Editor;
-using Microsoft.VisualStudio.Text.Operations;
 using XrmTools.FetchXml;
 using XrmTools.Logging;
 using XrmTools.Xrm.Repositories;
 using Microsoft.VisualStudio.ComponentModelHost;
 using Microsoft.VisualStudio.Shell;
 using Microsoft.VisualStudio.LanguageServices;
-using XrmTools.FetchXml.Schema; // future use
 
 /// <summary>
 /// MEF entry point for FetchXML async completion.

@@ -136,7 +136,6 @@
     <Compile Include="Resiliency\HttpCircuitBreakerStrategyOptions.cs" />
     <Compile Include="Resiliency\HttpClientResiliencePredicates.cs" />
     <Compile Include="Resiliency\HttpRetryStrategyOptions.cs" />
-    <Compile Include="Resiliency\RateLimiterResiliencePipelineBuilderExtensions.cs" />
     <Compile Include="Resiliency\RetryAfterHelper.cs" />
     <Compile Include="UI\InfoBars\NugetUpdateInfoBar.cs" />
     <Compile Include="UI\InfoBars\FoundNewEnvironmentInfoBar.cs" />
