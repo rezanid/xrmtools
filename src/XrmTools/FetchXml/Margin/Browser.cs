@@ -2,7 +2,6 @@
 namespace XrmTools.FetchXml.Margin;
 
 using Community.VisualStudio.Toolkit;
-using Microsoft.CodeAnalysis.Scripting;
 using Microsoft.VisualStudio.Shell;
 using Microsoft.Web.WebView2.Core;
 using Microsoft.Web.WebView2.Wpf;
@@ -17,7 +16,6 @@ using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using System.Windows;
-using System.Windows.Controls;
 using HorizontalAlignment = System.Windows.HorizontalAlignment;
 
 public class Browser : IDisposable
@@ -33,6 +31,9 @@ public class Browser : IDisposable
     private string _lastFetchXml = string.Empty;
     private FetchQueryResultModel? _lastResult;
 
+    // Messaging
+    public event EventHandler<string>? WebMessageReceived; // raw JSON
+
     // Cache StringBuilder and Regex for better performance
     private static readonly ConcurrentQueue<StringBuilder> _stringBuilderPool = new();
     private static readonly Regex _escapeRegex = new(@"[\\\r\n""]", RegexOptions.Compiled | RegexOptions.CultureInvariant);
@@ -42,7 +43,6 @@ public class Browser : IDisposable
     {
         webView.Initialized += BrowserInitialized;
         webView.NavigationStarting += BrowserNavigationStarting;
-        webView.SetResourceReference(Control.BackgroundProperty, VsBrushes.ToolWindowBackgroundKey);
     }
 
     public void Dispose()
@@ -51,8 +51,8 @@ public class Browser : IDisposable
         webView.NavigationStarting -= BrowserNavigationStarting;
         if (webView?.CoreWebView2 != null)
         {
-            try { webView.CoreWebView2.WebResourceRequested -= CoreWebView2_WebResourceRequested; } catch {}
-            //try { webView.CoreWebView2.NavigationCompleted -= CoreWebView2_NavigationCompleted; } catch {}
+            try { webView.CoreWebView2.WebResourceRequested -= CoreWebView2_WebResourceRequested; } catch { }
+            try { webView.CoreWebView2.WebMessageReceived -= CoreWebView2_WebMessageReceived; } catch { }
         }
         webView.Dispose();
     }
@@ -94,11 +94,10 @@ public class Browser : IDisposable
             }
             await webView.EnsureCoreWebView2Async(webView2Environment);
 
-            // Hook request handling for custom scheme and navigation complete for readiness
+            // Hook request handling for custom scheme, navigation, and web messages
             webView.CoreWebView2.AddWebResourceRequestedFilter("*", CoreWebView2WebResourceContext.All);
-            //webView.CoreWebView2.AddWebResourceRequestedFilter("webapi://*", CoreWebView2WebResourceContext.All);
             webView.CoreWebView2.WebResourceRequested += CoreWebView2_WebResourceRequested;
-            //webView.CoreWebView2.NavigationCompleted += CoreWebView2_NavigationCompleted;
+            webView.CoreWebView2.WebMessageReceived += CoreWebView2_WebMessageReceived;
         }
 
         void SetVirtualFolderMappings()
@@ -109,13 +108,23 @@ public class Browser : IDisposable
         }
     }
 
+    private void CoreWebView2_WebMessageReceived(object sender, CoreWebView2WebMessageReceivedEventArgs e)
+    {
+        try
+        {
+            string json = e.WebMessageAsJson; // already returns JSON string
+            WebMessageReceived?.Invoke(this, json);
+        }
+        catch { /* ignore malformed */ }
+    }
+
     public async Task SetHostThemeAsync(bool isDark)
     {
         try
         {
             await webView.EnsureCoreWebView2Async();
-            var mode = isDark ? "dark" : "light";
-            await webView.CoreWebView2.ExecuteScriptAsync($"window.setHostTheme && window.setHostTheme('{mode}')");
+
+            webView.CoreWebView2.Profile.PreferredColorScheme = isDark ? CoreWebView2PreferredColorScheme.Dark : CoreWebView2PreferredColorScheme.Light;
         }
         catch { /* ignore */ }
     }
@@ -160,16 +169,6 @@ public class Browser : IDisposable
         }
     }
 
-    //private async void CoreWebView2_NavigationCompleted(object sender, CoreWebView2NavigationCompletedEventArgs e)
-    //{
-    //        await WaitForAppReadyAsync(10000);
-    //        if (!string.IsNullOrWhiteSpace(_lastFetchXml))
-    //        {
-    //            //_ = SubmitFetchXmlAsync(_lastFetchXml);
-    //            _ = RenderFetchXmlResultAsync(_lastResult);
-    //        }
-    //}
-
     private void CoreWebView2_WebResourceRequested(object sender, CoreWebView2WebResourceRequestedEventArgs e)
     {
         try
@@ -191,8 +190,8 @@ public class Browser : IDisposable
                 return;
             }
 
-            // TODO: dispatch to Power Platform Web API layer here, based on uri.Host/path
-            // For now, return an empty result
+            // Currently host-side execution path handles fetch logic; return empty placeholder.
+            // in future this can route the requests to WebApiService if needed.
             var resultJson = "{\"value\":[]}";
             var bytes = Encoding.UTF8.GetBytes(resultJson);
             var stream = new MemoryStream(bytes);
@@ -301,6 +300,33 @@ public class Browser : IDisposable
         }
     }
 
+    // Structured messaging helpers
+    public async Task PostMessageAsync(object payload)
+    {
+        await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync();
+        try
+        {
+            string json = Newtonsoft.Json.JsonConvert.SerializeObject(payload);
+            webView.CoreWebView2.PostWebMessageAsJson(json);
+        }
+        catch { }
+    }
+
+    public Task NotifyFetchStartedAsync(Guid requestId)
+        => ExecuteScriptSafelyAsync($"window.fetchXmlRequestStarted && window.fetchXmlRequestStarted('{requestId}')");
+
+    public Task NotifyFetchCancelledAsync(Guid requestId)
+        => PostMessageAsync(new { v = 1, kind = "fetchxml/cancelled", requestId });
+
+    private async Task ExecuteScriptSafelyAsync(string script)
+    {
+        try
+        {
+            await webView.ExecuteScriptAsync(script);
+        }
+        catch { }
+    }
+
     private async Task WaitForAppReadyAsync(int timeoutMs)
     {
         var sw = Stopwatch.StartNew();
@@ -316,7 +342,7 @@ public class Browser : IDisposable
         if (_appReady) return true;
         try
         {
-            var res = await webView.ExecuteScriptAsync("typeof window.fetchXmlQuery === 'function'");
+            var res = await webView.ExecuteScriptAsync("typeof window.setLoading === 'function'");
             if (res == "true")
             {
                 _appReady = true;

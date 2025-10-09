@@ -9,8 +9,5 @@
 			<condition attribute="fullname" operator="neq" value=". ."/>
 			<condition attribute="telephone1" operator="begins-with" value="+32"/>
 		</filter>
-		<link-entity name="account" from="accountid" to="parentcustomerid" link-type="outer">
-			<attribute name="name" />
-		</link-entity>
 	</entity>
 </fetch>

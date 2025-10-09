@@ -1,54 +1,44 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import './App.css'
 
-import type { ColDef } from "ag-grid-community";
-import { ModuleRegistry, AllCommunityModule } from 'ag-grid-community';
-ModuleRegistry.registerModules([AllCommunityModule]);
+import type { ColDef } from 'ag-grid-community'
+import { ModuleRegistry, AllCommunityModule } from 'ag-grid-community'
+ModuleRegistry.registerModules([AllCommunityModule])
 
 import { AgGridReact } from 'ag-grid-react'
 
-interface FetchXmlResponse {
-  value: any[]
+interface HostEnvelope {
+  v: number
+  kind: string
+  requestId?: string
+  elapsedMs?: number
+  error?: { code?: string; message: string }
 }
 
-// Placeholder transform function for future customization
-function defaultTransform(rows: any[]): any[] {
-  return rows
-}
+function defaultTransform(rows: any[]): any[] { return rows }
 
-// Global API to run FetchXML from VSIX host
-// The host can call window.fetchXmlQuery(fetchXml: string)
-// Optionally set a result transformation via window.setResultTransform(fn)
 declare global {
   interface Window {
-    fetchXmlQuery?: (fetchXml: string) => Promise<void>
     setResultTransform?: (fn: ((rows: any[]) => any[]) | null | undefined) => void
     renderFetchXmlResult?: (payloadOrRows: any, meta?: { elapsedMs?: number | null, error?: { code: string, message: string } | null }) => Promise<void>
     setLoading?: (isLoading: boolean) => void
-    setHostTheme?: (mode: 'light' | 'dark') => void
+    fetchXmlRequestStarted?: (requestId: string) => void
   }
 }
 
 function App() {
   const gridApiRef = useRef<any | null>(null)
-  const lastQueryRef = useRef<string | null>(null)
   const transformRef = useRef<(rows: any[]) => any[]>(defaultTransform)
   const [rowData, setRowData] = useState<any[]>([])
   const [columnDefs, setColumnDefs] = useState<any[]>([])
   const [loading, setLoading] = useState(false)
   const [lastRunMs, setLastRunMs] = useState<number | null>(null)
   const [error, setError] = useState<{ code?: string, message: string } | null | undefined>(null)
+  const [currentRequestId, setCurrentRequestId] = useState<string | null>(null)
 
-  const defaultColDef: ColDef = {
-    flex: 1,
-  };
+  const defaultColDef: ColDef = { flex: 1 }
 
-  // Host-provided theme override; null => fall back to system
-  const [hostTheme, setHostThemeState] = useState<'light' | 'dark' | null>(null)
-  const systemDark = useSystemDarkMode()
-  const isDark = hostTheme ? hostTheme === 'dark' : systemDark
-
-  const agThemeMode = isDark ? 'dark' : 'light'
+  const agThemeMode = isSystemDarkMode() ? 'dark' : 'light'
 
   const autoSizeCols = useCallback(() => {
     const api = gridApiRef.current
@@ -61,75 +51,95 @@ function App() {
     const rows = transformRef.current(data)
     setRowData(rows)
     const first = rows[0]
-    const cols: any[] = first ? Object.keys(first).filter(k => !k.startsWith('@')).map((k) => ({ field: k, headerName: k })) : []
+    const cols: any[] = first ? Object.keys(first).filter(k => !k.startsWith('@')).map(k => ({ field: k, headerName: k })) : []
     setColumnDefs(cols)
   }, [])
 
-  const runFetchXml = useCallback(async (fetchXml: string) => {
-    setLoading(true)
-    lastQueryRef.current = fetchXml
-    const start = performance.now()
-    try {
-      const res = await fetch('webapi://fetchxml', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ fetchXml }),
-      })
-      if (!res.ok) throw new Error(`Request failed: ${res.status} ${res.statusText}`)
-      const payload: FetchXmlResponse = await res.json()
-      const rows = Array.isArray(payload?.value) ? payload.value : []
-      setDataIntoGrid(rows)
-      setLastRunMs(Math.round(performance.now() - start))
-      setTimeout(autoSizeCols, 0)
-      setError(null)
-    } catch (e) {
-      console.error(e)
-      setRowData([])
-      setColumnDefs([])
-      setLastRunMs(null)
-    } finally {
-      setLoading(false)
-    }
-  }, [autoSizeCols, setDataIntoGrid])
-
+  // Host -> web message channel
   useEffect(() => {
-    window.fetchXmlQuery = runFetchXml
+    const webview = (window as any).chrome?.webview
+    if (!webview) return
+    const handler = (evt: any) => {
+      const msg: HostEnvelope = evt?.data
+      if (!msg || typeof msg !== 'object') return
+      if (msg.v !== 1) return
+      switch (msg.kind) {
+        case 'fetchxml/started':
+          if (msg.requestId) {
+            setCurrentRequestId(msg.requestId)
+            setLoading(true)
+            setError(null)
+          }
+          break
+        case 'fetchxml/cancelled':
+          if (msg.requestId && msg.requestId === currentRequestId) {
+            setLoading(false)
+            setCurrentRequestId(null)
+          }
+          break
+        case 'fetchxml/result':
+          if (msg.requestId && msg.requestId === currentRequestId) {
+            setLoading(false)
+            setCurrentRequestId(null)
+            if (typeof msg.elapsedMs === 'number') setLastRunMs(msg.elapsedMs)
+          }
+          break
+        case 'fetchxml/error':
+          if (msg.requestId && msg.requestId === currentRequestId) {
+            setLoading(false)
+            setCurrentRequestId(null)
+            setError(msg.error)
+          }
+          break
+      }
+    }
+    webview.addEventListener('message', handler)
+    return () => webview.removeEventListener('message', handler)
+  }, [currentRequestId])
+
+  // Host callbacks and globals that remain supported
+  useEffect(() => {
+    window.fetchXmlRequestStarted = (requestId: string) => {
+      setCurrentRequestId(requestId)
+      setLoading(true)
+      setError(null)
+    }
     window.setResultTransform = (fn) => { transformRef.current = fn ?? defaultTransform }
     window.renderFetchXmlResult = async (payloadOrRows: any, meta?: { elapsedMs?: number | null, error?: { code: string, message: string } | null }) => {
       try {
         const rows = Array.isArray(payloadOrRows) ? payloadOrRows : Array.isArray(payloadOrRows?.value) ? payloadOrRows.value : []
-        const error = meta?.error
+        const err = meta?.error
         setDataIntoGrid(rows)
         setLastRunMs(typeof meta?.elapsedMs === 'number' ? Math.round(meta.elapsedMs) : null)
-        setError(error)
+        setError(err)
         setTimeout(autoSizeCols, 0)
       } catch (err) { console.error(err) }
-      }
-    window.setLoading = setLoading
-    window.setHostTheme = (mode: 'light' | 'dark') => {
-      setHostThemeState(mode)
-      document.documentElement.setAttribute('data-theme', mode)
     }
+    window.setLoading = setLoading
     return () => {
-      if (window.fetchXmlQuery === runFetchXml) delete window.fetchXmlQuery
       delete window.setResultTransform
       delete window.renderFetchXmlResult
       delete window.setLoading
-      delete window.setHostTheme
+      delete window.fetchXmlRequestStarted
     }
-  }, [runFetchXml, setDataIntoGrid, autoSizeCols])
+  }, [setDataIntoGrid, autoSizeCols])
 
   const onGridReady = useCallback((params: any) => { gridApiRef.current = params.api }, [])
 
-  const onRefreshClick = useCallback(() => {
-    const q = lastQueryRef.current
-    if (q) runFetchXml(q); else autoSizeCols()
-  }, [runFetchXml, autoSizeCols])
+  // Unified action button: Refresh when idle, Cancel when loading
+  const onActionClick = useCallback(() => {
+    const webview = (window as any).chrome?.webview
+    if (loading && currentRequestId) {
+      try { webview?.postMessage({ v: 1, kind: 'fetchxml/cancel', requestId: currentRequestId }) } catch (e) { console.error(e) }
+      return
+    }
+    try { webview?.postMessage({ v: 1, kind: 'fetchxml/refresh' }) } catch (e) { console.error(e) }
+  }, [loading, currentRequestId])
 
   const statusText = useMemo(() => {
     const count = rowData.length
     const time = lastRunMs != null ? `${lastRunMs} ms` : '-'
-    return error ? `Error: ${error.message}` : `Records: ${count} | Time: ${time} | `
+    return error ? `Error: ${error.message}` : `Records: ${count} | Time: ${time}`
   }, [rowData.length, lastRunMs, error])
 
   const gridOptions: any = useMemo(() => ({
@@ -145,8 +155,14 @@ function App() {
     <div className="app">
       <div className={`toolbar ${error ? 'toolbar--error' : ''}`}>
         <div className="status">{statusText}</div>
-        <button className="refresh-btn" onClick={onRefreshClick} disabled={loading}>
-          {loading ? 'Loading...' : 'Refresh'}
+        <button className="refresh-btn" onClick={onActionClick}>
+          {loading && (
+            <svg className="spinner" viewBox="0 0 24 24" width="14" height="14" aria-hidden="true" focusable="false">
+              <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="3" fill="none" opacity="0.25" />
+              <path d="M12 2 A10 10 0 0 1 22 12" stroke="currentColor" strokeWidth="3" fill="none" strokeLinecap="round" />
+            </svg>
+          )}
+          {loading ? 'Cancel' : 'Refresh'}
         </button>
       </div>
       <div className="content">
@@ -158,8 +174,7 @@ function App() {
   )
 }
 
-// Fallback to system-level dark detection when host doesn't set a theme
-function useSystemDarkMode() {
+function isSystemDarkMode() {
   const mq = useMemo(() => matchMedia('(prefers-color-scheme: dark)'), [])
   const [isDark, setIsDark] = useState(mq.matches)
   useEffect(() => {

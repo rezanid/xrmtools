@@ -18,7 +18,7 @@ public interface IWebApiService
     Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken);
     Task<HttpResponseMessage> GetAsync(string uri, CancellationToken cancellationToken);
     Task<ODataQueryResponse<T>> QueryAsync<T>(string odataQuery, CancellationToken cancellationToken = default) where T : Entity<T>;
-    Task<T> SendAsync<T>(HttpRequestMessage request) where T : HttpResponseMessage;
+    Task<T> SendAsync<T>(HttpRequestMessage request, CancellationToken cancellationToken = default) where T : HttpResponseMessage;
     Task<Uri?> GetBaseUrlAsync();
 }
 
@@ -84,9 +84,9 @@ public class WebApiService(
     /// <typeparam name="T">The type derived from HttpResponseMessage</typeparam>
     /// <param name="request">The request</param>
     /// <returns></returns>
-    public async Task<T> SendAsync<T>(HttpRequestMessage request) where T : HttpResponseMessage
+    public async Task<T> SendAsync<T>(HttpRequestMessage request, CancellationToken ct = default) where T : HttpResponseMessage
     {
-        var response = await SendAsync(request).ConfigureAwait(false);
+        var response = await SendAsync(request, ct).ConfigureAwait(false);
 
         // 'As' method is Extension of HttpResponseMessage see Extensions.cs
         return response.As<T>();

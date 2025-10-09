@@ -60,7 +60,7 @@ internal static partial class Extensions
 
         try
         {
-            var batchResponse = await service.SendAsync<BatchResponse>(batchRequest).ConfigureAwait(false);
+            var batchResponse = await service.SendAsync<BatchResponse>(batchRequest, cancellationToken).ConfigureAwait(false);
 
             var firstResponse = (await batchResponse.ParseResponseAsync().ConfigureAwait(false)).FirstOrDefault();
 

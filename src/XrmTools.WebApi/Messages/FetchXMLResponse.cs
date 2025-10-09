@@ -45,6 +45,8 @@ public sealed class FetchXmlResponse
     {
         if (raw == null) throw new ArgumentNullException(nameof(raw));
 
+        if (ct.IsCancellationRequested) ct.ThrowIfCancellationRequested();
+
         if (!raw.IsSuccessStatusCode)
         {
             var error = await raw.AsServiceExceptionAsync().ConfigureAwait(false);

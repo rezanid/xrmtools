@@ -26,6 +26,9 @@ internal class BrowserMargin : DockPanel, IWpfTextViewMargin
     private readonly ITextView textView;
     private bool _isDisposed;
 
+    private CancellationTokenSource _activeFetchCts;
+    private Guid? _activeRequestId;
+
     public FrameworkElement VisualElement => this;
     public double MarginSize => GeneralOptions.Instance.FetchXmlPreviewWindowWidth;
     public bool Enabled => true;
@@ -54,14 +57,21 @@ internal class BrowserMargin : DockPanel, IWpfTextViewMargin
             return;
         }
 
-        Browser.webView.CoreWebView2InitializationCompleted -= OnBrowserInitCompleted;
         document.Parsed -= UpdateBrowser;
         VSColorTheme.ThemeChanged -= OnThemeChange;
         GeneralOptions.Saved -= Options_Saved;
+        if (Browser != null)
+        {
+            Browser.webView.CoreWebView2InitializationCompleted -= OnBrowserInitCompleted;
+            Browser.WebMessageReceived -= Browser_WebMessageReceived;
+        }
+
+        _activeFetchCts?.Cancel();
+        _activeFetchCts?.Dispose();
+        _activeFetchCts = null;
+        _activeRequestId = null;
 
         Browser.Dispose();
-
-        // Do NOT dispose the buffer-scoped debouncer here.
 
         _isDisposed = true;
     }
@@ -84,10 +94,12 @@ internal class BrowserMargin : DockPanel, IWpfTextViewMargin
         WebView2 view = sender as WebView2;
 
         view.SetResourceReference(BackgroundProperty, VsBrushes.ToolWindowBackgroundKey);
+        view.CoreWebView2.Profile.PreferredColorScheme = IsVsDarkTheme() ? CoreWebView2PreferredColorScheme.Dark : CoreWebView2PreferredColorScheme.Light;
 
         document.Parsed += UpdateBrowser;
         GeneralOptions.Saved += Options_Saved;
         VSColorTheme.ThemeChanged += OnThemeChange;
+        Browser.WebMessageReceived += Browser_WebMessageReceived;
 
         var isDark = IsVsDarkTheme();
         _ = Browser.SetHostThemeAsync(isDark);
@@ -97,6 +109,44 @@ internal class BrowserMargin : DockPanel, IWpfTextViewMargin
         {
             UpdateBrowser(document);
         }
+    }
+
+    private void Browser_WebMessageReceived(object sender, string json)
+    {
+        // Lightweight parse for cancellation or manual refresh
+        try
+        {
+            var env = Newtonsoft.Json.JsonConvert.DeserializeObject<WebEnvelope>(json);
+            if (env == null || env.V != 1) return;
+            switch (env.Kind?.ToLowerInvariant())
+            {
+                case "fetchxml/cancel":
+                    if (env.RequestId != Guid.Empty)
+                    {
+                        TryCancelActiveFetch(env.RequestId);
+                    }
+                    break;
+                case "fetchxml/refresh":
+                    // Manual refresh request from SPA (button when idle)
+                    if (!_activeRequestId.HasValue)
+                    {
+                        // Trigger immediate fetch bypassing parse debounce (use current document state)
+                        ScheduleFetch(immediate: true);
+                    }
+                    break;
+            }
+        }
+        catch { }
+    }
+
+    private bool TryCancelActiveFetch(Guid requestId)
+    {
+        if (_activeRequestId.HasValue && _activeRequestId.Value == requestId && _activeFetchCts != null && !_activeFetchCts.IsCancellationRequested)
+        {
+            _activeFetchCts.Cancel();
+            return true;
+        }
+        return false;
     }
 
     private void CreateMarginControls(WebView2 view)
@@ -143,13 +193,9 @@ internal class BrowserMargin : DockPanel, IWpfTextViewMargin
 
             Action fixWidth = new(() =>
             {
-                // previewWindow maxWidth = current total width - textView width
                 double newWidth = textView.ViewportWidth + grid.ActualWidth - 150;
-
-                // preveiwWindow maxWidth < previewWindow minWidth
                 if (newWidth < 150)
                 {
-                    // Call 'get before 'set for performance
                     if (grid.ColumnDefinitions[2].MinWidth != 0)
                     {
                         grid.ColumnDefinitions[2].MinWidth = 0;
@@ -159,7 +205,6 @@ internal class BrowserMargin : DockPanel, IWpfTextViewMargin
                 else
                 {
                     grid.ColumnDefinitions[2].MaxWidth = newWidth;
-                    // Call 'get before 'set for performance
                     if (grid.ColumnDefinitions[2].MinWidth == 0)
                     {
                         grid.ColumnDefinitions[2].MinWidth = 150;
@@ -167,7 +212,6 @@ internal class BrowserMargin : DockPanel, IWpfTextViewMargin
                 }
             });
 
-            // Listen sizeChanged event of both marginGrid and textView
             grid.SizeChanged += (e, s) => fixWidth();
             textView.ViewportWidthChanged += (e, s) => fixWidth();
         }
@@ -234,20 +278,85 @@ internal class BrowserMargin : DockPanel, IWpfTextViewMargin
 
     private void UpdateBrowser(FetchXmlDocument document)
     {
-        if (!document.IsParsing)
+        if (document.IsParsing) return;
+        ScheduleFetch(immediate: false);
+    }
+
+    private void ScheduleFetch(bool immediate)
+    {
+        _ = ThreadHelper.JoinableTaskFactory.StartOnIdle(() =>
         {
-            _ = ThreadHelper.JoinableTaskFactory.StartOnIdle(() =>
+            var execDebouncer = textView.TextBuffer.GetDebouncer("fetchxml-exec", millisecondsToWait: immediate ? 0 : 350);
+            execDebouncer.Debounce(ct => ExecuteAndRenderAsync(ct), key: "exec");
+        }, VsTaskRunContext.UIThreadIdlePriority);
+    }
+
+    private async Task ExecuteAndRenderAsync(CancellationToken debounceToken)
+    {
+        // cancel existing
+        _activeFetchCts?.Cancel();
+        _activeFetchCts?.Dispose();
+        _activeFetchCts = CancellationTokenSource.CreateLinkedTokenSource(debounceToken);
+        var token = _activeFetchCts.Token;
+        var requestId = Guid.NewGuid();
+        _activeRequestId = requestId;
+
+        //TODO: Removed for now: await Browser.SetLoadingStateAsync(true).ConfigureAwait(false);
+        await Browser.NotifyFetchStartedAsync(requestId).ConfigureAwait(false);
+        await Browser.PostMessageAsync(new { v = 1, kind = "fetchxml/started", requestId }).ConfigureAwait(false);
+
+        Stopwatch sw = Stopwatch.StartNew();
+        FetchQueryResultModel result = null;
+        Exception error = null;
+        try
+        {
+            result = await ExecuteFetchXmlAsync(document, token).ConfigureAwait(false);
+        }
+        catch (OperationCanceledException)
+        {
+            // expected on cancellation
+        }
+        catch (Exception ex)
+        {
+            error = ex;
+        }
+        finally
+        {
+            sw.Stop();
+            bool isCurrent = _activeRequestId == requestId;
+            if (token.IsCancellationRequested)
             {
-                // Use a separate, named debouncer for Web API execution/render
-                var execDebouncer = textView.TextBuffer.GetDebouncer("fetchxml-exec", millisecondsToWait: 350);
-                execDebouncer.Debounce(async (ct) =>
+                if (isCurrent)
                 {
-                    await Browser.SetLoadingStateAsync(true).ConfigureAwait(false);
-                    var result = await ExecuteFetchXmlAsync(document, ct).ConfigureAwait(false);
-                    await Browser.RenderFetchXmlResultAsync(result);
+                    await Browser.NotifyFetchCancelledAsync(requestId).ConfigureAwait(false);
                     await Browser.SetLoadingStateAsync(false).ConfigureAwait(false);
-                }, key: "exec");
-            }, VsTaskRunContext.UIThreadIdlePriority);
+                }
+            }
+            else if (error != null)
+            {
+                if (isCurrent)
+                {
+                    await Browser.RenderFetchXmlResultAsync(new FetchQueryResultModel { Result = null, Error = error.Message }).ConfigureAwait(false);
+                    await Browser.PostMessageAsync(new { v = 1, kind = "fetchxml/error", requestId, error = new { message = error.Message } }).ConfigureAwait(false);
+                    await Browser.SetLoadingStateAsync(false).ConfigureAwait(false);
+                }
+            }
+            else
+            {
+                if (isCurrent)
+                {
+                    await Browser.RenderFetchXmlResultAsync(result).ConfigureAwait(false);
+                    await Browser.PostMessageAsync(new { v = 1, kind = "fetchxml/result", requestId, elapsedMs = (long)sw.Elapsed.TotalMilliseconds }).ConfigureAwait(false);
+                    await Browser.SetLoadingStateAsync(false).ConfigureAwait(false);
+                }
+            }
+
+            if (isCurrent)
+            {
+                _activeFetchCts?.Dispose();
+                _activeFetchCts = null;
+                _activeRequestId = null;
+            }
         }
     }
 
@@ -255,7 +364,7 @@ internal class BrowserMargin : DockPanel, IWpfTextViewMargin
     {
         if (document == null || string.IsNullOrWhiteSpace(document.XmlDocument?.ToFullString()))
         {
-            return null;
+            return new FetchQueryResultModel { Result = "null", ElapsedMs = 0 };
         }
         var repo = await repositoryFactory.CreateRepositoryAsync<IEntityMetadataRepository>().ConfigureAwait(false);
         var entity = await repo.GetAsync(document.EntityName, cancellationToken).ConfigureAwait(false);
@@ -309,5 +418,12 @@ internal class BrowserMargin : DockPanel, IWpfTextViewMargin
             GeneralOptions.Instance.FetchXmlPreviewWindowHeight = (int)Browser.webView.ActualHeight;
             GeneralOptions.Instance.Save();
         }
+    }
+
+    private class WebEnvelope
+    {
+        public int V { get; set; }
+        public string Kind { get; set; }
+        public Guid RequestId { get; set; }
     }
 }
