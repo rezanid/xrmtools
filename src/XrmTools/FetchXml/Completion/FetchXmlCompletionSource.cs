@@ -14,11 +14,11 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Xml.Linq;
 using XrmTools.CodeCompletion;
-using XrmTools.Logging;
+using XrmTools.Logging.Compatibility;
 using XrmTools.Xrm.Repositories;
 
 internal sealed class FetchXmlCompletionSource(
-    IOutputLoggerService logger,
+    ILogger logger,
     IRepositoryFactory repositoryFactory,
     VisualStudioWorkspace workspace) : XrmCompletionSource(logger, repositoryFactory, workspace)
 {

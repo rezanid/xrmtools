@@ -8,12 +8,12 @@ using System;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
-using XrmTools.Logging;
+using XrmTools.Logging.Compatibility;
 using XrmTools.Options;
 
 public class FetchXmlDocument : IDisposable
 {
-    private readonly IOutputLoggerService _logger;
+    private readonly ILogger _logger;
     private readonly ITextBuffer _buffer;
     private readonly SemaphoreSlim _parseSemaphore = new(1, 1);
     private CancellationTokenSource _parseCts = new();
@@ -27,7 +27,7 @@ public class FetchXmlDocument : IDisposable
     public bool IsParsing { get; private set; }
     public event Action<FetchXmlDocument> Parsed;
 
-    public FetchXmlDocument(ITextBuffer buffer, IOutputLoggerService logger)
+    public FetchXmlDocument(ITextBuffer buffer, ILogger logger)
     {
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         _buffer = buffer ?? throw new ArgumentNullException(nameof(buffer));

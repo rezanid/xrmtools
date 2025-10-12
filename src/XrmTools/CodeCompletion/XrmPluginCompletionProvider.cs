@@ -10,7 +10,7 @@ using Microsoft.VisualStudio.Utilities;
 using System.ComponentModel.Composition;
 using XrmTools.Helpers;
 using System;
-using XrmTools.Logging;
+using XrmTools.Logging.Compatibility;
 using XrmTools.Xrm.CodeCompletion;
 using Microsoft.VisualStudio.ComponentModelHost;
 using Microsoft.VisualStudio.LanguageServices;
@@ -23,7 +23,7 @@ using XrmTools.Xrm.Repositories;
 [method: ImportingConstructor]
 internal class XrmPluginCompletionProvider(
     [Import(typeof(SVsServiceProvider))] IServiceProvider serviceProvider,
-    [Import] IOutputLoggerService logger,
+    [Import] ILogger<XrmPluginCompletionProvider> logger,
     [Import] IRepositoryFactory repositoryFactory,
     [Import] ITextStructureNavigatorSelectorService structureNavigatorSelector) : IAsyncCompletionSourceProvider
 {

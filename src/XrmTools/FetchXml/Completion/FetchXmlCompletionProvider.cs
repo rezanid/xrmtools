@@ -7,7 +7,7 @@ using Microsoft.VisualStudio.Utilities;
 using Microsoft.VisualStudio.Language.Intellisense.AsyncCompletion;
 using Microsoft.VisualStudio.Text.Editor;
 using XrmTools.FetchXml;
-using XrmTools.Logging;
+using XrmTools.Logging.Compatibility;
 using XrmTools.Xrm.Repositories;
 using Microsoft.VisualStudio.ComponentModelHost;
 using Microsoft.VisualStudio.Shell;
@@ -23,7 +23,7 @@ using Microsoft.VisualStudio.LanguageServices;
 [method: ImportingConstructor]
 internal sealed class FetchXmlCompletionProvider(
     [Import(typeof(SVsServiceProvider))] IServiceProvider serviceProvider,
-    [Import] IOutputLoggerService logger,
+    [Import] ILogger<FetchXmlCompletionProvider> logger,
     [Import] IRepositoryFactory repositoryFactory) : IAsyncCompletionSourceProvider
 {
     public IAsyncCompletionSource? GetOrCreate(ITextView textView)

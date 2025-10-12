@@ -2,7 +2,6 @@
 namespace XrmTools.CodeCompletion;
 
 using Microsoft.CodeAnalysis;
-//using Microsoft.CodeAnalysis.Completion;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.Text;
 using Microsoft.VisualStudio.Language.Intellisense.AsyncCompletion;
@@ -15,12 +14,12 @@ using System.Threading;
 using System.Threading.Tasks;
 using XrmTools.Core.Helpers;
 using XrmTools.Core.Repositories;
-using XrmTools.Logging;
+using XrmTools.Logging.Compatibility;
 using XrmTools.Meta.Attributes;
 using XrmTools.Xrm.Repositories;
 
 internal sealed class XrmPluginDefinitionCompletionSource(
-    IOutputLoggerService logger, IRepositoryFactory repositoryFactory, VisualStudioWorkspace workspace) 
+    ILogger logger, IRepositoryFactory repositoryFactory, VisualStudioWorkspace workspace) 
     : XrmCompletionSource(logger, repositoryFactory, workspace)
 {
     const int StepCtorArgumentMessageIndex = 0;

@@ -12,16 +12,16 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using XrmTools.Core.Repositories;
-using XrmTools.Logging;
+using XrmTools.Logging.Compatibility;
 using XrmTools.WebApi.Entities;
 using XrmTools.WebApi.Types;
 using XrmTools.Xrm;
 using XrmTools.Xrm.Repositories;
 
 internal abstract class XrmCompletionSource(
-    IOutputLoggerService logger, IRepositoryFactory repositoryFactory, VisualStudioWorkspace workspace) : IAsyncCompletionSource
+    ILogger logger, IRepositoryFactory repositoryFactory, VisualStudioWorkspace workspace) : IAsyncCompletionSource
 {
-    protected readonly IOutputLoggerService logger = logger;
+    protected readonly ILogger logger = logger;
     protected readonly IRepositoryFactory repositoryFactory = repositoryFactory;
     protected readonly VisualStudioWorkspace workspace = workspace;
 
@@ -58,7 +58,6 @@ internal abstract class XrmCompletionSource(
 
         return new CompletionContext([.. entities.Where(e => entityNames.Contains(e.LogicalName)).Select(ToCompletionItem)]);
     }
-
 
     /// <summary>
     /// List of all attributes supported by the given entity, excluding the ones already specified.

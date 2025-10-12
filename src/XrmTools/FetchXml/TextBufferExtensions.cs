@@ -3,11 +3,11 @@
 using Microsoft.VisualStudio.Text;
 using System;
 using XrmTools.FetchXml.Margin;
-using XrmTools.Logging;
+using XrmTools.Logging.Compatibility;
 
 public static class TextBufferExtensions
 {
-    public static FetchXmlDocument GetFetchXmlDocument(this ITextBuffer buffer, IOutputLoggerService logger)
+    public static FetchXmlDocument GetFetchXmlDocument(this ITextBuffer buffer, ILogger logger)
     {
         if (buffer == null) throw new ArgumentNullException(nameof(buffer));
         if (logger == null) throw new ArgumentNullException(nameof(logger));

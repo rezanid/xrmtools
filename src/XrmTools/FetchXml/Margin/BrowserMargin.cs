@@ -12,7 +12,7 @@ using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 using XrmTools.Core.Repositories;
-using XrmTools.Logging;
+using XrmTools.Logging.Compatibility;
 using XrmTools.Options;
 using XrmTools.WebApi;
 using XrmTools.WebApi.Methods;
@@ -34,7 +34,7 @@ internal class BrowserMargin : DockPanel, IWpfTextViewMargin
     public bool Enabled => true;
     public Browser Browser { get; private set; }
 
-    public BrowserMargin(ITextView textView, IWebApiService webApi, IRepositoryFactory repositoryFactory, IOutputLoggerService logger)
+    public BrowserMargin(ITextView textView, IWebApiService webApi, IRepositoryFactory repositoryFactory, ILogger logger)
     {
         this.webApi = webApi ?? throw new ArgumentNullException(nameof(webApi));
         this.repositoryFactory = repositoryFactory ?? throw new ArgumentNullException(nameof(repositoryFactory));
@@ -305,7 +305,6 @@ internal class BrowserMargin : DockPanel, IWpfTextViewMargin
         await Browser.NotifyFetchStartedAsync(requestId).ConfigureAwait(false);
         await Browser.PostMessageAsync(new { v = 1, kind = "fetchxml/started", requestId }).ConfigureAwait(false);
 
-        Stopwatch sw = Stopwatch.StartNew();
         FetchQueryResultModel result = null;
         Exception error = null;
         try
@@ -322,7 +321,6 @@ internal class BrowserMargin : DockPanel, IWpfTextViewMargin
         }
         finally
         {
-            sw.Stop();
             bool isCurrent = _activeRequestId == requestId;
             if (token.IsCancellationRequested)
             {
@@ -346,7 +344,7 @@ internal class BrowserMargin : DockPanel, IWpfTextViewMargin
                 if (isCurrent)
                 {
                     await Browser.RenderFetchXmlResultAsync(result).ConfigureAwait(false);
-                    await Browser.PostMessageAsync(new { v = 1, kind = "fetchxml/result", requestId, elapsedMs = (long)sw.Elapsed.TotalMilliseconds }).ConfigureAwait(false);
+                    await Browser.PostMessageAsync(new { v = 1, kind = "fetchxml/result", requestId, elapsedMs = result.ElapsedMs }).ConfigureAwait(false);
                     await Browser.SetLoadingStateAsync(false).ConfigureAwait(false);
                 }
             }
