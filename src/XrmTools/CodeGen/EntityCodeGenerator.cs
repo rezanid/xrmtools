@@ -64,7 +64,7 @@ internal class EntityCodeGenerator : BaseCodeGeneratorWithSite
     [Import]
     internal ISettingsProvider SettingsProvider { get; set; }
 
-    public override string GetDefaultExtension() => ".Generated.cs";
+    public override string GetDefaultExtension() => ".g.cs";
 
     public EntityCodeGenerator() => SatisfyImports();
 
@@ -144,7 +144,8 @@ internal class EntityCodeGenerator : BaseCodeGeneratorWithSite
                     Generator.Config = new XrmCodeGenConfig
                     {
                         DefaultNamespace = GetDefaultNamespace() + ".OptionSets",
-                        TemplateFilePath = await TemplateFinder.FindGlobalOptionSetsTemplatePathAsync()
+                        TemplateFilePath = await TemplateFinder.FindGlobalOptionSetsTemplatePathAsync(),
+                        InputFileName = inputFileName
                     };
 
                     var globalOptionSetFileName = await SettingsProvider.GlobalOptionSetsFilePathAsync();
@@ -158,13 +159,12 @@ internal class EntityCodeGenerator : BaseCodeGeneratorWithSite
             {
                 //TODO: The GetDefaultNamespace is not required. The FileNamespace is never empty even when not set.
                 DefaultNamespace = string.IsNullOrWhiteSpace(FileNamespace) ? GetDefaultNamespace() : FileNamespace,
-                TemplateFilePath = templateFilePath
+                TemplateFilePath = templateFilePath,
+                InputFileName = inputFileName
             };
 
             if (GeneralOptions.Instance.LogLevel == LogLevel.Trace)
             {
-                // We use Newtonsoft for serialization because it supports polymorphic types
-                // Probably through old serialization attributes set on Xrm.Sdk types.
                 var serializedConfig = JsonConvert.SerializeObject(inputModel, new JsonSerializerSettings
                 {
                     ContractResolver = new PolymorphicContractResolver()
@@ -184,7 +184,7 @@ internal class EntityCodeGenerator : BaseCodeGeneratorWithSite
                 var lastGenFileName = await inputFile.GetAttributeAsync("LastGenOutput");
                 if (string.IsNullOrWhiteSpace(lastGenFileName))
                 {
-                    lastGenFileName = Path.ChangeExtension(Path.GetFileName(inputFileName), ".Generated.cs");
+                    lastGenFileName = Path.ChangeExtension(Path.GetFileName(inputFileName), ".g.cs");
                     await inputFile.TrySetAttributeAsync(PhysicalFileAttribute.LastGenOutput, lastGenFileName);
                 }
                 var lastGenFilePath = Path.Combine(Path.GetDirectoryName(inputFileName), lastGenFileName);

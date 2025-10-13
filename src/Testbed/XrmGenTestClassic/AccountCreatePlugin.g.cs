@@ -1,6 +1,7 @@
 using Microsoft.Xrm.Sdk;
 using Microsoft.Xrm.Sdk.Client;
 using Microsoft.Xrm.Sdk.Extensions;
+using Microsoft.Xrm.Sdk.PluginTelemetry;
 using System;
 using System.CodeDom.Compiler;
 using System.Collections.Generic;
@@ -12,7 +13,7 @@ using XrmTools;
 
 namespace XrmGenTestClassic
 {
-    [GeneratedCode("TemplatedCodeGenerator", "1.4.3.0")]
+    [GeneratedCode("TemplatedCodeGenerator", "1.4.6.0")]
     public partial class AccountCreatePlugin
     {
         /// <summary>
@@ -22,7 +23,6 @@ namespace XrmGenTestClassic
         {
             var scope = new DependencyScope<AccountCreatePlugin>();
             scope.Set<IServiceProvider>(serviceProvider);
-            scope.Set<IPluginExecutionContext>((IPluginExecutionContext)serviceProvider.GetService(typeof(IPluginExecutionContext)));
         
             return scope;
         }
@@ -108,16 +108,27 @@ namespace XrmGenTestClassic
         }
 
 
-	    protected static T EntityOrDefault<T>(DataCollection<string, object> keyValues, string key) where T : Entity
+	    private static T EntityOrDefault<T>(DataCollection<string, object> keyValues, string key) where T : Entity
         {
             if (keyValues is null) return default;
             return keyValues.TryGetValue(key, out var obj) ? obj is Entity entity ? entity.ToEntity<T>() : default : default;
         }
 
-        protected static T EntityOrDefault<T>(DataCollection<string, Entity> keyValues, string key) where T : Entity
+        private static T EntityOrDefault<T>(DataCollection<string, Entity> keyValues, string key) where T : Entity
         {
             if (keyValues is null) return default;
             return keyValues.TryGetValue(key, out var entity) ? entity?.ToEntity<T>() : default;
         }
+
+        private static T Require<T>() => DependencyScope<AccountCreatePlugin>.Current.Require<T>();
+        private static T Require<T>(string name) => DependencyScope<AccountCreatePlugin>.Current.Require<T>(name);
+
+        private static bool TryGet<T>(out T instance) => DependencyScope<AccountCreatePlugin>.Current.TryGet(out instance);
+        private static bool TryGet<T>(string name, out T instance) => DependencyScope<AccountCreatePlugin>.Current.TryGet(name, out instance);
+
+        private static T Set<T>(T instance) => DependencyScope<AccountCreatePlugin>.Current.Set(instance);
+        private static T Set<T>(string name, T instance) => DependencyScope<AccountCreatePlugin>.Current.Set(name, instance);
+        private static T SetAndTrack<T>(T instance) where T : IDisposable => DependencyScope<AccountCreatePlugin>.Current.SetAndTrack(instance);
+        private static T SetAndTrack<T>(string name, T instance) where T : IDisposable => DependencyScope<AccountCreatePlugin>.Current.SetAndTrack(name, instance);
     }
 }

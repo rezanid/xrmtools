@@ -100,10 +100,10 @@
   <ItemGroup>
     <Compile Include="AccountCreatePlugin.cs">
       <Generator>Xrm Tools Plugin Code Generator</Generator>
-      <LastGenOutput>AccountCreatePlugin.Generated.cs</LastGenOutput>
       <IsXrmPlugin>True</IsXrmPlugin>
+      <LastGenOutput>AccountCreatePlugin.g.cs</LastGenOutput>
     </Compile>
-    <Compile Include="AccountCreatePlugin.Generated.cs">
+    <Compile Include="AccountCreatePlugin.g.cs">
       <AutoGen>True</AutoGen>
       <DesignTime>True</DesignTime>
       <DependentUpon>AccountCreatePlugin.cs</DependentUpon>
@@ -138,6 +138,11 @@
       <DependentUpon>Entities.cs</DependentUpon>
     </Compile>
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="Test.g.cs">
+      <AutoGen>True</AutoGen>
+      <DesignTime>True</DesignTime>
+      <DependentUpon>Test.fetch</DependentUpon>
+    </Compile>
   </ItemGroup>
   <ItemGroup>
     <None Include=".xrmtools\schemas\Fetch.xsd">
@@ -146,7 +151,10 @@
     <None Include="app.config" />
     <None Include="key.snk" />
     <None Include="packages.config" />
-    <None Include="Test.fetch" />
+    <None Include="Test.fetch">
+      <Generator>XrmTools FetchXML Generator</Generator>
+      <LastGenOutput>Test.g.cs</LastGenOutput>
+    </None>
   </ItemGroup>
   <ItemGroup>
     <Content Include="Test.fetch.xml" />
