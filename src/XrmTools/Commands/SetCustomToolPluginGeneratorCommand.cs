@@ -138,4 +138,4 @@ internal sealed class SetCustomToolPluginGeneratorCommand : BaseCommand<SetCusto
         await file.TrySetAttributeAsync("IsXrmPlugin", string.Empty);
     }
 }
-#nullable restore
+#nullable restore 

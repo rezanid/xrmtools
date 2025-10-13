@@ -65,6 +65,9 @@
     <Compile Include="CodeCompletion\XrmAttributeCompletionFilters.cs" />
     <Compile Include="CodeCompletion\XrmCompletionSource.cs" />
     <Compile Include="CodeCompletion\XrmEntityCompletionFilters.cs" />
+    <Content Include="CodeGenTemplates\FetchXml.sbncs">
+      <IncludeInVSIX>true</IncludeInVSIX>
+    </Content>
     <Compile Include="CodeRefactoringProviders\PluginRefactoringProvider.cs" />
     <Compile Include="CodeRefactoringProviders\PropertyGenerator.cs" />
     <Compile Include="CodeRefactoringProviders\SdkMessageRefactoringProvider.cs" />
@@ -79,6 +82,9 @@
       <DesignTime>True</DesignTime>
       <DependentUpon>CustomMonikers.vsct</DependentUpon>
     </Compile>
+    <Compile Include="FetchXml\CodeGen\FetchXmlCodeGenerator.cs" />
+    <Compile Include="FetchXml\CodeGen\FetchXmlCodeGeneratorAsync.cs" />
+    <Compile Include="FetchXml\CodeGen\FetchXmlParser.cs" />
     <Compile Include="FetchXml\Completion\FetchXmlCompletionProvider.cs" />
     <Compile Include="FetchXml\Completion\FetchXmlCompletionSource.cs" />
     <Compile Include="FetchXml\FetchXmlDocument.cs" />
@@ -97,6 +103,7 @@
     <Compile Include="FetchXml\Model\FetchOrder.cs" />
     <Compile Include="FetchXml\Model\FetchQuery.cs" />
     <Compile Include="FetchXml\Model\FetchValue.cs" />
+    <Compile Include="FetchXml\Save\FetchXmlSimpleSaveLogger.cs" />
     <Compile Include="FetchXml\Schema\FetchXmlSchemaLoader.cs" />
     <Compile Include="FetchXml\TextBufferExtensions.cs" />
     <Compile Include="Helpers\NugetParser.cs" />

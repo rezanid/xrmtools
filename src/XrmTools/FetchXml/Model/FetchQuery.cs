@@ -55,4 +55,17 @@ public sealed class FetchQuery
 
     // The root entity
     public FetchEntity Entity { get; set; }
+
+    /// <summary>
+    /// Arbitrary settings parsed from comments immediately preceding the <fetch> element
+    /// with the pattern <!-- fx.key: value -->
+    /// </summary>
+    public System.Collections.Generic.Dictionary<string, string> Settings { get; } = new System.Collections.Generic.Dictionary<string, string>(System.StringComparer.OrdinalIgnoreCase);
+
+    /// <summary>
+    /// For preserving uncommon attributes on <fetch>
+    /// </summary>
+    public System.Collections.Generic.Dictionary<string, string> Extras { get; } = new System.Collections.Generic.Dictionary<string, string>(System.StringComparer.OrdinalIgnoreCase);
+
+    public string Raw { get; set; }
 }

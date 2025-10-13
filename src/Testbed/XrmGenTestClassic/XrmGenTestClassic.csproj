@@ -152,12 +152,15 @@
     <None Include="key.snk" />
     <None Include="packages.config" />
     <None Include="Test.fetch">
-      <Generator>XrmTools FetchXML Generator</Generator>
       <LastGenOutput>Test.g.cs</LastGenOutput>
+      <Generator>XrmTools FetchXml Generator</Generator>
     </None>
   </ItemGroup>
   <ItemGroup>
-    <Content Include="Test.fetch.xml" />
+    <Content Include="Test.fetch.xml">
+      <Generator>XrmTools FetchXml Generator</Generator>
+      <LastGenOutput>Test.fetch.g.cs</LastGenOutput>
+    </Content>
   </ItemGroup>
   <ItemGroup />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />

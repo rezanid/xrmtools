@@ -22,4 +22,9 @@ public abstract class FetchNode
 
     // Nested <link-entity> only (children are always links)
     public List<FetchLinkEntity> Links { get; } = new();
+
+    /// <summary>
+    /// For preserving uncommon attributes on entity/link-entity nodes
+    /// </summary>
+    public Dictionary<string, string> Extras { get; } = new Dictionary<string, string>(System.StringComparer.OrdinalIgnoreCase);
 }
