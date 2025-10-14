@@ -63,6 +63,7 @@
     <Compile Include="Environments\DataverseEnvironmentList.cs" />
     <Compile Include="Environments\IEnvironmentProvider.cs" />
     <Compile Include="Helpers\GuidFactory.cs" />
+    <Compile Include="Helpers\PathHelper.cs" />
     <Compile Include="Helpers\StreamHelper.cs" />
     <Compile Include="Helpers\StringHelper.cs" />
     <Compile Include="Helpers\TypeExtensions.cs" />

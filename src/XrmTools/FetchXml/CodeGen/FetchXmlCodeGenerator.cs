@@ -5,9 +5,11 @@ using Community.VisualStudio.Toolkit;
 using Microsoft.Language.Xml;
 using Microsoft.VisualStudio;
 using Microsoft.VisualStudio.ComponentModelHost;
+using Microsoft.VisualStudio.Imaging;
 using Microsoft.VisualStudio.Shell;
 using Microsoft.VisualStudio.Shell.Interop;
 using Microsoft.VisualStudio.TextTemplating.VSHost;
+using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel.Composition;
@@ -18,7 +20,9 @@ using System.Threading;
 using System.Threading.Tasks;
 using XrmTools.Helpers;
 using XrmTools.Logging.Compatibility;
+using XrmTools.Options;
 using XrmTools.Resources;
+using XrmTools.Serialization;
 using XrmTools.Xrm.Generators;
 
 /// <summary>
@@ -103,6 +107,15 @@ internal sealed class FetchXmlCodeGenerator : BaseCodeGeneratorWithSite
                 TemplateFilePath = templateFilePath,
                 InputFileName = Path.GetFileNameWithoutExtension(inputFileName)
             };
+
+            if (GeneralOptions.Instance.LogLevel == LogLevel.Trace)
+            {
+                var serializedConfig = JsonConvert.SerializeObject(inputModel, new JsonSerializerSettings
+                {
+                    ContractResolver = new PolymorphicContractResolver()
+                });
+                File.WriteAllText(Path.ChangeExtension(inputFileName, ".model.json"), serializedConfig);
+            }
 
             string? generatedCode = null;
             if (project.IsSdkStyle())

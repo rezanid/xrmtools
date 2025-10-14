@@ -109,6 +109,30 @@ internal sealed class FetchXmlSimpleSaveLogger : IWpfTextViewCreationListener
             });
         }
 
+        void loadedHandler(object s, TextDocumentFileActionEventArgs e)
+        {
+            ThreadHelper.JoinableTaskFactory.Run(async () =>
+            {
+                var a = e.FileActionType;
+                bool isLoaded = a.HasFlag(FileActionTypes.ContentLoadedFromDisk);
+
+                if (!isLoaded) return;
+
+                try
+                {
+                    // Get the FetchXmlDocument bound to this buffer
+                    var fetchDoc = buffer.GetFetchXmlDocument(Logger);
+
+                    Logger.LogDebug($"FetchXML loaded: {fetchDoc.FileName} (entity='{fetchDoc.EntityName}')" + DateTimeOffset.Now.ToString("O"));
+
+                }
+                catch (Exception ex)
+                {
+                    Logger.LogError($"FetchXML save logging failed: {ex.Message}");
+                }
+            });
+        }
+
         // Detach cleanly when the text document is disposed
         void disposedHandler(object s, TextDocumentEventArgs e)
         {

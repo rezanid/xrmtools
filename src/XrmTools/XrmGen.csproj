@@ -75,6 +75,7 @@
     <Compile Include="CodeRefactoringProviders\TypeNameParser.cs" />
     <Compile Include="CodeRefactoringProviders\WebApiServiceHelper.cs" />
     <Compile Include="Commands\ManageEnvironmentsCommand.cs" />
+    <Compile Include="Commands\NewFetchXmlFileCommand.cs" />
     <Compile Include="Commands\ResetCodeGenTemplatesCommand.cs" />
     <Compile Include="Core\Repositories\ICacheConfiguration.cs" />
     <Compile Include="CustomMonikers.cs">
@@ -83,13 +84,13 @@
       <DependentUpon>CustomMonikers.vsct</DependentUpon>
     </Compile>
     <Compile Include="FetchXml\CodeGen\FetchXmlCodeGenerator.cs" />
-    <Compile Include="FetchXml\CodeGen\FetchXmlCodeGeneratorAsync.cs" />
     <Compile Include="FetchXml\CodeGen\FetchXmlParser.cs" />
     <Compile Include="FetchXml\Completion\FetchXmlCompletionProvider.cs" />
     <Compile Include="FetchXml\Completion\FetchXmlCompletionSource.cs" />
     <Compile Include="FetchXml\FetchXmlDocument.cs" />
     <Compile Include="FetchXml\FetchQueryResultModel.cs" />
     <Compile Include="FetchXml\FetchXmlContentTypeDefinitions.cs" />
+    <Compile Include="FetchXml\ItemTemplateWizard.cs" />
     <Compile Include="FetchXml\Margin\Browser.cs" />
     <Compile Include="FetchXml\Margin\BrowserMargin.cs" />
     <Compile Include="FetchXml\Margin\BrowserMarginProvider.cs" />
@@ -245,7 +246,7 @@
     <Compile Include="Logging\OutputLogger.cs" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="XrmTools.csproj" />
+    <Content Include="ItemTemplates\Fetch.fetch" />
     <VSCTCompile Include="CustomMonikers.vsct">
       <Generator>VsctGenerator</Generator>
       <LastGenOutput>CustomMonikers.cs</LastGenOutput>
@@ -276,6 +277,8 @@
       <IncludeInVSIX>true</IncludeInVSIX>
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
+    <Content Include="ItemTemplates\FetchItem.vstemplate" />
+    <Content Include="ItemTemplates\FetchIcon.png" />
     <Content Include="UI\WebResources\preview.html" />
     <Content Include="UI\WebResources\themes\prism.css" />
     <Content Include="UI\WebResources\prism.js" />
