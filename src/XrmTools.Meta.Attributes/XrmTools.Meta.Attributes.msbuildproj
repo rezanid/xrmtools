@@ -4,7 +4,7 @@
     <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
     <ImplicitUsings>disable</ImplicitUsings>
     <DevelopmentDependency>true</DevelopmentDependency>
-    <VersionPrefix>1.0.56</VersionPrefix>
+    <VersionPrefix>1.0.57</VersionPrefix>
     <Description>Attributes to be used by Xrm Tools for source generation, registration and other features in Visual Studio. This is a source only package with no assemblies included.</Description>
     <Authors>Reza Niroomand</Authors>
     <PackageIcon>XrmTools_256.png</PackageIcon>
@@ -17,24 +17,28 @@
     <PackageReadmeFile>README.md</PackageReadmeFile>
     <RepositoryUrl>https://github.com/rezanid/xrmtools</RepositoryUrl>
   </PropertyGroup>
-
   <!-- Pack the targets into /build (and optionally /buildTransitive) -->
   <ItemGroup>
-    <None Include="build/XrmTools.Meta.Attributes.targets"
-          Pack="true" PackagePath="build/" />
+    <None Include="build/XrmTools.Meta.Attributes.targets" Pack="true" PackagePath="build/" />
     <!-- Optional: transitive import for PackageReference consumers -->
     <!--<None Include="buildTransitive/XrmTools.Meta.Attributes.targets"
           Pack="true" PackagePath="buildTransitive/" />-->
   </ItemGroup>
-
   <!-- Pack the source files  -->
   <ItemGroup>
     <None Include="src/**/*.cs" Pack="true" PackagePath="src/" />
   </ItemGroup>
-
   <!-- Readme & Icon -->
   <ItemGroup>
     <None Include="README.md" Pack="true" PackagePath="/" />
     <None Include="images/XrmTools_256.png" Pack="true" PackagePath="/" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="schemas\*.xsd" Pack="true" PackagePath="build/schemas/" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Update="schemas\Fetch.xsd">
+      <SubType>Designer</SubType>
+    </None>
   </ItemGroup>
 </Project>

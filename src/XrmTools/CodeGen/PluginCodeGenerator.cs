@@ -66,7 +66,7 @@ public class PluginCodeGenerator : BaseCodeGeneratorWithSite
     [Import]
     internal IXrmMetaDataService XrmMetaDataService { get; set; }
 
-    public override string GetDefaultExtension() => ".Generated.cs";
+    public override string GetDefaultExtension() => ".g.cs";
 
     public PluginCodeGenerator() => SatisfyImports();
 
@@ -112,7 +112,7 @@ public class PluginCodeGenerator : BaseCodeGeneratorWithSite
             var inputFile = await PhysicalFile.FromFileAsync(inputFileName);
             if (inputFile is null || inputFile.FindParent(SolutionItemType.Project) is not Project project)
             {
-                return Encoding.UTF8.GetBytes("// Unable to find the project for the input file.");
+                return Encoding.UTF8.GetBytes("// Unable to find the input file or its project.");
             }
 
             var templateFilePath = await GetTemplateFilePathAsync(inputModel, project);
@@ -129,7 +129,8 @@ public class PluginCodeGenerator : BaseCodeGeneratorWithSite
             Generator.Config = new XrmCodeGenConfig
             {
                 DefaultNamespace = string.IsNullOrWhiteSpace(FileNamespace) ? GetDefaultNamespace() : FileNamespace,
-                TemplateFilePath = templateFilePath
+                TemplateFilePath = templateFilePath,
+                InputFileName = inputFileName
             };
 
             var currentEnvironment = await EnvironmentProvider.GetActiveEnvironmentAsync();
@@ -163,7 +164,7 @@ public class PluginCodeGenerator : BaseCodeGeneratorWithSite
                 var lastGenFileName = await inputFile.GetAttributeAsync("LastGenOutput");
                 if (string.IsNullOrWhiteSpace(lastGenFileName))
                 {
-                    lastGenFileName = Path.ChangeExtension(Path.GetFileName(inputFileName), ".Generated.cs");
+                    lastGenFileName = Path.ChangeExtension(Path.GetFileName(inputFileName), ".g.cs");
                     await inputFile.TrySetAttributeAsync(PhysicalFileAttribute.LastGenOutput, lastGenFileName);
                 }
                 var lastGenFilePath = Path.Combine(Path.GetDirectoryName(inputFileName), lastGenFileName);

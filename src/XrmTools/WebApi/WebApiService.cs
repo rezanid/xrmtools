@@ -6,13 +6,11 @@ using System;
 using System.ComponentModel.Composition;
 using System.Linq;
 using System.Net.Http;
-using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
 using XrmTools.Environments;
 using XrmTools.Http;
 using XrmTools.Logging.Compatibility;
-using XrmTools.Meta.Model;
 using XrmTools.WebApi.Entities;
 
 public interface IWebApiService
@@ -20,7 +18,8 @@ public interface IWebApiService
     Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken);
     Task<HttpResponseMessage> GetAsync(string uri, CancellationToken cancellationToken);
     Task<ODataQueryResponse<T>> QueryAsync<T>(string odataQuery, CancellationToken cancellationToken = default) where T : Entity<T>;
-    Task<T> SendAsync<T>(HttpRequestMessage request) where T : HttpResponseMessage;
+    Task<T> SendAsync<T>(HttpRequestMessage request, CancellationToken cancellationToken = default) where T : HttpResponseMessage;
+    Task<Uri?> GetBaseUrlAsync();
 }
 
 [Export(typeof(IWebApiService))]
@@ -28,7 +27,6 @@ public interface IWebApiService
 public class WebApiService(
     IXrmHttpClientFactory httpClientFactory, IEnvironmentProvider environmentProvider, ILogger<WebApiService> logger) : IWebApiService
 {
-    private bool _disposedValue;
     private string? _sessionToken = null;
 
     public async Task<Uri?> GetBaseUrlAsync() => (await environmentProvider.GetActiveEnvironmentAsync().ConfigureAwait(false))?.BaseServiceUrl;
@@ -48,7 +46,11 @@ public class WebApiService(
         }
 
         using var client = await httpClientFactory.CreateClientAsync().ConfigureAwait(false);
-        
+
+        // without buffering, it proved to be unreliable. The request content would be not readable.
+        //var response =  await client.SendAsync(request, HttpCompletionOption.ResponseHeadersRead,  cancellationToken).ConfigureAwait(false);
+        //await response.Content.LoadIntoBufferAsync().ConfigureAwait(false);
+
         var response =  await client.SendAsync(request, cancellationToken).ConfigureAwait(false);
 
         // Capture the current session token value
@@ -68,7 +70,7 @@ public class WebApiService(
 
         if (!response.IsSuccessStatusCode && !response.Content.IsMimeMultipartContent())
         {
-            var exception = await ParseExceptionAsync(response);
+            var exception = await response.AsServiceExceptionAsync();
             await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync();
             logger.LogError(exception, "Error in Web API call.");//: {Message}", exception.Message);
             throw exception;
@@ -82,87 +84,31 @@ public class WebApiService(
     /// <typeparam name="T">The type derived from HttpResponseMessage</typeparam>
     /// <param name="request">The request</param>
     /// <returns></returns>
-    public async Task<T> SendAsync<T>(HttpRequestMessage request) where T : HttpResponseMessage
+    public async Task<T> SendAsync<T>(HttpRequestMessage request, CancellationToken ct = default) where T : HttpResponseMessage
     {
-        var response = await SendAsync(request).ConfigureAwait(false);
+        var response = await SendAsync(request, ct).ConfigureAwait(false);
 
         // 'As' method is Extension of HttpResponseMessage see Extensions.cs
         return response.As<T>();
     }
 
+    public async Task<TResponse> SendAsync<TResponse>(
+        WebApiRequest<TResponse> request,
+        CancellationToken ct = default)
+    {
+        if (request == null) throw new ArgumentNullException(nameof(request));
+
+        using var raw = await SendAsync(request as HttpRequestMessage, ct)
+            .ConfigureAwait(false);
+        // Optional policy: move/replace with your own error handling.
+        raw.EnsureSuccessStatusCode();
+
+        // Let the request create the typed response (no reflection).
+        return await request.CreateResponseAsync(raw, ct).ConfigureAwait(false);
+    }
+
     public async Task<HttpResponseMessage> GetAsync(string uri, CancellationToken cancellationToken = default)
         => await SendAsync(new HttpRequestMessage(HttpMethod.Get, new Uri(uri, UriKind.Relative)), cancellationToken).ConfigureAwait(false);
-
-    public static async Task<ServiceException> ParseExceptionAsync(HttpResponseMessage response)
-    {
-        string requestId = string.Empty;
-        if (response.Headers.Contains("REQ_ID"))
-        {
-            requestId = response.Headers.GetValues("REQ_ID").FirstOrDefault();
-        }
-
-        var content = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
-        ODataError? oDataError = null;
-
-        try
-        {
-            var options = new JsonSerializerOptions
-            {
-                PropertyNameCaseInsensitive = true
-            };
-
-            oDataError = JsonSerializer.Deserialize<ODataError>(content, options);
-        }
-        catch (Exception)
-        {
-            // Error may not be in correct OData Error format, so keep trying...
-        }
-
-        if (oDataError != null && oDataError.Error != null)
-        {
-
-            var exception = oDataError.Error.Message is string msg ? new ServiceException(msg) : new ServiceException()
-            {
-                ODataError = oDataError,
-                Content = content,
-                ReasonPhrase = response.ReasonPhrase,
-                HttpStatusCode = response.StatusCode,
-                RequestId = requestId
-            };
-            return exception;
-        }
-        else
-        {
-            try
-            {
-                var oDataException = JsonSerializer.Deserialize<ODataException>(content);
-
-                ServiceException otherException = oDataException?.Message is string msg ? new(msg) : new()
-                {
-                    Content = content,
-                    ReasonPhrase = response.ReasonPhrase,
-                    HttpStatusCode = response.StatusCode,
-                    RequestId = requestId
-                };
-                return otherException;
-
-            }
-            catch (Exception)
-            {
-
-            }
-
-            //When nothing else works
-            ServiceException exception = new(response.ReasonPhrase)
-            {
-                Content = content,
-                ReasonPhrase = response.ReasonPhrase,
-                HttpStatusCode = response.StatusCode,
-                RequestId = requestId
-            };
-            return exception;
-        }
-    }
 
     /// <summary>
     /// Performs an query with a given OData query string and deserialized the result.

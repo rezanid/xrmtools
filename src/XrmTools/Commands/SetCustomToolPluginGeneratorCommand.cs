@@ -95,7 +95,7 @@ internal sealed class SetCustomToolPluginGeneratorCommand : BaseCommand<SetCusto
         {
             var genFilePath = Path.Combine(
                 Path.GetDirectoryName(file.FullPath),
-                Path.GetFileNameWithoutExtension(file.FullPath)) + ".Generated.cs";
+                Path.GetFileNameWithoutExtension(file.FullPath)) + ".g.cs";
             if (!File.Exists(genFilePath)) await FileHelper.AddItemAsync(genFilePath, "", file);
             var genFile = await PhysicalFile.FromFileAsync(genFilePath);
             if (genFile is null)
@@ -122,7 +122,7 @@ internal sealed class SetCustomToolPluginGeneratorCommand : BaseCommand<SetCusto
         {
             var genFilePath = Path.Combine(
                 Path.GetDirectoryName(file.FullPath),
-                Path.GetFileNameWithoutExtension(file.FullPath)) + ".Generated.cs";
+                Path.GetFileNameWithoutExtension(file.FullPath)) + ".g.cs";
             if (File.Exists(genFilePath))
             {
                 if ((await PhysicalFile.FromFileAsync(genFilePath)) is PhysicalFile genFile)
@@ -138,4 +138,4 @@ internal sealed class SetCustomToolPluginGeneratorCommand : BaseCommand<SetCusto
         await file.TrySetAttributeAsync("IsXrmPlugin", string.Empty);
     }
 }
-#nullable restore
+#nullable restore 

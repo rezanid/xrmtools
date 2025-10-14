@@ -21,10 +21,10 @@ using XrmTools.WebApi.Messages;
 internal class EnvironmentSelectorViewModel : ViewModelBase
 {
     private readonly IRepositoryFactory? repositoryFactory;
-    private readonly ILogger logger;
-    private DataverseEnvironment _environment;
-    private SolutionItem _solutionItem;
-    public DataverseEnvironment Environment 
+    private readonly ILogger? logger;
+    private DataverseEnvironment? _environment;
+    private SolutionItem _solutionItem = null!;
+    public DataverseEnvironment? Environment 
     { 
         get => _environment;
         set => SetProperty(ref _environment, value);
@@ -50,25 +50,36 @@ internal class EnvironmentSelectorViewModel : ViewModelBase
         Action onSelect, 
         Action onCancel, 
         IRepositoryFactory? repositoryFactory,
-        ILogger logger)
+        ILogger? logger)
     {
         this.repositoryFactory = repositoryFactory;
         this.settingsProvider = settingsProvider;
         this.logger = logger;
         StorageType = storageType;
         SolutionItem = solutionItem;
-        Environments = new ObservableCollection<DataverseEnvironment>(GeneralOptions.Instance.Environments);
-        Environment = storageType switch
-        {
-            SettingsStorageTypes.Solution => GetSolutionEnvironment(),
-            SettingsStorageTypes.SolutionUser => GetSolutionUserEnvironment(),
-            SettingsStorageTypes.Project => GetProjectEnvironment(),
-            SettingsStorageTypes.ProjectUser => GetProjectUserEnvironment(),
-            _ => GeneralOptions.Instance.CurrentEnvironment
-        };
+        Environments = [];
         SelectCommand = new RelayCommand(onSelect);
         CancelCommand = new RelayCommand(onCancel);
         TestCommand = new AsyncRelayCommand<DataverseEnvironment>(TestEnvironmentAsync); 
+    }
+
+    public async Task InitializeAsync()
+    {
+        var options = await GeneralOptions.GetLiveInstanceAsync().ConfigureAwait(false);
+        var environments = new ObservableCollection<DataverseEnvironment>(GeneralOptions.Instance.Environments);
+        Environments.Clear();
+        foreach (var env in environments)
+        {
+            Environments.Add(env);
+        }
+        Environment = StorageType switch
+        {
+            SettingsStorageTypes.Solution => GetSolutionEnvironment(),
+            SettingsStorageTypes.SolutionUser => GetSolutionUserEnvironment(),
+            SettingsStorageTypes.Project => await GetProjectEnvironmentAsync(),
+            SettingsStorageTypes.ProjectUser => await GetProjectUserEnvironmentAsync(),
+            _ => options.CurrentEnvironment
+        };
     }
 
     private DataverseEnvironment GetSolutionEnvironment()
@@ -81,16 +92,16 @@ internal class EnvironmentSelectorViewModel : ViewModelBase
         var url = settingsProvider.SolutionUserSettings.EnvironmentUrl();
         return Environments.FirstOrDefault(e => e.Url == url);
     }
-    private DataverseEnvironment GetProjectEnvironment()
+    private async Task<DataverseEnvironment> GetProjectEnvironmentAsync()
     {
-        var url = settingsProvider.ProjectSettings.EnvironmentUrlAsync()
-            .ConfigureAwait(false).GetAwaiter().GetResult();
+        var url = await settingsProvider.ProjectSettings.EnvironmentUrlAsync()
+            .ConfigureAwait(false);
         return Environments.FirstOrDefault(e => e.Url == url);
     }
-    private DataverseEnvironment GetProjectUserEnvironment()
+    private async Task<DataverseEnvironment> GetProjectUserEnvironmentAsync()
     {
-        var url = settingsProvider.ProjectUserSettings.EnvironmentUrlAsync()
-            .ConfigureAwait(false).GetAwaiter().GetResult();
+        var url = await settingsProvider.ProjectUserSettings.EnvironmentUrlAsync()
+            .ConfigureAwait(false);
         return Environments.FirstOrDefault(e => e.Url == url);
     }
 

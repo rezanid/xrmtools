@@ -16,13 +16,7 @@ namespace XrmTraditionalPlugins
     [GeneratedCode("TemplatedCodeGenerator", "1.4.4.0")]
     public partial class CleanAccountPostOperation
     {
-        // full_type_name:Microsoft.Xrm.Sdk.IOrganizationServiceFactory | dep_name:  | provided_by_property: 
-            // full_type_name:Microsoft.Xrm.Sdk.ITracingService | dep_name:  | provided_by_property: 
-            // full_type_name:Microsoft.Xrm.Sdk.PluginTelemetry.ILogger | dep_name:  | provided_by_property: 
-            // full_type_name:Microsoft.Xrm.Sdk.IExecutionContext | dep_name:  | provided_by_property: 
-            // full_type_name:XrmTraditionalPlugins.IBusinessService | dep_name:  | provided_by_property: 
-            // full_type_name:string | dep_name: Config | provided_by_property: Config
-            /// <summary>
+        /// <summary>
         /// This method should be called before accessing any target, image or any of your dependencies.
         /// </summary>
         protected IDisposable CreateScope(IServiceProvider serviceProvider)

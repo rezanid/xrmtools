@@ -1,11 +1,12 @@
 ﻿#nullable enable
 namespace XrmTools.Helpers;
 
-using Microsoft.VisualStudio.Shell.Interop;
-using Microsoft.VisualStudio.Shell;
 using Microsoft.VisualStudio;
-using System.Runtime.InteropServices;
+using Microsoft.VisualStudio.Shell;
+using Microsoft.VisualStudio.Shell.Interop;
 using System;
+using System.Runtime.InteropServices;
+using System.Threading.Tasks;
 
 internal static class IVsHierarchyExtensions
 {
@@ -41,5 +42,41 @@ internal static class IVsHierarchyExtensions
         }
     }
 
+    /// <summary>
+    /// Selects the given hierarchy/itemId in Solution Explorer.
+    /// Pass the item-specific hierarchy if you have both (hierarchy & itemHierarchy).
+    /// </summary>
+    public static async Task SelectInSolutionExplorerAsync(this IVsHierarchy hierarchy, uint itemId)
+    {
+        await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync();
+
+        if (hierarchy == null)
+            return;
+
+        // Ensure Solution Explorer is created/shown
+        var uiShellObj = await AsyncServiceProvider.GlobalProvider.GetServiceAsync(typeof(SVsUIShell));
+        var seGuid = VSConstants.StandardToolWindows.SolutionExplorer;
+        IVsWindowFrame? frame = null;
+        if (uiShellObj is IVsUIShell uiShell)
+        {
+            uiShell.FindToolWindow((uint)__VSFINDTOOLWIN.FTW_fForceCreate, ref seGuid, out frame);
+        }
+
+        if (frame == null)
+            return;
+
+        frame.Show();
+
+        // Get the IVsUIHierarchyWindow behind Solution Explorer
+        frame.GetProperty((int)__VSFPROPID.VSFPROPID_DocView, out object docView);
+        if (docView is not IVsUIHierarchyWindow hierarchyWindow)
+            return;
+
+        // Select (optionally ensure visible / expand)
+        if (hierarchy is IVsUIHierarchy uiHierarchy)
+        {
+            hierarchyWindow.ExpandItem(uiHierarchy, itemId, EXPANDFLAGS.EXPF_SelectItem);
+        }
+    }
 }
 #nullable restore

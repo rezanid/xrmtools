@@ -100,10 +100,10 @@
   <ItemGroup>
     <Compile Include="AccountCreatePlugin.cs">
       <Generator>Xrm Tools Plugin Code Generator</Generator>
-      <LastGenOutput>AccountCreatePlugin.Generated.cs</LastGenOutput>
       <IsXrmPlugin>True</IsXrmPlugin>
+      <LastGenOutput>AccountCreatePlugin.g.cs</LastGenOutput>
     </Compile>
-    <Compile Include="AccountCreatePlugin.Generated.cs">
+    <Compile Include="AccountCreatePlugin.g.cs">
       <AutoGen>True</AutoGen>
       <DesignTime>True</DesignTime>
       <DependentUpon>AccountCreatePlugin.cs</DependentUpon>
@@ -138,12 +138,25 @@
       <DependentUpon>Entities.cs</DependentUpon>
     </Compile>
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="Test.g.cs">
+      <AutoGen>True</AutoGen>
+      <DesignTime>True</DesignTime>
+      <DependentUpon>Test.fetch</DependentUpon>
+    </Compile>
   </ItemGroup>
   <ItemGroup>
+    <None Include=".xrmtools\schemas\Fetch.xsd">
+      <SubType>Designer</SubType>
+    </None>
     <None Include="app.config" />
     <None Include="key.snk" />
     <None Include="packages.config" />
+    <None Include="Test.fetch">
+      <LastGenOutput>Test.g.cs</LastGenOutput>
+      <Generator>XrmTools FetchXml Generator</Generator>
+    </None>
   </ItemGroup>
+  <ItemGroup />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <Import Project="..\XrmGenTest\packages\XrmTools.Meta.Attributes.1.0.51\build\XrmTools.Meta.Attributes.targets" Condition="Exists('..\XrmGenTest\packages\XrmTools.Meta.Attributes.1.0.51\build\XrmTools.Meta.Attributes.targets')" />
   <Target Name="EnsureNuGetPackageBuildImports" BeforeTargets="PrepareForBuild">
@@ -151,7 +164,7 @@
       <ErrorText>This project references NuGet package(s) that are missing on this computer. Use NuGet Package Restore to download them.  For more information, see http://go.microsoft.com/fwlink/?LinkID=322105. The missing file is {0}.</ErrorText>
     </PropertyGroup>
     <Error Condition="!Exists('..\XrmGenTest\packages\XrmTools.Meta.Attributes.1.0.51\build\XrmTools.Meta.Attributes.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\XrmGenTest\packages\XrmTools.Meta.Attributes.1.0.51\build\XrmTools.Meta.Attributes.targets'))" />
-    <Error Condition="!Exists('..\packages\XrmTools.Meta.Attributes.1.0.55\build\XrmTools.Meta.Attributes.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\XrmTools.Meta.Attributes.1.0.55\build\XrmTools.Meta.Attributes.targets'))" />
+    <Error Condition="!Exists('..\packages\XrmTools.Meta.Attributes.1.0.57\build\XrmTools.Meta.Attributes.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\XrmTools.Meta.Attributes.1.0.57\build\XrmTools.Meta.Attributes.targets'))" />
   </Target>
-  <Import Project="..\packages\XrmTools.Meta.Attributes.1.0.55\build\XrmTools.Meta.Attributes.targets" Condition="Exists('..\packages\XrmTools.Meta.Attributes.1.0.55\build\XrmTools.Meta.Attributes.targets')" />
+  <Import Project="..\packages\XrmTools.Meta.Attributes.1.0.57\build\XrmTools.Meta.Attributes.targets" Condition="Exists('..\packages\XrmTools.Meta.Attributes.1.0.57\build\XrmTools.Meta.Attributes.targets')" />
 </Project>

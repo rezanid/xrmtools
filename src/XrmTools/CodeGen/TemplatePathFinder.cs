@@ -16,6 +16,7 @@ public interface ITemplateFinder
     Task<string?> FindEntityTemplatePathAsync(string inputFile);
     Task<string?> FindPluginTemplatePathAsync(string inputFile);
     Task<string?> FindGlobalOptionSetsTemplatePathAsync();
+    Task<string?> FindFetchXmlTemplatePathAsync(string inputFile);
 }
 
 [Export(typeof(ITemplateFinder))]
@@ -117,6 +118,17 @@ public class TemplatePathFinder(ISettingsProvider settings, ILogger<TemplatePath
             settingsPathGetter: settings.GlobalOptionSetsTemplateFilePathAsync,
             templateFileName: Constants.ScribanGlobalOptionSetsFileName,
             notFoundWarning: "Failed to find any template for global option sets code generation.");
+    }
+
+    public async Task<string?> FindFetchXmlTemplatePathAsync(string inputFile)
+    {
+        var candidate = Path.Combine(Path.GetDirectoryName(inputFile), Path.GetFileNameWithoutExtension(inputFile)) + Constants.ScribanTemplateExtensionWithDot;
+
+        return await ResolveTemplatePathAsync(
+            explicitCandidatePath: candidate,
+            settingsPathGetter: settings.GlobalOptionSetsTemplateFilePathAsync,
+            templateFileName: Constants.ScribanFetchXmlFileName,
+            notFoundWarning: "Failed to find any template for FetchXML code generation.");
     }
 }
 #nullable restore

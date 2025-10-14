@@ -2,17 +2,17 @@
 namespace XrmTools.Helpers;
 
 using Community.VisualStudio.Toolkit;
+using Microsoft.CodeAnalysis;
+using Microsoft.VisualStudio.ComponentModelHost;
+using Microsoft.VisualStudio.LanguageServices;
+using Microsoft.VisualStudio.Shell;
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
-using System.Collections.Generic;
-using Microsoft.VisualStudio.ComponentModelHost;
-using Microsoft.VisualStudio.LanguageServices;
-using Microsoft.VisualStudio.Shell;
-using Microsoft.CodeAnalysis;
 
 internal static class FileHelper
 {
@@ -52,7 +52,7 @@ internal static class FileHelper
         return workspace.CurrentSolution.Projects.FirstOrDefault(p => p.FilePath == projectFilePath);
     }
 
-    public static async Task AddItemAsync(string name, string content, SolutionItem activeItem)
+    public static async Task AddItemAsync(string name, string content, SolutionItem activeItem, bool selectItem = false)
     {
         if (activeItem is null || string.IsNullOrWhiteSpace(name) || content is null) return;
         ValidatePath(name);
@@ -79,7 +79,7 @@ internal static class FileHelper
 
         if (proj != null)
         {
-            await AddItemAsync(file, content, proj);
+            await AddItemAsync(file, content, proj, selectItem);
             return;
         }
 
@@ -90,7 +90,7 @@ internal static class FileHelper
             await VS.MessageBox.ShowErrorAsync(Vsix.Name, "Could not determine where to create the new file.");
             return;
         }
-        await AddItemAsync(file, content, folder!);
+        await AddItemAsync(file, content, folder!, selectItem);
     }
 
     private static string? FindPath(SolutionItem? solutionItem)
@@ -124,7 +124,7 @@ internal static class FileHelper
         } while (!string.IsNullOrEmpty(path));
     }
 
-    private static async Task AddItemAsync(FileInfo file, string content, Community.VisualStudio.Toolkit.Project project)
+    private static async Task AddItemAsync(FileInfo file, string content, Community.VisualStudio.Toolkit.Project project, bool selectItem)
     {
         try
         {
@@ -135,10 +135,13 @@ internal static class FileHelper
             await VS.MessageBox.ShowErrorAsync(Vsix.Name, $"Failed to write to file '{file.FullName}'.");
             return;
         }
-        await project.AddExistingFilesAsync([file.FullName]);
-    } 
+        var files = await project.AddExistingFilesAsync([file.FullName]);
 
-    private static async Task AddItemAsync(FileInfo file, string content, PhysicalFolder folder)
+        files.First().GetItemInfo(out var hierarchy, out var itemId, out _);
+        if (selectItem) await hierarchy.SelectInSolutionExplorerAsync(itemId);
+    }
+
+    private static async Task AddItemAsync(FileInfo file, string content, PhysicalFolder folder, bool selectItem)
     {
         try
         {
@@ -149,7 +152,9 @@ internal static class FileHelper
             await VS.MessageBox.ShowErrorAsync(Vsix.Name, $"Failed to write to file '{file.FullName}'.");
             return;
         }
-        await folder.AddExistingFilesAsync([file.FullName]);
+        var files = await folder.AddExistingFilesAsync([file.FullName]);
+        files.First().GetItemInfo(out var hierarchy, out var itemId, out _);
+        if (selectItem) await hierarchy.SelectInSolutionExplorerAsync(itemId);
     }
 
     //TODO: Add another AddItemAsync(FileInfo file, string content, Solution solution)

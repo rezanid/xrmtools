@@ -2,7 +2,6 @@
 namespace XrmTools.UI;
 
 using Community.VisualStudio.Toolkit;
-using Microsoft.VisualStudio.Shell.Interop;
 using System;
 using System.ComponentModel.Composition;
 using System.Threading.Tasks;
@@ -42,24 +41,15 @@ internal class EnvironmentSelector : IEnvironmentSelector
             return null;
         }
 
-        var dialog = new EnvironmentSelectorDialog(
+        var environment = await EnvironmentSelectorDialog.ShowDialogAsync(
             settingLevel, SettingsProvider, solutionItem, RepositoryFactory, Logger);
-        if (dialog == null)
-        {
-            Logger.LogWarning("Environment level is not set to Solution or Project.");
-            await VS.MessageBox.ShowAsync(
-                Vsix.Name,
-                "Environment level not selected. Please select at which level you would like to set the environment in Tools > Options > Xrm Tools.",
-                OLEMSGICON.OLEMSGICON_WARNING);
-            return null;
-        }
-        if (dialog.ShowDialog() == true)
+        if (environment != null)
         {
             Logger.LogInformation("Environment selected");
-            var viewmodel = (EnvironmentSelectorViewModel)dialog.DataContext;
-            EnvironmentChanged?.Invoke(this, viewmodel.Environment);
-            return viewmodel.Environment;
+            EnvironmentChanged?.Invoke(this, environment);
+            return environment;
         }
+
         return null;
     }
 }

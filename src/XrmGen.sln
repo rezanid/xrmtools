@@ -23,6 +23,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "XrmTools.Core.Tests", "Unit
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "XrmTools.Tests", "UnitTests\XrmTools.Tests\XrmTools.Tests.csproj", "{9C0C3BC9-ED0D-4EFC-909E-CA6CBB524CF7}"
 EndProject
+Project("{54A90642-561A-4BB1-A94E-469ADEE60C69}") = "xrmtools.fetchxmlviewer", "XrmTools.FetchXmlViewer\xrmtools.fetchxmlviewer.esproj", "{CB4A725C-72D8-7192-9B65-3F3C72FDCE19}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -141,6 +143,24 @@ Global
 		{9C0C3BC9-ED0D-4EFC-909E-CA6CBB524CF7}.Release|arm64.Build.0 = Release|Any CPU
 		{9C0C3BC9-ED0D-4EFC-909E-CA6CBB524CF7}.Release|x86.ActiveCfg = Release|Any CPU
 		{9C0C3BC9-ED0D-4EFC-909E-CA6CBB524CF7}.Release|x86.Build.0 = Release|Any CPU
+		{CB4A725C-72D8-7192-9B65-3F3C72FDCE19}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{CB4A725C-72D8-7192-9B65-3F3C72FDCE19}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{CB4A725C-72D8-7192-9B65-3F3C72FDCE19}.Debug|Any CPU.Deploy.0 = Debug|Any CPU
+		{CB4A725C-72D8-7192-9B65-3F3C72FDCE19}.Debug|arm64.ActiveCfg = Debug|Any CPU
+		{CB4A725C-72D8-7192-9B65-3F3C72FDCE19}.Debug|arm64.Build.0 = Debug|Any CPU
+		{CB4A725C-72D8-7192-9B65-3F3C72FDCE19}.Debug|arm64.Deploy.0 = Debug|Any CPU
+		{CB4A725C-72D8-7192-9B65-3F3C72FDCE19}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{CB4A725C-72D8-7192-9B65-3F3C72FDCE19}.Debug|x86.Build.0 = Debug|Any CPU
+		{CB4A725C-72D8-7192-9B65-3F3C72FDCE19}.Debug|x86.Deploy.0 = Debug|Any CPU
+		{CB4A725C-72D8-7192-9B65-3F3C72FDCE19}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{CB4A725C-72D8-7192-9B65-3F3C72FDCE19}.Release|Any CPU.Build.0 = Release|Any CPU
+		{CB4A725C-72D8-7192-9B65-3F3C72FDCE19}.Release|Any CPU.Deploy.0 = Release|Any CPU
+		{CB4A725C-72D8-7192-9B65-3F3C72FDCE19}.Release|arm64.ActiveCfg = Release|Any CPU
+		{CB4A725C-72D8-7192-9B65-3F3C72FDCE19}.Release|arm64.Build.0 = Release|Any CPU
+		{CB4A725C-72D8-7192-9B65-3F3C72FDCE19}.Release|arm64.Deploy.0 = Release|Any CPU
+		{CB4A725C-72D8-7192-9B65-3F3C72FDCE19}.Release|x86.ActiveCfg = Release|Any CPU
+		{CB4A725C-72D8-7192-9B65-3F3C72FDCE19}.Release|x86.Build.0 = Release|Any CPU
+		{CB4A725C-72D8-7192-9B65-3F3C72FDCE19}.Release|x86.Deploy.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

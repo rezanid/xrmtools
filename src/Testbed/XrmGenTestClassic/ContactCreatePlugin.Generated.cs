@@ -1,6 +1,7 @@
 using Microsoft.Xrm.Sdk;
 using Microsoft.Xrm.Sdk.Client;
 using Microsoft.Xrm.Sdk.Extensions;
+using Microsoft.Xrm.Sdk.PluginTelemetry;
 using System;
 using System.CodeDom.Compiler;
 using System.Collections.Generic;
@@ -12,7 +13,7 @@ using XrmTools;
 
 namespace XrmGenTest
 {
-    [GeneratedCode("TemplatedCodeGenerator", "1.4.3.0")]
+    [GeneratedCode("TemplatedCodeGenerator", "1.4.6.0")]
     public partial class ContactCreatePlugin
     {
         /// <summary>
@@ -22,14 +23,12 @@ namespace XrmGenTest
         {
             var scope = new DependencyScope<ContactCreatePlugin>();
             scope.Set<IServiceProvider>(serviceProvider);
-            scope.Set<IPluginExecutionContext>((IPluginExecutionContext)serviceProvider.GetService(typeof(IPluginExecutionContext)));
         
-            var iContactPersister = new XrmGenTest.ContactPersister(this.OrganizationServiceFactory, this.TracingService);
+            var contactPersister = new XrmGenTest.ContactPersister(this.OrganizationServiceFactory, this.TracingService);
         
-            scope.Set<XrmGenTest.IContactPersister>(iContactPersister);
-            scope.Set<XrmGenTest.IContactOrchestrator>(scope.SetAndTrack(new XrmGenTest.ContactOrchestrator(iContactPersister, this.TracingService)));
+            scope.Set<XrmGenTest.IContactPersister>(contactPersister);
+            scope.Set<XrmGenTest.IContactOrchestrator>(scope.SetAndTrack(new XrmGenTest.ContactOrchestrator(contactPersister, this.TracingService)));
             scope.Set<XrmGenTest.IValidationService>(scope.Set(new XrmGenTest.ValidationService()));
-        
             return scope;
         }
 	    [EntityLogicalName("contact")]
@@ -245,13 +244,13 @@ namespace XrmGenTest
         }
 
 
-	    protected static T EntityOrDefault<T>(DataCollection<string, object> keyValues, string key) where T : Entity
+	    private static T EntityOrDefault<T>(DataCollection<string, object> keyValues, string key) where T : Entity
         {
             if (keyValues is null) return default;
             return keyValues.TryGetValue(key, out var obj) ? obj is Entity entity ? entity.ToEntity<T>() : default : default;
         }
 
-        protected static T EntityOrDefault<T>(DataCollection<string, Entity> keyValues, string key) where T : Entity
+        private static T EntityOrDefault<T>(DataCollection<string, Entity> keyValues, string key) where T : Entity
         {
             if (keyValues is null) return default;
             return keyValues.TryGetValue(key, out var entity) ? entity?.ToEntity<T>() : default;

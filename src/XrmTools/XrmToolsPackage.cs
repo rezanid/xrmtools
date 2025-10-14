@@ -21,6 +21,7 @@ using System.Runtime.InteropServices;
 using System.Threading;
 using XrmTools.Commands;
 using XrmTools.Environments;
+using XrmTools.FetchXml.Schema;
 using XrmTools.Helpers;
 using XrmTools.Logging;
 using XrmTools.Options;
@@ -44,7 +45,7 @@ using Task = System.Threading.Tasks.Task;
 /// utility what data to put into .pkgdef file.
 /// </para>
 /// <para>
-/// To get loaded into VS, the package must be referred by <Asset Type="Microsoft.VisualStudio.VsPackage" ...> in .vsixmanifest file.
+/// To get loaded into VS, the package must be referred to by <Asset Type="Microsoft.VisualStudio.VsPackage" ...> in .vsixmanifest file.
 /// </para>
 /// </remarks>
 [PackageRegistration(UseManagedResourcesOnly = true, AllowsBackgroundLoading = true)]
@@ -54,6 +55,8 @@ using Task = System.Threading.Tasks.Task;
 [ProvideCodeGeneratorExtension(EntityCodeGenerator.Name, ".yaml")]
 [ProvideCodeGenerator(typeof(PluginCodeGenerator), PluginCodeGenerator.Name, PluginCodeGenerator.Description, true, ProjectSystem = ProvideCodeGeneratorAttribute.CSharpProjectGuid, RegisterCodeBase = true)]
 [ProvideCodeGeneratorExtension(PluginCodeGenerator.Name, ".def.json")]
+[ProvideCodeGenerator(typeof(FetchXml.CodeGen.FetchXmlCodeGenerator), "XrmTools FetchXML Generator", "Generates C# code from FetchXML files.", true, ProjectSystem = ProvideCodeGeneratorAttribute.CSharpProjectGuid, RegisterCodeBase = true)]
+[ProvideCodeGeneratorExtension("XrmTools FetchXML Generator", ".fetch")]
 [ProvideMenuResource("Menus.ctmenu", 1)]
 // Decide the visibility of our commands when the commands are NOT yet loaded.
 [ProvideUIContextRule(PackageGuids.SetCustomToolEntitiesCmdUIRuleString,
@@ -94,14 +97,14 @@ using Task = System.Threading.Tasks.Task;
         "ActiveProjectCapability:CSharp",
         VSConstants.UICONTEXT.SolutionHasSingleProject_string,
         VSConstants.UICONTEXT.SolutionHasMultipleProjects_string])]
-//[ProvideUIContextRule(PackageGuids.NewPluginDefinitionCmdUIRuleString,
-//    name: "UI Context NewPluginConfigCommand",
-//    expression: "CSharp & (SingleProj | MultiProj)",
-//    termNames: ["CSharp", "SingleProj", "MultiProj"],
-//    termValues: [
-//        "ActiveProjectCapability:CSharp",
-//        VSConstants.UICONTEXT.SolutionHasSingleProject_string,
-//        VSConstants.UICONTEXT.SolutionHasMultipleProjects_string])]
+[ProvideUIContextRule(PackageGuids.NewProjectItemUIRuleString,
+    name: "UI Context NewPluginConfigCommand",
+    expression: "CSharp & (SingleProj | MultiProj)",
+    termNames: ["CSharp", "SingleProj", "MultiProj"],
+    termValues: [
+        "ActiveProjectCapability:CSharp",
+        VSConstants.UICONTEXT.SolutionHasSingleProject_string,
+        VSConstants.UICONTEXT.SolutionHasMultipleProjects_string])]
 [ProvideService(typeof(IXrmCodeGenerator), IsAsyncQueryable = true, IsCacheable = true, IsFreeThreaded = true)]
 [ProvideService(typeof(IEnvironmentProvider), IsAsyncQueryable = true, IsCacheable = true, IsFreeThreaded = true)]
 [ProvideService(typeof(ISettingsProvider), IsAsyncQueryable = true, IsCacheable = true, IsFreeThreaded = true)]
@@ -166,6 +169,8 @@ public sealed partial class XrmToolsPackage : ToolkitPackage
         //In the following article, base.InitializeAsync is at the begining.
         // https://learn.microsoft.com/en-us/visualstudio/extensibility/how-to-provide-an-asynchronous-visual-studio-service?view=vs-2022
         await base.InitializeAsync(cancellationToken, progress);
+        // Ensure FetchXml XSD embedded schema is loaded early (non-blocking errors logged only)
+        FetchXmlSchemaLoader.EnsureLoaded(_loggerService);
 
         foreach (var key in SettingsProvider.SolutionUserSettings.Keys)
         {
@@ -196,6 +201,7 @@ public sealed partial class XrmToolsPackage : ToolkitPackage
         // The following two commands contirbute to the dropdown combo box for selecting environments.
         await ManageEnvironmentsCommand.InitializeAsync(this);
         await ManageEnvironmentsGetListCommand.InitializeAsync(this);
+        await NewFetchXmlFileCommand.InitializeAsync(this);
 
         VS.Events.SolutionEvents.OnAfterOpenSolution += (solution) => OnAfterOpenSolution(solution, cancellationToken);
         VS.Events.SolutionEvents.OnAfterCloseSolution += () => OnAfterCloseSolution(cancellationToken);

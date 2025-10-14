@@ -3,10 +3,10 @@ namespace XrmTools.UI;
 
 using Community.VisualStudio.Toolkit;
 using Microsoft.VisualStudio.PlatformUI;
-using Microsoft.VisualStudio.Shell.Interop;
 using System;
 using System.Linq;
 using System.Reflection;
+using System.Threading.Tasks;
 using XrmTools.Logging.Compatibility;
 using XrmTools.Options;
 using XrmTools.Settings;
@@ -17,12 +17,27 @@ using XrmTools.Xrm.Repositories;
 /// </summary>
 internal partial class EnvironmentSelectorDialog : DialogWindow
 {
-    internal EnvironmentSelectorDialog(
-        SettingsStorageTypes storageType, ISettingsProvider settingsProvider, SolutionItem solutionItem, IRepositoryFactory? repositoryFactory, ILogger logger)
+    private EnvironmentSelectorDialog()//(object dataContext)
     {
         EnsureReferencedAssembliesInMarkupAreLoaded();
-        DataContext = new EnvironmentSelectorViewModel(storageType, solutionItem, settingsProvider, OnSelect, OnCancel, repositoryFactory, logger);
         InitializeComponent();
+    }
+
+    internal static async Task<DataverseEnvironment?> ShowDialogAsync(
+        SettingsStorageTypes storageType, ISettingsProvider settingsProvider, SolutionItem solutionItem, IRepositoryFactory? repositoryFactory, ILogger? logger)
+    {
+        var dialog = new EnvironmentSelectorDialog();
+
+        var viewModel =  new EnvironmentSelectorViewModel(storageType, solutionItem, settingsProvider, dialog.OnSelect, dialog.OnCancel, repositoryFactory, logger);
+        await viewModel.InitializeAsync();
+
+        dialog.DataContext = viewModel;
+
+        if (dialog.ShowModal() == true)
+        {
+            return viewModel.Environment;
+        }
+        return null;
     }
 
     private void OnSelect()
@@ -35,12 +50,6 @@ internal partial class EnvironmentSelectorDialog : DialogWindow
     {
         DialogResult = false;
         Close();
-    }
-
-    private void OnTest()
-    {
-        //TODO: Check if the connection is successfull and if the developer has enough previleges.
-        VS.MessageBox.Show("TEST", "Test is not implemented yet", OLEMSGICON.OLEMSGICON_INFO);
     }
 
     private void EnsureReferencedAssembliesInMarkupAreLoaded()

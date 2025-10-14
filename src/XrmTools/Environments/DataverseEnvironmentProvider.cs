@@ -32,17 +32,6 @@ internal class DataverseEnvironmentProvider : IEnvironmentProvider
         _ => GeneralOptions.Instance.CurrentEnvironment,
     };
 
-    public DataverseEnvironment? GetActiveEnvironment()
-    => (GeneralOptions.Instance).CurrentEnvironmentStorage switch
-    {
-        SettingsStorageTypes.Options => GeneralOptions.Instance.CurrentEnvironment,
-        SettingsStorageTypes.Solution => GetEnvironmentFromSolution(),
-        SettingsStorageTypes.SolutionUser => GetEnvironmentFromSolutionUserFile(),
-        SettingsStorageTypes.Project => GetEnvironmentFromProjectAsync().ConfigureAwait(false).GetAwaiter().GetResult(),
-        SettingsStorageTypes.ProjectUser => GetEnvironmentFromProjectUserFileAsync().ConfigureAwait(false).GetAwaiter().GetResult(),
-        _ => GeneralOptions.Instance.CurrentEnvironment,
-    };
-
     public async Task SetActiveEnvironmentAsync(DataverseEnvironment environment)
     {
         if (environment?.IsValid != true) return;

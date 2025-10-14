@@ -1,21 +1,22 @@
 ﻿#nullable enable
 namespace XrmTools.Http;
-using System;
-using System.Threading.Tasks;
-using System.Collections.Concurrent;
-using System.Net.Http;
-using System.Threading;
-using Polly;
-using XrmTools.Environments;
-using XrmTools.Logging.Compatibility;
-using System.ComponentModel.Composition;
-using XrmTools.Authentication;
-using System.Net.Http.Headers;
-using Microsoft.Extensions.Http.Resilience;
 using Microsoft.Identity.Client;
 using Microsoft.VisualStudio.Threading;
-using System.Reflection;
+using Polly;
+//using Polly.RateLimiting;
+using Polly.Timeout;
+using System;
+using System.Collections.Concurrent;
+using System.ComponentModel.Composition;
 using System.Net;
+using System.Net.Http;
+using System.Net.Http.Headers;
+using System.Reflection;
+using System.Threading;
+using System.Threading.Tasks;
+using XrmTools.Authentication;
+using XrmTools.Environments;
+using XrmTools.Logging.Compatibility;
 using XrmTools.Options;
 
 [Export(typeof(IXrmHttpClientFactory))]
@@ -153,11 +154,12 @@ internal class XrmHttpClientFactory : IXrmHttpClientFactory, System.IAsyncDispos
 
     private IAsyncPolicy<HttpResponseMessage> CreateDefaultPolicy()
         => new ResiliencePipelineBuilder<HttpResponseMessage>()
-            .AddRateLimiter(new HttpRateLimiterStrategyOptions() { Name = "Standard-RateLimiter" })
-            .AddTimeout(new HttpTimeoutStrategyOptions() { Name = "Standard-TotalRequestTimeout" })
-            .AddRetry(new HttpRetryStrategyOptions() { Name = "Standard-Retry" })
-            .AddCircuitBreaker(new HttpCircuitBreakerStrategyOptions() { Name = "Standard-CircuitBreaker" })
-            .AddTimeout(new HttpTimeoutStrategyOptions
+            //.AddRateLimiter(new HttpRateLimiterStrategyOptions() { Name = "Standard-RateLimiter" }) or:
+            //.AddRateLimiter(new RateLimiterStrategyOptions() { Name = "Standard-RateLimiter" })
+            .AddTimeout(new TimeoutStrategyOptions() { Name = "Standard-TotalRequestTimeout" })
+            .AddRetry(new Resiliency.HttpRetryStrategyOptions() { Name = "Standard-Retry" })
+            .AddCircuitBreaker(new Resiliency.HttpCircuitBreakerStrategyOptions() { Name = "Standard-CircuitBreaker" })
+            .AddTimeout(new TimeoutStrategyOptions
             {
                 Timeout = TimeSpan.FromSeconds(60.0),
                 Name = "Standard-AttemptTimeout"

@@ -35,6 +35,10 @@ public partial class EnvironmentEditorDialog : DialogWindow
             UrlTextBox.Focus();
             UrlTextBox.SelectAll();
         });
+        if (vm.Environments.Count == 0)
+        {
+            vm.AddEnvironmentCommand.Execute(null);
+        }
     }
 
     private void EnsureReferencedAssembliesInMarkupAreLoaded()
