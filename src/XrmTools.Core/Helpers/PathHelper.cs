@@ -46,7 +46,14 @@ public static class PathHelper
     /// If 'fromPath' appears to be a file (or is an existing file), its directory is used.
     /// If paths are on different roots/drives, returns the absolute resolved 'toPath'.
     /// </summary>
-    public static string GetRelativePath(string fromPath, string toPath)
+    /// <param name="fromPath">Starting (base) path; if a file, its directory is used.</param>
+    /// <param name="toPath">Target path to express relative to <paramref name="fromPath"/>.</param>
+    /// <param name="directorySeparator">
+    /// Optional directory separator to use in the returned relative path.
+    /// When null (default), the OS-native separator is used. When provided, all separators
+    /// in the relative path are converted to this character (including on Windows where '/' would normally be translated).
+    /// </param>
+    public static string GetRelativePath(string fromPath, string toPath, char? directorySeparator = null)
     {
         if (string.IsNullOrWhiteSpace(fromPath)) throw new ArgumentException("fromPath is required.", nameof(fromPath));
         if (string.IsNullOrWhiteSpace(toPath)) throw new ArgumentException("toPath is required.", nameof(toPath));
@@ -68,20 +75,35 @@ public static class PathHelper
             return ".";
 
         // Build file:// URIs to leverage MakeRelativeUri reliably
-        var baseUri = new Uri(AppendDirectorySeparator(baseDir));                    // ensure dir semantics
-        var targetUri = new Uri(targetIsDir ? AppendDirectorySeparator(toResolved)     // ensure dir semantics
-                                            : toResolved);
+        var baseUri = new Uri(AppendDirectorySeparator(baseDir));
+        var targetUri = new Uri(targetIsDir ? AppendDirectorySeparator(toResolved) : toResolved);
 
         var relUri = baseUri.MakeRelativeUri(targetUri);
-        var relative = Uri.UnescapeDataString(relUri.ToString());
+        var relative = Uri.UnescapeDataString(relUri.ToString()); // always '/' separated
 
-        // Uri gives '/' separators; convert to OS-native if needed
-        if (Path.DirectorySeparatorChar != '/')
-            relative = relative.Replace('/', Path.DirectorySeparatorChar);
+        // Empty -> "."
+        if (string.IsNullOrEmpty(relative))
+            return ".";
 
-        // When both resolve to the same file, MakeRelativeUri may return just the file name (fine).
-        // When it returns empty (rare), use "."
-        return string.IsNullOrEmpty(relative) ? "." : relative;
+        // Apply requested or OS-native separator (skip when result is just ".")
+        if (relative != ".")
+        {
+            if (directorySeparator.HasValue)
+            {
+                var sep = directorySeparator.Value;
+                // Replace forward slashes from URI output
+                relative = relative.Replace('/', sep);
+                // If URI unexpectedly produced any backslashes (unlikely), normalize them too
+                relative = relative.Replace('\\', sep);
+            }
+            else if (Path.DirectorySeparatorChar != '/')
+            {
+                // Default existing behavior: use OS-native separator
+                relative = relative.Replace('/', Path.DirectorySeparatorChar);
+            }
+        }
+
+        return relative;
     }
 
     private static bool PathsEqual(string a, string b)

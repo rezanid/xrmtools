@@ -90,7 +90,6 @@
     <Compile Include="FetchXml\FetchXmlDocument.cs" />
     <Compile Include="FetchXml\FetchQueryResultModel.cs" />
     <Compile Include="FetchXml\FetchXmlContentTypeDefinitions.cs" />
-    <Compile Include="FetchXml\ItemTemplateWizard.cs" />
     <Compile Include="FetchXml\Margin\Browser.cs" />
     <Compile Include="FetchXml\Margin\BrowserMargin.cs" />
     <Compile Include="FetchXml\Margin\BrowserMarginProvider.cs" />
@@ -104,7 +103,7 @@
     <Compile Include="FetchXml\Model\FetchOrder.cs" />
     <Compile Include="FetchXml\Model\FetchQuery.cs" />
     <Compile Include="FetchXml\Model\FetchValue.cs" />
-    <Compile Include="FetchXml\Save\FetchXmlSimpleSaveLogger.cs" />
+    <Compile Include="FetchXml\FetchXmlDocumentInitializer.cs" />
     <Compile Include="FetchXml\Schema\FetchXmlSchemaLoader.cs" />
     <Compile Include="FetchXml\TextBufferExtensions.cs" />
     <Compile Include="Helpers\NugetParser.cs" />
@@ -246,7 +245,6 @@
     <Compile Include="Logging\OutputLogger.cs" />
   </ItemGroup>
   <ItemGroup>
-    <Content Include="ItemTemplates\Fetch.fetch" />
     <VSCTCompile Include="CustomMonikers.vsct">
       <Generator>VsctGenerator</Generator>
       <LastGenOutput>CustomMonikers.cs</LastGenOutput>
@@ -277,8 +275,6 @@
       <IncludeInVSIX>true</IncludeInVSIX>
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
-    <Content Include="ItemTemplates\FetchItem.vstemplate" />
-    <Content Include="ItemTemplates\FetchIcon.png" />
     <Content Include="UI\WebResources\preview.html" />
     <Content Include="UI\WebResources\themes\prism.css" />
     <Content Include="UI\WebResources\prism.js" />

@@ -137,7 +137,7 @@ public class Browser : IDisposable
         if (await IsUpAsync(viteUrl, 15000))
         {
             webView.CoreWebView2.Navigate(viteUrl.ToString());
-            webView.CoreWebView2.OpenDevToolsWindow();
+            //webView.CoreWebView2.OpenDevToolsWindow();
             await WaitForAppReadyAsync(15000);
             // If we already have a query, push it
             if (!string.IsNullOrWhiteSpace(_lastFetchXml))

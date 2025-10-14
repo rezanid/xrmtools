@@ -240,4 +240,89 @@ public class PathHelperTests
         // Assert
         rel.Should().Be(Path.Combine("docs", "guide.md"));
     }
+    [Fact]
+    public void GetRelativePath_CustomSeparator_Is_Used()
+    {
+        // Arrange: create a nested target so relative path has separators
+        string baseDir, target;
+        var sep = '/'; // force forward slash even on Windows
+
+        if (IsWindows)
+        {
+            baseDir = @"C:\x\y"; // treat as directory
+            target = @"C:\x\y\z\file.txt";
+        }
+        else
+        {
+            var cwd = Directory.GetCurrentDirectory();
+            baseDir = Path.Combine(cwd, "x", "y");
+            target = Path.Combine(cwd, "x", "y", "z", "file.txt");
+        }
+
+        // Act
+        var rel = PathHelper.GetRelativePath(baseDir, target, sep);
+
+        // Assert
+        rel.Should().Be("z" + sep + "file.txt");
+        if (sep != Path.DirectorySeparatorChar)
+            rel.Should().NotContain(Path.DirectorySeparatorChar.ToString());
+    }
+
+    [Fact]
+    public void GetRelativePath_CustomSeparator_With_ParentTraversal()
+    {
+        // Arrange: sibling file so relative path starts with ..
+        string baseDir, target, expected;
+        var sep = '|';
+
+        if (IsWindows)
+        {
+            baseDir = @"C:\projects\app\bin";
+            target = @"C:\projects\app\readme.txt";
+        }
+        else
+        {
+            var cwd = Directory.GetCurrentDirectory();
+            baseDir = Path.Combine(cwd, "bin");
+            target = Path.Combine(cwd, "readme.txt");
+        }
+
+        expected = ".." + sep + "readme.txt";
+
+        // Act
+        var rel = PathHelper.GetRelativePath(baseDir, target, sep);
+
+        // Assert
+        rel.Should().Be(expected);
+        rel.Should().NotContain(Path.DirectorySeparatorChar.ToString());
+    }
+
+    [Fact]
+    public void GetRelativePath_CustomSeparator_Ignores_SimpleFileName()
+    {
+        // Arrange: same file path so relative is just file name (no separator to replace)
+        string baseFile, target, expected;
+        var sep = '/';
+
+        if (IsWindows)
+        {
+            baseFile = @"C:\work\repo\notes.txt";
+            target = @"C:\work\repo\notes.txt";
+        }
+        else
+        {
+            var cwd = Directory.GetCurrentDirectory();
+            baseFile = Path.Combine(cwd, "notes.txt");
+            target = baseFile;
+        }
+
+        expected = "notes.txt";
+
+        // Act
+        var rel = PathHelper.GetRelativePath(baseFile, target, sep);
+
+        // Assert
+        rel.Should().Be(expected); // unchanged
+        rel.Should().NotContain(sep.ToString()); // no separator present at all
+    }
 }

@@ -19,7 +19,7 @@ internal sealed class NewFetchXmlFileCommand : BaseCommand<NewFetchXmlFileComman
 {
     private const string content = """
 <?xml version="1.0" encoding="utf-8" ?>
-<fetch xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="$xrmtools_schema_path$">
+<fetch xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="{0}">
   <entity name="account">
   </entity>
 </fetch>
@@ -47,8 +47,12 @@ internal sealed class NewFetchXmlFileCommand : BaseCommand<NewFetchXmlFileComman
         }
         var fileName = GenerateUniqueFilename(proj);
         var activeItem = await FileHelper.FindActiveItemAsync();
-        await FileHelper.AddItemAsync(fileName, content, activeItem ?? proj);
 
+        string projectRoot = Path.GetDirectoryName(proj.FullPath);
+        var schemaAbs = Path.Combine(projectRoot ?? string.Empty, ".xrmtools", "schemas", "Fetch.xsd");
+        var relativeSchema = PathHelper.GetRelativePath(fileName, schemaAbs, '/');
+
+        await FileHelper.AddItemAsync(fileName, string.Format(content, relativeSchema), activeItem ?? proj, selectItem: true);
     }
 
     [MemberNotNull(nameof(Logger))]

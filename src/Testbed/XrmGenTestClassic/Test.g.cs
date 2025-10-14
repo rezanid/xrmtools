@@ -6,7 +6,7 @@ namespace XrmGenTestClassic
     internal static partial class FetchQueries
     {
         public const string Test = @"
-<fetch >
+<fetch  >
 	<entity name=""contact"">
 		<attribute name=""fullname"" />
 		<attribute name=""telephone1""/>

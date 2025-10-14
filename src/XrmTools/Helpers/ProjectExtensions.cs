@@ -24,7 +24,14 @@ public static class ProjectExtensions
 
     public static bool IsSdkStyle(this Project project)
         => project.IsCapabilityMatch("OpenProjectFile");
-        // Other capabilities that are also true for SDK-Style projects: ProjectReferences, PackageReferences
+    // Other capabilities that are also true for SDK-Style projects: ProjectReferences, PackageReferences
+
+    //public static bool IsSdkStyle(this Project project)
+    //{
+
+    //    project.GetItemInfo(out var hierarchy, out _, out _);
+    //    return hierarchy.IsSdkStyleProject();
+    //}
 
     public static IVsBuildPropertyStorage? ToBuildPropertyStorage(this Project project)
     {
