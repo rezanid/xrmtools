@@ -90,6 +90,7 @@
     <Compile Include="FetchXml\FetchXmlDocument.cs" />
     <Compile Include="FetchXml\FetchQueryResultModel.cs" />
     <Compile Include="FetchXml\FetchXmlContentTypeDefinitions.cs" />
+    <Compile Include="FetchXml\FetchXmlOptions.cs" />
     <Compile Include="FetchXml\Margin\Browser.cs" />
     <Compile Include="FetchXml\Margin\BrowserMargin.cs" />
     <Compile Include="FetchXml\Margin\BrowserMarginProvider.cs" />

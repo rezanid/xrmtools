@@ -42,33 +42,6 @@ internal class GeneralOptions : BaseOptionModel<GeneralOptions>
     [Editor(typeof(CurrentEnvironmentEditor), typeof(UITypeEditor))]
     public DataverseEnvironment CurrentEnvironment { get; set; } = DataverseEnvironment.Empty;
 
-    [Category("FetchXML Preview")]
-    [DisplayName("Enable previewing FetchXML result")]
-    [Description("Determines if the preview window should be shown.")]
-    [DefaultValue(true)]
-    public bool EnableFetchXmlPreviewWindow { get; set; } = true;
-
-    [Category("FetchXML Preview")]
-    [DisplayName("FetchXML preview location")]
-    [Description("Determines if the preview window should be shown on the side or below the document.")]
-    [DefaultValue(FetchXmlPreviewLocation.Vertical)]
-    [TypeConverter(typeof(EnumDescriptionConverter))]
-    public FetchXmlPreviewLocation PreviewWindowLocation { get; set; } = FetchXmlPreviewLocation.Vertical;
-
-    [Category("FetchXML Preview")]
-    [DisplayName("FetchXML preview window width")]
-    [Description("The width in pixels of the preview window.")]
-    [DefaultValue(500)]
-    [Browsable(false)] // hidden
-    public int FetchXmlPreviewWindowWidth { get; set; } = 500;
-
-    [Category("FetchXML Preview")]
-    [DisplayName("FetchXML preview window height")]
-    [Description("The height in pixels of the preview window.")]
-    [DefaultValue(300)]
-    [Browsable(false)] // hidden
-    public int FetchXmlPreviewWindowHeight { get; set; } = 300;
-
     [Category("Advanced")]
     [DisplayName("Proxy")]
     [Description("Use a proxy server for all communications with Power Platform. Requires restarting Visual Studio.")]
@@ -96,13 +69,5 @@ internal class GeneralOptions : BaseOptionModel<GeneralOptions>
         // Ensure that the list is not null
         Environments ??= [];
     }
-}
-
-public enum FetchXmlPreviewLocation
-{
-    [Description("On the side")]
-    Vertical,
-    [Description("Below the document")]
-    Horizontal
 }
 #nullable restore

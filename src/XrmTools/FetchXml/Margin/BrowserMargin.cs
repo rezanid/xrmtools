@@ -30,7 +30,7 @@ internal class BrowserMargin : DockPanel, IWpfTextViewMargin
     private Guid? _activeRequestId;
 
     public FrameworkElement VisualElement => this;
-    public double MarginSize => GeneralOptions.Instance.FetchXmlPreviewWindowWidth;
+    public double MarginSize => FetchXmlOptions.Instance.FetchXmlPreviewWindowWidth;
     public bool Enabled => true;
     public Browser Browser { get; private set; }
 
@@ -40,7 +40,7 @@ internal class BrowserMargin : DockPanel, IWpfTextViewMargin
         this.repositoryFactory = repositoryFactory ?? throw new ArgumentNullException(nameof(repositoryFactory));
         this.textView = textView;
         document = textView.TextBuffer.GetFetchXmlDocument(logger);
-        Visibility = GeneralOptions.Instance.EnableFetchXmlPreviewWindow ? Visibility.Visible : Visibility.Collapsed;
+        Visibility = FetchXmlOptions.Instance.EnableFetchXmlPreviewWindow ? Visibility.Visible : Visibility.Collapsed;
 
         SetResourceReference(BackgroundProperty, VsBrushes.ToolWindowBackgroundKey);
 
@@ -59,7 +59,7 @@ internal class BrowserMargin : DockPanel, IWpfTextViewMargin
 
         document.Parsed -= UpdateBrowser;
         VSColorTheme.ThemeChanged -= OnThemeChange;
-        GeneralOptions.Saved -= Options_Saved;
+        FetchXmlOptions.Saved -= Options_Saved;
         if (Browser != null)
         {
             Browser.webView.CoreWebView2InitializationCompleted -= OnBrowserInitCompleted;
@@ -97,7 +97,7 @@ internal class BrowserMargin : DockPanel, IWpfTextViewMargin
         view.CoreWebView2.Profile.PreferredColorScheme = IsVsDarkTheme() ? CoreWebView2PreferredColorScheme.Dark : CoreWebView2PreferredColorScheme.Light;
 
         document.Parsed += UpdateBrowser;
-        GeneralOptions.Saved += Options_Saved;
+        FetchXmlOptions.Saved += Options_Saved;
         VSColorTheme.ThemeChanged += OnThemeChange;
         Browser.WebMessageReceived += Browser_WebMessageReceived;
 
@@ -151,7 +151,7 @@ internal class BrowserMargin : DockPanel, IWpfTextViewMargin
 
     private void CreateMarginControls(WebView2 view)
     {
-        if (GeneralOptions.Instance.PreviewWindowLocation == FetchXmlPreviewLocation.Vertical)
+        if (FetchXmlOptions.Instance.PreviewWindowLocation == FetchXmlPreviewLocation.Vertical)
         {
             CreateRightMarginControls(view);
         }
@@ -162,7 +162,7 @@ internal class BrowserMargin : DockPanel, IWpfTextViewMargin
 
         void CreateRightMarginControls(WebView2 view)
         {
-            int width = GeneralOptions.Instance.FetchXmlPreviewWindowWidth;
+            int width = FetchXmlOptions.Instance.FetchXmlPreviewWindowWidth;
 
             Grid grid = new();
             grid.ColumnDefinitions.Add(new ColumnDefinition() { Width = new GridLength(0, GridUnitType.Star) });
@@ -218,7 +218,7 @@ internal class BrowserMargin : DockPanel, IWpfTextViewMargin
 
         void CreateBottomMarginControls(WebView2 view)
         {
-            int height = GeneralOptions.Instance.FetchXmlPreviewWindowHeight;
+            int height = FetchXmlOptions.Instance.FetchXmlPreviewWindowHeight;
 
             Grid grid = new();
             grid.RowDefinitions.Add(new RowDefinition() { Height = new GridLength(0, GridUnitType.Star) });
@@ -249,7 +249,7 @@ internal class BrowserMargin : DockPanel, IWpfTextViewMargin
         }
     }
 
-    private void Options_Saved(GeneralOptions options)
+    private void Options_Saved(FetchXmlOptions options)
     {
         RefreshAsync().FireAndForget();
     }
@@ -263,7 +263,7 @@ internal class BrowserMargin : DockPanel, IWpfTextViewMargin
 
     public async Task RefreshAsync()
     {
-        GeneralOptions options = await GeneralOptions.GetLiveInstanceAsync();
+        FetchXmlOptions options = await FetchXmlOptions.GetLiveInstanceAsync();
 
         if (options.EnableFetchXmlPreviewWindow && Visibility != Visibility.Visible)
         {
@@ -406,15 +406,15 @@ internal class BrowserMargin : DockPanel, IWpfTextViewMargin
 
     private void SplitterDragCompleted(object sender, System.Windows.Controls.Primitives.DragCompletedEventArgs e)
     {
-        if (GeneralOptions.Instance.PreviewWindowLocation == FetchXmlPreviewLocation.Vertical && !double.IsNaN(Browser.webView.ActualWidth))
+        if (FetchXmlOptions.Instance.PreviewWindowLocation == FetchXmlPreviewLocation.Vertical && !double.IsNaN(Browser.webView.ActualWidth))
         {
-            GeneralOptions.Instance.FetchXmlPreviewWindowWidth = (int)Browser.webView.ActualWidth;
-            GeneralOptions.Instance.Save();
+            FetchXmlOptions.Instance.FetchXmlPreviewWindowWidth = (int)Browser.webView.ActualWidth;
+            FetchXmlOptions.Instance.Save();
         }
         else if (!double.IsNaN(Browser.webView.ActualHeight))
         {
-            GeneralOptions.Instance.FetchXmlPreviewWindowHeight = (int)Browser.webView.ActualHeight;
-            GeneralOptions.Instance.Save();
+            FetchXmlOptions.Instance.FetchXmlPreviewWindowHeight = (int)Browser.webView.ActualHeight;
+            FetchXmlOptions.Instance.Save();
         }
     }
 

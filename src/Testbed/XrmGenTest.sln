@@ -34,7 +34,4 @@ Global
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {BFD49DD2-2CBD-4BD3-8A69-D1F681378B8D}
 	EndGlobalSection
-	GlobalSection(XrmToolsProperies) = preSolution
-		EnvironmentUrl = https://gcm-dev.crm4.dynamics.com
-	EndGlobalSection
 EndGlobal

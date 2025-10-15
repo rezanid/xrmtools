@@ -92,6 +92,9 @@ public class Browser : IDisposable
             {
                 webView2Environment = await CoreWebView2Environment.CreateAsync(browserExecutableFolder: null, userDataFolder: tempDir, options: null);
             }
+            // I have observed, if the user closes an open document immediately while solution is loading, it can cause NRE
+            // in the following line, Although webView is not null!.
+            if (webView2Environment is null) return;
             await webView.EnsureCoreWebView2Async(webView2Environment);
 
             // Hook request handling for custom scheme, navigation, and web messages

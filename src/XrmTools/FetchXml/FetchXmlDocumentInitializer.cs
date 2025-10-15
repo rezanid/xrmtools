@@ -93,6 +93,13 @@ internal sealed class FetchXmlDocumentInitializer : IWpfTextViewCreationListener
             });
         }
 
+        void savedHandler(object s, TextDocumentFileActionEventArgs e)
+        {
+            ThreadHelper.ThrowIfNotOnUIThread();
+
+            // Placeholder for any actions needed on save
+        }
+
         // Detach cleanly when the text document is disposed
         void disposedHandler(object s, TextDocumentEventArgs e)
         {
