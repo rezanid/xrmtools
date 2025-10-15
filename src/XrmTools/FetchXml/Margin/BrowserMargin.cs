@@ -104,10 +104,27 @@ internal class BrowserMargin : DockPanel, IWpfTextViewMargin
         var isDark = IsVsDarkTheme();
         _ = Browser.SetHostThemeAsync(isDark);
 
-        // Seed initial preview if parse already happened
+        // Seed initial preview / run on open respecting options
         if (document.XmlDocument != null && !document.IsParsing)
         {
-            UpdateBrowser(document);
+            // If execution mode is OnChange, behave like before (run on change)
+            // Otherwise, only run on open if the user opted in
+            var execMode = FetchXmlOptions.Instance.FetchXmlExecution;
+            var runOnOpen = FetchXmlOptions.Instance.RunQueryOnDocumentOpen;
+
+            if (runOnOpen)
+            {
+                ScheduleFetch(delayMilliseconds: 200);
+            }
+            //if (execMode == FetchXmlExecutionMode.OnChange)
+            //{
+            //    UpdateBrowser(document);
+            //}
+            //else if (runOnOpen)
+            //{
+            //    // Run one-shot on open
+            //    TriggerFetch(immediate: true);
+            //}
         }
     }
 
@@ -131,7 +148,7 @@ internal class BrowserMargin : DockPanel, IWpfTextViewMargin
                     if (!_activeRequestId.HasValue)
                     {
                         // Trigger immediate fetch bypassing parse debounce (use current document state)
-                        ScheduleFetch(immediate: true);
+                        ScheduleFetch(delayMilliseconds: 0);
                     }
                     break;
             }
@@ -279,16 +296,26 @@ internal class BrowserMargin : DockPanel, IWpfTextViewMargin
     private void UpdateBrowser(FetchXmlDocument document)
     {
         if (document.IsParsing) return;
-        ScheduleFetch(immediate: false);
+        // Respect execution mode
+        if (FetchXmlOptions.Instance.FetchXmlExecution == FetchXmlExecutionMode.OnChange)
+        {
+            ScheduleFetch();
+        }
     }
 
-    private void ScheduleFetch(bool immediate)
+    private void ScheduleFetch(int delayMilliseconds = 350)
     {
         _ = ThreadHelper.JoinableTaskFactory.StartOnIdle(() =>
         {
-            var execDebouncer = textView.TextBuffer.GetDebouncer("fetchxml-exec", millisecondsToWait: immediate ? 0 : 350);
+            var execDebouncer = textView.TextBuffer.GetDebouncer("fetchxml-exec", millisecondsToWait: delayMilliseconds);
             execDebouncer.Debounce(ct => ExecuteAndRenderAsync(ct), key: "exec");
         }, VsTaskRunContext.UIThreadIdlePriority);
+    }
+
+    // Public trigger to allow external callers (e.g., save/load handlers) to execute the query
+    public void TriggerFetch(bool immediate = true)
+    {
+        ScheduleFetch(0);
     }
 
     private async Task ExecuteAndRenderAsync(CancellationToken debounceToken)

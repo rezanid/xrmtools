@@ -29,9 +29,9 @@ internal class FetchXmlOptions : BaseOptionModel<FetchXmlOptions>
     [Category("FetchXML Preview")]
     [DisplayName("Query execution mode")]
     [Description("Determines when the FetchXML query should be executed to update the preview window.")]
-    [DefaultValue(FetchXmlExecutionMode.OnChange)]
+    [DefaultValue(FetchXmlExecutionMode.OnSave)]
     [TypeConverter(typeof(EnumDescriptionConverter))]
-    public FetchXmlExecutionMode FetchXmlExecution { get; set; } = FetchXmlExecutionMode.OnChange;
+    public FetchXmlExecutionMode FetchXmlExecution { get; set; } = FetchXmlExecutionMode.OnSave;
 
     [Category("FetchXML Preview")]
     [DisplayName("Run query when document opens")]

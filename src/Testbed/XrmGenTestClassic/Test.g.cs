@@ -10,6 +10,9 @@ namespace XrmGenTestClassic
 	<entity name=""contact"">
 		<attribute name=""fullname"" />
 		<attribute name=""telephone1""/>
+		<attribute name=""lastname""/>
+		<attribute name=""firstname""/>
+		<attribute name=""telephone1""/>
 		<attribute name=""bpg_address1_fulladdress""/>
 		<filter>
 			<condition attribute=""fullname"" operator=""not-begin-with"" value=""Logic""/>
