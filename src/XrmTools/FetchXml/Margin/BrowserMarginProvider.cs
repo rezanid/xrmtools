@@ -22,12 +22,12 @@ internal class PreviewMarginVerticalProvider(IWebApiService webApi, IRepositoryF
 
     public IWpfTextViewMargin CreateMargin(IWpfTextViewHost wpfTextViewHost, IWpfTextViewMargin marginContainer)
     {
-        if (GeneralOptions.Instance.PreviewWindowLocation == FetchXmlPreviewLocation.Horizontal)
+        if (FetchXmlOptions.Instance.PreviewWindowLocation == FetchXmlPreviewLocation.Horizontal)
         {
             return null;
         }
 
-        GeneralOptions.Saved += Options_Saved;
+        FetchXmlOptions.Saved += Options_Saved;
         wpfTextViewHost.Closed += OnWpfTextViewHostClosed;
         _browserMargin = new BrowserMargin(wpfTextViewHost.TextView, webApi, repositoryFactory, logger);
 
@@ -38,10 +38,10 @@ internal class PreviewMarginVerticalProvider(IWebApiService webApi, IRepositoryF
     {
         IWpfTextViewHost host = (IWpfTextViewHost)sender;
         host.Closed -= OnWpfTextViewHostClosed;
-        GeneralOptions.Saved -= Options_Saved;
+        FetchXmlOptions.Saved -= Options_Saved;
     }
 
-    private void Options_Saved(GeneralOptions options)
+    private void Options_Saved(FetchXmlOptions options)
     {
         _browserMargin?.RefreshAsync().FireAndForget();
     }
@@ -60,12 +60,12 @@ internal class PreviewMarginHorizontalProvider(IWebApiService webApi, IRepositor
 
     public IWpfTextViewMargin CreateMargin(IWpfTextViewHost wpfTextViewHost, IWpfTextViewMargin marginContainer)
     {
-        if (GeneralOptions.Instance.PreviewWindowLocation == FetchXmlPreviewLocation.Vertical)
+        if (FetchXmlOptions.Instance.PreviewWindowLocation == FetchXmlPreviewLocation.Vertical)
         {
             return null;
         }
 
-        GeneralOptions.Saved += Options_Saved;
+        FetchXmlOptions.Saved += Options_Saved;
         wpfTextViewHost.Closed += OnWpfTextViewHostClosed;
         _browserMargin = new BrowserMargin(wpfTextViewHost.TextView, webApi, repositoryFactory, logger);
 
@@ -76,10 +76,10 @@ internal class PreviewMarginHorizontalProvider(IWebApiService webApi, IRepositor
     {
         IWpfTextViewHost host = (IWpfTextViewHost)sender;
         host.Closed -= OnWpfTextViewHostClosed;
-        GeneralOptions.Saved -= Options_Saved;
+        FetchXmlOptions.Saved -= Options_Saved;
     }
 
-    private void Options_Saved(GeneralOptions options)
+    private void Options_Saved(FetchXmlOptions options)
     {
         _browserMargin?.RefreshAsync().FireAndForget();
     }

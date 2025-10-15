@@ -30,7 +30,7 @@ internal class BrowserMargin : DockPanel, IWpfTextViewMargin
     private Guid? _activeRequestId;
 
     public FrameworkElement VisualElement => this;
-    public double MarginSize => GeneralOptions.Instance.FetchXmlPreviewWindowWidth;
+    public double MarginSize => FetchXmlOptions.Instance.FetchXmlPreviewWindowWidth;
     public bool Enabled => true;
     public Browser Browser { get; private set; }
 
@@ -40,7 +40,7 @@ internal class BrowserMargin : DockPanel, IWpfTextViewMargin
         this.repositoryFactory = repositoryFactory ?? throw new ArgumentNullException(nameof(repositoryFactory));
         this.textView = textView;
         document = textView.TextBuffer.GetFetchXmlDocument(logger);
-        Visibility = GeneralOptions.Instance.EnableFetchXmlPreviewWindow ? Visibility.Visible : Visibility.Collapsed;
+        Visibility = FetchXmlOptions.Instance.EnableFetchXmlPreviewWindow ? Visibility.Visible : Visibility.Collapsed;
 
         SetResourceReference(BackgroundProperty, VsBrushes.ToolWindowBackgroundKey);
 
@@ -59,7 +59,7 @@ internal class BrowserMargin : DockPanel, IWpfTextViewMargin
 
         document.Parsed -= UpdateBrowser;
         VSColorTheme.ThemeChanged -= OnThemeChange;
-        GeneralOptions.Saved -= Options_Saved;
+        FetchXmlOptions.Saved -= Options_Saved;
         if (Browser != null)
         {
             Browser.webView.CoreWebView2InitializationCompleted -= OnBrowserInitCompleted;
@@ -97,17 +97,34 @@ internal class BrowserMargin : DockPanel, IWpfTextViewMargin
         view.CoreWebView2.Profile.PreferredColorScheme = IsVsDarkTheme() ? CoreWebView2PreferredColorScheme.Dark : CoreWebView2PreferredColorScheme.Light;
 
         document.Parsed += UpdateBrowser;
-        GeneralOptions.Saved += Options_Saved;
+        FetchXmlOptions.Saved += Options_Saved;
         VSColorTheme.ThemeChanged += OnThemeChange;
         Browser.WebMessageReceived += Browser_WebMessageReceived;
 
         var isDark = IsVsDarkTheme();
         _ = Browser.SetHostThemeAsync(isDark);
 
-        // Seed initial preview if parse already happened
+        // Seed initial preview / run on open respecting options
         if (document.XmlDocument != null && !document.IsParsing)
         {
-            UpdateBrowser(document);
+            // If execution mode is OnChange, behave like before (run on change)
+            // Otherwise, only run on open if the user opted in
+            var execMode = FetchXmlOptions.Instance.FetchXmlExecution;
+            var runOnOpen = FetchXmlOptions.Instance.RunQueryOnDocumentOpen;
+
+            if (runOnOpen)
+            {
+                ScheduleFetch(delayMilliseconds: 200);
+            }
+            //if (execMode == FetchXmlExecutionMode.OnChange)
+            //{
+            //    UpdateBrowser(document);
+            //}
+            //else if (runOnOpen)
+            //{
+            //    // Run one-shot on open
+            //    TriggerFetch(immediate: true);
+            //}
         }
     }
 
@@ -131,7 +148,7 @@ internal class BrowserMargin : DockPanel, IWpfTextViewMargin
                     if (!_activeRequestId.HasValue)
                     {
                         // Trigger immediate fetch bypassing parse debounce (use current document state)
-                        ScheduleFetch(immediate: true);
+                        ScheduleFetch(delayMilliseconds: 0);
                     }
                     break;
             }
@@ -151,7 +168,7 @@ internal class BrowserMargin : DockPanel, IWpfTextViewMargin
 
     private void CreateMarginControls(WebView2 view)
     {
-        if (GeneralOptions.Instance.PreviewWindowLocation == FetchXmlPreviewLocation.Vertical)
+        if (FetchXmlOptions.Instance.PreviewWindowLocation == FetchXmlPreviewLocation.Vertical)
         {
             CreateRightMarginControls(view);
         }
@@ -162,7 +179,7 @@ internal class BrowserMargin : DockPanel, IWpfTextViewMargin
 
         void CreateRightMarginControls(WebView2 view)
         {
-            int width = GeneralOptions.Instance.FetchXmlPreviewWindowWidth;
+            int width = FetchXmlOptions.Instance.FetchXmlPreviewWindowWidth;
 
             Grid grid = new();
             grid.ColumnDefinitions.Add(new ColumnDefinition() { Width = new GridLength(0, GridUnitType.Star) });
@@ -218,7 +235,7 @@ internal class BrowserMargin : DockPanel, IWpfTextViewMargin
 
         void CreateBottomMarginControls(WebView2 view)
         {
-            int height = GeneralOptions.Instance.FetchXmlPreviewWindowHeight;
+            int height = FetchXmlOptions.Instance.FetchXmlPreviewWindowHeight;
 
             Grid grid = new();
             grid.RowDefinitions.Add(new RowDefinition() { Height = new GridLength(0, GridUnitType.Star) });
@@ -249,7 +266,7 @@ internal class BrowserMargin : DockPanel, IWpfTextViewMargin
         }
     }
 
-    private void Options_Saved(GeneralOptions options)
+    private void Options_Saved(FetchXmlOptions options)
     {
         RefreshAsync().FireAndForget();
     }
@@ -263,7 +280,7 @@ internal class BrowserMargin : DockPanel, IWpfTextViewMargin
 
     public async Task RefreshAsync()
     {
-        GeneralOptions options = await GeneralOptions.GetLiveInstanceAsync();
+        FetchXmlOptions options = await FetchXmlOptions.GetLiveInstanceAsync();
 
         if (options.EnableFetchXmlPreviewWindow && Visibility != Visibility.Visible)
         {
@@ -279,16 +296,26 @@ internal class BrowserMargin : DockPanel, IWpfTextViewMargin
     private void UpdateBrowser(FetchXmlDocument document)
     {
         if (document.IsParsing) return;
-        ScheduleFetch(immediate: false);
+        // Respect execution mode
+        if (FetchXmlOptions.Instance.FetchXmlExecution == FetchXmlExecutionMode.OnChange)
+        {
+            ScheduleFetch();
+        }
     }
 
-    private void ScheduleFetch(bool immediate)
+    private void ScheduleFetch(int delayMilliseconds = 350)
     {
         _ = ThreadHelper.JoinableTaskFactory.StartOnIdle(() =>
         {
-            var execDebouncer = textView.TextBuffer.GetDebouncer("fetchxml-exec", millisecondsToWait: immediate ? 0 : 350);
+            var execDebouncer = textView.TextBuffer.GetDebouncer("fetchxml-exec", millisecondsToWait: delayMilliseconds);
             execDebouncer.Debounce(ct => ExecuteAndRenderAsync(ct), key: "exec");
         }, VsTaskRunContext.UIThreadIdlePriority);
+    }
+
+    // Public trigger to allow external callers (e.g., save/load handlers) to execute the query
+    public void TriggerFetch(bool immediate = true)
+    {
+        ScheduleFetch(0);
     }
 
     private async Task ExecuteAndRenderAsync(CancellationToken debounceToken)
@@ -406,15 +433,15 @@ internal class BrowserMargin : DockPanel, IWpfTextViewMargin
 
     private void SplitterDragCompleted(object sender, System.Windows.Controls.Primitives.DragCompletedEventArgs e)
     {
-        if (GeneralOptions.Instance.PreviewWindowLocation == FetchXmlPreviewLocation.Vertical && !double.IsNaN(Browser.webView.ActualWidth))
+        if (FetchXmlOptions.Instance.PreviewWindowLocation == FetchXmlPreviewLocation.Vertical && !double.IsNaN(Browser.webView.ActualWidth))
         {
-            GeneralOptions.Instance.FetchXmlPreviewWindowWidth = (int)Browser.webView.ActualWidth;
-            GeneralOptions.Instance.Save();
+            FetchXmlOptions.Instance.FetchXmlPreviewWindowWidth = (int)Browser.webView.ActualWidth;
+            FetchXmlOptions.Instance.Save();
         }
         else if (!double.IsNaN(Browser.webView.ActualHeight))
         {
-            GeneralOptions.Instance.FetchXmlPreviewWindowHeight = (int)Browser.webView.ActualHeight;
-            GeneralOptions.Instance.Save();
+            FetchXmlOptions.Instance.FetchXmlPreviewWindowHeight = (int)Browser.webView.ActualHeight;
+            FetchXmlOptions.Instance.Save();
         }
     }
 

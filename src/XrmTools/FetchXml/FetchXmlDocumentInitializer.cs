@@ -15,6 +15,8 @@ using XrmTools.Logging.Compatibility;
 using System.Text.RegularExpressions;
 using XrmTools.Helpers;
 using System.Threading;
+using XrmTools.FetchXml.Margin;
+using XrmTools.Options;
 
 [Export(typeof(IWpfTextViewCreationListener))]
 [ContentType(FetchXmlContentTypeDefinitions.ContentTypeName)]
@@ -28,6 +30,7 @@ internal sealed class FetchXmlDocumentInitializer : IWpfTextViewCreationListener
 
     public void TextViewCreated(IWpfTextView textView)
     {
+        if (textView == null) throw new ArgumentNullException(nameof(textView));
         var buffer = textView?.TextBuffer;
         if (buffer == null) return;
 
@@ -42,7 +45,7 @@ internal sealed class FetchXmlDocumentInitializer : IWpfTextViewCreationListener
             // If the ITextDocument already exists, attach now; otherwise, attach when it's created.
             if (DocumentFactory.TryGetTextDocument(buffer, out var doc))
             {
-                AttachToDocument(buffer, doc);
+                AttachToDocument(textView!, buffer, doc);
             }
             else
             {
@@ -52,7 +55,7 @@ internal sealed class FetchXmlDocumentInitializer : IWpfTextViewCreationListener
                     if (e?.TextDocument?.TextBuffer == buffer)
                     {
                         try { DocumentFactory.TextDocumentCreated -= createdHandler; } catch { }
-                        AttachToDocument(buffer, e.TextDocument);
+                        AttachToDocument(textView!, buffer, e.TextDocument);
                     }
                 }
 
@@ -61,7 +64,7 @@ internal sealed class FetchXmlDocumentInitializer : IWpfTextViewCreationListener
         }).FireAndForget();
     }
 
-    private void AttachToDocument(ITextBuffer buffer, ITextDocument doc)
+    private void AttachToDocument(IWpfTextView textView, ITextBuffer buffer, ITextDocument doc)
     {
         ThreadHelper.ThrowIfNotOnUIThread();
 
@@ -93,6 +96,27 @@ internal sealed class FetchXmlDocumentInitializer : IWpfTextViewCreationListener
             });
         }
 
+        void savedHandler(object s, TextDocumentFileActionEventArgs e)
+        {
+            ThreadHelper.ThrowIfNotOnUIThread();
+            try
+            {
+                var a = e.FileActionType;
+                bool isSaved = a.HasFlag(FileActionTypes.ContentSavedToDisk);
+                if (!isSaved) return;
+
+                var options = FetchXmlOptions.Instance;
+                if (options.EnableFetchXmlPreviewWindow && options.FetchXmlExecution == FetchXmlExecutionMode.OnSave)
+                {
+                    if (textView?.Properties != null && textView.Properties.TryGetProperty(typeof(BrowserMargin), out BrowserMargin margin))
+                    {
+                        margin?.TriggerFetch(immediate: true);
+                    }
+                }
+            }
+            catch { }
+        }
+
         // Detach cleanly when the text document is disposed
         void disposedHandler(object s, TextDocumentEventArgs e)
         {
@@ -100,6 +124,7 @@ internal sealed class FetchXmlDocumentInitializer : IWpfTextViewCreationListener
             if (e?.TextDocument == doc)
             {
                 try { doc.FileActionOccurred -= loadedHandler; } catch { }
+                try { doc.FileActionOccurred -= savedHandler; } catch { }
                 try { DocumentFactory.TextDocumentDisposed -= disposedHandler; } catch { }
                 try { buffer.Properties.RemoveProperty(SubscribedKey); } catch { }
             }
@@ -115,6 +140,7 @@ internal sealed class FetchXmlDocumentInitializer : IWpfTextViewCreationListener
         });
 
         doc.FileActionOccurred += loadedHandler;
+        doc.FileActionOccurred += savedHandler;
         DocumentFactory.TextDocumentDisposed += disposedHandler;
     }
 

@@ -109,6 +109,7 @@ using Task = System.Threading.Tasks.Task;
 [ProvideService(typeof(IEnvironmentProvider), IsAsyncQueryable = true, IsCacheable = true, IsFreeThreaded = true)]
 [ProvideService(typeof(ISettingsProvider), IsAsyncQueryable = true, IsCacheable = true, IsFreeThreaded = true)]
 [ProvideOptionPage(typeof(OptionsProvider.GeneralOptions), Vsix.Name, "General", 0, 0, true, SupportsProfiles = true)]
+[ProvideOptionPage(typeof(OptionsProvider.FetchXmlOptions), Vsix.Name, "FetchXML", 0, 0, true, SupportsProfiles = true)]
 public sealed partial class XrmToolsPackage : ToolkitPackage
 {
     private static readonly object _lock = new();
@@ -123,12 +124,6 @@ public sealed partial class XrmToolsPackage : ToolkitPackage
     public const string SolutionPersistanceKey = "XrmToolsProperies";
     private static readonly ExplicitInterfaceInvoker<Package> implicitInvoker = new();
     public DTE2? Dte;
-
-    /// <summary>
-    /// The initial configuration of the extension. The value can change after initialization if 
-    /// the user changes the settings.
-    /// </summary>
-    private GeneralOptions? Options;
 
     [Export(typeof(TimeProvider))] internal TimeProvider TimeProvider { get => TimeProvider.System; }
     [Export(typeof(IOutputLoggerService))] internal IOutputLoggerService OutputLoggerService { get => _loggerService; }
@@ -183,8 +178,6 @@ public sealed partial class XrmToolsPackage : ToolkitPackage
             ?? throw new InvalidOperationException(
                 string.Format(Resources.Strings.Package_InitializationErroMissingDte, nameof(XrmToolsPackage)));
         Assumes.Present(Dte);
-
-        Options = await GeneralOptions.GetLiveInstanceAsync();
 
         await InitializeMefServicesAsync();
 

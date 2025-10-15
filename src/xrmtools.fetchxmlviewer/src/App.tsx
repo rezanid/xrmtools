@@ -162,7 +162,7 @@ function App() {
               <path d="M12 2 A10 10 0 0 1 22 12" stroke="currentColor" strokeWidth="3" fill="none" strokeLinecap="round" />
             </svg>
           )}
-          {loading ? 'Cancel' : 'Refresh'}
+          {loading ? 'Cancel' : 'Execute'}
         </button>
       </div>
       <div className="content">
