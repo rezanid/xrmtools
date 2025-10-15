@@ -157,7 +157,7 @@ public class Browser : IDisposable
         {
             webView.CoreWebView2.SetVirtualHostNameToFolderMapping(
                 SpaVirtualHost, dist, CoreWebView2HostResourceAccessKind.Allow);
-            webView.CoreWebView2.Navigate($"https://{SpaVirtualHost}/index.html");
+            webView.CoreWebView2.Navigate($"http://{SpaVirtualHost}/index.html");
             await WaitForAppReadyAsync(15000);
             if (!string.IsNullOrWhiteSpace(_lastFetchXml))
             {
@@ -401,14 +401,14 @@ public class Browser : IDisposable
     {
         // Try installed VSIX content next to the extension assembly
         var baseDir = GetFolder();
-        var probe = Path.Combine(baseDir, "xrmtools.fetchxmlviewer", "dist");
+        var probe = Path.Combine(baseDir, "FetchXmlViewer");
         if (Directory.Exists(probe)) return probe;
 
         // Try parent folders (dev environment): ../../XrmTools.FetchXmlViewer/dist
         var dir = new DirectoryInfo(baseDir);
         for (int i = 0; i < 6 && dir != null; i++, dir = dir.Parent)
         {
-            var candidate = Path.Combine(dir.FullName, "XrmTools.FetchXmlViewer", "dist");
+            var candidate = Path.Combine(dir.FullName, "FetchXmlViewer");
             if (Directory.Exists(candidate)) return candidate;
         }
 

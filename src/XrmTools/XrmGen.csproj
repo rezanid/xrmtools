@@ -250,6 +250,18 @@
       <Generator>VsctGenerator</Generator>
       <LastGenOutput>CustomMonikers.cs</LastGenOutput>
     </VSCTCompile>
+    <Content Include="FetchXmlViewer\assets\index-Df-1zudZ.js">
+      <IncludeInVSIX>true</IncludeInVSIX>
+    </Content>
+    <Content Include="FetchXmlViewer\assets\index-DW_6Iuza.css">
+      <IncludeInVSIX>true</IncludeInVSIX>
+    </Content>
+    <Content Include="FetchXmlViewer\index.html">
+      <IncludeInVSIX>true</IncludeInVSIX>
+    </Content>
+    <Content Include="FetchXmlViewer\icon.svg">
+      <IncludeInVSIX>true</IncludeInVSIX>
+    </Content>
     <Content Include="Microsoft.Bcl.TimeProvider\Microsoft.Bcl.TimeProvider.dll">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
       <IncludeInVSIX>true</IncludeInVSIX>
@@ -356,6 +368,9 @@
       <IncludeInVSIX>true</IncludeInVSIX>
     </Content>
     <Content Include="CodeGenTemplates\GlobalOptionSets.sbncs">
+      <IncludeInVSIX>true</IncludeInVSIX>
+    </Content>
+    <Content Include="FetchXmlViewer\assets\index-Df-1zudZ.js.map">
       <IncludeInVSIX>true</IncludeInVSIX>
     </Content>
     <None Include="PrepareImageManifest.targets" />
