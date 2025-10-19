@@ -344,6 +344,11 @@ internal class CSharpXrmMetaParser(
         var dependencyGraph = dependencyAnalyzer.Analyze(typeSymbol, compilation);
         if (dependencyGraph != null)
         {
+            // This dependency is requried for creating Target property in plugin's code-behind:
+            if (!dependencyGraph.Dependencies.Any(d => "Microsoft.Xrm.Sdk.IPluginExecutionContext".Equals(d.FullTypeName, StringComparison.InvariantCulture)))
+            {
+                dependencyGraph.Dependencies.Insert(0, new Dependency { ShortTypeName = "IPluginExecutionContext", FullTypeName = "Microsoft.Xrm.Sdk.IPluginExecutionContext" });
+            }
             dependencyPreparation.Prepare(dependencyGraph);
         }
 

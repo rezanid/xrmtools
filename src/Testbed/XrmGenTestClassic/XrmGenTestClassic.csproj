@@ -156,7 +156,6 @@
       <Generator>XrmTools FetchXml Generator</Generator>
     </None>
   </ItemGroup>
-  <ItemGroup />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <Import Project="..\XrmGenTest\packages\XrmTools.Meta.Attributes.1.0.51\build\XrmTools.Meta.Attributes.targets" Condition="Exists('..\XrmGenTest\packages\XrmTools.Meta.Attributes.1.0.51\build\XrmTools.Meta.Attributes.targets')" />
   <Target Name="EnsureNuGetPackageBuildImports" BeforeTargets="PrepareForBuild">
