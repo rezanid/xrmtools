@@ -494,10 +494,9 @@
     <Folder Include="_Core\" />
   </ItemGroup>
   <ItemGroup>
-    <Page Include="Resources\Dataverse.xaml">
-      <Generator>MSBuild:Compile</Generator>
+    <Resource Include="Resources\Dataverse.xaml">
       <SubType>Designer</SubType>
-    </Page>
+    </Resource>
     <Page Include="UI\AssemblySelectionDialog.xaml">
       <SubType>Designer</SubType>
       <Generator>XamlIntelliSenseFileGenerator</Generator>
