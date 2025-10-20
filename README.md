@@ -166,7 +166,10 @@ public partial class ContactCreatePlugin : IPlugin
 {
     public void Execute(IServiceProvider serviceProvider)
     {
-        Target.Description = $"Hello {Target.FirstName} {Target.LastName}!";
+        using (var scope = CreateScope())
+        {
+            Target.Description = $"Hello {Target.FirstName} {Target.LastName}!";
+        }
     }
 }
 ```
