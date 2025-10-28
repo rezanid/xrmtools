@@ -1,5 +1,5 @@
-﻿namespace XrmTools.UI;
-#nullable enable
+﻿#nullable enable
+namespace XrmTools.UI;
 using Community.VisualStudio.Toolkit;
 using CommunityToolkit.Mvvm.Input;
 using System;
