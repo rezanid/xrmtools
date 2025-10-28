@@ -148,6 +148,99 @@ public class XrmHttpClientFactoryTests
         handler.DisposeCount.Should().Be(1);
     }
 
+    [Fact]
+    public async Task CreateHttpClientAsync_Should_Authenticate_Only_Once_When_Called_Concurrently()
+    {
+        // Arrange
+        var environment = CreateFakeEnvironment();
+        var authResult = CreateFakeAuthenticationResult();
+
+        _authenticationServiceMock
+            .Setup(x => x.AuthenticateAsync(It.IsAny<DataverseEnvironment>(), It.IsAny<Action<string>>(), It.IsAny<CancellationToken>()))
+            .Returns(async () =>
+            {
+                await Task.Delay(100);
+                return authResult;
+            });
+
+        // Act
+        var tasks = new Task<XrmHttpClient>[5];
+        for (int i = 0; i < tasks.Length; i++)
+        {
+            tasks[i] = _factory.CreateClientAsync(environment);
+        }
+        await Task.WhenAll(tasks);
+
+        // Assert
+        _authenticationServiceMock.Verify(x => x.AuthenticateAsync(It.IsAny<DataverseEnvironment>(), It.IsAny<Action<string>>(), It.IsAny<CancellationToken>()), Times.Once);
+        foreach (var client in tasks)
+        {
+            client.Result.DefaultRequestHeaders.Authorization.Parameter.Should().Be(authResult.AccessToken);
+        }
+    }
+
+    [Fact]
+    public async Task CreateHttpClientAsync_Should_Retry_After_Authentication_Failure()
+    {
+        // Arrange
+        var environment = CreateFakeEnvironment();
+        var authResult = CreateFakeAuthenticationResult();
+        var call = 0;
+        _authenticationServiceMock
+            .Setup(x => x.AuthenticateAsync(It.IsAny<DataverseEnvironment>(), It.IsAny<Action<string>>(), It.IsAny<CancellationToken>()))
+            .Returns(() =>
+            {
+                call++;
+                if (call == 1)
+                {
+                    throw new InvalidOperationException("Auth failed");
+                }
+                return Task.FromResult(authResult);
+            });
+
+        // Act + Assert: first call fails
+        await FluentActions.Invoking(async () => await _factory.CreateClientAsync(environment))
+            .Should().ThrowAsync<InvalidOperationException>();
+
+        // Second call should retry and succeed
+        var client = await _factory.CreateClientAsync(environment);
+        client.DefaultRequestHeaders.Authorization.Parameter.Should().Be(authResult.AccessToken);
+        _authenticationServiceMock.Verify(x => x.AuthenticateAsync(It.IsAny<DataverseEnvironment>(), It.IsAny<Action<string>>(), It.IsAny<CancellationToken>()), Times.Exactly(2));
+    }
+
+    [Fact]
+    public async Task CreateHttpClientAsync_CallerCancellation_Does_Not_Cancel_Shared_Auth()
+    {
+        // Arrange
+        var environment = CreateFakeEnvironment();
+        var authResult = CreateFakeAuthenticationResult();
+
+        var tcs = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+        _authenticationServiceMock
+            .Setup(x => x.AuthenticateAsync(It.IsAny<DataverseEnvironment>(), It.IsAny<Action<string>>(), It.IsAny<CancellationToken>()))
+            .Returns(async () =>
+            {
+                await Task.Delay(150);
+                return authResult;
+            });
+
+        using var cts = new CancellationTokenSource();
+
+        var waiting = _factory.CreateClientAsync(environment, cts.Token);
+        var stillWaiting = _factory.CreateClientAsync(environment);
+
+        // Cancel only the first caller
+        cts.CancelAfter(10);
+
+        await FluentActions.Invoking(async () => await waiting).Should().ThrowAsync<OperationCanceledException>();
+
+        // The in-flight shared auth should complete and the second caller should succeed
+        var client = await stillWaiting;
+        client.DefaultRequestHeaders.Authorization.Parameter.Should().Be(authResult.AccessToken);
+
+        _authenticationServiceMock.Verify(x => x.AuthenticateAsync(It.IsAny<DataverseEnvironment>(), It.IsAny<Action<string>>(), It.IsAny<CancellationToken>()), Times.Once);
+    }
+
     private AuthenticationResult CreateFakeAuthenticationResult(bool isValid = true, string name = "FakeToken")
         => new (
             name, 

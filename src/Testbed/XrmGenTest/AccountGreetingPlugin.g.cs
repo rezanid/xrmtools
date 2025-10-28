@@ -11,19 +11,20 @@ using System.Linq;
 using System.Runtime.Serialization;
 using XrmTools;
 
-namespace XrmGenTestClassic
+namespace XrmGenTest
 {
-    [GeneratedCode("TemplatedCodeGenerator", "1.4.6.0")]
-    public partial class AccountCreatePlugin
+    [GeneratedCode("TemplatedCodeGenerator", "1.5.0.2")]
+    public partial class AccountGreetingPlugin
     {
         /// <summary>
         /// This method should be called before accessing any target, image or any of your dependencies.
         /// </summary>
         protected IDisposable CreateScope(IServiceProvider serviceProvider)
         {
-            var scope = new DependencyScope<AccountCreatePlugin>();
+            var scope = new DependencyScope<AccountGreetingPlugin>();
             scope.Set<IServiceProvider>(serviceProvider);
         
+            scope.Set<IPluginExecutionContext>((IPluginExecutionContext)serviceProvider.GetService(typeof(IPluginExecutionContext)));
             return scope;
         }
 	    [EntityLogicalName("account")]
@@ -104,7 +105,7 @@ namespace XrmGenTestClassic
 	    
 	    public TargetAccount Target
         {
-            get => EntityOrDefault<TargetAccount>(DependencyScope<AccountCreatePlugin>.Current.Require<IPluginExecutionContext>().InputParameters, "Target");
+            get => EntityOrDefault<TargetAccount>(DependencyScope<AccountGreetingPlugin>.Current.Require<IPluginExecutionContext>().InputParameters, "Target");
         }
 
 
@@ -120,15 +121,15 @@ namespace XrmGenTestClassic
             return keyValues.TryGetValue(key, out var entity) ? entity?.ToEntity<T>() : default;
         }
 
-        private static T Require<T>() => DependencyScope<AccountCreatePlugin>.Current.Require<T>();
-        private static T Require<T>(string name) => DependencyScope<AccountCreatePlugin>.Current.Require<T>(name);
+        private static T Require<T>() => DependencyScope<AccountGreetingPlugin>.Current.Require<T>();
+        private static T Require<T>(string name) => DependencyScope<AccountGreetingPlugin>.Current.Require<T>(name);
 
-        private static bool TryGet<T>(out T instance) => DependencyScope<AccountCreatePlugin>.Current.TryGet(out instance);
-        private static bool TryGet<T>(string name, out T instance) => DependencyScope<AccountCreatePlugin>.Current.TryGet(name, out instance);
+        private static bool TryGet<T>(out T instance) => DependencyScope<AccountGreetingPlugin>.Current.TryGet(out instance);
+        private static bool TryGet<T>(string name, out T instance) => DependencyScope<AccountGreetingPlugin>.Current.TryGet(name, out instance);
 
-        private static T Set<T>(T instance) => DependencyScope<AccountCreatePlugin>.Current.Set(instance);
-        private static T Set<T>(string name, T instance) => DependencyScope<AccountCreatePlugin>.Current.Set(name, instance);
-        private static T SetAndTrack<T>(T instance) where T : IDisposable => DependencyScope<AccountCreatePlugin>.Current.SetAndTrack(instance);
-        private static T SetAndTrack<T>(string name, T instance) where T : IDisposable => DependencyScope<AccountCreatePlugin>.Current.SetAndTrack(name, instance);
+        private static T Set<T>(T instance) => DependencyScope<AccountGreetingPlugin>.Current.Set(instance);
+        private static T Set<T>(string name, T instance) => DependencyScope<AccountGreetingPlugin>.Current.Set(name, instance);
+        private static T SetAndTrack<T>(T instance) where T : IDisposable => DependencyScope<AccountGreetingPlugin>.Current.SetAndTrack(instance);
+        private static T SetAndTrack<T>(string name, T instance) where T : IDisposable => DependencyScope<AccountGreetingPlugin>.Current.SetAndTrack(name, instance);
     }
 }

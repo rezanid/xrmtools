@@ -1,4 +1,5 @@
-﻿namespace XrmTools.Meta.Model.Configuration;
+﻿#nullable enable
+namespace XrmTools.Meta.Model.Configuration;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Runtime.CompilerServices;
@@ -35,7 +36,7 @@ public sealed class PluginAssemblyConfig : PluginAssembly//, IPluginAssemblyConf
     public ICollection<EntityConfig> OtherEntities { get; set; } = [];
 
     [JsonIgnore]
-    public ICollection<EntityMetadata>? EntityDefinitions { get; set; }
+    public ICollection<EntityMetadata?>? EntityDefinitions { get; set; }
 
     [JsonIgnore]
     public ICollection<EntityMetadata>? OtherEntityDefinitions { get; set; }
@@ -58,3 +59,4 @@ public sealed class PluginAssemblyConfig : PluginAssembly//, IPluginAssemblyConf
 
     public ICollection<PluginTypeConfig> OtherPluginTypes { get; set; } = [];
 }
+#nullable restore

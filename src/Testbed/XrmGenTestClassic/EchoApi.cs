@@ -1,4 +1,4 @@
-﻿namespace XrmGenTest
+﻿namespace XrmGenTestClassic
 {
     using Microsoft.Xrm.Sdk;
     using System;
@@ -52,10 +52,10 @@
             public DateTime DateTimeParameter { get; set; }
             public decimal DecimalParameter { get; set; }
             public Entity EntityParameter { get; set; }
-            public Contact ContactParameter { get; set; }
+            public ApiContact ContactParameter { get; set; }
             public TypedExpando TypedExpandoParameter { get; set; }
             public EntityCollection EntityCollectionParameter { get; set; }
-            public IEnumerable<Contact> CustomEntitiesParameter { get; set; }
+            public IEnumerable<ApiContact> CustomEntitiesParameter { get; set; }
             public EntityReference EntityReferenceParameter { get; set; }
             public double FloatParameter { get; set; }
             public int IntegerParameter { get; set; }
@@ -75,10 +75,10 @@
             public DateTime DateTimeParameter { get; set; }
             public decimal DecimalParameter { get; set; }
             public Entity EntityParameter { get; set; }
-            public Contact ContactParameter { get; set; }
+            public ApiContact ContactParameter { get; set; }
             public TypedExpando TypedExpandoParameter { get; set; }
             public EntityCollection EntityCollectionParameter { get; set; }
-            public IEnumerable<Contact> CustomEntitiesParameter { get; set; }
+            public IEnumerable<ApiContact> CustomEntitiesParameter { get; set; }
             public EntityReference EntityReferenceParameter { get; set; }
             public double FloatParameter { get; set; }
             public int IntegerParameter { get; set; }
@@ -91,6 +91,7 @@
             public string[] Logs { get; set; } = Array.Empty<string>();
         }
     }
+    
     public enum TestEnum
     {
         Option1 = 1,
@@ -105,10 +106,10 @@
         Option10 = 10
     }
     
-    public class Contact : Entity
+    public class ApiContact : Entity
     {
-        public Contact() : base("contact") { }
-        public Contact(Guid id) : base("contact", id) { }
+        public ApiContact() : base("contact") { }
+        public ApiContact(Guid id) : base("contact", id) { }
         public string FirstName 
         { 
             get => GetAttributeValue<string>("firstname");
