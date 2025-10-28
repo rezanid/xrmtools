@@ -295,8 +295,8 @@ internal sealed class PluginRegistrationService(
 
         _log.LogTrace($"Fetching SDK Messages for entities: {string.Join(", ", stepEntities)}");
 
-        var messageRepo = await _repositoryFactory.CreateRepositoryAsync<ISdkMessageRepository>();
-        var messages = await messageRepo.GetForEntitiesAsync(stepEntities!, cancellationToken);
+        using var messageRepo = _repositoryFactory.CreateRepository<ISdkMessageRepository>();
+        var messages = await messageRepo.GetForEntitiesAsync(stepEntities!, cancellationToken).ConfigureAwait(false);
 
         return messages.ToDictionary(m => m.Name, m => m, StringComparer.OrdinalIgnoreCase);
     }

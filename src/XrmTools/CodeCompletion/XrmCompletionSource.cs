@@ -30,7 +30,7 @@ internal abstract class XrmCompletionSource(
     /// </summary>
     protected async Task<CompletionContext> GetEntityCompletionsAsync(CancellationToken cancellationToken)
     {
-        var entityMetadataRepository = await repositoryFactory.CreateRepositoryAsync<IEntityMetadataRepository>();
+        using var entityMetadataRepository = repositoryFactory.CreateRepository<IEntityMetadataRepository>();
         if (entityMetadataRepository == null) return CompletionContext.Empty;
         try
         {
@@ -51,7 +51,7 @@ internal abstract class XrmCompletionSource(
         string messageName,
         CancellationToken cancellationToken)
     {
-        var entityMetadataRepository = await repositoryFactory.CreateRepositoryAsync<IEntityMetadataRepository>();
+        using var entityMetadataRepository = repositoryFactory.CreateRepository<IEntityMetadataRepository>();
         if (entityMetadataRepository == null) return CompletionContext.Empty;
         var entityNames = await entityMetadataRepository.GetEntityNamesAsync(messageName, cancellationToken).ConfigureAwait(false);
         var entities = await entityMetadataRepository.GetAsync(cancellationToken).ConfigureAwait(false);
@@ -69,7 +69,7 @@ internal abstract class XrmCompletionSource(
     {
         if (string.IsNullOrEmpty(entityName)) return CompletionContext.Empty;
 
-        var entityMetadataRepository = await repositoryFactory.CreateRepositoryAsync<IEntityMetadataRepository>();
+        using var entityMetadataRepository = repositoryFactory.CreateRepository<IEntityMetadataRepository>();
         if (entityMetadataRepository == null) return CompletionContext.Empty;
         EntityMetadata entity;
         try
@@ -97,7 +97,7 @@ internal abstract class XrmCompletionSource(
     /// </summary>
     protected async Task<CompletionContext> GetMessageCompletionsWhenProcessingStepAllowedAsync(CancellationToken cancellationToken)
     {
-        var entityMetadataRepository = await repositoryFactory.CreateRepositoryAsync<ISdkMessageRepository>();
+        using var entityMetadataRepository = repositoryFactory.CreateRepository<ISdkMessageRepository>();
         if (entityMetadataRepository == null) return CompletionContext.Empty;
         var messages = await entityMetadataRepository.GetCustomProcessingStepAllowedAsync(cancellationToken).ConfigureAwait(false);
         return new CompletionContext([.. messages.Select(message => new CompletionItem(message.Name, this))]);
@@ -105,7 +105,7 @@ internal abstract class XrmCompletionSource(
 
     protected async Task<CompletionContext> GetMessageCompletionsWhenVisibleAsync(CancellationToken cancellationToken)
     {
-        var entityMetadataRepository = await repositoryFactory.CreateRepositoryAsync<ISdkMessageRepository>();
+        using var entityMetadataRepository = repositoryFactory.CreateRepository<ISdkMessageRepository>();
         if (entityMetadataRepository == null) return CompletionContext.Empty;
         var messages = await entityMetadataRepository.GetVisibleWithoutDescendantsAsync(cancellationToken).ConfigureAwait(false);
         return new CompletionContext([.. messages.Select(message => new CompletionItem(message.Name, this))]);

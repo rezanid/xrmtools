@@ -2,15 +2,13 @@
 namespace XrmTools.UI;
 
 using System.ComponentModel.Composition;
-using System.Threading.Tasks;
-using XrmTools.Core.Repositories;
 using XrmTools.Logging.Compatibility;
 using XrmTools.Meta.Model.Configuration;
 using XrmTools.Xrm.Repositories;
 
 internal interface IAssemblySelector
 {
-    Task<(PluginAssemblyConfig? config, string? filename)> ChooseAssemblyAsync();
+    (PluginAssemblyConfig? config, string? filename) ChooseAssembly();
 }
 
 [Export(typeof(IAssemblySelector))]
@@ -19,11 +17,9 @@ internal class AssemblySelector(
     [Import] IRepositoryFactory repositoryFactory,
     [Import] ILogger<AssemblySelector> logger) : IAssemblySelector
 {
-    public async Task<(PluginAssemblyConfig? config, string? filename)> ChooseAssemblyAsync()
+    public (PluginAssemblyConfig? config, string? filename) ChooseAssembly()
     {
-        var assemblyRepository = await repositoryFactory.CreateRepositoryAsync<IPluginAssemblyRepository>();
-        var typeRepository = await repositoryFactory.CreateRepositoryAsync<IPluginTypeRepository>();
-        var dialog = new AssemblySelectionDialog(assemblyRepository, typeRepository);
+        var dialog = new AssemblySelectionDialog(repositoryFactory);
         if (dialog.ShowDialog() == true)
         {
             var viewmodel = (AssemblySelectionViewModel)dialog.DataContext;

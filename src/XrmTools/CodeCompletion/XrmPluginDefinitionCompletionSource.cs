@@ -152,7 +152,7 @@ internal sealed class XrmPluginDefinitionCompletionSource(
         var entityName = semanticModel.GetConstantValue(entityArgument.Expression).Value as string;
         if (string.IsNullOrEmpty(entityName))
             return CompletionContext.Empty;
-        var entityMetadataRepository = await repositoryFactory.CreateRepositoryAsync<IEntityMetadataRepository>();
+        using var entityMetadataRepository = repositoryFactory.CreateRepository<IEntityMetadataRepository>();
         if (entityMetadataRepository == null) return CompletionContext.Empty;
         var messages = await entityMetadataRepository.GetAvailableMessagesAsync(entityName, cancellationToken).ConfigureAwait(false);
         return new CompletionContext([.. messages.Select(message => new CompletionItem(message.Name, this))]);
