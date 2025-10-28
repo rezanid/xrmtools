@@ -53,9 +53,9 @@ public record DataverseEnvironment
             }
             else
             {
-                _url = segments.FirstOrDefault(s => s.StartsWith("Url=", StringComparison.OrdinalIgnoreCase))?.Substring(4);
+                _url = segments.FirstOrDefault(s => s.StartsWith("Url=", StringComparison.OrdinalIgnoreCase))?[4..];
             }
-            isValidConnectionString = !string.IsNullOrWhiteSpace(value) && !string.IsNullOrWhiteSpace(_url);
+            isValidConnectionString = !string.IsNullOrWhiteSpace(value) && !string.IsNullOrWhiteSpace(_url) && Uri.TryCreate(_url, UriKind.Absolute, out _);
         }
     }
 
