@@ -27,8 +27,6 @@ public class SdkMessageRefactoringProvider : CodeRefactoringProvider
     [Import]
     internal IRepositoryFactory RepositoryFactory { get; set; } = null!;
 
-    private ISdkMessageRepository sdkMessageRepository = null!;
-
     private bool isNullableEnabled;
     private SemanticModel? semanticModel;
 
@@ -79,8 +77,6 @@ public class SdkMessageRefactoringProvider : CodeRefactoringProvider
                 equivalenceKey: "FixResponseProxy");
             context.RegisterRefactoring(OrgResponseAction);
         }
-
-        sdkMessageRepository = await RepositoryFactory.CreateRepositoryAsync<ISdkMessageRepository>().ConfigureAwait(false);
     }
 
     private async Task<Document> ApplyRequestProxyFixAsync(
@@ -89,6 +85,7 @@ public class SdkMessageRefactoringProvider : CodeRefactoringProvider
         string messageName,
         CancellationToken cancellationToken)
     {
+        using var sdkMessageRepository = RepositoryFactory.CreateRepository<ISdkMessageRepository>();
         var message = await sdkMessageRepository.GetByNameWithDescendantsAsync(messageName, cancellationToken).ConfigureAwait(false);
         if (message is null || semanticModel is null) return document;
 
@@ -366,6 +363,7 @@ public class SdkMessageRefactoringProvider : CodeRefactoringProvider
         string messageName,
         CancellationToken cancellationToken)
     {
+        using var sdkMessageRepository = RepositoryFactory.CreateRepository<ISdkMessageRepository>();
         var message = await sdkMessageRepository.GetByNameWithDescendantsAsync(messageName, cancellationToken);
         if (message is null || semanticModel is null) return document;
 

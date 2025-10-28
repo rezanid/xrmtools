@@ -16,7 +16,7 @@ namespace XrmGenTestClassic
 	[GeneratedCode("TemplatedCodeGenerator", "1.4.2.0")]
 	[EntityLogicalName("contact")]
 	[global::System.Diagnostics.CodeAnalysis.ExcludeFromCodeCoverage]
-	public partial class Contact : Microsoft.Xrm.Sdk.Entity
+	public partial class ApiContact : Microsoft.Xrm.Sdk.Entity
 	{
 		public partial class Meta 
 		{
@@ -85,10 +85,10 @@ namespace XrmGenTestClassic
 			get => TryGetAttributeValue("lastname", out string value) ? value : null;
 			set => this["lastname"] = value;
 		}
-		public Contact() : base(Meta.EntityLogicalName) { }
-		public Contact(Guid id) : base(Meta.EntityLogicalName, id) { }
-		public Contact(string keyName, object keyValue) : base(Meta.EntityLogicalName, keyName, keyValue) { }
-		public Contact(KeyAttributeCollection keyAttributes) : base(Meta.EntityLogicalName, keyAttributes) { }
+		public ApiContact() : base(Meta.EntityLogicalName) { }
+		public ApiContact(Guid id) : base(Meta.EntityLogicalName, id) { }
+		public ApiContact(string keyName, object keyValue) : base(Meta.EntityLogicalName, keyName, keyValue) { }
+		public ApiContact(KeyAttributeCollection keyAttributes) : base(Meta.EntityLogicalName, keyAttributes) { }
 	}
 	/// <summary>
 	/// Display Name: Account

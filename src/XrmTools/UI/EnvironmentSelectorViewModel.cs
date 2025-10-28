@@ -139,7 +139,7 @@ internal class EnvironmentSelectorViewModel : ViewModelBase
         WhoAmIResponse? response = null;
         try
         {
-            using var systemRepository = await repositoryFactory.CreateRepositoryAsync<ISystemRepository>(environment);
+            using var systemRepository = repositoryFactory.CreateRepository<ISystemRepository>(environment);
             response = await systemRepository.WhoAmIAsync(CancellationToken.None);
         }
         catch (Exception ex)

@@ -72,8 +72,8 @@ public class WebApiService(
         {
             var exception = await response.AsServiceExceptionAsync();
             await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync();
-            logger.LogError(exception, "Error in Web API call.");//: {Message}", exception.Message);
-            throw exception;
+            logger.LogError(exception, $"Error in Web API call. " + exception?.Message);
+            if (exception is not null) throw exception;
         }
         return response;
     }

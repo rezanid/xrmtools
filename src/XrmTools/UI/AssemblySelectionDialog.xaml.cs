@@ -2,19 +2,18 @@
 namespace XrmTools.UI;
 using Microsoft.VisualStudio.PlatformUI;
 using System.Windows;
-using XrmTools.Xrm;
 using System.Reflection;
 using System.Linq;
 using System;
-using XrmTools.Core.Repositories;
+using XrmTools.Xrm.Repositories;
 
 public partial class AssemblySelectionDialog : DialogWindow
 {
-    internal AssemblySelectionDialog(IPluginAssemblyRepository assemblyRepository, IPluginTypeRepository typeRepository)
+    internal AssemblySelectionDialog(IRepositoryFactory repositoryFactory)
     {
         EnsureReferencedAssembliesInMarkupAreLoaded();
         InitializeComponent();
-        DataContext = new AssemblySelectionViewModel(assemblyRepository, typeRepository);
+        DataContext = new AssemblySelectionViewModel(repositoryFactory);
         Loaded += OnLoaded;
     }
 

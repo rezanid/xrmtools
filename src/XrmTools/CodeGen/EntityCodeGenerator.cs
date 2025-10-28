@@ -44,7 +44,7 @@ internal class EntityCodeGenerator : BaseCodeGeneratorWithSite
     public IXrmCodeGenerator? Generator { get; set; }
 
     [Import]
-    internal IRepositoryFactory? RepositoryFactory { get; set; }
+    internal IRepositoryFactory RepositoryFactory { get; set; }
 
     [Import]
     public IEnvironmentProvider EnvironmentProvider { get; set; }
@@ -76,13 +76,13 @@ internal class EntityCodeGenerator : BaseCodeGeneratorWithSite
     {
         var componentModel = (IComponentModel)Package.GetGlobalService(typeof(SComponentModel));
         componentModel?.DefaultCompositionService.SatisfyImportsOnce(this);
-        if (Generator == null) throw new InvalidOperationException(string.Format(Strings.MissingServiceDependency, nameof(EntityCodeGenerator), nameof(Generator)));
-        if (RepositoryFactory == null) throw new InvalidOperationException(string.Format(Strings.MissingServiceDependency, nameof(EntityCodeGenerator), nameof(RepositoryFactory)));
-        if (EnvironmentProvider == null) throw new InvalidOperationException(string.Format(Strings.MissingServiceDependency, nameof(EntityCodeGenerator), nameof(EnvironmentProvider)));
-        if (Logger == null) throw new InvalidOperationException(string.Format(Strings.MissingServiceDependency, nameof(EntityCodeGenerator), nameof(Logger)));
-        if (TemplateFinder == null) throw new InvalidOperationException(string.Format(Strings.MissingServiceDependency, nameof(EntityCodeGenerator), nameof(TemplateFinder)));
-        if (TemplateFileGenerator == null) throw new InvalidOperationException(string.Format(Strings.MissingServiceDependency, nameof(EntityCodeGenerator), nameof(TemplateFileGenerator)));
-        if (SettingsProvider == null) throw new InvalidOperationException(string.Format(Strings.MissingServiceDependency, nameof(EntityCodeGenerator), nameof(SettingsProvider)));
+        if (Generator == null) throw new InvalidOperationException(string.Format(Strings.MissingServiceDependency, nameof(AddEntityMetadataToEntityConfigAsync), nameof(Generator)));
+        if (RepositoryFactory == null) throw new InvalidOperationException(string.Format(Strings.MissingServiceDependency, nameof(AddEntityMetadataToEntityConfigAsync), nameof(RepositoryFactory)));
+        if (EnvironmentProvider == null) throw new InvalidOperationException(string.Format(Strings.MissingServiceDependency, nameof(AddEntityMetadataToEntityConfigAsync), nameof(EnvironmentProvider)));
+        if (Logger == null) throw new InvalidOperationException(string.Format(Strings.MissingServiceDependency, nameof(AddEntityMetadataToEntityConfigAsync), nameof(Logger)));
+        if (TemplateFinder == null) throw new InvalidOperationException(string.Format(Strings.MissingServiceDependency, nameof(AddEntityMetadataToEntityConfigAsync), nameof(TemplateFinder)));
+        if (TemplateFileGenerator == null) throw new InvalidOperationException(string.Format(Strings.MissingServiceDependency, nameof(AddEntityMetadataToEntityConfigAsync), nameof(TemplateFileGenerator)));
+        if (SettingsProvider == null) throw new InvalidOperationException(string.Format(Strings.MissingServiceDependency, nameof(AddEntityMetadataToEntityConfigAsync), nameof(SettingsProvider)));
         if (XrmMetaDataService == null) throw new InvalidOperationException(string.Format(Strings.MissingServiceDependency, nameof(PluginCodeGenerator), nameof(XrmMetaDataService)));
     }
 
@@ -119,7 +119,21 @@ internal class EntityCodeGenerator : BaseCodeGeneratorWithSite
                     " Please go to Tools > Options > XRM Tools to setup the environment and set the current environment.");
             }
 
-            AddEntityMetadataToEntityConfig(inputModel);
+            try
+            {
+                using var cts = new CancellationTokenSource(120000);
+                await AddEntityMetadataToEntityConfigAsync(inputModel, cts.Token).ConfigureAwait(false);
+            }
+            catch (OperationCanceledException)
+            {
+                Logger.LogWarning("Metadata retrieval was canceled.");
+                throw;
+            }
+            catch (Exception ex)
+            {
+                Logger.LogError(ex, "Failed to retrieve metadata for code generation");
+                throw;
+            }
 
             var inputFile = await PhysicalFile.FromFileAsync(inputFileName);
             if (inputFile is null || inputFile.FindParent(SolutionItemType.Project) is not Project project)
@@ -179,6 +193,7 @@ internal class EntityCodeGenerator : BaseCodeGeneratorWithSite
             }
 
             string? generatedCode = null;
+            await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync();
             if (project.IsSdkStyle())
             {
                 var lastGenFileName = await inputFile.GetAttributeAsync("LastGenOutput");
@@ -241,17 +256,31 @@ internal class EntityCodeGenerator : BaseCodeGeneratorWithSite
         return string.Empty;
     }
 
-    private void AddEntityMetadataToEntityConfig(PluginAssemblyConfig config) 
-        => config.EntityDefinitions = [.. config.Entities
-            .Where(c => !string.IsNullOrWhiteSpace(c.LogicalName))
-            .Select(e => GetEntityMetadata(e.LogicalName!, e.AttributeNames?.Split(',') ?? [], config.ReplacePrefixes))];
-
-    private EntityMetadata GetEntityMetadata(string logicalName, IEnumerable<string> attributeNames, Meta.Model.CodeGenReplacePrefixConfig[] prefixReplacements)
+    private async Task AddEntityMetadataToEntityConfigAsync(PluginAssemblyConfig config, CancellationToken ct)
     {
-        var entityMetadataRepo = ThreadHelper.JoinableTaskFactory.Run(RepositoryFactory.CreateRepositoryAsync<IEntityMetadataRepository>);
+        config.EntityDefinitions = [];
+        foreach (var entityConfig in config.Entities)
+        {
+            ct.ThrowIfCancellationRequested();
+            if (string.IsNullOrWhiteSpace(entityConfig.LogicalName)) continue;
+            var entityMetadata = await GetEntityMetadataAsync(
+                entityConfig.LogicalName!,
+                entityConfig.AttributeNames?.Split(',') ?? [],
+                config.ReplacePrefixes,
+                ct).ConfigureAwait(false);
+            if (entityMetadata != null)
+            {
+                config.EntityDefinitions.Add(entityMetadata);
+            }
+        }
+    }
+
+    private async Task<EntityMetadata?> GetEntityMetadataAsync(string logicalName, IEnumerable<string> attributeNames, Meta.Model.CodeGenReplacePrefixConfig[] prefixReplacements, CancellationToken ct)
+    {
+        using var entityMetadataRepo = RepositoryFactory.CreateRepository<IEntityMetadataRepository>();
         if (entityMetadataRepo is null) return null;
-        using var cts = new CancellationTokenSource(120000);
-        var entityDefinition = ThreadHelper.JoinableTaskFactory.Run(async () => await entityMetadataRepo.GetAsync(logicalName, cts.Token));
+
+        var entityDefinition = await entityMetadataRepo.GetAsync(logicalName, ct).ConfigureAwait(false); ;
         if (entityDefinition == null) { return null; }
 
         //NOTE!

@@ -1,6 +1,7 @@
 using Microsoft.Xrm.Sdk;
 using Microsoft.Xrm.Sdk.Client;
 using Microsoft.Xrm.Sdk.Extensions;
+using Microsoft.Xrm.Sdk.PluginTelemetry;
 using System;
 using System.CodeDom.Compiler;
 using System.Collections.Generic;
@@ -12,21 +13,28 @@ using XrmTools;
 
 namespace XrmGenTest
 {
-    [GeneratedCode("TemplatedCodeGenerator", "1.4.3.0")]
-    public partial class ContactCreatePlugin
+    [GeneratedCode("TemplatedCodeGenerator", "1.5.0.2")]
+    public partial class ContactGreetingPlugin
     {
         /// <summary>
         /// This method should be called before accessing any target, image or any of your dependencies.
         /// </summary>
-        protected IDisposable CreateScope(IServiceProvider serviceProvider)
+        protected override IDisposable CreateScope(IServiceProvider serviceProvider)
         {
-            var scope = new DependencyScope<ContactCreatePlugin>();
+            var scope = new DependencyScope<ContactGreetingPlugin>();
             scope.Set<IServiceProvider>(serviceProvider);
-            scope.Set<IPluginExecutionContext>((IPluginExecutionContext)serviceProvider.GetService(typeof(IPluginExecutionContext)));
         
-            scope.Set<System.IServiceProvider>(serviceProvider);
-            scope.Set<XrmGenTest.SomeService>(scope.Set(new XrmGenTest.SomeService(serviceProvider)));
-            scope.Set<XrmGenTest.IContactPersister>(scope.Set(new XrmGenTest.ContactPersister(this.OrganizationService) { OrgService = this.OrganizationServiceUser }));
+            var iTracingService = (ITracingService)serviceProvider.GetService(typeof(ITracingService));
+            var iOrganizationServiceFactory = (IOrganizationServiceFactory)serviceProvider.GetService(typeof(IOrganizationServiceFactory));
+            var contactPersister = new XrmGenTest.ContactPersister((IOrganizationServiceFactory)serviceProvider.GetService(typeof(IOrganizationServiceFactory)), (ITracingService)serviceProvider.GetService(typeof(ITracingService)));
+        
+            scope.Set<ITracingService>((ITracingService)serviceProvider.GetService(typeof(ITracingService)));
+            scope.Set<XrmGenTest.ILoggingService>(scope.Set(new XrmGenTest.LoggingService(serviceProvider)));
+            scope.Set<IOrganizationServiceFactory>((IOrganizationServiceFactory)serviceProvider.GetService(typeof(IOrganizationServiceFactory)));
+            scope.Set<IPluginExecutionContext>((IPluginExecutionContext)serviceProvider.GetService(typeof(IPluginExecutionContext)));
+            scope.Set<XrmGenTest.IContactPersister>(contactPersister);
+            scope.Set<XrmGenTest.IContactOrchestrator>(scope.SetAndTrack(new XrmGenTest.ContactOrchestrator(contactPersister, (ITracingService)serviceProvider.GetService(typeof(ITracingService)))));
+            scope.Set<XrmGenTest.IValidationService>(scope.Set(new XrmGenTest.ValidationService()));
             return scope;
         }
 	    [EntityLogicalName("contact")]
@@ -132,7 +140,7 @@ namespace XrmGenTest
 	    
 	    public CreateTargetContact CreateTarget
         {
-            get => EntityOrDefault<CreateTargetContact>(DependencyScope<ContactCreatePlugin>.Current.Require<IPluginExecutionContext>().InputParameters, "Target");
+            get => EntityOrDefault<CreateTargetContact>(DependencyScope<ContactGreetingPlugin>.Current.Require<IPluginExecutionContext>().InputParameters, "Target");
         }
 
 	    [EntityLogicalName("contact")]
@@ -334,18 +342,18 @@ namespace XrmGenTest
 	    
 	    public UpdateTargetContact UpdateTarget
         {
-            get => EntityOrDefault<UpdateTargetContact>(DependencyScope<ContactCreatePlugin>.Current.Require<IPluginExecutionContext>().InputParameters, "Target");
+            get => EntityOrDefault<UpdateTargetContact>(DependencyScope<ContactGreetingPlugin>.Current.Require<IPluginExecutionContext>().InputParameters, "Target");
         }
 
-	    public UpdatePreImageContact ContactPreImage { get => EntityOrDefault<UpdatePreImageContact>(DependencyScope<ContactCreatePlugin>.Current.Require<IPluginExecutionContext>().PreEntityImages, "ContactPreImage"); }
+	    public UpdatePreImageContact ContactPreImage { get => EntityOrDefault<UpdatePreImageContact>(DependencyScope<ContactGreetingPlugin>.Current.Require<IPluginExecutionContext>().PreEntityImages, "ContactPreImage"); }
 
-	    protected static T EntityOrDefault<T>(DataCollection<string, object> keyValues, string key) where T : Entity
+	    private static T EntityOrDefault<T>(DataCollection<string, object> keyValues, string key) where T : Entity
         {
             if (keyValues is null) return default;
             return keyValues.TryGetValue(key, out var obj) ? obj is Entity entity ? entity.ToEntity<T>() : default : default;
         }
 
-        protected static T EntityOrDefault<T>(DataCollection<string, Entity> keyValues, string key) where T : Entity
+        private static T EntityOrDefault<T>(DataCollection<string, Entity> keyValues, string key) where T : Entity
         {
             if (keyValues is null) return default;
             return keyValues.TryGetValue(key, out var entity) ? entity?.ToEntity<T>() : default;

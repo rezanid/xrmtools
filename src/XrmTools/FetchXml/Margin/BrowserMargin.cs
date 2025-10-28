@@ -391,7 +391,7 @@ internal class BrowserMargin : DockPanel, IWpfTextViewMargin
         {
             return new FetchQueryResultModel { Result = "null", ElapsedMs = 0 };
         }
-        var repo = await repositoryFactory.CreateRepositoryAsync<IEntityMetadataRepository>().ConfigureAwait(false);
+        using var repo = repositoryFactory.CreateRepository<IEntityMetadataRepository>();
         var entity = await repo.GetAsync(document.EntityName, cancellationToken).ConfigureAwait(false);
 
         Stopwatch stopwatch = null;

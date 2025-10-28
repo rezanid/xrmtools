@@ -98,35 +98,38 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="AccountCreatePlugin.cs">
-      <Generator>Xrm Tools Plugin Code Generator</Generator>
-      <IsXrmPlugin>True</IsXrmPlugin>
-      <LastGenOutput>AccountCreatePlugin.g.cs</LastGenOutput>
-    </Compile>
-    <Compile Include="AccountCreatePlugin.g.cs">
-      <AutoGen>True</AutoGen>
-      <DesignTime>True</DesignTime>
-      <DependentUpon>AccountCreatePlugin.cs</DependentUpon>
-    </Compile>
-    <Compile Include="ContactCreatePlugin.cs">
-      <Generator>Xrm Tools Plugin Code Generator</Generator>
-      <LastGenOutput>ContactCreatePlugin.Generated.cs</LastGenOutput>
-      <IsXrmPlugin>True</IsXrmPlugin>
-    </Compile>
-    <Compile Include="ContactCreatePlugin.Generated.cs">
-      <AutoGen>True</AutoGen>
-      <DesignTime>True</DesignTime>
-      <DependentUpon>ContactCreatePlugin.cs</DependentUpon>
-    </Compile>
-    <Compile Include="EchoApi.cs">
-      <Generator>Xrm Tools Plugin Code Generator</Generator>
-      <LastGenOutput>EchoApi.Generated.cs</LastGenOutput>
-      <IsXrmPlugin>True</IsXrmPlugin>
-    </Compile>
-    <Compile Include="EchoApi.Generated.cs">
+    <Compile Include="ContactOrchestrator.cs" />
+    <Compile Include="ContactPersister.cs" />
+    <Compile Include="EchoApi.g.cs">
       <AutoGen>True</AutoGen>
       <DesignTime>True</DesignTime>
       <DependentUpon>EchoApi.cs</DependentUpon>
+    </Compile>
+    <Compile Include="ValidationService.cs" />
+    <Compile Include="AccountGreetingPlugin.cs">
+      <Generator>Xrm Tools Plugin Code Generator</Generator>
+      <IsXrmPlugin>True</IsXrmPlugin>
+      <LastGenOutput>AccountGreetingPlugin.g.cs</LastGenOutput>
+    </Compile>
+    <Compile Include="AccountGreetingPlugin.g.cs">
+      <AutoGen>True</AutoGen>
+      <DesignTime>True</DesignTime>
+      <DependentUpon>AccountGreetingPlugin.cs</DependentUpon>
+    </Compile>
+    <Compile Include="ContactGreetingPlugin.cs">
+      <Generator>Xrm Tools Plugin Code Generator</Generator>
+      <IsXrmPlugin>True</IsXrmPlugin>
+      <LastGenOutput>ContactGreetingPlugin.g.cs</LastGenOutput>
+    </Compile>
+    <Compile Include="ContactGreetingPlugin.g.cs">
+      <AutoGen>True</AutoGen>
+      <DesignTime>True</DesignTime>
+      <DependentUpon>ContactGreetingPlugin.cs</DependentUpon>
+    </Compile>
+    <Compile Include="EchoApi.cs">
+      <Generator>Xrm Tools Plugin Code Generator</Generator>
+      <IsXrmPlugin>True</IsXrmPlugin>
+      <LastGenOutput>EchoApi.g.cs</LastGenOutput>
     </Compile>
     <Compile Include="Entities.cs">
       <Generator>XrmTools Entity Generator</Generator>
@@ -137,6 +140,8 @@
       <DesignTime>True</DesignTime>
       <DependentUpon>Entities.cs</DependentUpon>
     </Compile>
+    <Compile Include="LoggingService.cs" />
+    <Compile Include="PluginBase.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Test.g.cs">
       <AutoGen>True</AutoGen>
@@ -145,9 +150,6 @@
     </Compile>
   </ItemGroup>
   <ItemGroup>
-    <None Include=".xrmtools\schemas\Fetch.xsd">
-      <SubType>Designer</SubType>
-    </None>
     <None Include="app.config" />
     <None Include="key.snk" />
     <None Include="packages.config" />

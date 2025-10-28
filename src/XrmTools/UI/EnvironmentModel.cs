@@ -66,6 +66,10 @@ internal class EnvironmentModel : ViewModelBase
         get => _environmentUrl;
         set
         {
+            if (Uri.TryCreate(value, UriKind.Absolute, out var UriResult))
+            {
+                value = UriResult.ToString();
+            }
             if (SetProperty(ref _environmentUrl, value))
                 UpdateConnectionStringFromProperties();
         }
