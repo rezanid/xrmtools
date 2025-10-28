@@ -6,6 +6,7 @@ using Microsoft.VisualStudio.Shell;
 using System.Collections.Concurrent;
 using System.Diagnostics.CodeAnalysis;
 using XrmTools.Logging.Compatibility;
+using System;
 
 public class OutputLoggerService : IOutputLoggerService
 {
@@ -54,7 +55,7 @@ public class OutputLoggerService : IOutputLoggerService
             logQueue.Enqueue(value);
         }
     }
-    public void Log(LogLevel level, string message) => OutputString($"[{level}] : {message}");
+    public void Log(LogLevel level, string message) => OutputString($"[{level}] : {message}{Environment.NewLine}");
     public void LogWarning(string message) => Log(LogLevel.Warning, message);
     public void LogInformation(string message) => Log(LogLevel.Information, message);
     public void LogCritical(string message) => Log(LogLevel.Critical, message);
