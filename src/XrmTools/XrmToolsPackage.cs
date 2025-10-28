@@ -165,7 +165,7 @@ public sealed partial class XrmToolsPackage : ToolkitPackage
         // https://learn.microsoft.com/en-us/visualstudio/extensibility/how-to-provide-an-asynchronous-visual-studio-service?view=vs-2022
         await base.InitializeAsync(cancellationToken, progress);
         // Ensure FetchXml XSD embedded schema is loaded early (non-blocking errors logged only)
-        FetchXmlSchemaLoader.EnsureLoaded(_loggerService);
+        //FetchXmlSchemaLoader.EnsureLoaded(_loggerService);
 
         foreach (var key in SettingsProvider.SolutionUserSettings.Keys)
         {
@@ -234,18 +234,19 @@ public sealed partial class XrmToolsPackage : ToolkitPackage
 
     private async Task ProposeNewEnvironmentFromSolutionAsync(Community.VisualStudio.Toolkit.Solution? solution)
     {
-        var environmentUrl = SettingsProvider.SolutionSettings.EnvironmentUrl()?.Trim();
-        if (string.IsNullOrWhiteSpace(environmentUrl)) return;
+        var rawUrl = SettingsProvider.SolutionSettings.EnvironmentUrl()?.Trim();
+        if (string.IsNullOrWhiteSpace(rawUrl)) return;
+        var environmentUrl = new Uri(rawUrl);
         var environments = await EnvironmentProvider.GetAvailableEnvironmentsAsync();
         var environment = environments
-            .FirstOrDefault(e => e.IsValid && e.Url.Equals(environmentUrl, StringComparison.OrdinalIgnoreCase));
+            .FirstOrDefault(e => e.IsValid && new Uri(e.Url) == environmentUrl);
         // If the environment is not found, we will prompt the user to add it.
         if (environment is null)
         {
             var infoBar = new FoundNewEnvironmentInfoBar
             {
                 PromptMessage = $"New environment found in the {solution?.Name} solution, would you like to add it to your list? ",
-                EnvironmentUrl = environmentUrl!
+                EnvironmentUrl = environmentUrl.ToString()!
             };
             await infoBar.TryShowAsync();
         }
