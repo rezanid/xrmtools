@@ -21,12 +21,12 @@ internal interface IEntityMetadataRepository : IXrmRepository
     /// <summary>
     /// Get all the entities metadata.
     /// </summary>
-    Task<IEnumerable<EntityMetadata>> GetAsync(CancellationToken cancellationToken);
-    Task<IEnumerable<EntityMetadata>> GetByMessageNameAsync(string messageName, CancellationToken cancellationToken);
-    Task<EntityMetadata> GetAsync(string entityLogicalName, CancellationToken cancellationToken);
+    Task<IEnumerable<EntityMetadata>> GetEntitiesAsync(CancellationToken cancellationToken);
+    Task<IEnumerable<EntityMetadata>> GetEntitiesByMessageNameAsync(string messageName, CancellationToken cancellationToken);
+    Task<EntityMetadata> GetEntityAsync(string entityLogicalName, CancellationToken cancellationToken);
     Task<IEnumerable<SdkMessage>> GetAvailableMessagesAsync(string entityLogicalName, CancellationToken cancellationToken);
-    Task<EntityMetadata> GetRelationshipsAsync(string entityLogicalName, CancellationToken cancellationToken);
-    Task<IEnumerable<string>> GetEntityNamesAsync(string messageName, CancellationToken cancellationToken = default);
+    Task<EntityMetadata> GetEntityWithRelationshipsAsync(string entityLogicalName, CancellationToken cancellationToken);
+    Task<IEnumerable<string>> GetEntityNamesByMessageAsync(string messageName, CancellationToken cancellationToken = default);
 }
 
 internal class EntityMetadataRepository(IWebApiService service, ILogger logger) : XrmRepository(service), IEntityMetadataRepository
@@ -45,7 +45,7 @@ internal class EntityMetadataRepository(IWebApiService service, ILogger logger) 
         ContractResolver = new PolymorphicContractResolver()
     };
 
-    public async Task<IEnumerable<string>> GetEntityNamesAsync(string messageName, CancellationToken cancellationToken = default)
+    public async Task<IEnumerable<string>> GetEntityNamesByMessageAsync(string messageName, CancellationToken cancellationToken = default)
     {
         var response = await service.GetAsync(sdkMessageEntityNamesQuery.FormatWith(messageName), cancellationToken).ConfigureAwait(false);
         if (response.IsSuccessStatusCode)
@@ -61,7 +61,7 @@ internal class EntityMetadataRepository(IWebApiService service, ILogger logger) 
     }
 
     /// <inheritdoc/>
-    public async Task<IEnumerable<EntityMetadata>> GetAsync(CancellationToken cancellationToken)
+    public async Task<IEnumerable<EntityMetadata>> GetEntitiesAsync(CancellationToken cancellationToken)
     {
         var response = await service.SendAsync(new(HttpMethod.Get, entityMetadataQueryAll), cancellationToken).ConfigureAwait(false);
         var typed = await response.CastAsync<RetrieveAllEntitiesResponse>().ConfigureAwait(false);
@@ -73,7 +73,7 @@ internal class EntityMetadataRepository(IWebApiService service, ILogger logger) 
     }
 
     /// <inheritdoc/>
-    public async Task<IEnumerable<EntityMetadata>> GetByMessageNameAsync(string messageName, CancellationToken cancellationToken)
+    public async Task<IEnumerable<EntityMetadata>> GetEntitiesByMessageNameAsync(string messageName, CancellationToken cancellationToken)
     {
         var response = await service.SendAsync(new(HttpMethod.Get, entityMetadataQueryAll), cancellationToken).ConfigureAwait(false);
         var typed = await response.CastAsync<RetrieveAllEntitiesResponse>().ConfigureAwait(false);
@@ -107,7 +107,7 @@ internal class EntityMetadataRepository(IWebApiService service, ILogger logger) 
     /// <param name="entityLogicalName">The logical name of the entity to retrieve its metadata.</param>
     /// <param name="cancellationToken">The cancellation token.</param>
     /// <returns></returns>
-    public async Task<EntityMetadata> GetAsync(string entityLogicalName, CancellationToken cancellationToken)
+    public async Task<EntityMetadata> GetEntityAsync(string entityLogicalName, CancellationToken cancellationToken)
     {
         var response = await service.GetAsync(entityMetadataQuerySingle.FormatWith(entityLogicalName), cancellationToken).ConfigureAwait(false);
         using var content = await response.Content.ReadAsStreamAsync().ConfigureAwait(false);
@@ -128,7 +128,7 @@ internal class EntityMetadataRepository(IWebApiService service, ILogger logger) 
     /// <param name="entityLogicalName">The logical name of the entity to retrieve its relationships.</param>
     /// <param name="cancellationToken">The cancellation token.</param>
     /// <returns></returns>
-    public async Task<EntityMetadata> GetRelationshipsAsync(string entityLogicalName, CancellationToken cancellationToken)
+    public async Task<EntityMetadata> GetEntityWithRelationshipsAsync(string entityLogicalName, CancellationToken cancellationToken)
     {
         var response = await service.GetAsync(entityRelationshipsQuery.FormatWith(entityLogicalName), cancellationToken).ConfigureAwait(false);
         if (response.IsSuccessStatusCode)

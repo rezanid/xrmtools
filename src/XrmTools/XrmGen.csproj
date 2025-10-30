@@ -237,6 +237,9 @@
       <DependentUpon>Strings.resx</DependentUpon>
     </Compile>
     <Compile Include="Xrm\Repositories\EntityMetadataRepository.cs" />
+    <Compile Include="Xrm\Repositories\LocalEntityMetadataRepository.cs" />
+    <Compile Include="Xrm\Repositories\Metadata\RetrieveMetadataChangesModels.cs" />
+    <Compile Include="Xrm\Repositories\Metadata\RetrieveMetadataChangesRequest.cs" />
     <Compile Include="Xrm\Repositories\PluginAssemblyRepository.cs" />
     <Compile Include="Xrm\Repositories\PluginTypeRepository.cs" />
     <Compile Include="Xrm\Repositories\RepositoryFactory.cs" />

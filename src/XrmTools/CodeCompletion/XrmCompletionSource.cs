@@ -34,7 +34,7 @@ internal abstract class XrmCompletionSource(
         if (entityMetadataRepository == null) return CompletionContext.Empty;
         try
         {
-            var entities = await entityMetadataRepository.GetAsync(cancellationToken).ConfigureAwait(false);
+            var entities = await entityMetadataRepository.GetEntitiesAsync(cancellationToken).ConfigureAwait(false);
             return new CompletionContext([.. entities.Select(ToCompletionItem)]);
         }
         catch (Exception ex)
@@ -53,8 +53,8 @@ internal abstract class XrmCompletionSource(
     {
         using var entityMetadataRepository = repositoryFactory.CreateRepository<IEntityMetadataRepository>();
         if (entityMetadataRepository == null) return CompletionContext.Empty;
-        var entityNames = await entityMetadataRepository.GetEntityNamesAsync(messageName, cancellationToken).ConfigureAwait(false);
-        var entities = await entityMetadataRepository.GetAsync(cancellationToken).ConfigureAwait(false);
+        var entityNames = await entityMetadataRepository.GetEntityNamesByMessageAsync(messageName, cancellationToken).ConfigureAwait(false);
+        var entities = await entityMetadataRepository.GetEntitiesAsync(cancellationToken).ConfigureAwait(false);
 
         return new CompletionContext([.. entities.Where(e => entityNames.Contains(e.LogicalName)).Select(ToCompletionItem)]);
     }
@@ -74,7 +74,7 @@ internal abstract class XrmCompletionSource(
         EntityMetadata entity;
         try
         {
-            entity = await entityMetadataRepository.GetAsync(entityName, cancellationToken).ConfigureAwait(false);
+            entity = await entityMetadataRepository.GetEntityAsync(entityName, cancellationToken).ConfigureAwait(false);
         }
         catch (Exception)
         {

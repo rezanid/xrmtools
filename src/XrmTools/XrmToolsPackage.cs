@@ -19,16 +19,20 @@ using System.Linq;
 using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Threading;
+using XrmTools.Authentication;
 using XrmTools.Commands;
+using XrmTools.Core.Repositories;
 using XrmTools.Environments;
 using XrmTools.FetchXml.Schema;
 using XrmTools.Helpers;
+using XrmTools.Http;
 using XrmTools.Logging;
 using XrmTools.Options;
 using XrmTools.Settings;
 using XrmTools.Tokens;
 using XrmTools.UI.InfoBars;
 using XrmTools.Xrm.Generators;
+using XrmTools.Xrm.Repositories;
 using Task = System.Threading.Tasks.Task;
 
 /// <summary>
@@ -281,7 +285,7 @@ public sealed partial class XrmToolsPackage : ToolkitPackage
             CanBeCanceled = false,
         });
         handler.RegisterTask(AuditNugetsAsync(handler, cancellationToken));
-        //handler.RegisterTask(InitializeXrmMetadataAsync(data, handler));
+        //handler.RegisterTask(InitializeXrmMetadataAsync(handler));
     }
 
     private async Task InitializeXrmMetadataAsync(ITaskHandler handler)
@@ -290,6 +294,7 @@ public sealed partial class XrmToolsPackage : ToolkitPackage
         var environments = options.Environments
             .Where(e => e.IsValid).ToList();
         var currentIndex = 0;
+
         foreach (var env in environments)
         {
             handler.Progress.Report(new TaskProgressData

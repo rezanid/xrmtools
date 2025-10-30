@@ -48,6 +48,19 @@ public static class StreamHelper
         return serializer.Deserialize<T>(jr);
     }
 
+    // New helpers for writing JSON to files/streams with consistent settings
+    public static void SerializeToFile<T>(this T value, string filePath, bool isFile = true)
+    {
+        var settings = isFile ? jsonSerializerSettingsForFile : jsonSerializerSettings;
+        var json = JsonConvert.SerializeObject(value, Formatting.Indented, settings);
+        var directory = Path.GetDirectoryName(filePath);
+        if (!string.IsNullOrWhiteSpace(directory) && !Directory.Exists(directory))
+        {
+            Directory.CreateDirectory(directory);
+        }
+        File.WriteAllText(filePath, json);
+    }
+
     public class KnownTypeContractResolver : DefaultContractResolver
     {
         protected override JsonObjectContract CreateObjectContract(Type objectType)

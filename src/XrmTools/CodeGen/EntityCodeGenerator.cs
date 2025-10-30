@@ -280,7 +280,7 @@ internal class EntityCodeGenerator : BaseCodeGeneratorWithSite
         using var entityMetadataRepo = RepositoryFactory.CreateRepository<IEntityMetadataRepository>();
         if (entityMetadataRepo is null) return null;
 
-        var entityDefinition = await entityMetadataRepo.GetAsync(logicalName, ct).ConfigureAwait(false); ;
+        var entityDefinition = await entityMetadataRepo.GetEntityAsync(logicalName, ct).ConfigureAwait(false); ;
         if (entityDefinition == null) { return null; }
 
         //NOTE!
