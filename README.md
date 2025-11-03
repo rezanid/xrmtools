@@ -1,31 +1,28 @@
 # What is Xrm Tools
 Xrm Tools is a Visual Studio extension that aims to make Power Platform development feel native within Visual Studio. You will get Intellisense support for your Plugins, generate boiler plate code, typed entities and more right from within Visual Studio. You also have full control over the code generation using [Scriban](https://github.com/scriban/scriban) templates.
 
-## Features
+## Main Features
 
-* Define plugins entirely in code using attributes.
+* Define plugins registration entirely in code using attributes.
 * Intellisense for entities, attributes and more based on connected environment.
-* Attribute colorization within strings.
-* Traditional and packaged plugins.
-* Solution awareness.
-* Multi-environment.
-* Secure secret managment using Windows Credential Management or environment variables.
-* Binding environment to solution, project or global level per developer or per team.
-* Customizable seamless code generation for plugins, custom APIs and entities.
-* One-click plugin registration.
-* One-click project registration.
-* Fully customizable code generation using liquid-like templates.
-* Support CSharp v12.0 via PolySharp.
+* Supports traditional and packaged plugins (dependenct assemblies).
+* Solution aware plugins.
+* Environment management at User, Solution or Project level.
+* Secure secret managment using Windows Credential Management or environment variables for connection strings.
+* Design-time code generation for plugins, custom APIs, entities and Fetch XML.
+* One-click plugin / assembly registration.
+* Fully customizable code generation templates.
+* Supports CSharp v12.0 via PolySharp.
 * FetchXML editor and automatic code generation at save.
+* Retro-fit to your existing plugins using smart code-fixers (aka bulb actions)
 
 ## Xrm Tools is a good citizin in Visual Studio
 * XrmTools does not need admin privileges and will not apply any system-wide change in your machine nor the configuration of your Visual Studio or projects. 
-* You can always remove the extension safely and completely when you don't need it.
-* XrmTools does not send any information from your machine unlike some other extensions.
-* XrmTools does not do any code generation at build time. In other words everything is done in development time where you see the changes transparently and benefit from Git for diffing and reviewing the code.
-* XrmTools does not make you change your coding style. In other words, you don't have to inherit from a specific class or apply a special interface or things like that.
-* All you need to apply are a number of attributes to define your intent so the extensions knows where and how to help.
-* Should you decide to uninstall Xrm Tools, whatever you have developed with it will continue to work as there is no unsupported trickery going on behind the scenes.
+* Xrm Tools does not send any telemetry information from your machine.
+* Xrm Tools does not do any code generation at build time. In other words everything is done in development time and you will see the changes transparently and can benefit from Git for diffing and reviewing the code.
+* Xrm Tools does not force you to change your coding style. In other words, you don't have to inherit from a specific class or apply a special interface or things like that.
+* All you need to apply are a number of attributes to define your intent so the extension knows where and how to help.
+* Should you decide to uninstall Xrm Tools, whatever you have developed with it will continue to work because it is standard C# code and there is no unsupported trickery going on behind the scenes.
 
 # Connecting to a development environment
 After you install Xrm Tools, the first thing you need to do is to connect to an environment so that Xrm Tools can see where you are developing to help you along the way. You can add as many environments as you want to later use any of them in your projects. When adding a new environment you can use your own account or use a secret or certificate safely without pushing any secrets to your repository. Let's now connect to an environment.
