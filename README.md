@@ -16,6 +16,7 @@ Xrm Tools is a Visual Studio extension that aims to make Power Platform developm
 * One-click project registration.
 * Fully customizable code generation using liquid-like templates.
 * Support CSharp v12.0 via PolySharp.
+* FetchXML editor and automatic code generation at save.
 
 ## Xrm Tools is a good citizin in Visual Studio
 * XrmTools does not need admin privileges and will not apply any system-wide change in your machine nor the configuration of your Visual Studio or projects. 
