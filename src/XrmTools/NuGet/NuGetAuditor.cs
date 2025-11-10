@@ -65,7 +65,7 @@ internal sealed class NuGetAuditor
                 if (match is null) continue;
 
                 // Compare against 1.0.55 using NuGet's semver comparer
-                if (comparer.Compare(match.Version, "1.0.56") < 0)
+                if (comparer.Compare(match.Version, "1.0.57") < 0)
                 {
                     outdated.Add((project.Name, match.Version));
                 }

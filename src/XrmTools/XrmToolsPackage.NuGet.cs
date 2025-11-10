@@ -24,13 +24,11 @@ public partial class XrmToolsPackage
         });
         try
         {
-            // Delegate the audit logic to NuGetAuditor for readability and testability
             var auditor = new NuGetAuditor();
             await auditor.AuditAsync(ct);
         }
         catch (Exception ex)
         {
-            // Keep failures silent for UX; if desired, log to Output window.
             var pane = await VS.Windows.CreateOutputWindowPaneAsync("XrmTools");
             await pane.WriteLineAsync($"[XrmTools] Package audit failed: {ex.Message}");
         }
@@ -45,7 +43,7 @@ public partial class XrmToolsPackage
     {
         var infoBar = new NugetUpdateInfoBar
         {
-            PromptMessage = $"“XrmTools.Meta.Attributes” is below 1.0.56 in {hits.Count} project(s): " +
+            PromptMessage = $"“XrmTools.Meta.Attributes” is outdated in {hits.Count} project(s): " +
             string.Join(", ", hits.Take(5).Select(h => $"{h.ProjectName} ({h.Version})")) +
             (hits.Count > 5 ? ", …" : "")
         };
