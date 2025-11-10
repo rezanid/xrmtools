@@ -87,6 +87,8 @@ public class PluginCodeGenerator : BaseCodeGeneratorWithSite
         if (XrmMetaDataService == null) throw new InvalidOperationException(string.Format(Strings.MissingServiceDependency, nameof(PluginCodeGenerator), nameof(XrmMetaDataService)));
     }
 
+    [SuppressMessage("CodeQuality", "IDE0079:Remove unnecessary suppression", Justification = "The following supression is necessary for ThreadHelper.JoinableTaskFactory.Run")]
+    [SuppressMessage("Usage", "VSTHRD104:Offer async methods", Justification = "This method is considered the entry point for code generation.")]
     protected override byte[]? GenerateCode(string inputFileName, string inputFileContent)
     {
         if (string.IsNullOrWhiteSpace(inputFileContent)) { return null; }
@@ -110,6 +112,8 @@ public class PluginCodeGenerator : BaseCodeGeneratorWithSite
             }
 
             var inputFile = await PhysicalFile.FromFileAsync(inputFileName);
+
+            await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync();
             if (inputFile is null || inputFile.FindParent(SolutionItemType.Project) is not Project project)
             {
                 return Encoding.UTF8.GetBytes("// Unable to find the input file or its project.");
@@ -173,7 +177,6 @@ public class PluginCodeGenerator : BaseCodeGeneratorWithSite
             }
 
             string? generatedCode = null;
-            await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync();
             if (project.IsSdkStyle())
             {
                 var lastGenFileName = await inputFile.GetAttributeAsync("LastGenOutput");

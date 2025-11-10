@@ -86,6 +86,8 @@ internal class EntityCodeGenerator : BaseCodeGeneratorWithSite
         if (XrmMetaDataService == null) throw new InvalidOperationException(string.Format(Strings.MissingServiceDependency, nameof(PluginCodeGenerator), nameof(XrmMetaDataService)));
     }
 
+    [SuppressMessage("CodeQuality", "IDE0079:Remove unnecessary suppression", Justification = "The following supression is necessary for ThreadHelper.JoinableTaskFactory.Run")]
+    [SuppressMessage("Usage", "VSTHRD102:Implement internal logic asynchronously", Justification = "This method is cosidered the entry point for code generation.")]
     protected override byte[]? GenerateCode(string inputFileName, string inputFileContent)
     {
         if (string.IsNullOrWhiteSpace(inputFileContent)) { return null; }
@@ -136,6 +138,8 @@ internal class EntityCodeGenerator : BaseCodeGeneratorWithSite
             }
 
             var inputFile = await PhysicalFile.FromFileAsync(inputFileName);
+
+            await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync();
             if (inputFile is null || inputFile.FindParent(SolutionItemType.Project) is not Project project)
             {
                 return Encoding.UTF8.GetBytes(
@@ -193,7 +197,6 @@ internal class EntityCodeGenerator : BaseCodeGeneratorWithSite
             }
 
             string? generatedCode = null;
-            await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync();
             if (project.IsSdkStyle())
             {
                 var lastGenFileName = await inputFile.GetAttributeAsync("LastGenOutput");
@@ -292,7 +295,7 @@ internal class EntityCodeGenerator : BaseCodeGeneratorWithSite
         //    entityDefinition.Attributes.Where(a => a.AttributeType != AttributeTypeCode.EntityName && a.IsLogical != true).ToArray() :
         //    entityDefinition.Attributes.Where(a => a.AttributeType != AttributeTypeCode.EntityName && attributes.Contains(a.LogicalName)).ToArray();
 
-        FormatAttributeSchemaNames(filteredAttributes ?? entityDefinition.Attributes, prefixReplacements);
+        FormatAttributeSchemaNames(filteredAttributes ?? entityDefinition.Attributes!, prefixReplacements);
         FormatEntitySchemaName(entityDefinition, prefixReplacements);
 
         // The cloning is done because we don't want to modify the object in the cache.
