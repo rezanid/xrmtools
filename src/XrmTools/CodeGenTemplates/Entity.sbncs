@@ -54,9 +54,9 @@ namespace {{ first_plugin_type?.namespace ?? config.default_namespace }}
 					}
 				}
 				public static IEnumerable<string> GetAll() => 
-					[{{-for attribute in entity_definition.attributes | array.filter @supported_attribute}}
+					new string[] { {{-for attribute in entity_definition.attributes | array.filter @supported_attribute}}
 						{{-attribute.schema_name}},
-					{{-end~}}];
+					{{-end~}} };
 			{{~else~}}
 				private static readonly Dictionary<string, string> _fieldMap = new Dictionary<string, string>
 				{
