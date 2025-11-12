@@ -213,7 +213,7 @@
       <!--[Project Context Menu] > "Add" > "New plugin definition..."-->
       <Button guid="XrmToolsCmdSetId" id="NewFetchXmlFileCmdId" priority="0x0200" type="Button">
         <Parent guid="guidSHLMainMenu" id="IDG_VS_CTXT_PROJECT_ADD_ITEMS"/>
-        <Icon guid="ImageCatalogGuid" id="XMLFile" />
+        <Icon guid="ImageCatalogGuid" id="NewListQuery" />
         <CommandFlag>IconIsMoniker</CommandFlag>
         <CommandFlag>DynamicVisibility</CommandFlag>
         <Strings>
