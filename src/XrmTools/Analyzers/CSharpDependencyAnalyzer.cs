@@ -326,14 +326,13 @@ public class CSharpDependencyAnalyzer : ICSharpDependencyAnalyzer
         var result = new Dictionary<ITypeSymbol, List<ProviderInfo>>(SymbolEqualityComparer.Default);
 
         INamedTypeSymbol? current = classSymbol;
-        while (current is not null && current.SpecialType != SpecialType.System_Object)
+        while (current is not null && current.SpecialType == SpecialType.None)
         {
             foreach (var member in current.GetMembers().OfType<IPropertySymbol>())
             {
-                if (member.DeclaredAccessibility != Accessibility.Private && 
-                    !member.IsWriteOnly && 
+                if (!member.IsWriteOnly && 
                     member.Type.TypeKind is TypeKind.Class or TypeKind.Interface &&
-                    member.Type.SpecialType != SpecialType.System_String &&
+                    member.Type.SpecialType == SpecialType.None &&
                     member.GetAttributes().FirstOrDefault(attr => attr.AttributeClass?.ToDisplayString() == typeof(DependencyProviderAttribute).FullName) is AttributeData providerAttr)
                 {
                     string? name = null;
@@ -419,15 +418,30 @@ public class CSharpDependencyAnalyzer : ICSharpDependencyAnalyzer
                 ProcessNamespace(subNs);
         }
 
-        // Process current project
-        ProcessNamespace(compilation.Assembly.GlobalNamespace);
+        bool ShouldSkipAssembly(IAssemblySymbol asm)
+        {
+            var name = asm.Name;
+            return name.StartsWith("System.", System.StringComparison.OrdinalIgnoreCase)
+                || name.StartsWith("Microsoft.", System.StringComparison.OrdinalIgnoreCase);
+        }
 
-        // Process referenced projects
+        void ProcessAssembly(IAssemblySymbol asm)
+        {
+            if (ShouldSkipAssembly(asm))
+                return;
+
+            ProcessNamespace(asm.GlobalNamespace);
+        }
+
+        // Process current project (unless excluded)
+        ProcessAssembly(compilation.Assembly);
+
+        // Process referenced projects, excluding System.* and Microsoft.* assemblies
         foreach (var reference in compilation.References)
         {
             if (compilation.GetAssemblyOrModuleSymbol(reference) is IAssemblySymbol referencedAssembly)
             {
-                ProcessNamespace(referencedAssembly.GlobalNamespace);
+                ProcessAssembly(referencedAssembly);
             }
         }
 
