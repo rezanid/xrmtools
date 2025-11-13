@@ -19,13 +19,13 @@
 
   <PropertyGroup>
     <!-- Allow override by the consumer if they want a different location or to disable the copy -->
-    <XrmToolsSchemasDir Condition="'$(XrmToolsSchemasDir)'==''">$(MSBuildProjectDirectory)\.xrmtools\schemas\</XrmToolsSchemasDir>
+    <XrmToolsSchemasDir Condition="'$(XrmToolsSchemasDir)'==''">$(MSBuildProjectDirectory).xrmtools/schemas/</XrmToolsSchemasDir>
     <XrmToolsCopySchemas Condition="'$(XrmToolsCopySchemas)'==''">true</XrmToolsCopySchemas>
   </PropertyGroup>
 
   <ItemGroup Condition="'$(XrmToolsCopySchemas)'=='true'">
     <!-- Resolve the XSD(s) from the package’s build/schemas folder -->
-    <_XrmToolsSchemaFromPkg Include="$(MSBuildThisFileDirectory)schemas\*.xsd" />
+    <_XrmToolsSchemaFromPkg Include="$(MSBuildThisFileDirectory)schemas/*.xsd" />
   </ItemGroup>
 
   <Target Name="XrmTools_CopySchemas"
@@ -37,7 +37,7 @@
           SkipUnchangedFiles="true" />
     <!-- Add them to the project (invisible) so they’re easy to find in Solution Explorer -->
     <ItemGroup>
-      <None Include="$([System.IO.Path]::Combine('$(XrmToolsSchemasDir)','**\*.xsd'))"
+      <None Include="$(XrmToolsSchemasDir)**/*.xsd"
             Visible="false" />
     </ItemGroup>
   </Target>

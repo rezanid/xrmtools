@@ -35,7 +35,7 @@
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageReference>
     <PackageReference Include="System.Text.Json" Version="9.0.0" />
-    <PackageReference Include="XrmTools.Meta.Attributes" Version="1.0.56">
+    <PackageReference Include="XrmTools.Meta.Attributes" Version="1.0.57">
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageReference>
