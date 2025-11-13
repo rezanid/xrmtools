@@ -114,6 +114,7 @@ public class PluginCodeGenerator : BaseCodeGeneratorWithSite
             var inputFile = await PhysicalFile.FromFileAsync(inputFileName);
 
             await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync();
+
             if (inputFile is null || inputFile.FindParent(SolutionItemType.Project) is not Project project)
             {
                 return Encoding.UTF8.GetBytes("// Unable to find the input file or its project.");
@@ -177,6 +178,9 @@ public class PluginCodeGenerator : BaseCodeGeneratorWithSite
             }
 
             string? generatedCode = null;
+
+            await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync();
+
             if (project.IsSdkStyle())
             {
                 var lastGenFileName = await inputFile.GetAttributeAsync("LastGenOutput");

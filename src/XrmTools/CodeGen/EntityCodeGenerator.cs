@@ -197,6 +197,9 @@ internal class EntityCodeGenerator : BaseCodeGeneratorWithSite
             }
 
             string? generatedCode = null;
+
+            await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync();
+
             if (project.IsSdkStyle())
             {
                 var lastGenFileName = await inputFile.GetAttributeAsync("LastGenOutput");
