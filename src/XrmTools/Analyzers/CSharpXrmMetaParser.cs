@@ -235,7 +235,7 @@ internal class CSharpXrmMetaParser(
                                 DisplayName = innerProperty.Name,
                                 Type = CustomApiFieldTypeMapping.TryGetValue(innerProperty.Type.ToDisplayString(SymbolDisplayFormat.CSharpShortErrorMessageFormat).TrimEnd('?'), out var fieldType)
                                     ? fieldType
-                                    : innerProperty.Type.TypeKind == TypeKind.Enum
+                                    : (innerProperty.Type.TypeKind == TypeKind.Enum || (innerProperty.Type.Name == "Nullable" && (innerProperty.Type as INamedTypeSymbol)?.TypeArguments[0].TypeKind == TypeKind.Enum))
                                         ? WebApi.Types.CustomApiFieldType.Picklist
                                         : innerProperty.Type.IsEnumerableOfXrmEntityLike(compilation, out var elementType)
                                             ? WebApi.Types.CustomApiFieldType.EntityCollection
