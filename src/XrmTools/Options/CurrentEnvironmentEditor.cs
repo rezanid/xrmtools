@@ -122,7 +122,7 @@ public class CurrentEnvironmentEditor : UITypeEditor
         if (!environment.IsValid) return (false, string.Format(Strings.EnvironmentConnectionStringError, environment.Name));
         try
         {
-            using var repo = ThreadHelper.JoinableTaskFactory.Run(async () => await RepositoryFactory.CreateRepositoryAsync<ISystemRepository>(environment));
+            using var repo = RepositoryFactory.CreateRepository<ISystemRepository>(environment);
             var response = ThreadHelper.JoinableTaskFactory.Run(async () => await repo.WhoAmIAsync(CancellationToken.None));
         }
         catch (Exception ex)

@@ -146,7 +146,7 @@ Error details: {1}</value>
     <value>The path provided for plugin code generator was not found. Path: {0}</value>
   </data>
   <data name="PluginGenerator.TemplatePathNotSet" xml:space="preserve">
-    <value>Configuration does contain the path to template file.</value>
+    <value>Configuration does not contain the path to template file.</value>
   </data>
   <data name="EnvironmentInvalid" xml:space="preserve">
     <value>{0} is not a valid environment.</value>

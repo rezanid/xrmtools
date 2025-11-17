@@ -59,16 +59,23 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="AccountCreatePlugin.cs">
+    <Compile Include="AccountGreetingPlugin.cs">
       <Generator>Xrm Tools Plugin Code Generator</Generator>
-      <LastGenOutput>AccountCreatePlugin.Generated.cs</LastGenOutput>
       <IsXrmPlugin>True</IsXrmPlugin>
+      <LastGenOutput>AccountGreetingPlugin.g.cs</LastGenOutput>
     </Compile>
-    <Compile Include="AccountCreatePlugin.Generated.cs">
+    <Compile Include="AccountGreetingPlugin.g.cs">
       <AutoGen>True</AutoGen>
       <DesignTime>True</DesignTime>
-      <DependentUpon>AccountCreatePlugin.cs</DependentUpon>
+      <DependentUpon>AccountGreetingPlugin.cs</DependentUpon>
     </Compile>
+    <Compile Include="ContactGreetingPlugin1.g.cs">
+      <AutoGen>True</AutoGen>
+      <DesignTime>True</DesignTime>
+      <DependentUpon>ContactGreetingPlugin.cs</DependentUpon>
+    </Compile>
+    <Compile Include="ContactOrchestrator.cs" />
+    <Compile Include="ContactPersister.cs" />
     <Compile Include="Entities.cs">
       <Generator>XrmTools Entity Generator</Generator>
       <LastGenOutput>Entities.Generated.cs</LastGenOutput>
@@ -79,18 +86,15 @@
       <DependentUpon>Entities.cs</DependentUpon>
     </Compile>
     <Compile Include="GlobalOptionSets.cs" />
+    <Compile Include="LoggingService.cs" />
+    <Compile Include="PluginBase.cs" />
     <Compile Include="QueryExpressionExtensions.cs" />
     <Compile Include="TypedSdkMessages\EchoRequest.cs" />
     <Compile Include="TypedSdkMessages\EchoResponse.cs" />
-    <Compile Include="ContactCreatePlugin.cs">
+    <Compile Include="ContactGreetingPlugin.cs">
       <Generator>Xrm Tools Plugin Code Generator</Generator>
-      <LastGenOutput>ContactCreatePlugin.Generated.cs</LastGenOutput>
       <IsXrmPlugin>True</IsXrmPlugin>
-    </Compile>
-    <Compile Include="ContactCreatePlugin.Generated.cs">
-      <AutoGen>True</AutoGen>
-      <DesignTime>True</DesignTime>
-      <DependentUpon>ContactCreatePlugin.cs</DependentUpon>
+      <LastGenOutput>ContactGreetingPlugin1.g.cs</LastGenOutput>
     </Compile>
     <Compile Include="EchoApiRetrofit.cs" />
     <Compile Include="LeadCreatePlugin.cs">
@@ -113,6 +117,7 @@
       <DependentUpon>LeadCreatePlugin.cs</DependentUpon>
     </Compile>
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="ValidationService.cs" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="Microsoft.CrmSdk.CoreAssemblies">
@@ -124,7 +129,7 @@
       <PrivateAssets>all</PrivateAssets>
     </PackageReference>
     <PackageReference Include="XrmTools.Meta.Attributes">
-      <Version>1.0.54</Version>
+      <Version>1.0.57</Version>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
       <PrivateAssets>all</PrivateAssets>
     </PackageReference>

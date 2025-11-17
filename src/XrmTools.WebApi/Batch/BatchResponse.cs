@@ -3,8 +3,8 @@
 using System.Collections.Generic;
 using System.Net.Http;
 using System.Net.Http.Headers;
-using System.Threading.Tasks;
 using System.Threading;
+using System.Threading.Tasks;
 
 public class BatchResponse : HttpResponseMessage
 {
@@ -16,6 +16,8 @@ public class BatchResponse : HttpResponseMessage
 
     private static async Task<List<HttpResponseMessage>> ParseBatchResponseAsync(HttpContent content, CancellationToken cancellationToken)
     {
+        if (content == null) return [];
+
         // NOTE: MultipartMemoryStreamProvider is still usable via Microsoft.AspNet.WebApi.Client
         var multipart = await content.ReadAsMultipartAsync(cancellationToken);
 

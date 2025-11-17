@@ -66,10 +66,7 @@ public class TemplateFileGenerator(ISettingsProvider settings, ILogger<TemplateF
             Constants.ScribanTemplatesFolderName);
         Directory.CreateDirectory(templatesDirectory);
         SolutionFolder? templateSolutionFolder = solution.Children.FirstOrDefault(i => i?.Name == Constants.ScribanTemplatesFolderName && i?.Type == SolutionItemType.SolutionFolder) as SolutionFolder;
-        if (templateSolutionFolder is null)
-        {
-            templateSolutionFolder = await solution.AddSolutionFolderAsync(Constants.ScribanTemplatesFolderName);
-        }
+        templateSolutionFolder ??= await solution.AddSolutionFolderAsync(Constants.ScribanTemplatesFolderName);
         foreach (var sourceFile in Directory.EnumerateFiles(templateSourceDirectory, $"*.{Constants.ScribanTemplateExtension}"))
         {
             var targetFile = Path.Combine(templatesDirectory, Path.GetFileName(sourceFile));

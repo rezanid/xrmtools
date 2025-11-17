@@ -287,7 +287,7 @@ namespace XrmTools.Resources {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to Configuration does contain the path to template file..
+        ///   Looks up a localized string similar to Configuration does not contain the path to template file..
         /// </summary>
         internal static string PluginGenerator_TemplatePathNotSet {
             get {

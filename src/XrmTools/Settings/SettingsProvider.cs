@@ -59,6 +59,7 @@ public interface ISettingsProvider
     Task<string?> GlobalOptionSetsFilePathAsync();
     Task DeleteEntityTemplateFilePathSettingAsync();
     Task DeletePluginTemplateFilePathSettingAsync();
+    Task<string?> FetchXmlTemplateFilePathAsync();
 }
 
 [ComVisible(true)]
@@ -102,6 +103,13 @@ public class SettingsProvider : ISettingsProvider
         ?? await ResolveFilePathAsync(await ProjectSettings.GlobalOptionSetsTemplateFilePathAsync(), ResolveScope.Project)
         ?? await ResolveFilePathAsync(SolutionUserSettings.GlobalOptionSetsTemplateFilePath(), ResolveScope.Solution)
         ?? await ResolveFilePathAsync(SolutionSettings.GlobalOptionSetsTemplateFilePath(), ResolveScope.Solution);
+
+    /// <inheritdoc cref="ISettingsProvider.GlobalOptionSetsTemplateFilePathAsync"/>
+    public async Task<string?> FetchXmlTemplateFilePathAsync()
+        => await ResolveFilePathAsync(await ProjectUserSettings.FetchXmlTemplateFilePathAsync(), ResolveScope.Project)
+        ?? await ResolveFilePathAsync(await ProjectSettings.FetchXmlTemplateFilePathAsync(), ResolveScope.Project)
+        ?? await ResolveFilePathAsync(SolutionUserSettings.FetchXmlTemplateFilePath(), ResolveScope.Solution)
+        ?? await ResolveFilePathAsync(SolutionSettings.FetchXmlTemplateFilePath(), ResolveScope.Solution);
 
     public async Task DeleteEntityTemplateFilePathSettingAsync()
     {

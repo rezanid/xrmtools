@@ -8,7 +8,7 @@ using Microsoft.Extensions.Time.Testing;
 public class AsyncTimerTests
 {
     [Fact]
-    public async Task Timer_Should_Invoke_Callback_Periodically()
+    public void Timer_Should_Invoke_Callback_Periodically()
     {
         // Arrange
         var fakeTimeProvider = new FakeTimeProvider();
@@ -34,7 +34,7 @@ public class AsyncTimerTests
     }
 
     [Fact]
-    public async Task Timer_Should_Stop_Gracefully()
+    public void Timer_Should_Stop_Gracefully()
     {
         // Arrange
         var fakeTimeProvider = new FakeTimeProvider();
@@ -60,7 +60,7 @@ public class AsyncTimerTests
     }
 
     [Fact]
-    public async Task Timer_Should_Handle_Cancellation()
+    public void Timer_Should_Handle_Cancellation()
     {
         // Arrange
         var fakeTimeProvider = new FakeTimeProvider();

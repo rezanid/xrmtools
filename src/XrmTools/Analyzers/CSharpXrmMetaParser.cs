@@ -235,7 +235,7 @@ internal class CSharpXrmMetaParser(
                                 DisplayName = innerProperty.Name,
                                 Type = CustomApiFieldTypeMapping.TryGetValue(innerProperty.Type.ToDisplayString(SymbolDisplayFormat.CSharpShortErrorMessageFormat).TrimEnd('?'), out var fieldType)
                                     ? fieldType
-                                    : innerProperty.Type.TypeKind == TypeKind.Enum
+                                    : (innerProperty.Type.TypeKind == TypeKind.Enum || (innerProperty.Type.Name == "Nullable" && (innerProperty.Type as INamedTypeSymbol)?.TypeArguments[0].TypeKind == TypeKind.Enum))
                                         ? WebApi.Types.CustomApiFieldType.Picklist
                                         : innerProperty.Type.IsEnumerableOfXrmEntityLike(compilation, out var elementType)
                                             ? WebApi.Types.CustomApiFieldType.EntityCollection
@@ -344,6 +344,11 @@ internal class CSharpXrmMetaParser(
         var dependencyGraph = dependencyAnalyzer.Analyze(typeSymbol, compilation);
         if (dependencyGraph != null)
         {
+            // This dependency is requried for creating Target property in plugin's code-behind:
+            if (!dependencyGraph.Dependencies.Any(d => "Microsoft.Xrm.Sdk.IPluginExecutionContext".Equals(d.FullTypeName, StringComparison.InvariantCulture)))
+            {
+                dependencyGraph.Dependencies.Insert(0, new Dependency { ShortTypeName = "IPluginExecutionContext", FullTypeName = "Microsoft.Xrm.Sdk.IPluginExecutionContext" });
+            }
             dependencyPreparation.Prepare(dependencyGraph);
         }
 
@@ -360,9 +365,9 @@ internal class CSharpXrmMetaParser(
             Namespace = typeSymbol.ContainingNamespace.ToDisplayString(),
             BaseTypeName = typeSymbol.BaseType?.Name,
             BaseTypeNamespace = typeSymbol.BaseType?.ContainingNamespace.ToDisplayString(),
-            BaseTypeMethodNames = typeSymbol.BaseType?.GetMembers()
-                .Where(m => m.Kind == SymbolKind.Method && m.DeclaredAccessibility is Accessibility.Public or Accessibility.ProtectedAndInternal or Accessibility.Internal)
-                .Select(m => m.Name).ToList() ?? [],
+            BaseTypeMethods = typeSymbol.BaseType?.GetMembers()
+                .Where(m => m.Kind == SymbolKind.Method && m.DeclaredAccessibility is Accessibility.Public or Accessibility.ProtectedAndInternal or Accessibility.Internal or Accessibility.Protected)
+                .Select(m => new TypeSymbol { Name = m.Name, IsAbstract = m.IsAbstract, IsVirtual = m.IsVirtual }).ToList() ?? [],
             TypeName = typeName,
             // Default values:
             Name = typeName,

@@ -44,7 +44,7 @@ internal class EntityCodeGenerator : BaseCodeGeneratorWithSite
     public IXrmCodeGenerator? Generator { get; set; }
 
     [Import]
-    internal IRepositoryFactory? RepositoryFactory { get; set; }
+    internal IRepositoryFactory RepositoryFactory { get; set; }
 
     [Import]
     public IEnvironmentProvider EnvironmentProvider { get; set; }
@@ -64,7 +64,7 @@ internal class EntityCodeGenerator : BaseCodeGeneratorWithSite
     [Import]
     internal ISettingsProvider SettingsProvider { get; set; }
 
-    public override string GetDefaultExtension() => ".Generated.cs";
+    public override string GetDefaultExtension() => ".g.cs";
 
     public EntityCodeGenerator() => SatisfyImports();
 
@@ -76,16 +76,18 @@ internal class EntityCodeGenerator : BaseCodeGeneratorWithSite
     {
         var componentModel = (IComponentModel)Package.GetGlobalService(typeof(SComponentModel));
         componentModel?.DefaultCompositionService.SatisfyImportsOnce(this);
-        if (Generator == null) throw new InvalidOperationException(string.Format(Strings.MissingServiceDependency, nameof(EntityCodeGenerator), nameof(Generator)));
-        if (RepositoryFactory == null) throw new InvalidOperationException(string.Format(Strings.MissingServiceDependency, nameof(EntityCodeGenerator), nameof(RepositoryFactory)));
-        if (EnvironmentProvider == null) throw new InvalidOperationException(string.Format(Strings.MissingServiceDependency, nameof(EntityCodeGenerator), nameof(EnvironmentProvider)));
-        if (Logger == null) throw new InvalidOperationException(string.Format(Strings.MissingServiceDependency, nameof(EntityCodeGenerator), nameof(Logger)));
-        if (TemplateFinder == null) throw new InvalidOperationException(string.Format(Strings.MissingServiceDependency, nameof(EntityCodeGenerator), nameof(TemplateFinder)));
-        if (TemplateFileGenerator == null) throw new InvalidOperationException(string.Format(Strings.MissingServiceDependency, nameof(EntityCodeGenerator), nameof(TemplateFileGenerator)));
-        if (SettingsProvider == null) throw new InvalidOperationException(string.Format(Strings.MissingServiceDependency, nameof(EntityCodeGenerator), nameof(SettingsProvider)));
+        if (Generator == null) throw new InvalidOperationException(string.Format(Strings.MissingServiceDependency, nameof(AddEntityMetadataToEntityConfigAsync), nameof(Generator)));
+        if (RepositoryFactory == null) throw new InvalidOperationException(string.Format(Strings.MissingServiceDependency, nameof(AddEntityMetadataToEntityConfigAsync), nameof(RepositoryFactory)));
+        if (EnvironmentProvider == null) throw new InvalidOperationException(string.Format(Strings.MissingServiceDependency, nameof(AddEntityMetadataToEntityConfigAsync), nameof(EnvironmentProvider)));
+        if (Logger == null) throw new InvalidOperationException(string.Format(Strings.MissingServiceDependency, nameof(AddEntityMetadataToEntityConfigAsync), nameof(Logger)));
+        if (TemplateFinder == null) throw new InvalidOperationException(string.Format(Strings.MissingServiceDependency, nameof(AddEntityMetadataToEntityConfigAsync), nameof(TemplateFinder)));
+        if (TemplateFileGenerator == null) throw new InvalidOperationException(string.Format(Strings.MissingServiceDependency, nameof(AddEntityMetadataToEntityConfigAsync), nameof(TemplateFileGenerator)));
+        if (SettingsProvider == null) throw new InvalidOperationException(string.Format(Strings.MissingServiceDependency, nameof(AddEntityMetadataToEntityConfigAsync), nameof(SettingsProvider)));
         if (XrmMetaDataService == null) throw new InvalidOperationException(string.Format(Strings.MissingServiceDependency, nameof(PluginCodeGenerator), nameof(XrmMetaDataService)));
     }
 
+    [SuppressMessage("CodeQuality", "IDE0079:Remove unnecessary suppression", Justification = "The following supression is necessary for ThreadHelper.JoinableTaskFactory.Run")]
+    [SuppressMessage("Usage", "VSTHRD102:Implement internal logic asynchronously", Justification = "This method is cosidered the entry point for code generation.")]
     protected override byte[]? GenerateCode(string inputFileName, string inputFileContent)
     {
         if (string.IsNullOrWhiteSpace(inputFileContent)) { return null; }
@@ -119,9 +121,25 @@ internal class EntityCodeGenerator : BaseCodeGeneratorWithSite
                     " Please go to Tools > Options > XRM Tools to setup the environment and set the current environment.");
             }
 
-            AddEntityMetadataToEntityConfig(inputModel);
+            try
+            {
+                using var cts = new CancellationTokenSource(120000);
+                await AddEntityMetadataToEntityConfigAsync(inputModel, cts.Token).ConfigureAwait(false);
+            }
+            catch (OperationCanceledException)
+            {
+                Logger.LogWarning("Metadata retrieval was canceled.");
+                throw;
+            }
+            catch (Exception ex)
+            {
+                Logger.LogError(ex, "Failed to retrieve metadata for code generation");
+                throw;
+            }
 
             var inputFile = await PhysicalFile.FromFileAsync(inputFileName);
+
+            await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync();
             if (inputFile is null || inputFile.FindParent(SolutionItemType.Project) is not Project project)
             {
                 return Encoding.UTF8.GetBytes(
@@ -144,7 +162,8 @@ internal class EntityCodeGenerator : BaseCodeGeneratorWithSite
                     Generator.Config = new XrmCodeGenConfig
                     {
                         DefaultNamespace = GetDefaultNamespace() + ".OptionSets",
-                        TemplateFilePath = await TemplateFinder.FindGlobalOptionSetsTemplatePathAsync()
+                        TemplateFilePath = await TemplateFinder.FindGlobalOptionSetsTemplatePathAsync(),
+                        InputFileName = inputFileName
                     };
 
                     var globalOptionSetFileName = await SettingsProvider.GlobalOptionSetsFilePathAsync();
@@ -158,13 +177,12 @@ internal class EntityCodeGenerator : BaseCodeGeneratorWithSite
             {
                 //TODO: The GetDefaultNamespace is not required. The FileNamespace is never empty even when not set.
                 DefaultNamespace = string.IsNullOrWhiteSpace(FileNamespace) ? GetDefaultNamespace() : FileNamespace,
-                TemplateFilePath = templateFilePath
+                TemplateFilePath = templateFilePath,
+                InputFileName = inputFileName
             };
 
             if (GeneralOptions.Instance.LogLevel == LogLevel.Trace)
             {
-                // We use Newtonsoft for serialization because it supports polymorphic types
-                // Probably through old serialization attributes set on Xrm.Sdk types.
                 var serializedConfig = JsonConvert.SerializeObject(inputModel, new JsonSerializerSettings
                 {
                     ContractResolver = new PolymorphicContractResolver()
@@ -179,12 +197,15 @@ internal class EntityCodeGenerator : BaseCodeGeneratorWithSite
             }
 
             string? generatedCode = null;
+
+            await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync();
+
             if (project.IsSdkStyle())
             {
                 var lastGenFileName = await inputFile.GetAttributeAsync("LastGenOutput");
                 if (string.IsNullOrWhiteSpace(lastGenFileName))
                 {
-                    lastGenFileName = Path.ChangeExtension(Path.GetFileName(inputFileName), ".Generated.cs");
+                    lastGenFileName = Path.ChangeExtension(Path.GetFileName(inputFileName), ".g.cs");
                     await inputFile.TrySetAttributeAsync(PhysicalFileAttribute.LastGenOutput, lastGenFileName);
                 }
                 var lastGenFilePath = Path.Combine(Path.GetDirectoryName(inputFileName), lastGenFileName);
@@ -241,17 +262,31 @@ internal class EntityCodeGenerator : BaseCodeGeneratorWithSite
         return string.Empty;
     }
 
-    private void AddEntityMetadataToEntityConfig(PluginAssemblyConfig config) 
-        => config.EntityDefinitions = [.. config.Entities
-            .Where(c => !string.IsNullOrWhiteSpace(c.LogicalName))
-            .Select(e => GetEntityMetadata(e.LogicalName!, e.AttributeNames?.Split(',') ?? [], config.ReplacePrefixes))];
-
-    private EntityMetadata GetEntityMetadata(string logicalName, IEnumerable<string> attributeNames, Meta.Model.CodeGenReplacePrefixConfig[] prefixReplacements)
+    private async Task AddEntityMetadataToEntityConfigAsync(PluginAssemblyConfig config, CancellationToken ct)
     {
-        var entityMetadataRepo = ThreadHelper.JoinableTaskFactory.Run(RepositoryFactory.CreateRepositoryAsync<IEntityMetadataRepository>);
+        config.EntityDefinitions = [];
+        foreach (var entityConfig in config.Entities)
+        {
+            ct.ThrowIfCancellationRequested();
+            if (string.IsNullOrWhiteSpace(entityConfig.LogicalName)) continue;
+            var entityMetadata = await GetEntityMetadataAsync(
+                entityConfig.LogicalName!,
+                entityConfig.AttributeNames?.Split(',') ?? [],
+                config.ReplacePrefixes,
+                ct).ConfigureAwait(false);
+            if (entityMetadata != null)
+            {
+                config.EntityDefinitions.Add(entityMetadata);
+            }
+        }
+    }
+
+    private async Task<EntityMetadata?> GetEntityMetadataAsync(string logicalName, IEnumerable<string> attributeNames, Meta.Model.CodeGenReplacePrefixConfig[] prefixReplacements, CancellationToken ct)
+    {
+        using var entityMetadataRepo = RepositoryFactory.CreateRepository<IEntityMetadataRepository>();
         if (entityMetadataRepo is null) return null;
-        using var cts = new CancellationTokenSource(120000);
-        var entityDefinition = ThreadHelper.JoinableTaskFactory.Run(async () => await entityMetadataRepo.GetAsync(logicalName, cts.Token));
+
+        var entityDefinition = await entityMetadataRepo.GetAsync(logicalName, ct).ConfigureAwait(false); ;
         if (entityDefinition == null) { return null; }
 
         //NOTE!
@@ -263,7 +298,7 @@ internal class EntityCodeGenerator : BaseCodeGeneratorWithSite
         //    entityDefinition.Attributes.Where(a => a.AttributeType != AttributeTypeCode.EntityName && a.IsLogical != true).ToArray() :
         //    entityDefinition.Attributes.Where(a => a.AttributeType != AttributeTypeCode.EntityName && attributes.Contains(a.LogicalName)).ToArray();
 
-        FormatAttributeSchemaNames(filteredAttributes ?? entityDefinition.Attributes, prefixReplacements);
+        FormatAttributeSchemaNames(filteredAttributes ?? entityDefinition.Attributes!, prefixReplacements);
         FormatEntitySchemaName(entityDefinition, prefixReplacements);
 
         // The cloning is done because we don't want to modify the object in the cache.

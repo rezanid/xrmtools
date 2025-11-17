@@ -1,19 +1,38 @@
 {{- # Initialize collections for local variables
 localTypeNames = [] -}}
 {{- localDeps = [] -}}
-{{- knownDeps = ["ITracingService", "IOrganizationServiceFactory", "IServiceEndpointNotificationService", "IManagedIdentityService"] -}}
+{{- knownDeps = [
+  "Microsoft.Xrm.Sdk.*"] -}}
 
-{{- # Helper function to compute a camel-cased variable name from a short type name -}}
-{{func varName(name) 
+{{-func remove_known_ns(typeName)
+    ret typeName | string.replace_first "Microsoft.Xrm.Sdk.PluginTelemetry." "" | string.replace_first "Microsoft.Xrm.Sdk." ""
+end -}}
+
+{{-func varName(name)
     ret (name | string.slice 0 1 | string.downcase) + (name | string.slice 1) 
 end -}}
 
-{{- # Recursive function to gather all dependencies that need local variables -}}
+{{func is_named(dep); ret dep.provided_by_name; end -}}
+{{func dep_name(dep); ret dep.provided_by_name; end -}}
+{{func is_known(dep)
+  for known in knownDeps
+    if (known | string.ends_with "*") && (dep | string.starts_with (known | string.slice 0 math.minus(string.size(known), 1)))
+      ret true
+    end
+    if (known == dep)
+      ret true
+    end
+  end
+  ret false
+end -}}
+
 {{func gather_locals(dep) 
     for sub in dep.dependencies 
         gather_locals(sub) 
     end 
-    if dep.is_local_variable_needed && !dep.provided_by_property
+    # Exclude IServiceProvider from locals; it's provided by CreateScope parameter
+    # Also exclude string type due to special treatment by DI.
+    if dep.is_local_variable_needed && !dep.provided_by_property && !is_named(dep) && dep.full_type_name != "System.IServiceProvider" && dep.full_type_name != "string"
         if !(localTypeNames | array.contains dep.full_type_name) 
             localTypeNames = localTypeNames | array.add dep.full_type_name 
             localDeps = localDeps | array.add dep 
@@ -21,22 +40,23 @@ end -}}
     end 
 end -}}
 
-{{- # Function to instantiate a dependency (returns the C# expression as string) -}}
 {{func instantiate(dep) 
+    # Prefer provider property when available (even if the dependency is named)
     if dep.provided_by_property 
         ret "this." + dep.provided_by_property
-    end 
+    end
+    if is_named(dep)
+        ret "DependencyScope<" + (plugintype.type_name | last_segment) + ">.Current.Require<" + dep.full_type_name + ">(\"" + dep_name(dep) + "\")" 
+    end
     if dep.full_type_name == "System.IServiceProvider" 
         ret "serviceProvider" 
     end
-    if (knownDeps | array.contains dep.short_type_name)
-        ret "(" + dep.full_type_name + ")serviceProvider.GetService(typeof(" + dep.full_type_name + "))"
+    if (dep.full_type_name | is_known)
+        ret "(" + dep.full_type_name | remove_known_ns + ")serviceProvider.GetService(typeof(" + dep.full_type_name | remove_known_ns + "))"
     end
     if dep.is_local_variable_needed 
-        # Use the shared local variable instead of a new expression
-        ret varName(dep.short_type_name) 
+        ret varName(dep.resolved_short_type_name) 
     end 
-    # Otherwise, construct a new object with its dependencies
     $ctorList = [] 
     $propList = [] 
     for child in dep.dependencies 
@@ -51,23 +71,26 @@ end -}}
     else
         $expr = "scope.Set("
     end
-    $expr += "new " + dep.resolved_full_type_name + "(" + ($ctorList | array.join ", ") + ")" 
+    $expr += "new " + dep.resolved_full_type_name | remove_known_ns + "(" + ($ctorList | array.join ", ") + ")" 
     if $propList.size > 0 
         $expr = $expr + " { " + ($propList | array.join ", ") + " }" 
     end 
     ret $expr + ")"
 end -}}
 
-{{- # Function to instantiate a dependency *even if* marked local (for local var declarations) -}}
 {{func instantiate_new(dep)
+    # Prefer provider property when available (even if the dependency is named)
     if dep.provided_by_property 
         ret "this." + dep.provided_by_property
     end 
+    if is_named(dep)
+        ret "DependencyScope<" + (plugintype.type_name | last_segment) + ">.Current.Require<" + dep.full_type_name | remove_known_ns + ">(\"" + dep_name(dep) + "\")" 
+    end
     if dep.full_type_name == "System.IServiceProvider" 
         ret "serviceProvider" 
     end
-    if (knownDeps | array.contains dep.short_type_name)
-        ret "(" + dep.full_type_name + ")serviceProvider.GetService(typeof(" + dep.full_type_name + "))"
+    if (dep.full_type_name | is_known)
+        ret "(" + dep.full_type_name | remove_known_ns + ")serviceProvider.GetService(typeof(" + dep.full_type_name | remove_known_ns + "))"
     end
     $ctorList = [] 
     $propList = [] 
@@ -85,31 +108,31 @@ end -}}
     ret $expr 
 end -}}
 
-{{- # Gather all needed local dependencies from the top-level list -}}
 {{for dep in dependencies 
     gather_locals(dep) 
 end ~}}
-{{~initialize_exists = plugintype.base_type_method_names | array.contains "InjectDependencies"~}}
+
+{{-existing_method = plugintype.base_type_methods | find_method "CreateScope"-}}
 /// <summary>
 /// This method should be called before accessing any target, image or any of your dependencies.
 /// </summary>
-protected {{initialize_exists ? 'override ' : '' }}IDisposable CreateScope(IServiceProvider serviceProvider)
+protected {{existing_method ? 'override ' : '' }}IDisposable CreateScope(IServiceProvider serviceProvider)
 {
-    {{~if initialize_exists~}}
-    var scope = base.Initialize(serviceProvider);
+    {{~if existing_method && existing_method.is_virtual~}}
+    var scope = (DependencyScope<{{plugintype.type_name | last_segment }}>)base.CreateScope(serviceProvider);
     {{~else~}}
     var scope = new DependencyScope<{{plugintype.type_name | last_segment }}>();
     {{~end~}}
     scope.Set<IServiceProvider>(serviceProvider);
-    scope.Set<IPluginExecutionContext>((IPluginExecutionContext)serviceProvider.GetService(typeof(IPluginExecutionContext)));
 
 {{~ for local in localDeps ~}}
-    var {{ varName(local.short_type_name) }} = {{ instantiate_new(local) }};
+    var {{ varName(local.resolved_short_type_name) }} = {{ instantiate_new(local) }};
 {{~ end ~}}
 {{~ if localDeps.size > 0 && dependencies.size > 0 ~}}{{ "\r\n" }}{{~ end ~}}
 {{~ for dep in dependencies ~}}
-    scope.Set<{{ dep.full_type_name }}>({{ instantiate(dep) }});
+    {{~ if !is_named(dep) && dep.full_type_name != "System.String" ~}}
+    scope.Set<{{ dep.full_type_name | remove_known_ns }}>({{ instantiate(dep) }});
+    {{~ end ~}}
 {{~ end ~}}
-
     return scope;
 }

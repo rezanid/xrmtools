@@ -1,30 +1,35 @@
 ﻿#nullable enable
 namespace XrmTools.Http;
-using System;
-using System.Threading.Tasks;
-using System.Collections.Concurrent;
-using System.Net.Http;
-using System.Threading;
-using Polly;
-using XrmTools.Environments;
-using XrmTools.Logging.Compatibility;
-using System.ComponentModel.Composition;
-using XrmTools.Authentication;
-using System.Net.Http.Headers;
-using Microsoft.Extensions.Http.Resilience;
 using Microsoft.Identity.Client;
 using Microsoft.VisualStudio.Threading;
-using System.Reflection;
+using Polly;
+//using Polly.RateLimiting;
+using Polly.Timeout;
+using System;
+using System.Collections.Concurrent;
+using System.ComponentModel.Composition;
 using System.Net;
+using System.Net.Http;
+using System.Net.Http.Headers;
+using System.Reflection;
+using System.Threading;
+using System.Threading.Tasks;
+using XrmTools.Authentication;
+using XrmTools.Environments;
+using XrmTools.Logging.Compatibility;
 using XrmTools.Options;
 
 [Export(typeof(IXrmHttpClientFactory))]
 internal class XrmHttpClientFactory : IXrmHttpClientFactory, System.IAsyncDisposable, IDisposable
 {
+    private static readonly TimeSpan TokenExpirySkew = TimeSpan.FromMinutes(2);
+
     private readonly SemaphoreSlim _semaphore = new(1, 1);
     private readonly AsyncTimer timer;
     private readonly ConcurrentDictionary<DataverseEnvironment, Lazy<HttpMessageHandlerEntry>> _handlerPool = new();
     private readonly ConcurrentDictionary<string, AuthenticationResult> _tokenCache = new();
+    // Ensures only one authentication flow runs per environment/connection string at a time
+    private readonly ConcurrentDictionary<string, AsyncLazy<AuthenticationResult>> _inflightAuth = new();
     private readonly TimeProvider timeProvider;
     private readonly IEnvironmentProvider environmentProvider;
     private readonly IAuthenticationService authenticationService;
@@ -45,13 +50,17 @@ internal class XrmHttpClientFactory : IXrmHttpClientFactory, System.IAsyncDispos
         this.logger = logger;
     }
 
-    public async Task<XrmHttpClient> CreateClientAsync()
+    // Explicit interface methods without CancellationToken for compatibility
+    public Task<XrmHttpClient> CreateClientAsync() => CreateClientAsync(cancellationToken: default);
+    public Task<XrmHttpClient> CreateClientAsync(DataverseEnvironment environment) => CreateClientAsync(environment, cancellationToken: default);
+
+    public async Task<XrmHttpClient> CreateClientAsync(CancellationToken cancellationToken = default)
     {
         var environment = await environmentProvider.GetActiveEnvironmentAsync();
-        return environment == null || environment == DataverseEnvironment.Empty ? throw new InvalidOperationException("No environment selected.") : await CreateClientAsync(environment);
+        return environment == null || environment == DataverseEnvironment.Empty ? throw new InvalidOperationException("No environment selected.") : await CreateClientAsync(environment, cancellationToken);
     }
 
-    public async Task<XrmHttpClient> CreateClientAsync(DataverseEnvironment environment)
+    public async Task<XrmHttpClient> CreateClientAsync(DataverseEnvironment environment, CancellationToken cancellationToken = default)
     {
         if (environment == null) throw new ArgumentNullException(nameof(environment));
 
@@ -59,16 +68,70 @@ internal class XrmHttpClientFactory : IXrmHttpClientFactory, System.IAsyncDispos
         {
             throw new InvalidOperationException($"Environment '{environment.Name}' connection string is empty.");
         }
+
+        // Authenticate with a timeout to avoid waiting indefinitely, and deduplicate concurrent requests per environment
+        AuthenticationResult? authResult = null;
+        if (environment != DataverseEnvironment.Empty && (!_tokenCache.TryGetValue(environment.ConnectionString!, out authResult) || authResult.ExpiresOn <= timeProvider.GetUtcNow().Add(TokenExpirySkew)))
+        {
+            var key = environment.ConnectionString!;
+            var lazy = _inflightAuth.GetOrAdd(key, _ => new AsyncLazy<AuthenticationResult>(async () =>
+            {
+                var authTimeout = TimeSpan.FromSeconds(60);
+                using var timeoutCts = new CancellationTokenSource(authTimeout);
+
+                try
+                {
+                    // Use only the timeout CTS for the shared single-flight to avoid one caller cancelling others
+                    var result = await authenticationService.AuthenticateAsync(environment, msg => logger.LogInformation(msg), timeoutCts.Token).ConfigureAwait(false);
+                    _tokenCache[key] = result;
+                    return result;
+                }
+                catch (OperationCanceledException) when (timeoutCts.IsCancellationRequested)
+                {
+                    throw new TimeoutException("Authentication timed out.");
+                }
+                catch (Exception ex)
+                {
+                    logger.LogError(ex, "Authentication failed.");
+                    throw;
+                }
+            }, null));
+
+            try
+            {
+                // Allow the current caller to cancel waiting without cancelling the shared authentication operation.
+                var sharedAuthTask = lazy.GetValueAsync();
+                if (cancellationToken.CanBeCanceled)
+                {
+                    var cancelTcs = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+                    using (cancellationToken.Register(() => cancelTcs.TrySetResult(true)))
+                    {
+                        var completed = await Task.WhenAny(sharedAuthTask, cancelTcs.Task).ConfigureAwait(false);
+                        if (completed != sharedAuthTask)
+                        {
+                            throw new OperationCanceledException(cancellationToken);
+                        }
+                    }
+                }
+                authResult = await sharedAuthTask.ConfigureAwait(false);
+            }
+            finally
+            {
+                // Ensure future calls can trigger a new auth when needed (e.g., after expiry or on failure)
+                _inflightAuth.TryRemove(key, out _);
+            }
+        }
+
         var handlerEntry = _handlerPool.GetOrAdd(environment, _ => new Lazy<HttpMessageHandlerEntry>(() => CreateHandlerEntry(environment))).Value;
 
         handlerEntry.IncrementUsage();
         var client = new XrmHttpClient(handlerEntry.Handler, handlerEntry.DecrementUsage);
-        await ConfigureClientAsync(client, environment);
+        ConfigureClient(client, environment, authResult?.AccessToken);
 
         return client;
     }
 
-    private async Task ConfigureClientAsync(XrmHttpClient client, DataverseEnvironment environment)
+    private void ConfigureClient(XrmHttpClient client, DataverseEnvironment environment, string? accessToken)
     {
         client.Timeout = TimeSpan.FromMinutes(60);
         if (environment != DataverseEnvironment.Empty)
@@ -81,12 +144,7 @@ internal class XrmHttpClientFactory : IXrmHttpClientFactory, System.IAsyncDispos
             client.DefaultRequestHeaders.Add("OData-Version", "4.0");
             client.DefaultRequestHeaders.Accept.Add(
                 new MediaTypeWithQualityHeaderValue("application/json"));
-            if (!_tokenCache.TryGetValue(environment.ConnectionString!, out var authResult) || authResult.ExpiresOn <= timeProvider.GetUtcNow())
-            {
-                authResult = await authenticationService.AuthenticateAsync(environment, msg => logger.LogInformation(msg), CancellationToken.None);
-                _tokenCache[environment.ConnectionString!] = authResult;
-            }
-            client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", authResult.AccessToken);
+            if (!string.IsNullOrEmpty(accessToken)) client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
         }
     }
 
@@ -153,11 +211,12 @@ internal class XrmHttpClientFactory : IXrmHttpClientFactory, System.IAsyncDispos
 
     private IAsyncPolicy<HttpResponseMessage> CreateDefaultPolicy()
         => new ResiliencePipelineBuilder<HttpResponseMessage>()
-            .AddRateLimiter(new HttpRateLimiterStrategyOptions() { Name = "Standard-RateLimiter" })
-            .AddTimeout(new HttpTimeoutStrategyOptions() { Name = "Standard-TotalRequestTimeout" })
-            .AddRetry(new HttpRetryStrategyOptions() { Name = "Standard-Retry" })
-            .AddCircuitBreaker(new HttpCircuitBreakerStrategyOptions() { Name = "Standard-CircuitBreaker" })
-            .AddTimeout(new HttpTimeoutStrategyOptions
+            //.AddRateLimiter(new HttpRateLimiterStrategyOptions() { Name = "Standard-RateLimiter" }) or:
+            //.AddRateLimiter(new RateLimiterStrategyOptions() { Name = "Standard-RateLimiter" })
+            .AddTimeout(new TimeoutStrategyOptions() { Name = "Standard-TotalRequestTimeout" })
+            .AddRetry(new Resiliency.HttpRetryStrategyOptions() { Name = "Standard-Retry" })
+            .AddCircuitBreaker(new Resiliency.HttpCircuitBreakerStrategyOptions() { Name = "Standard-CircuitBreaker" })
+            .AddTimeout(new TimeoutStrategyOptions
             {
                 Timeout = TimeSpan.FromSeconds(60.0),
                 Name = "Standard-AttemptTimeout"

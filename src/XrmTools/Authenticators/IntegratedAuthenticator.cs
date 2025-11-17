@@ -1,7 +1,5 @@
 ﻿namespace XrmTools.Authentication;
 using Microsoft.Identity.Client;
-using Microsoft.VisualStudio.Shell;
-using Microsoft.VisualStudio.Shell.Interop;
 using System;
 using System.Linq;
 using System.Threading;
@@ -9,76 +7,65 @@ using System.Threading.Tasks;
 
 internal class IntegratedAuthenticator : DelegatingAuthenticator
 {
-    //TODO: The following dictionary is IDisposable.
-    private readonly AsyncDictionary<AuthenticationParameters, IPublicClientApplication> apps = new();
-
     public override async Task<AuthenticationResult> AuthenticateAsync(
         AuthenticationParameters parameters,
         bool clearTokenCache,
-        Action<string> onMessageForUser = default, 
+        Action<string> onMessageForUser = default,
         CancellationToken cancellationToken = default)
     {
-        AuthenticationResult result = null;
-        var app = await apps.GetOrAddAsync(
-            parameters, 
-            async (k, ct) => (await CreateClientAppAsync(k, ct)).AsPublicClient(),
-            cancellationToken);
+        cancellationToken.ThrowIfCancellationRequested();
+
+        // Fresh app per attempt to avoid sticky broker state
+        // Previously we cached the app instances in an AsyncDictionary<AuthenticationParameters, IPublicClientApplication>
+        var app = (await CreateClientAppAsync(parameters, cancellationToken)).AsPublicClient();
 
         if (clearTokenCache)
         {
             await ClearTokenCacheAsync(app).ConfigureAwait(false);
         }
 
-        var accounts = await app.GetAccountsAsync();
-        var firstAccount = accounts.FirstOrDefault(a => a.HomeAccountId.TenantId == parameters.Tenant);
+        var accounts = await app.GetAccountsAsync().ConfigureAwait(false);
+        var firstAccount = accounts.FirstOrDefault(a => string.Equals(a.HomeAccountId?.TenantId, parameters.Tenant, StringComparison.OrdinalIgnoreCase));
 
         try
         {
-            result = await app.AcquireTokenSilent(parameters.Scopes, firstAccount)
+            return await app.AcquireTokenSilent(parameters.Scopes, firstAccount)
                 .ExecuteAsync(cancellationToken)
                 .ConfigureAwait(false);
         }
         catch (MsalUiRequiredException)
         {
-            try
-            {
-                await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync();
-                var vsUIShell = (IVsUIShell)Package.GetGlobalService(typeof(SVsUIShell));
-                if (0 != vsUIShell.GetDialogOwnerHwnd(out var phwnd))
-                {
-                    result = await app.AcquireTokenInteractive(parameters.Scopes)
-                        .WithAccount(accounts.FirstOrDefault())
-                        .WithPrompt(Prompt.SelectAccount)
-                        .WithParentActivityOrWindow(phwnd)
-                        .ExecuteAsync().ConfigureAwait(false);
-                }
-                else
-                {
-                    result = await app.AcquireTokenInteractive(parameters.Scopes)
-                        .WithAccount(accounts.FirstOrDefault())
-                        .WithPrompt(Prompt.SelectAccount)
-                        .WithParentActivityOrWindow(phwnd)
-                        .ExecuteAsync().ConfigureAwait(false);
+            // continue to interactive
+        }
+        catch (OperationCanceledException)
+        {
+            throw;
+        }
 
-                }
-            }
-            catch (MsalException)
-            {
-                //TODO: Logging
-            }
-        }
-        catch (Exception)
+        // Interactive using embedded web view to avoid WAM hangs
+        // Add a hard timeout guard so we never wait forever if the broker/webview fails to signal cancel on repeated attempts
+        var builder = app.AcquireTokenInteractive(parameters.Scopes)
+            .WithPrompt(Prompt.SelectAccount)
+            .WithUseEmbeddedWebView(true);
+
+        var execTask = builder.ExecuteAsync(cancellationToken);
+        var timeoutTask = Task.Delay(TimeSpan.FromSeconds(60));
+        var completed = await Task.WhenAny(execTask, timeoutTask).ConfigureAwait(false);
+        if (completed != execTask)
         {
-            //TODO: Logging.
+            throw new OperationCanceledException("Interactive authentication timed out.", cancellationToken);
         }
-        if (result == null)
+
+        try
         {
-            // WAM cannot be used in VS 2022, so we are stuck with IWA.
-            return await app.AcquireTokenByIntegratedWindowsAuth(parameters.Scopes)
-                .ExecuteAsync(cancellationToken).ConfigureAwait(false);
+            return await execTask.ConfigureAwait(false);
         }
-        return result;
+        catch (MsalException ex) when (ex.ErrorCode == "authentication_canceled" || ex.ErrorCode == "access_denied" || ex.ErrorCode == "user_canceled")
+        {
+            throw new OperationCanceledException("User cancelled the authentication.", ex, cancellationToken);
+        }
     }
-    public override bool CanAuthenticate(AuthenticationParameters parameters) 
+
+    public override bool CanAuthenticate(AuthenticationParameters parameters)
         => parameters.UseCurrentUser || parameters.IsUncertainAuthFlow();
 }

@@ -30,7 +30,7 @@ public byte[] {{prop_name}}
 	if attribute.option_set?.is_global == true && model.global_option_set_code_gen.mode == 'GlobalOptionSetFile'
 		enum_type = config.default_namespace + '.OptionSets.' + (attribute.option_set.display_name | get_label 1033 | tokenize);
 	else
-		enum_type = attribute.option_set.display_name | get_label 1033 | tokenize | do; ret base_class_name + '.Meta.OptionSets.' + $0;end;
+		enum_type = attribute.option_set.display_name | get_label 1033 | tokenize | do; ret parent_type_name + '.Meta.OptionSets.' + $0;end;
 	end
 else
 	enum_type = int

@@ -16,6 +16,7 @@ public class ProjectSettings(ProjectStorageType storageType) : IAsyncXrmToolsSet
     public async Task<string?> EntityTemplateFilePathAsync() => await GetSettingAsync(XrmSettingKeys.DataverseEntityTemplateFilePath);
     public async Task<string?> GlobalOptionSetsTemplateFilePathAsync() => await GetSettingAsync(XrmSettingKeys.DataverseGlobalOptionSetsTemplateFilePath);
     public async Task<string?> GlobalOptionSetsFilePathAsync() => await GetSettingAsync(XrmSettingKeys.DataverseGlobalOptionSetsFilePath);
+    public async Task<string?> FetchXmlTemplateFilePathAsync() => await GetSettingAsync(XrmSettingKeys.DataverseFetchXmlTemplateFilePath);
     public async Task<bool> EnvironmentUrlAsync(string? value) => await SetSettingAsync(XrmSettingKeys.EnvironmentUrl, value);
     public async Task<bool> ConnectionStringAsync(string? value) => await SetSettingAsync(XrmSettingKeys.DataverseConnectionString, value);
     public async Task<bool> PluginTemplateFilePathAsync(string? value) => await SetSettingAsync(XrmSettingKeys.DataversePluginTemplateFilePath, value);

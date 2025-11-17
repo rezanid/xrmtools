@@ -66,7 +66,7 @@ public class PluginCodeGenerator : BaseCodeGeneratorWithSite
     [Import]
     internal IXrmMetaDataService XrmMetaDataService { get; set; }
 
-    public override string GetDefaultExtension() => ".Generated.cs";
+    public override string GetDefaultExtension() => ".g.cs";
 
     public PluginCodeGenerator() => SatisfyImports();
 
@@ -87,6 +87,8 @@ public class PluginCodeGenerator : BaseCodeGeneratorWithSite
         if (XrmMetaDataService == null) throw new InvalidOperationException(string.Format(Strings.MissingServiceDependency, nameof(PluginCodeGenerator), nameof(XrmMetaDataService)));
     }
 
+    [SuppressMessage("CodeQuality", "IDE0079:Remove unnecessary suppression", Justification = "The following supression is necessary for ThreadHelper.JoinableTaskFactory.Run")]
+    [SuppressMessage("Usage", "VSTHRD104:Offer async methods", Justification = "This method is considered the entry point for code generation.")]
     protected override byte[]? GenerateCode(string inputFileName, string inputFileContent)
     {
         if (string.IsNullOrWhiteSpace(inputFileContent)) { return null; }
@@ -110,9 +112,12 @@ public class PluginCodeGenerator : BaseCodeGeneratorWithSite
             }
 
             var inputFile = await PhysicalFile.FromFileAsync(inputFileName);
+
+            await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync();
+
             if (inputFile is null || inputFile.FindParent(SolutionItemType.Project) is not Project project)
             {
-                return Encoding.UTF8.GetBytes("// Unable to find the project for the input file.");
+                return Encoding.UTF8.GetBytes("// Unable to find the input file or its project.");
             }
 
             var templateFilePath = await GetTemplateFilePathAsync(inputModel, project);
@@ -129,7 +134,8 @@ public class PluginCodeGenerator : BaseCodeGeneratorWithSite
             Generator.Config = new XrmCodeGenConfig
             {
                 DefaultNamespace = string.IsNullOrWhiteSpace(FileNamespace) ? GetDefaultNamespace() : FileNamespace,
-                TemplateFilePath = templateFilePath
+                TemplateFilePath = templateFilePath,
+                InputFileName = inputFileName
             };
 
             var currentEnvironment = await EnvironmentProvider.GetActiveEnvironmentAsync();
@@ -140,7 +146,21 @@ public class PluginCodeGenerator : BaseCodeGeneratorWithSite
                     " Please go to Tools > Options > XRM Tools to setup the environment and set the current environment.");
             }
 
-            AddEntityMetadataToPluginDefinition(inputModel!);
+            try
+            {
+                using var cts = new CancellationTokenSource(120000);
+                await AddEntityMetadataToPluginDefinitionAsync(inputModel!, cts.Token).ConfigureAwait(false);
+            }
+            catch (OperationCanceledException)
+            {
+                Logger.LogWarning("Metadata retrieval was canceled.");
+                throw;
+            }
+            catch (Exception ex)
+            {
+                Logger.LogError(ex, "Failed to retrieve metadata for code generation");
+                throw;
+            }
 
             if (GeneralOptions.Instance.LogLevel == LogLevel.Trace)
             {
@@ -158,12 +178,15 @@ public class PluginCodeGenerator : BaseCodeGeneratorWithSite
             }
 
             string? generatedCode = null;
+
+            await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync();
+
             if (project.IsSdkStyle())
             {
                 var lastGenFileName = await inputFile.GetAttributeAsync("LastGenOutput");
                 if (string.IsNullOrWhiteSpace(lastGenFileName))
                 {
-                    lastGenFileName = Path.ChangeExtension(Path.GetFileName(inputFileName), ".Generated.cs");
+                    lastGenFileName = Path.ChangeExtension(Path.GetFileName(inputFileName), ".g.cs");
                     await inputFile.TrySetAttributeAsync(PhysicalFileAttribute.LastGenOutput, lastGenFileName);
                 }
                 var lastGenFilePath = Path.Combine(Path.GetDirectoryName(inputFileName), lastGenFileName);
@@ -230,12 +253,12 @@ public class PluginCodeGenerator : BaseCodeGeneratorWithSite
         return null;
     }
 
-    private EntityMetadata? GetEntityMetadata(string logicalName, IEnumerable<string> attributeNames, CodeGenReplacePrefixConfig[] prefixReplacements)
+    private async Task<EntityMetadata?> GetEntityMetadataAsync(string logicalName, IEnumerable<string> attributeNames, CodeGenReplacePrefixConfig[] prefixReplacements, CancellationToken ct)
     {
-        var entityMetadataRepo = ThreadHelper.JoinableTaskFactory.Run(async () => await RepositoryFactory.CreateRepositoryAsync<IEntityMetadataRepository>());
+        using var entityMetadataRepo = RepositoryFactory.CreateRepository<IEntityMetadataRepository>();
         if (entityMetadataRepo is null) return null;
-        using var cts = new CancellationTokenSource(120000);
-        var entityDefinition = ThreadHelper.JoinableTaskFactory.Run(async () => await entityMetadataRepo.GetAsync(logicalName, cts.Token));
+
+        var entityDefinition = await entityMetadataRepo.GetAsync(logicalName, ct).ConfigureAwait(false);
         if (entityDefinition == null) { return null; }
         
         //NOTE!
@@ -244,10 +267,8 @@ public class PluginCodeGenerator : BaseCodeGeneratorWithSite
             attributeNames.Count() == 0 ?
             entityDefinition.Attributes :
             [.. entityDefinition.Attributes.Where(a => attributeNames.Contains(a.LogicalName))];
-        //    entityDefinition.Attributes.Where(a => a.AttributeType != AttributeTypeCode.EntityName && a.IsLogical != true).ToArray() :
-        //    entityDefinition.Attributes.Where(a => a.AttributeType != AttributeTypeCode.EntityName && attributes.Contains(a.LogicalName)).ToArray();
 
-        FormatAttributeSchemaNames(filteredAttributes ?? entityDefinition.Attributes, prefixReplacements);
+        FormatAttributeSchemaNames(filteredAttributes ?? entityDefinition.Attributes ?? [], prefixReplacements);
         FormatEntitySchemaName(entityDefinition, prefixReplacements);
 
         // The cloning is done because we don't want to modify the object in the cache.
@@ -323,14 +344,16 @@ public class PluginCodeGenerator : BaseCodeGeneratorWithSite
         return string.Empty;
     }
 
-    private void AddEntityMetadataToPluginDefinition(PluginAssemblyConfig config)
+    private async Task AddEntityMetadataToPluginDefinitionAsync(PluginAssemblyConfig config, CancellationToken ct)
     {
         // Let's first keep track of all the attributes that are used in the plugin definitions.
         var entitiesAndAttributes = new Dictionary<string, HashSet<string>>();
         // We also keep track of all the entities that are used in the plugin definitions.
-        var entityDefinitions = new Dictionary<string, EntityMetadata>();
+        var entityDefinitions = new Dictionary<string, EntityMetadata?>();
         foreach (var step in config.PluginTypes.SelectMany(plugin => plugin.Steps).Where(s => !string.IsNullOrWhiteSpace(s.PrimaryEntityName)))
         {
+            ct.ThrowIfCancellationRequested();
+
             var filteringAttributes = step.FilteringAttributes?.Split([','], StringSplitOptions.RemoveEmptyEntries) ?? [];
             if (!entitiesAndAttributes.ContainsKey(step.PrimaryEntityName!))
             {
@@ -347,14 +370,13 @@ public class PluginCodeGenerator : BaseCodeGeneratorWithSite
                 // We have some attributes already, so we add the new ones too.
                 entitiesAndAttributes[step.PrimaryEntityName!].UnionWith(filteringAttributes);
             }
-            var entityDefinition = GetEntityMetadata(step.PrimaryEntityName!, filteringAttributes, config.ReplacePrefixes);
+            var entityDefinition = await GetEntityMetadataAsync(step.PrimaryEntityName!, filteringAttributes, config.ReplacePrefixes, ct).ConfigureAwait(false);
             step.PrimaryEntityDefinition = entityDefinition;
-            //if (entityDefinition is not null && !entityDefinitions.ContainsKey(entityDefinition.LogicalName))
-            //{
-            //    entityDefinitions[entityDefinition.LogicalName] = GetEntityMetadata(step.PrimaryEntityName!, [], config.RemovePrefixesCollection)!;
-            //}
+
             foreach (var image in step.Images)
             {
+                ct.ThrowIfCancellationRequested();
+
                 var imageAttributes = image.Attributes?.Split(',') ?? [];
                 if (!entitiesAndAttributes.ContainsKey(step.PrimaryEntityName!))
                 {
@@ -370,28 +392,22 @@ public class PluginCodeGenerator : BaseCodeGeneratorWithSite
                 {
                     entitiesAndAttributes[step.PrimaryEntityName!].UnionWith(imageAttributes);
                 }
-                entityDefinition = GetEntityMetadata(step.PrimaryEntityName!, imageAttributes, config.ReplacePrefixes);
+                entityDefinition = await GetEntityMetadataAsync(step.PrimaryEntityName!, imageAttributes, config.ReplacePrefixes, ct).ConfigureAwait(false);
                 image.MessagePropertyDefinition = entityDefinition;
-                //if (entityDefinition is not null && !entityDefinitions.ContainsKey(entityDefinition.LogicalName))
-                //{
-                //    entityDefinitions[entityDefinition.LogicalName] = GetEntityMetadata(step.PrimaryEntityName!, [], config.RemovePrefixesCollection)!;
-                //}
             }
         }
         // Now we update entity definitions with the attributes used in the plugin definitions.
         foreach (var entityEntry in entitiesAndAttributes)//.Where(e => e.Value.Count > 0))
         {
-            //var entityDefinition = entityDefinitions[entity.Key];
-            //var entityDefinition = GetEntityMetadata(entity.Key, entity.Value, config.RemovePrefixesCollection);
-            //var attributesUsedInPluginDefinitions = entityDefinition.Attributes.Where(a => entity.Value.Contains(a.LogicalName)).ToArray();
-            //typeof(EntityMetadata).GetProperty("Attributes").SetValue(entityDefinition, attributesUsedInPluginDefinitions);
-            entityDefinitions[entityEntry.Key] = GetEntityMetadata(entityEntry.Key, entityEntry.Value, config.ReplacePrefixes)!;
+            ct.ThrowIfCancellationRequested();
+            entityDefinitions[entityEntry.Key] = await GetEntityMetadataAsync(entityEntry.Key, entityEntry.Value, config.ReplacePrefixes, ct).ConfigureAwait(false);
         }
         foreach (var entityConfig in config.Entities)
         {
+            ct.ThrowIfCancellationRequested();
             if (!string.IsNullOrEmpty(entityConfig.LogicalName))
             {
-                entityDefinitions[entityConfig.LogicalName!] = GetEntityMetadata(entityConfig.LogicalName!, entityConfig.AttributeNames?.SplitAndTrim(',') ?? [], config.ReplacePrefixes)!;
+                entityDefinitions[entityConfig.LogicalName!] = await GetEntityMetadataAsync(entityConfig.LogicalName!, entityConfig.AttributeNames?.SplitAndTrim(',') ?? [], config.ReplacePrefixes, ct).ConfigureAwait(false)!;
             }
         }
         config.EntityDefinitions = entityDefinitions.Values;

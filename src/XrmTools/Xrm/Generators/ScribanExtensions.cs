@@ -149,5 +149,9 @@ public static class ScribanExtensions
 
     public static string? GetLabel(Label? label, int language)
        => label?.LocalizedLabels?.FirstOrDefault(l => l.LanguageCode == language)?.Label;
+
+    public static string EscapeVerbatim(string input)
+        => string.IsNullOrEmpty(input) ? string.Empty : input.Replace("\"", "\"\"");
+
 }
 #nullable restore

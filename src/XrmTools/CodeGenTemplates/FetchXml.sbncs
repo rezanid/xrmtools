@@ -1,0 +1,11 @@
+﻿using Microsoft.Xrm.Sdk;
+using Microsoft.Xrm.Sdk.Query;
+
+namespace {{config.default_namespace}}
+{
+    internal static partial class FetchQueries
+    {
+        public const string {{config.input_file_name}} = @"{{escape_verbatim(model.raw)}}";
+        public static EntityCollection Query{{config.input_file_name}}(this IOrganizationService service) => service.RetrieveMultiple(new FetchExpression({{config.input_file_name}}));
+    }
+}

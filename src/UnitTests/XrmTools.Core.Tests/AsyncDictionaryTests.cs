@@ -10,7 +10,7 @@ public class AsyncDictionaryTests
     public async Task GetOrAddAsync_AddsAndReturnsValue()
     {
         var dictionary = new AsyncDictionary<string, int>();
-        int value = await dictionary.GetOrAddAsync("key", async _ => 42);
+        int value = await dictionary.GetOrAddAsync("key", async _ => await Task.FromResult(42));
 
         Assert.Equal(42, value);
     }
@@ -19,8 +19,8 @@ public class AsyncDictionaryTests
     public async Task GetOrAddAsync_ReturnsExistingValueIfPresent()
     {
         var dictionary = new AsyncDictionary<string, int>();
-        await dictionary.GetOrAddAsync("key", async _ => 42);
-        int value = await dictionary.GetOrAddAsync("key", async _ => 84);
+        await dictionary.GetOrAddAsync("key", async _ => await Task.FromResult(42));
+        int value = await dictionary.GetOrAddAsync("key", async _ => await Task.FromResult(84));
 
         Assert.Equal(42, value);
     }
@@ -73,7 +73,7 @@ public class AsyncDictionaryTests
     public async Task TryRemove_RemovesExistingValue()
     {
         var dictionary = new AsyncDictionary<string, int>();
-        await dictionary.GetOrAddAsync("key", async _ => 42);
+        await dictionary.GetOrAddAsync("key", async _ => await Task.FromResult(42));
 
         bool removed = dictionary.TryRemove("key", out int value);
 
@@ -96,10 +96,10 @@ public class AsyncDictionaryTests
     public async Task GetOrAddAsync_AllowsReAddingAfterRemoval()
     {
         var dictionary = new AsyncDictionary<string, int>();
-        await dictionary.GetOrAddAsync("key", async _ => 42);
+        await dictionary.GetOrAddAsync("key", async _ => await Task.FromResult(42));
         dictionary.TryRemove("key", out _);
 
-        int newValue = await dictionary.GetOrAddAsync("key", async _ => 84);
+        int newValue = await dictionary.GetOrAddAsync("key", async _ => await Task.FromResult(84));
 
         Assert.Equal(84, newValue);
     }
@@ -111,7 +111,7 @@ public class AsyncDictionaryTests
     public async Task GetOrAddAsync_WithDifferentKeys_AddsAndReturnsCorrectValues(string key, int expectedValue)
     {
         var dictionary = new AsyncDictionary<string, int>();
-        int value = await dictionary.GetOrAddAsync(key, async _ => expectedValue);
+        int value = await dictionary.GetOrAddAsync(key, async _ => await Task.FromResult(expectedValue));
 
         Assert.Equal(expectedValue, value);
     }

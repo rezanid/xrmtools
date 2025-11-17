@@ -16,14 +16,14 @@ using System.Runtime.Serialization;
 namespace {{ first_plugin_type?.namespace ?? config.default_namespace }}
 {
 {{~for entity_definition in model.entity_definitions~}}
-{{~base_class_name = entity_definition.schema_name~}}
+{{~parent_type_name = entity_definition.schema_name~}}
 	/// <summary>
 	/// Display Name: {{entity_definition.display_name | get_label 1033}}
 	/// </summary>
 	{{codegen_attribute}}
 	[EntityLogicalName("{{entity_definition.logical_name}}")]
 	[global::System.Diagnostics.CodeAnalysis.ExcludeFromCodeCoverage]
-	public partial class {{base_class_name}} : {{model.entities[for.index].base_type}}
+	public partial class {{parent_type_name}} : {{model.entities[for.index].base_type}}
 	{
 		public partial class Meta 
 		{
@@ -43,36 +43,38 @@ namespace {{ first_plugin_type?.namespace ?? config.default_namespace }}
 			{{~end~}}
 
 			{{~if entity_definition.attributes.size < 32~}}
-				public static bool TryGet(string logicalName, out string attribute)
+				public static bool TryGet(string memberName, out string logicalName)
 				{
-					switch (logicalName)
+					switch (memberName)
 					{
 					{{~for attribute in entity_definition.attributes | array.filter @supported_attribute~}}
-						case nameof({{attribute.schema_name}}): attribute = {{attribute.schema_name}}; return true;
+						case nameof({{attribute.schema_name}}): logicalName = {{attribute.schema_name}}; return true;
 					{{~end~}}
-						default: attribute = null; return false;
+						default: logicalName = null; return false;
 					}
 				}
+				public static IEnumerable<string> GetAll() => 
+					new string[] { {{-for attribute in entity_definition.attributes | array.filter @supported_attribute}}
+						{{-attribute.schema_name}},
+					{{-end~}} };
 			{{~else~}}
 				private static readonly Dictionary<string, string> _fieldMap = new Dictionary<string, string>
 				{
 				{{~for attribute in entity_definition.attributes | array.filter @supported_attribute~}}
-					[nameof({{attribute.schema_name}})] = {{attribute.schema_name}},
+					[nameof({{attribute.schema_name}})] = "{{attribute.logical_name}}",
 				{{~end~}}
 				};
 
-				public static bool TryGet(string logicalName, out string attribute)
-				{
-					return _fieldMap.TryGetValue(logicalName, out attribute);
-				}
+				public static bool TryGet(string memberName, out string logicalName)
+					=> _fieldMap.TryGetValue(memberName, out logicalName);
+
+				public static IEnumerable<string> GetAll() => _fieldMap.Values;
 			{{~end~}}
 
-				public string this[string logicalName]
-				{
-					get => TryGet(logicalName, out var value)
-						? value
-						: throw new ArgumentException("Invalid attribute logical name.", nameof(logicalName));
-				}
+				public static string Get(string memberName)
+					=> TryGet(memberName, out var logicalName)
+						? logicalName
+						: throw new ArgumentException("Invalid attribute logical name.", nameof(memberName));
 			}
 			{{~enum_attributes = model.global_option_set_code_gen.mode == 'GlobalOptionSetFile' ? (entity_definition.attributes | filter_local_enum_attributes) : (entity_definition.attributes | filter_enum_attributes)~}}
 			{{~if enum_attributes && !(enum_attributes.empty?)}}
@@ -126,10 +128,10 @@ namespace {{ first_plugin_type?.namespace ?? config.default_namespace }}
 		{{~prop_name = attribute.schema_name ~}}
 		{{include attribute.attribute_type + '.sbncs' attributes:entity_definition.attributes}}
 		{{~end~}}
-		public {{base_class_name}}() : base(Meta.EntityLogicalName) { }
-		public {{base_class_name}}(Guid id) : base(Meta.EntityLogicalName, id) { }
-		public {{base_class_name}}(string keyName, object keyValue) : base(Meta.EntityLogicalName, keyName, keyValue) { }
-		public {{base_class_name}}(KeyAttributeCollection keyAttributes) : base(Meta.EntityLogicalName, keyAttributes) { }
+		public {{parent_type_name}}() : base(Meta.EntityLogicalName) { }
+		public {{parent_type_name}}(Guid id) : base(Meta.EntityLogicalName, id) { }
+		public {{parent_type_name}}(string keyName, object keyValue) : base(Meta.EntityLogicalName, keyName, keyValue) { }
+		public {{parent_type_name}}(KeyAttributeCollection keyAttributes) : base(Meta.EntityLogicalName, keyAttributes) { }
 	}
 {{~end~}}
 }

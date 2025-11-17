@@ -68,14 +68,14 @@
     </Groups>
 
     <Menus>
-      <Menu guid="XrmToolsCmdSetId" id="XrmToolsContextSubMenu" type="Menu">
+      <Menu guid="XrmToolsCmdSetId" id="XrmToolsContextSubMenu" type="Menu" priority="100">
         <Parent guid="XrmToolsCmdSetId" id="XrmToolsContextMenuGroup" />
         <Strings>
           <ButtonText>Set as template</ButtonText>
           <CommandName>Set as template</CommandName>
         </Strings>
       </Menu>
-      <Menu guid="XrmToolsCmdSetId" id="XrmToolsToolbar" type="Toolbar">
+      <Menu guid="XrmToolsCmdSetId" id="XrmToolsToolbar" type="Toolbar" priority="100">
         <Parent guid="guidSHLMainMenu" id="IDM_VS_CTXT_ITEMNODE" />
         <Strings>
           <ButtonText>Xrm Tools</ButtonText>
@@ -211,6 +211,16 @@
         </Strings>
       </Button>
       <!--[Project Context Menu] > "Add" > "New plugin definition..."-->
+      <Button guid="XrmToolsCmdSetId" id="NewFetchXmlFileCmdId" priority="0x0200" type="Button">
+        <Parent guid="guidSHLMainMenu" id="IDG_VS_CTXT_PROJECT_ADD_ITEMS"/>
+        <Icon guid="ImageCatalogGuid" id="NewListQuery" />
+        <CommandFlag>IconIsMoniker</CommandFlag>
+        <CommandFlag>DynamicVisibility</CommandFlag>
+        <Strings>
+          <ButtonText>New FetchXML file...</ButtonText>
+          <LocCanonicalName>.XrmTools.NewFetchXmlFile</LocCanonicalName>
+        </Strings>
+      </Button>
       <!--<Button guid="XrmToolsCmdSetId" id="NewPluginDefinitionCmdId" priority="0x0200" type="Button">
         <Parent guid="guidSHLMainMenu" id="IDG_VS_CTXT_PROJECT_ADD_ITEMS"/>
         <Icon guid="ImageCatalogGuid" id="Part" />
@@ -258,6 +268,7 @@
     <VisibilityItem guid="XrmToolsCmdSetId" id="SetEntityGeneratorTemplateInSolutionCmdId" context="CodeGenerationTemplateCmdUIRule" />
     <VisibilityItem guid="XrmToolsCmdSetId" id="SetEntityGeneratorTemplateInProjectCmdId" context="CodeGenerationTemplateCmdUIRule" />
     <VisibilityItem guid="XrmToolsCmdSetId" id="ResetCodeGenTemplatesCmdId" context="CSProjOrCodeGenerationTemplateCmdUIRule" />
+    <VisibilityItem guid="XrmToolsCmdSetId" id="NewFetchXmlFileCmdId" context="NewProjectItemUIRule" />
     <!--<VisibilityItem guid="XrmToolsCmdSetId" id="NewPluginDefinitionCmdId" context="NewPluginDefinitionCmdUIRule" />-->
   </VisibilityConstraints>
 
@@ -268,6 +279,7 @@
     <!-- Visibility Rules -->
     <GuidSymbol name="SetCustomToolEntitiesCmdUIRule" value="{6b9f081c-67ed-43f3-8434-237387ae4f5d}" />
     <GuidSymbol name="SetCustomToolPluginDefitionCmdUIRule" value="{ee3324f2-0e72-4af6-bcba-ac3af05df4e8}" />
+    <GuidSymbol name="NewProjectItemUIRule" value="{87765b0d-0ab7-4812-9668-a2d621957cf9}" />
     <!--<GuidSymbol name="NewPluginDefinitionCmdUIRule" value="{87765b0d-0ab7-4812-9668-a2d621957cf9}" />-->
     <GuidSymbol name="CodeGenerationTemplateCmdUIRule" value="{be4c5f8f-c72b-4442-9b9c-d2b5f7f2b9a0}" />
     <GuidSymbol name="CSProjOrCodeGenerationTemplateCmdUIRule" value="{f3e2d1c4-2b6e-4f7a-8e2e-5c9f0b6e4d3a}" />
@@ -284,6 +296,7 @@
       <IDSymbol name="XrmToolsProjectContextMenuGroup" value="0x0600" />
       <IDSymbol name="XrmToolsSolutionContextMenuGroup" value="0x0700" />
       <IDSymbol name="XrmToolsContextMenuGroup" value="0x0100" />
+      <IDSymbol name="NewFetchXmlFileCmdId" value="0x0200" />
       <!--<IDSymbol name="NewPluginDefinitionCmdId" value="0x0200" />-->
       <IDSymbol name="SetCustomToolPluginGeneratorCmdId" value="0x0300" />
       <IDSymbol name="SetCustomToolEntityGeneratorCmdId" value="0x0310" />
@@ -297,7 +310,7 @@
       <IDSymbol name="ManageEnvironmenGetListCmdId" value="0x0511"/>
       <IDSymbol name="RegisterPluginCmdId" value="0x0910"/>
       <IDSymbol name="XrmToolsToolbar" value="0x2000"/>
-      <IDSymbol name="XrmToolsToolbarGroup" value="0x2010"/>"
+      <IDSymbol name="XrmToolsToolbarGroup" value="0x2010"/>
       <IDSymbol name="XrmToolsContextSubMenu" value="0x1000"/>
       <IDSymbol name="XrmToolsContextSubMenuGroup" value="0x1010"/>
     </GuidSymbol>

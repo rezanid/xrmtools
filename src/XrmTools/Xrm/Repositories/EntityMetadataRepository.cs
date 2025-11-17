@@ -12,7 +12,6 @@ using System.Threading;
 using System.Threading.Tasks;
 using XrmTools.Core.Helpers;
 using XrmTools.Logging.Compatibility;
-using XrmTools.Meta.Model;
 using XrmTools.Serialization;
 using XrmTools.WebApi;
 using XrmTools.WebApi.Entities;

@@ -7,5 +7,10 @@ namespace XrmTools.Meta.Attributes
     /// Remember to call <c>InjectDependencies</c> early in your plugin's <c>Execute</c> method to ensure dependencies are set before use.
     /// </summary>
     [AttributeUsage(AttributeTargets.Property, Inherited = true, AllowMultiple = false)]
-    public sealed class DependencyProviderAttribute : Attribute { }
+    public sealed class DependencyProviderAttribute : Attribute 
+    { 
+        public string Name { get; }
+        public DependencyProviderAttribute() { }
+        public DependencyProviderAttribute(string name) { Name = name; }
+    }
 }

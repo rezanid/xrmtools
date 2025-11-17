@@ -10,6 +10,7 @@ using Scriban.Runtime;
 using XrmTools.Validation;
 using System.ComponentModel.DataAnnotations;
 using XrmTools.Meta.Model.Configuration;
+using XrmTools.FetchXml.Model;
 
 [Export(typeof(IXrmCodeGenerator))]
 [method:ImportingConstructor]
@@ -33,7 +34,14 @@ internal class TemplatedCodeGenerator(IValidationService validationService) : IX
         return GenerateCodeUsingScribanTemplate(inputModel);
     }
 
-    private string GenerateCodeUsingScribanTemplate(PluginAssemblyConfig inputModel)
+    public string GenerateCode(FetchQuery inputModel)
+    {
+        if (Config == null) { throw new InvalidOperationException("Config is not set."); }
+        if (string.IsNullOrWhiteSpace(Config.TemplateFilePath)) { throw new InvalidOperationException(Resources.Strings.PluginGenerator_TemplatePathNotSet); }
+        return GenerateCodeUsingScribanTemplate(inputModel);
+    }
+
+    private string GenerateCodeUsingScribanTemplate(object inputModel)
     {
         var scriptObject = new ScriptObject();
         scriptObject.Import(typeof(ScribanExtensions));

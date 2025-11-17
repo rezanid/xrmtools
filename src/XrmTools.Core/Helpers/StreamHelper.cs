@@ -9,7 +9,7 @@ using System.Linq;
 using System.Reflection;
 using System.Runtime.Serialization;
 
-internal static class StreamHelper
+public static class StreamHelper
 {
     // Newtonsoft Configuration:
     private static readonly JsonSerializerSettings jsonSerializerSettings = new()
@@ -26,7 +26,7 @@ internal static class StreamHelper
         //ContractResolver = new EntityResolverForFile()
     };
 
-    internal static T Deserialize<T>(this Stream stream, bool isFile = false)
+    public static T Deserialize<T>(this Stream stream, bool isFile = false)
     {
         using var sr = new StreamReader(stream);
         using var jr = new JsonTextReader(sr);
@@ -35,7 +35,7 @@ internal static class StreamHelper
         return serializer.Deserialize<T>(jr);
     }
 
-    internal static T DeserializeXrmType<T>(this Stream stream)
+    public static T DeserializeXrmType<T>(this Stream stream)
     {
         var settings = new JsonSerializerSettings
         {

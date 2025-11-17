@@ -120,7 +120,7 @@ internal sealed class RegisterPluginCommand : BaseCommand<RegisterPluginCommand>
         }
         catch (Exception ex)
         {
-            Logger.LogError(ex, "An error occurred while initializing the RegisterPluginCommand.");
+            Logger?.LogError(ex, "An error occurred while initializing the RegisterPluginCommand.");
             await VS.MessageBox.ShowErrorAsync(Vsix.Name, "An error occurred while initializing the RegisterPluginCommand. " + ex.Message);
             return;
         }

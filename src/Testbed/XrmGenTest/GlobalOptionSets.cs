@@ -1,7 +1,9 @@
 namespace XrmGenTest.OptionSets
 {
+    using System.CodeDom.Compiler;
     using System.Runtime.Serialization;
 	[DataContract]
+    [GeneratedCode("","")]
 	public enum Datastate
 	{
 		[EnumMember] Default = 0,

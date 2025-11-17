@@ -38,7 +38,7 @@ internal class XrmPluginDefCompletionSource(
 
     public CompletionStartData InitializeCompletion(CompletionTrigger trigger, SnapshotPoint triggerLocation, CancellationToken token)
     {
-        using var catalog = ThreadHelper.JoinableTaskFactory.Run(repositoryFactory.CreateRepositoryAsync<IEntityMetadataRepository>);
+        using var catalog = repositoryFactory.CreateRepository<IEntityMetadataRepository>();
         if (catalog == null)
         { 
             // Catalog is not initialized yet. We can't provide completion.
@@ -179,13 +179,13 @@ internal class XrmPluginDefCompletionSource(
 
     private async Task<CompletionContext> GetContextForEntityNameAsync(CancellationToken cancellationToken)
     {
-        using var catalog = ThreadHelper.JoinableTaskFactory.Run(repositoryFactory.CreateRepositoryAsync<IEntityMetadataRepository>);
+        using var catalog = repositoryFactory.CreateRepository<IEntityMetadataRepository>();
         return new CompletionContext((await catalog.GetAsync(cancellationToken)).Where(e => !e.IsLogicalEntity ?? false).Select(MakeItemFromMetadata).ToImmutableArray());
     }
 
     private async Task<CompletionContext> GetContextForAttributeNameAsync(string entityName, CancellationToken cancellationToken)
     {
-        using var catalog = ThreadHelper.JoinableTaskFactory.Run(repositoryFactory.CreateRepositoryAsync<IEntityMetadataRepository>);
+        using var catalog = repositoryFactory.CreateRepository<IEntityMetadataRepository>();
         return new CompletionContext((await catalog.GetAsync(entityName, cancellationToken)).Attributes.Where(a => !a.IsLogical ?? false).Select(MakeItemFromMetadata).ToImmutableArray());
     }
 

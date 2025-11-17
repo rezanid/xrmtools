@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<fetch  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation=".xrmtools/schemas/Fetch.xsd">
+	<entity name="contact">
+		<attribute name="fullname" />
+		<attribute name="telephone1"/>
+		<attribute name="lastname"/>
+		<attribute name="firstname"/>
+		<attribute name="telephone1"/>
+		<attribute name="bpg_address1_fulladdress"/>
+		<filter>
+			<condition attribute="fullname" operator="not-begin-with" value="Logic"/>
+			<condition attribute="fullname" operator="neq" value=". ."/>
+			<condition attribute="telephone1" operator="begins-with" value="+32"/>
+		</filter>
+	</entity>
+</fetch>

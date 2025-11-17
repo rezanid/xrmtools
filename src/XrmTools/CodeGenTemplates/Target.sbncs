@@ -1,4 +1,5 @@
 [EntityLogicalName("{{step.primary_entity_definition.logical_name}}")]
+{{~parent_type_name = target_type_name~}}
 public class {{target_type_name}} : Entity
 {
 	public static class Meta

@@ -46,14 +46,11 @@ internal class OutputLogger(string name, IOutputLoggerService outputLoggerServic
             logRecord = $"{string.Join(" => ", scopeInfo)}: {logRecord}";
         }
 
-        if (exception != null)
+        if (exception != null && logLevel <= LogLevel.Debug)
         {
             logRecord += Environment.NewLine + exception.ToString();
         }
 
-        // Ensure we're on the main thread to write to the Output window
-        ThreadHelper.ThrowIfNotOnUIThread();
-        //_outputPane.OutputString(logRecord + Environment.NewLine);
         outputLoggerService.OutputString(logRecord + Environment.NewLine);
     }
 

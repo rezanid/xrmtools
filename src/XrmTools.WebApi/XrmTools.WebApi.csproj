@@ -18,6 +18,9 @@
     <PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
     <PackageReadmeFile>README.md</PackageReadmeFile>
   </PropertyGroup>
+  <PropertyGroup>
+    <XrmToolsCopySchemas>false</XrmToolsCopySchemas>
+  </PropertyGroup>
   <ItemGroup>
     <Compile Remove="Methods\**" />
     <EmbeddedResource Remove="Methods\**" />
@@ -32,10 +35,13 @@
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageReference>
     <PackageReference Include="System.Text.Json" Version="9.0.0" />
-    <PackageReference Include="XrmTools.Meta.Attributes" Version="1.0.54">
+    <PackageReference Include="XrmTools.Meta.Attributes" Version="1.0.57">
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageReference>
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\XrmTools.Core\XrmTools.Core.csproj" />
   </ItemGroup>
   <ItemGroup>
     <Reference Include="System.Data.DataSetExtensions" />

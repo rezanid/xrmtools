@@ -7,8 +7,6 @@ using EnvDTE80;
 using Microsoft;
 using Microsoft.VisualStudio;
 using Microsoft.VisualStudio.CommandBars;
-using Microsoft.VisualStudio.ComponentModelHost;
-using Microsoft.VisualStudio.Imaging;
 using Microsoft.VisualStudio.Shell;
 using Microsoft.VisualStudio.Shell.Interop;
 using Microsoft.VisualStudio.TaskStatusCenter;
@@ -21,15 +19,15 @@ using System.Linq;
 using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Threading;
-using XrmTools.CodeGen;
 using XrmTools.Commands;
 using XrmTools.Environments;
+using XrmTools.FetchXml.Schema;
 using XrmTools.Helpers;
 using XrmTools.Logging;
 using XrmTools.Options;
 using XrmTools.Settings;
 using XrmTools.Tokens;
-using XrmTools.UI;
+using XrmTools.UI.InfoBars;
 using XrmTools.Xrm.Generators;
 using Task = System.Threading.Tasks.Task;
 
@@ -47,7 +45,7 @@ using Task = System.Threading.Tasks.Task;
 /// utility what data to put into .pkgdef file.
 /// </para>
 /// <para>
-/// To get loaded into VS, the package must be referred by &lt;Asset Type="Microsoft.VisualStudio.VsPackage" ...&gt; in .vsixmanifest file.
+/// To get loaded into VS, the package must be referred to by <Asset Type="Microsoft.VisualStudio.VsPackage" ...> in .vsixmanifest file.
 /// </para>
 /// </remarks>
 [PackageRegistration(UseManagedResourcesOnly = true, AllowsBackgroundLoading = true)]
@@ -57,6 +55,8 @@ using Task = System.Threading.Tasks.Task;
 [ProvideCodeGeneratorExtension(EntityCodeGenerator.Name, ".yaml")]
 [ProvideCodeGenerator(typeof(PluginCodeGenerator), PluginCodeGenerator.Name, PluginCodeGenerator.Description, true, ProjectSystem = ProvideCodeGeneratorAttribute.CSharpProjectGuid, RegisterCodeBase = true)]
 [ProvideCodeGeneratorExtension(PluginCodeGenerator.Name, ".def.json")]
+[ProvideCodeGenerator(typeof(FetchXml.CodeGen.FetchXmlCodeGenerator), "XrmTools FetchXML Generator", "Generates C# code from FetchXML files.", true, ProjectSystem = ProvideCodeGeneratorAttribute.CSharpProjectGuid, RegisterCodeBase = true)]
+[ProvideCodeGeneratorExtension("XrmTools FetchXML Generator", ".fetch")]
 [ProvideMenuResource("Menus.ctmenu", 1)]
 // Decide the visibility of our commands when the commands are NOT yet loaded.
 [ProvideUIContextRule(PackageGuids.SetCustomToolEntitiesCmdUIRuleString,
@@ -97,18 +97,19 @@ using Task = System.Threading.Tasks.Task;
         "ActiveProjectCapability:CSharp",
         VSConstants.UICONTEXT.SolutionHasSingleProject_string,
         VSConstants.UICONTEXT.SolutionHasMultipleProjects_string])]
-//[ProvideUIContextRule(PackageGuids.NewPluginDefinitionCmdUIRuleString,
-//    name: "UI Context NewPluginConfigCommand",
-//    expression: "CSharp & (SingleProj | MultiProj)",
-//    termNames: ["CSharp", "SingleProj", "MultiProj"],
-//    termValues: [
-//        "ActiveProjectCapability:CSharp",
-//        VSConstants.UICONTEXT.SolutionHasSingleProject_string,
-//        VSConstants.UICONTEXT.SolutionHasMultipleProjects_string])]
+[ProvideUIContextRule(PackageGuids.NewProjectItemUIRuleString,
+    name: "UI Context NewPluginConfigCommand",
+    expression: "CSharp & (SingleProj | MultiProj)",
+    termNames: ["CSharp", "SingleProj", "MultiProj"],
+    termValues: [
+        "ActiveProjectCapability:CSharp",
+        VSConstants.UICONTEXT.SolutionHasSingleProject_string,
+        VSConstants.UICONTEXT.SolutionHasMultipleProjects_string])]
 [ProvideService(typeof(IXrmCodeGenerator), IsAsyncQueryable = true, IsCacheable = true, IsFreeThreaded = true)]
 [ProvideService(typeof(IEnvironmentProvider), IsAsyncQueryable = true, IsCacheable = true, IsFreeThreaded = true)]
 [ProvideService(typeof(ISettingsProvider), IsAsyncQueryable = true, IsCacheable = true, IsFreeThreaded = true)]
 [ProvideOptionPage(typeof(OptionsProvider.GeneralOptions), Vsix.Name, "General", 0, 0, true, SupportsProfiles = true)]
+[ProvideOptionPage(typeof(OptionsProvider.FetchXmlOptions), Vsix.Name, "FetchXML", 0, 0, true, SupportsProfiles = true)]
 public sealed partial class XrmToolsPackage : ToolkitPackage
 {
     private static readonly object _lock = new();
@@ -123,12 +124,6 @@ public sealed partial class XrmToolsPackage : ToolkitPackage
     public const string SolutionPersistanceKey = "XrmToolsProperies";
     private static readonly ExplicitInterfaceInvoker<Package> implicitInvoker = new();
     public DTE2? Dte;
-
-    /// <summary>
-    /// The initial configuration of the extension. The value can change after initialization if 
-    /// the user changes the settings.
-    /// </summary>
-    private GeneralOptions? Options;
 
     [Export(typeof(TimeProvider))] internal TimeProvider TimeProvider { get => TimeProvider.System; }
     [Export(typeof(IOutputLoggerService))] internal IOutputLoggerService OutputLoggerService { get => _loggerService; }
@@ -166,6 +161,12 @@ public sealed partial class XrmToolsPackage : ToolkitPackage
     /// <returns>A task representing the async work of package initialization, or an already completed task if there is none. Do not return null from this method.</returns>
     protected override async Task InitializeAsync(CancellationToken cancellationToken, IProgress<ServiceProgressData> progress)
     {
+        //In the following article, base.InitializeAsync is at the begining.
+        // https://learn.microsoft.com/en-us/visualstudio/extensibility/how-to-provide-an-asynchronous-visual-studio-service?view=vs-2022
+        await base.InitializeAsync(cancellationToken, progress);
+        // Ensure FetchXml XSD embedded schema is loaded early (non-blocking errors logged only)
+        //FetchXmlSchemaLoader.EnsureLoaded(_loggerService);
+
         foreach (var key in SettingsProvider.SolutionUserSettings.Keys)
         {
             AddOptionKey(key);
@@ -177,8 +178,6 @@ public sealed partial class XrmToolsPackage : ToolkitPackage
             ?? throw new InvalidOperationException(
                 string.Format(Resources.Strings.Package_InitializationErroMissingDte, nameof(XrmToolsPackage)));
         Assumes.Present(Dte);
-
-        Options = await GeneralOptions.GetLiveInstanceAsync();
 
         await InitializeMefServicesAsync();
 
@@ -195,8 +194,16 @@ public sealed partial class XrmToolsPackage : ToolkitPackage
         // The following two commands contirbute to the dropdown combo box for selecting environments.
         await ManageEnvironmentsCommand.InitializeAsync(this);
         await ManageEnvironmentsGetListCommand.InitializeAsync(this);
+        await NewFetchXmlFileCommand.InitializeAsync(this);
 
-        VS.Events.SolutionEvents.OnAfterOpenSolution += OnAfterOpenSolution;
+        VS.Events.SolutionEvents.OnAfterOpenSolution += (solution) => OnAfterOpenSolution(solution, cancellationToken);
+        VS.Events.SolutionEvents.OnAfterCloseSolution += () => OnAfterCloseSolution(cancellationToken);
+
+        if (await VS.Solutions.IsOpenAsync())
+        {
+            // If the solution is already open, we need to run the handler manually.
+            OnAfterOpenSolution(await VS.Solutions.GetCurrentSolutionAsync(), cancellationToken);
+        }
 
         var options = await GeneralOptions.GetLiveInstanceAsync();
         if (options?.IsFirstRun == true)
@@ -207,65 +214,42 @@ public sealed partial class XrmToolsPackage : ToolkitPackage
             options.IsFirstRun = false;
             await options.SaveAsync();
         }
-
-        //TODO: In one article, the following call is at the begining of the method:
-        // https://learn.microsoft.com/en-us/visualstudio/extensibility/how-to-provide-an-asynchronous-visual-studio-service?view=vs-2022
-        await base.InitializeAsync(cancellationToken, progress);
     }
 
-    private void OnAfterOpenSolution(Community.VisualStudio.Toolkit.Solution? solution)
+    private void OnAfterOpenSolution(Community.VisualStudio.Toolkit.Solution? solution, CancellationToken cancellationToken)
     {
         ThreadHelper.JoinableTaskFactory.Run(async () =>
         {
-            // Currently no background operations are required. This is a placeholder for future use.
-            // StartBackgroundOperations();
+            await ProposeNewEnvironmentFromSolutionAsync(solution).ConfigureAwait(false);
 
-            var environmentUrl = SettingsProvider.SolutionSettings.EnvironmentUrl()?.Trim();
-            if (string.IsNullOrWhiteSpace(environmentUrl)) return;
-            var environments = await EnvironmentProvider.GetAvailableEnvironmentsAsync();
-            var environment = environments
-                .FirstOrDefault(e => e.IsValid && e.Url.Equals(environmentUrl, StringComparison.OrdinalIgnoreCase));
-            // If the environment is not found, we will prompt the user to add it.
-            if (environment is null)
-            {
-                var model = new InfoBarModel([
-                    new InfoBarTextSpan($"New environment found in the {solution?.Name} solution, would you like to add it to your list? "),
-                    new InfoBarHyperlink("Add Environment")],
-                    KnownMonikers.Environment,
-                    true);
-
-                var infoBar = await VS.InfoBar.CreateAsync(model);
-                if (infoBar is null)
-                {
-                    return;
-                }
-                infoBar.ActionItemClicked += (sender, args) =>
-                {
-                    try
-                    {
-                        ThreadHelper.JoinableTaskFactory.Run(async () =>
-                        {
-                            await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync();
-                            if (await GetServiceAsync(typeof(SComponentModel)) is not IComponentModel componentModel)
-                            {
-                                return;
-                            }
-                            var envEditor = componentModel.GetService<IEnvironmentEditor>();
-                            if (envEditor is not null)
-                            {
-                                var result = await envEditor.EditEnvironmentsAsync(new DataverseEnvironment { ConnectionString = environmentUrl});
-                                if (result)
-                                {
-                                    infoBar.Close();
-                                }
-                            }
-                        });
-                    }
-                    catch { }
-                };
-                await infoBar.TryShowInfoBarUIAsync();
-            }
+            StartBackgroundOperations(cancellationToken);
         });
+    }
+
+    private void OnAfterCloseSolution(CancellationToken cancellationToken)
+    {
+        FoundNewEnvironmentInfoBar.Close();
+        NugetUpdateInfoBar.Close();
+    }
+
+    private async Task ProposeNewEnvironmentFromSolutionAsync(Community.VisualStudio.Toolkit.Solution? solution)
+    {
+        var rawUrl = SettingsProvider.SolutionSettings.EnvironmentUrl()?.Trim();
+        if (string.IsNullOrWhiteSpace(rawUrl)) return;
+        var environmentUrl = new Uri(rawUrl);
+        var environments = await EnvironmentProvider.GetAvailableEnvironmentsAsync();
+        var environment = environments
+            .FirstOrDefault(e => e.IsValid && new Uri(e.Url) == environmentUrl);
+        // If the environment is not found, we will prompt the user to add it.
+        if (environment is null)
+        {
+            var infoBar = new FoundNewEnvironmentInfoBar
+            {
+                PromptMessage = $"New environment found in the {solution?.Name} solution, would you like to add it to your list? ",
+                EnvironmentUrl = environmentUrl.ToString()!
+            };
+            await infoBar.TryShowAsync();
+        }
     }
 
     private async Task InitializeMefServicesAsync()
@@ -284,22 +268,23 @@ public sealed partial class XrmToolsPackage : ToolkitPackage
         await Task.CompletedTask;
     }
 
-    private void StartBackgroundOperations()
+    private void StartBackgroundOperations(CancellationToken cancellationToken)
     {
         var taskCenter = GetService(typeof(SVsTaskStatusCenterService)) as IVsTaskStatusCenterService;
         Assumes.Present(taskCenter);
         var options = default(TaskHandlerOptions);
-        options.Title = "Loading XRM Metadata";
+        options.Title = "Scanning XrmTools NuGets";
         options.ActionsAfterCompletion = CompletionActions.None;
 
-        var data = default(TaskProgressData);
-        data.CanBeCanceled = false;
-
-        var handler = taskCenter.PreRegister(options, data);
-        handler.RegisterTask(InitializeXrmMetadataAsync(data, handler));
+        var handler = taskCenter.PreRegister(options, new TaskProgressData
+        {
+            CanBeCanceled = false,
+        });
+        handler.RegisterTask(AuditNugetsAsync(handler, cancellationToken));
+        //handler.RegisterTask(InitializeXrmMetadataAsync(data, handler));
     }
 
-    private async Task InitializeXrmMetadataAsync(TaskProgressData data, ITaskHandler handler)
+    private async Task InitializeXrmMetadataAsync(ITaskHandler handler)
     {
         var options = await GeneralOptions.GetLiveInstanceAsync();
         var environments = options.Environments
@@ -307,15 +292,19 @@ public sealed partial class XrmToolsPackage : ToolkitPackage
         var currentIndex = 0;
         foreach (var env in environments)
         {
-            data.ProgressText = $"Refreshing metadata for {env.Url}";
-            data.PercentComplete = 100 * currentIndex / environments.Count;
-            handler.Progress.Report(data);
+            handler.Progress.Report(new TaskProgressData
+            {
+                ProgressText = $"Refreshing metadata for {env.Url}",
+                PercentComplete = 100 * currentIndex / environments.Count
+            });
             //TODO: Write code to prefetch data if possible.
             //await XrmSchemaProviderFactory.EnsureInitializedAsync(env).ConfigureAwait(false);
         }
-        data.ProgressText = "Metadata refresh complete";
-        data.PercentComplete = 100;
-        handler.Progress.Report(data);
+        handler.Progress.Report(new TaskProgressData
+        {
+            ProgressText = "Metadata refresh completed",
+            PercentComplete = 100
+        });
     }
 }
 #nullable restore
