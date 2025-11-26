@@ -2,11 +2,46 @@
 namespace XrmTools.Helpers;
 
 using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.CSharp.Syntax;
 using System.Collections.Generic;
 using System.Linq;
 
 public static class RoslynHelpers
 {
+    /// <summary>
+    /// Determines whether the specified type declaration contains a member with the given name.
+    /// </summary>
+    /// <remarks>This method checks for members including methods, properties, events, fields, and nested
+    /// types. The comparison is case-sensitive and matches the exact identifier name.</remarks>
+    /// <param name="type">The type declaration to search for members.</param>
+    /// <param name="name">The name of the member to locate within the type declaration.</param>
+    /// <returns>true if a member with the specified name exists in the type declaration; otherwise, false.</returns>
+    public static bool HasMember(this TypeDeclarationSyntax type, string name)
+    {
+        foreach (var m in type.Members)
+        {
+            var id = m switch
+            {
+                BaseTypeDeclarationSyntax t => t.Identifier,
+                MethodDeclarationSyntax mth => mth.Identifier,
+                PropertyDeclarationSyntax p => p.Identifier,
+                EventDeclarationSyntax ev => ev.Identifier,
+                //FieldDeclarationSyntax f => default,
+                _ => default
+            };
+
+            if (id != default && id.ValueText == name)
+                return true;
+
+            if (m is FieldDeclarationSyntax fd)
+                foreach (var v in fd.Declaration.Variables)
+                    if (v.Identifier.ValueText == name)
+                        return true;
+        }
+
+        return false;
+    }
+
     /// <summary>
     /// Returns true if the type is array or implements <see cref="System.Collections.IEnumerable"/>.
     /// By default, treats string as NOT enumerable (set includeString=true to change).

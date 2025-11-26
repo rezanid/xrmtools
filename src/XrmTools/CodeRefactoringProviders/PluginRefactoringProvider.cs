@@ -15,6 +15,7 @@ using XrmTools.Meta.Attributes;
 using XrmTools.WebApi;
 using XrmTools.WebApi.Entities;
 using System.Collections.Generic;
+using System;
 
 [ExportCodeRefactoringProvider(LanguageNames.CSharp, Name = nameof(PluginRefactoringProvider)), Shared]
 public class PluginRefactoringProvider : CodeRefactoringProvider
@@ -29,9 +30,9 @@ public class PluginRefactoringProvider : CodeRefactoringProvider
 
         var node = root.FindNode(context.Span);
 
-        var attribute = (node is AttributeListSyntax attrList && attrList.Attributes.Count == 1) ?
-            attrList.Attributes[0] :
-            node.AncestorsAndSelf().OfType<AttributeSyntax>().FirstOrDefault();
+        //var attribute = (node is AttributeListSyntax attrList && attrList.Attributes.Count == 1) ?
+        //    attrList.Attributes[0] :
+        var attribute = node.AncestorsAndSelf().OfType<AttributeSyntax>().FirstOrDefault();
         if (attribute == null) return;
 
         var semanticModel = await context.Document.GetSemanticModelAsync(context.CancellationToken);
@@ -42,19 +43,32 @@ public class PluginRefactoringProvider : CodeRefactoringProvider
 
         var classNode = attribute.Ancestors().OfType<ClassDeclarationSyntax>().FirstOrDefault();
         if (classNode == null) return;
-        
-        var className = semanticModel.GetDeclaredSymbol(classNode).ToDisplayString(SymbolDisplayFormat.CSharpErrorMessageFormat);// classNode.Identifier.Text;
 
-        // TODO: Possible error: "No environment selected." 
-        var pluginType = await WebApiService.GetPluginDefinitionAsync(className);
-        if (pluginType == null) return;
+        // classNode.Identifier.Text will give the local name and not the fully qualified name.
+        var className = semanticModel.GetDeclaredSymbol(classNode)?.ToDisplayString(SymbolDisplayFormat.CSharpErrorMessageFormat);
 
-        var action = CodeAction.Create(
-            "Expand [Plugin] attribute and add [Step] and [Image] attributes",
-            ct => ApplyPluginFixAsync(context.Document, classNode, attribute, pluginType, ct),
-            equivalenceKey: "FixPluginAttribute");
+        // If the class has [CustomApiAttribute] we're not interested.
+        foreach (var attrList in classNode.AttributeLists)
+            foreach (var attr in attrList.Attributes)
+                if (IsCustomApiAttribute(attr)) return;
 
-        context.RegisterRefactoring(action);
+        try
+        {
+            var pluginType = await WebApiService.GetPluginDefinitionAsync(className);
+            if (string.IsNullOrEmpty(className) || pluginType == null) return;
+
+            var action = CodeAction.Create(
+                "Expand [Plugin] attribute and add [Step] and [Image] attributes",
+                ct => ApplyPluginFixAsync(context.Document, classNode, attribute, pluginType, ct),
+                equivalenceKey: "FixPluginAttribute");
+
+            context.RegisterRefactoring(action);
+        }
+        catch (Exception)
+        {
+            // Possible error: "No environment selected."
+            return;
+        }
     }
 
     private async Task<Document> ApplyPluginFixAsync(
@@ -79,7 +93,7 @@ public class PluginRefactoringProvider : CodeRefactoringProvider
             attributeArguments.Add(
                 SyntaxFactory.AttributeArgument(
                     SyntaxFactory.NameEquals("Name"), null,
-                    SyntaxFactory.LiteralExpression(SyntaxKind.StringLiteralExpression, SyntaxFactory.Literal(name))));
+                    SyntaxFactory.LiteralExpression(SyntaxKind.StringLiteralExpression, SyntaxFactory.Literal(name!))));
         }
 
         // Only add FriendlyName if different from typeName
@@ -88,7 +102,7 @@ public class PluginRefactoringProvider : CodeRefactoringProvider
             attributeArguments.Add(
                 SyntaxFactory.AttributeArgument(
                     SyntaxFactory.NameEquals("FriendlyName"), null,
-                    SyntaxFactory.LiteralExpression(SyntaxKind.StringLiteralExpression, SyntaxFactory.Literal(friendlyName))));
+                    SyntaxFactory.LiteralExpression(SyntaxKind.StringLiteralExpression, SyntaxFactory.Literal(friendlyName!))));
         }
 
         // Only add Description if not empty
@@ -97,16 +111,63 @@ public class PluginRefactoringProvider : CodeRefactoringProvider
             attributeArguments.Add(
                 SyntaxFactory.AttributeArgument(
                     SyntaxFactory.NameEquals("Description"), null,
-                    SyntaxFactory.LiteralExpression(SyntaxKind.StringLiteralExpression, SyntaxFactory.Literal(description))));
+                    SyntaxFactory.LiteralExpression(SyntaxKind.StringLiteralExpression, SyntaxFactory.Literal(description!))));
         }
 
-        var updatedPluginAttribute = SyntaxFactory.Attribute(
-            SyntaxFactory.IdentifierName(nameof(PluginAttribute)[..^9]),
-            SyntaxFactory.AttributeArgumentList(
-                SyntaxFactory.SeparatedList(attributeArguments)
-            )
-        );
+        var updatedPluginAttribute =
+            attributeArguments.Count == 0
+                ? SyntaxFactory.Attribute(SyntaxFactory.IdentifierName(nameof(PluginAttribute)[..^9]))
+                : SyntaxFactory.Attribute(
+                    SyntaxFactory.IdentifierName(nameof(PluginAttribute)[..^9]),
+                    SyntaxFactory.AttributeArgumentList(
+                        SyntaxFactory.SeparatedList(attributeArguments)
+                    )
+                );
         editor.ReplaceNode(attributeNode, updatedPluginAttribute);
+
+        // Remove all StepAttributes and ImageAttributes (supports both short and full names)
+        var toRemoveAttributeLists = new List<AttributeListSyntax>();
+        var replacements = new Dictionary<AttributeListSyntax, AttributeListSyntax>();
+
+        foreach (var attrList in classNode.AttributeLists)
+        {
+            var remaining = new List<AttributeSyntax>();
+            var changed = false;
+
+            foreach (var attr in attrList.Attributes)
+            {
+                if (IsStepOrImageAttribute(attr))
+                {
+                    changed = true;
+                    continue;
+                }
+
+                remaining.Add(attr);
+            }
+
+            if (changed)
+            {
+                if (remaining.Count == 0)
+                {
+                    toRemoveAttributeLists.Add(attrList);
+                }
+                else
+                {
+                    var newList = attrList.WithAttributes(SyntaxFactory.SeparatedList(remaining));
+                    replacements[attrList] = newList;
+                }
+            }
+        }
+
+        foreach (var kvp in replacements)
+        {
+            editor.ReplaceNode(kvp.Key, kvp.Value);
+        }
+
+        foreach (var emptyList in toRemoveAttributeLists)
+        {
+            editor.RemoveNode(emptyList);
+        }
 
         // Add StepAttributes
         foreach (var step in pluginType.Steps)
@@ -115,43 +176,43 @@ public class PluginRefactoringProvider : CodeRefactoringProvider
             var messageName = step.Message?.Name ?? step.Name ?? "";
             var primaryEntityName = step.SdkMessageFilter?.PrimaryObjectTypeCode;
             var filteringAttributes = step.FilteringAttributes;
-            var stage = step.Stage ?? Stages.PreOperation; // Default to PreOperation if null
-            var mode = (ExecutionMode)step.Mode; // Cast to enum
+            var stage = step.Stage ?? Stages.PreOperation;
+            var mode = step.Mode ?? ExecutionMode.Synchronous;
 
             AttributeArgumentSyntax[] positionalArgs;
 
             if (!string.IsNullOrWhiteSpace(primaryEntityName) && !string.IsNullOrWhiteSpace(filteringAttributes))
             {
                 // Use StepAttribute(string messageName, string primaryEntityName, string filteringAttributes, Stages stage, ExecutionMode mode)
-                positionalArgs = new[]
-                {
+                positionalArgs =
+                [
                     SyntaxFactory.AttributeArgument(SyntaxFactory.LiteralExpression(SyntaxKind.StringLiteralExpression, SyntaxFactory.Literal(messageName))),
                     SyntaxFactory.AttributeArgument(SyntaxFactory.LiteralExpression(SyntaxKind.StringLiteralExpression, SyntaxFactory.Literal(primaryEntityName))),
                     SyntaxFactory.AttributeArgument(SyntaxFactory.LiteralExpression(SyntaxKind.StringLiteralExpression, SyntaxFactory.Literal(filteringAttributes))),
                     SyntaxFactory.AttributeArgument(SyntaxFactory.ParseExpression($"{nameof(Stages)}.{stage}")),
                     SyntaxFactory.AttributeArgument(SyntaxFactory.ParseExpression($"{nameof(ExecutionMode)}.{mode}"))
-                };
+                ];
             }
             else if (!string.IsNullOrWhiteSpace(primaryEntityName))
             {
                 // Use StepAttribute(string messageName, string primaryEntityName, Stages stage, ExecutionMode mode)
-                positionalArgs = new[]
-                {
+                positionalArgs =
+                [
                     SyntaxFactory.AttributeArgument(SyntaxFactory.LiteralExpression(SyntaxKind.StringLiteralExpression, SyntaxFactory.Literal(messageName))),
                     SyntaxFactory.AttributeArgument(SyntaxFactory.LiteralExpression(SyntaxKind.StringLiteralExpression, SyntaxFactory.Literal(primaryEntityName))),
                     SyntaxFactory.AttributeArgument(SyntaxFactory.ParseExpression($"{nameof(Stages)}.{stage}")),
                     SyntaxFactory.AttributeArgument(SyntaxFactory.ParseExpression($"{nameof(ExecutionMode)}.{mode}"))
-                };
+                ];
             }
             else
             {
                 // Use StepAttribute(string messageName, Stages stage, ExecutionMode mode)
-                positionalArgs = new[]
-                {
+                positionalArgs =
+                [
                     SyntaxFactory.AttributeArgument(SyntaxFactory.LiteralExpression(SyntaxKind.StringLiteralExpression, SyntaxFactory.Literal(messageName))),
                     SyntaxFactory.AttributeArgument(SyntaxFactory.ParseExpression($"{nameof(Stages)}.{stage}")),
                     SyntaxFactory.AttributeArgument(SyntaxFactory.ParseExpression($"{nameof(ExecutionMode)}.{mode}"))
-                };
+                ];
             }
 
             // Add named arguments as needed (e.g., Description, Configuration, etc.)
@@ -164,7 +225,6 @@ public class PluginRefactoringProvider : CodeRefactoringProvider
                         SyntaxFactory.LiteralExpression(SyntaxKind.StringLiteralExpression, SyntaxFactory.Literal(step.Description))));
             }
 
-            // Add other named arguments as needed...
             var stepAttribute = SyntaxFactory.Attribute(
                 SyntaxFactory.IdentifierName(nameof(StepAttribute)[..^9]),
                 SyntaxFactory.AttributeArgumentList(
@@ -176,8 +236,8 @@ public class PluginRefactoringProvider : CodeRefactoringProvider
             // Add ImageAttributes for each step
             foreach (var image in step.Images)
             {
-                var imageTypeValue = image.ImageType ?? 0;
-                var imageType = (ImageTypes)imageTypeValue;
+                var imageTypeValue = image.ImageType ?? ImageTypes.PreImage;
+                var imageType = imageTypeValue;
                 var imageTypeName = imageType.ToString();
                 var imgAttributes = image.Attributes;
                 var imgEntityAlias = image.EntityAlias;
@@ -195,7 +255,7 @@ public class PluginRefactoringProvider : CodeRefactoringProvider
                 {
                     imageArgs.Add(
                         SyntaxFactory.AttributeArgument(
-                            SyntaxFactory.LiteralExpression(SyntaxKind.StringLiteralExpression, SyntaxFactory.Literal(imgAttributes))));
+                            SyntaxFactory.LiteralExpression(SyntaxKind.StringLiteralExpression, SyntaxFactory.Literal(imgAttributes!))));
                 }
 
                 // Named arguments
@@ -205,28 +265,28 @@ public class PluginRefactoringProvider : CodeRefactoringProvider
                     imageNamedArgs.Add(
                         SyntaxFactory.AttributeArgument(
                             SyntaxFactory.NameEquals("Name"), null,
-                            SyntaxFactory.LiteralExpression(SyntaxKind.StringLiteralExpression, SyntaxFactory.Literal(imgName))));
+                            SyntaxFactory.LiteralExpression(SyntaxKind.StringLiteralExpression, SyntaxFactory.Literal(imgName!))));
                 }
                 if (!string.IsNullOrWhiteSpace(imgEntityAlias) && imgEntityAlias != imageTypeName)
                 {
                     imageNamedArgs.Add(
                         SyntaxFactory.AttributeArgument(
                             SyntaxFactory.NameEquals("EntityAlias"), null,
-                            SyntaxFactory.LiteralExpression(SyntaxKind.StringLiteralExpression, SyntaxFactory.Literal(imgEntityAlias))));
+                            SyntaxFactory.LiteralExpression(SyntaxKind.StringLiteralExpression, SyntaxFactory.Literal(imgEntityAlias!))));
                 }
                 if (!string.IsNullOrWhiteSpace(imgMessagePropertyName) && imgMessagePropertyName != "Target")
                 {
                     imageNamedArgs.Add(
                         SyntaxFactory.AttributeArgument(
                             SyntaxFactory.NameEquals("MessagePropertyName"), null,
-                            SyntaxFactory.LiteralExpression(SyntaxKind.StringLiteralExpression, SyntaxFactory.Literal(imgMessagePropertyName))));
+                            SyntaxFactory.LiteralExpression(SyntaxKind.StringLiteralExpression, SyntaxFactory.Literal(imgMessagePropertyName!))));
                 }
                 if (!string.IsNullOrWhiteSpace(imgDescription))
                 {
                     imageNamedArgs.Add(
                         SyntaxFactory.AttributeArgument(
                             SyntaxFactory.NameEquals("Description"), null,
-                            SyntaxFactory.LiteralExpression(SyntaxKind.StringLiteralExpression, SyntaxFactory.Literal(imgDescription))));
+                            SyntaxFactory.LiteralExpression(SyntaxKind.StringLiteralExpression, SyntaxFactory.Literal(imgDescription!))));
                 }
 
                 var imageAttribute = SyntaxFactory.Attribute(
@@ -240,6 +300,28 @@ public class PluginRefactoringProvider : CodeRefactoringProvider
         }
 
         return editor.GetChangedDocument();
+    }
+
+    private static bool IsStepOrImageAttribute(string name)
+    {
+        return name == "Step" || name == "StepAttribute" || name == "Image" || name == "ImageAttribute";
+    }
+
+    private static bool IsStepOrImageAttribute(AttributeSyntax attr)
+        => GetAttributeSimpleName(attr) is "Step" or "StepAttribute" or "Image" or "ImageAttribute";
+
+    private static bool IsCustomApiAttribute(AttributeSyntax attr)
+        => GetAttributeSimpleName(attr) is "CustomApiAttribute" or "CustomApi";
+
+    private static string GetAttributeSimpleName(AttributeSyntax attr)
+    {
+        return attr.Name switch
+        {
+            IdentifierNameSyntax id => id.Identifier.ValueText,
+            QualifiedNameSyntax q => q.Right.Identifier.ValueText,
+            AliasQualifiedNameSyntax a => a.Name.Identifier.ValueText,
+            _ => attr.Name.ToString()
+        };
     }
 }
 #nullable restore
