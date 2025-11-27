@@ -15,10 +15,14 @@ using Microsoft.CodeAnalysis.CSharp;
 using XrmTools.WebApi.Entities;
 using System.Collections.Generic;
 using CustomApiFieldType = WebApi.Types.CustomApiFieldType;
+using System;
 
 [ExportCodeRefactoringProvider(LanguageNames.CSharp, Name = nameof(CustomApiRefactoringProvider)), Shared]
 public class CustomApiRefactoringProvider : CodeRefactoringProvider
 {
+    private const string RequestTypeName = "Request";
+    private const string ResponseTypeName = "Response";
+
     [Import]
     internal IWebApiService WebApiService { get; set; } = null!;
 
@@ -75,11 +79,11 @@ public class CustomApiRefactoringProvider : CodeRefactoringProvider
         string customApiName,
         CancellationToken cancellationToken)
     {
-        var customApi = await WebApiService.GetCustomApiDefinitionAsync(customApiName);
+        var customApi = await RetrieveCustomApiAsync(customApiName);
         if (customApi == null) return document;
 
         var editor = await DocumentEditor.CreateAsync(document, cancellationToken);
-        UpdateAttribute(editor, classNode, attributeNode, customApi);
+        UpdateAttribute(editor, attributeNode, customApi);
         return editor.GetChangedDocument();
     }
 
@@ -90,19 +94,38 @@ public class CustomApiRefactoringProvider : CodeRefactoringProvider
         string customApiName,
         CancellationToken cancellationToken)
     {
-        var customApi = await WebApiService.GetCustomApiDefinitionAsync(customApiName);
+        var customApi = await RetrieveCustomApiAsync(customApiName);
         if (customApi == null) return document;
 
         var editor = await DocumentEditor.CreateAsync(document, cancellationToken);
 
-        UpdateAttribute(editor, classNode, attributeNode, customApi);
-        editor.AddMember(classNode, GenerateRequestClass(classNode.Identifier.Text, customApi.RequestParameters));
-        editor.AddMember(classNode, GenerateResponseClass(classNode.Identifier.Text, customApi.ResponseProperties));
+        UpdateAttribute(editor, attributeNode, customApi);
+
+        foreach(var memberClass in classNode.Members.OfType<ClassDeclarationSyntax>())
+        {
+            if (memberClass.Identifier.ValueText is RequestTypeName or ResponseTypeName)
+                editor.RemoveNode(memberClass);
+        }
+
+        editor.AddMember(classNode, GenerateRequestClass(RequestTypeName, customApi.RequestParameters));
+        editor.AddMember(classNode, GenerateResponseClass(ResponseTypeName, customApi.ResponseProperties));
 
         return editor.GetChangedDocument();
     }
 
-    private void UpdateAttribute(DocumentEditor editor, ClassDeclarationSyntax classNode, AttributeSyntax attributeNode, CustomApi customApi)
+    private async Task<CustomApi?> RetrieveCustomApiAsync(string uniqueName)
+    {
+        try
+        {
+            return await WebApiService.GetCustomApiDefinitionAsync(uniqueName);
+        }
+        catch (Exception)
+        {
+            return null;
+        }
+    }
+
+    private void UpdateAttribute(DocumentEditor editor, AttributeSyntax attributeNode, CustomApi customApi)
     {
         if (string.IsNullOrWhiteSpace(customApi.UniqueName))
         {
@@ -123,7 +146,7 @@ public class CustomApiRefactoringProvider : CodeRefactoringProvider
     }
 
     private ClassDeclarationSyntax GenerateRequestClass(string className, IEnumerable<CustomApiRequestParameter> parameters)
-        => SyntaxFactory.ClassDeclaration($"{className}Request")
+        => SyntaxFactory.ClassDeclaration(className)
             .AddModifiers(SyntaxFactory.Token(SyntaxKind.PublicKeyword))
             .AddAttributeLists(
                 SyntaxFactory.AttributeList(
@@ -135,7 +158,7 @@ public class CustomApiRefactoringProvider : CodeRefactoringProvider
             .AddMembers([.. parameters.Select(GenerateProperty)]);
 
     private ClassDeclarationSyntax GenerateResponseClass(string className, IEnumerable<CustomApiResponseProperty> properties)
-        => SyntaxFactory.ClassDeclaration($"{className}Response")
+        => SyntaxFactory.ClassDeclaration(className)
         .AddModifiers(SyntaxFactory.Token(SyntaxKind.PublicKeyword))
         .AddAttributeLists(
             SyntaxFactory.AttributeList(
@@ -231,9 +254,10 @@ public class CustomApiRefactoringProvider : CodeRefactoringProvider
             }
         }
 
-        if (api.Name is string name) AddArg("Name", name);
-        if (api.DisplayName is string displayName) AddArg("DisplayName", displayName);
-        if (api.Description is string description) AddArg("Description", description);
+        var uniqueName = api.UniqueName;
+        if (api.Name is string name && name != uniqueName) AddArg("Name", name);
+        if (api.DisplayName is string displayName && displayName != uniqueName) AddArg("DisplayName", displayName);
+        if (api.Description is string description && description != uniqueName) AddArg("Description", description);
 
         if (api.StepType != CustomApi.ProcessingStepTypes.None)
         {
@@ -252,10 +276,12 @@ public class CustomApiRefactoringProvider : CodeRefactoringProvider
         if (api.BoundEntityLogicalName is string boundEntity) AddArg("BoundEntityLogicalName", boundEntity);
         if (api.ExecutePrivilegeName is string executePrivilege) AddArg("ExecutePrivilegeName", executePrivilege);
 
-        args.Add(SyntaxFactory.AttributeArgument(SyntaxFactory.NameEquals("IsFunction"), null,
-            api.IsFunction ? SyntaxFactory.LiteralExpression(SyntaxKind.TrueLiteralExpression) : SyntaxFactory.LiteralExpression(SyntaxKind.FalseLiteralExpression)));
-        args.Add(SyntaxFactory.AttributeArgument(SyntaxFactory.NameEquals("IsPrivate"), null,
-            api.IsPrivate ? SyntaxFactory.LiteralExpression(SyntaxKind.TrueLiteralExpression) : SyntaxFactory.LiteralExpression(SyntaxKind.FalseLiteralExpression)));
+        if (api.IsFunction)
+            args.Add(SyntaxFactory.AttributeArgument(SyntaxFactory.NameEquals("IsFunction"), null,
+                api.IsFunction ? SyntaxFactory.LiteralExpression(SyntaxKind.TrueLiteralExpression) : SyntaxFactory.LiteralExpression(SyntaxKind.FalseLiteralExpression)));
+        if (api.IsPrivate)
+            args.Add(SyntaxFactory.AttributeArgument(SyntaxFactory.NameEquals("IsPrivate"), null,
+                api.IsPrivate ? SyntaxFactory.LiteralExpression(SyntaxKind.TrueLiteralExpression) : SyntaxFactory.LiteralExpression(SyntaxKind.FalseLiteralExpression)));
 
         return args;
     }
