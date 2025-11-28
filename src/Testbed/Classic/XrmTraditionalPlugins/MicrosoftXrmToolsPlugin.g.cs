@@ -13,7 +13,7 @@ using XrmTools;
 
 namespace XrmTraditionalPlugins
 {
-    [GeneratedCode("TemplatedCodeGenerator", "1.4.4.0")]
+    [GeneratedCode("TemplatedCodeGenerator", "1.5.0.2")]
     public partial class CleanAccountPostOperation
     {
         /// <summary>
@@ -23,14 +23,14 @@ namespace XrmTraditionalPlugins
         {
             var scope = new DependencyScope<CleanAccountPostOperation>();
             scope.Set<IServiceProvider>(serviceProvider);
-            scope.Set<IPluginExecutionContext>((IPluginExecutionContext)serviceProvider.GetService(typeof(IPluginExecutionContext)));
         
             var iLogger = (ILogger)serviceProvider.GetService(typeof(ILogger));
         
+            scope.Set<IPluginExecutionContext>((IPluginExecutionContext)serviceProvider.GetService(typeof(IPluginExecutionContext)));
             scope.Set<IOrganizationServiceFactory>((IOrganizationServiceFactory)serviceProvider.GetService(typeof(IOrganizationServiceFactory)));
             scope.Set<ITracingService>((ITracingService)serviceProvider.GetService(typeof(ITracingService)));
             scope.Set<ILogger>((ILogger)serviceProvider.GetService(typeof(ILogger)));
-            scope.Set<IExecutionContext>(scope.Set(new RemoteExecutionContext()));
+            scope.Set<IExecutionContext>((IExecutionContext)serviceProvider.GetService(typeof(IExecutionContext)));
             scope.Set<XrmTraditionalPlugins.IBusinessService>(scope.Set(new XrmTraditionalPlugins.BusinessService((ILogger)serviceProvider.GetService(typeof(ILogger)), this.Config)));
             return scope;
         }

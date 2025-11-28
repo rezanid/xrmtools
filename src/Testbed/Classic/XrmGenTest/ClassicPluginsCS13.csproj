@@ -88,6 +88,11 @@
     <Compile Include="GlobalOptionSets.cs" />
     <Compile Include="LoggingService.cs" />
     <Compile Include="PluginBase.cs" />
+    <Compile Include="Queries\Accounts.g.cs">
+      <AutoGen>True</AutoGen>
+      <DesignTime>True</DesignTime>
+      <DependentUpon>Accounts.fetch</DependentUpon>
+    </Compile>
     <Compile Include="QueryExpressionExtensions.cs" />
     <Compile Include="TypedSdkMessages\EchoRequest.cs" />
     <Compile Include="TypedSdkMessages\EchoResponse.cs" />
@@ -133,6 +138,12 @@
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
       <PrivateAssets>all</PrivateAssets>
     </PackageReference>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Queries\Accounts.fetch">
+      <Generator>XrmTools FetchXML Generator</Generator>
+      <LastGenOutput>Accounts.g.cs</LastGenOutput>
+    </None>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <ProjectExtensions />

@@ -1,13 +1,19 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio Version 17
-VisualStudioVersion = 17.14.36429.23
+# Visual Studio Version 18
+VisualStudioVersion = 18.0.11205.157
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "XrmGenTestCS13", "XrmGenTest\XrmGenTestCS13.csproj", "{2F08D24A-EAE5-4EE1-9D2B-761B26C7E94A}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ClassicPluginsCS13", "Classic\XrmGenTest\ClassicPluginsCS13.csproj", "{2F08D24A-EAE5-4EE1-9D2B-761B26C7E94A}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "XrmGenTestClassic", "XrmGenTestClassic\XrmGenTestClassic.csproj", "{8AE60F54-0531-43C1-B723-AE88C50285F9}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ClassicPluginsCS73", "Classic\XrmGenTestClassic\ClassicPluginsCS73.csproj", "{8AE60F54-0531-43C1-B723-AE88C50285F9}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "XrmTraditionalPlugins", "XrmTraditionalPlugins\XrmTraditionalPlugins.csproj", "{0B2C5980-65B4-4BB7-ACB1-1BBC8B8D956F}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MicrosoftSamplePlugin", "Classic\XrmTraditionalPlugins\MicrosoftSamplePlugin.csproj", "{0B2C5980-65B4-4BB7-ACB1-1BBC8B8D956F}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "SDK-Style", "SDK-Style", "{2E47006E-85D0-4382-82DF-B819A1126F8C}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Classic", "Classic", "{53C8EA8F-9F3F-443D-BF87-8955CBBA9729}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SdkPluginsCS10", "SdkStyle\SdkPluginsCS10\SdkPluginsCS10.csproj", "{9D106EFF-1159-144F-9ED3-260CB46D8C95}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -27,9 +33,19 @@ Global
 		{0B2C5980-65B4-4BB7-ACB1-1BBC8B8D956F}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{0B2C5980-65B4-4BB7-ACB1-1BBC8B8D956F}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{0B2C5980-65B4-4BB7-ACB1-1BBC8B8D956F}.Release|Any CPU.Build.0 = Release|Any CPU
+		{9D106EFF-1159-144F-9ED3-260CB46D8C95}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{9D106EFF-1159-144F-9ED3-260CB46D8C95}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{9D106EFF-1159-144F-9ED3-260CB46D8C95}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{9D106EFF-1159-144F-9ED3-260CB46D8C95}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{2F08D24A-EAE5-4EE1-9D2B-761B26C7E94A} = {53C8EA8F-9F3F-443D-BF87-8955CBBA9729}
+		{8AE60F54-0531-43C1-B723-AE88C50285F9} = {53C8EA8F-9F3F-443D-BF87-8955CBBA9729}
+		{0B2C5980-65B4-4BB7-ACB1-1BBC8B8D956F} = {53C8EA8F-9F3F-443D-BF87-8955CBBA9729}
+		{9D106EFF-1159-144F-9ED3-260CB46D8C95} = {2E47006E-85D0-4382-82DF-B819A1126F8C}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {BFD49DD2-2CBD-4BD3-8A69-D1F681378B8D}
