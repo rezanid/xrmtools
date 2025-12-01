@@ -35,8 +35,10 @@ The best way to start using Xrm Tools is:
 * [Getting Started](https://github.com/rezanid/xrmtools/wiki/Getting-started) guide in the [Wiki](https://github.com/rezanid/xrmtools/wiki)
 * YouTube Videos:
   * [Short - Why Xrm Tools](https://www.youtube.com/shorts/nnoKjmEwEVY)
-  * [Writing a Hello World Plugin](https://www.youtube.com/watch?v=6E2AE8vrEbI)
+  * [Building a Hello World Plugin](https://www.youtube.com/watch?v=6E2AE8vrEbI)
   * [Enabling Code Generation and Dependency Injection](https://www.youtube.com/watch?v=C6XR08AckP0)
+  * [Building Custom APIs](https://youtu.be/VkbgbgRRD5I?si=hbGBm-bYmNZAZH3W)
+  * [Converting old plugins to Xrm Tools in seconds](https://youtu.be/_f8uMrxdkD4?si=Icd3IXMgU7ix5lPA)
 
 # Learn more
 To learn more about Xrm Tools extension for Visual Studio check the [wiki](https://github.com/rezanid/xrmtools/wiki)
