@@ -17,7 +17,7 @@ Xrm Tools is a Visual Studio extension that aims to make Power Platform developm
 * [Retro-fit to your existing plugins using smart code-fixers (aka bulb actions)](https://github.com/rezanid/xrmtools/wiki/Enabling-Xrm-Tools-for-Old-plugins)
 * [Easily call Custom APIs and Actions from your plugin](https://github.com/rezanid/xrmtools/wiki/Calling-Custom-APIs-Action-and-Other-Messages)
 
-## Xrm Tools is a good citizin in Visual Studio
+## Xrm Tools is a good citizen in Visual Studio
 * XrmTools does not need admin privileges and will not apply any system-wide change in your machine nor the configuration of your Visual Studio or projects. 
 * Xrm Tools does not send any telemetry information from your machine.
 * Xrm Tools does not do any code generation at build time. In other words everything is done in development time and you will see the changes transparently and can benefit from Git for diffing and reviewing the code.
