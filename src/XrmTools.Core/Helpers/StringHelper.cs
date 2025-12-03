@@ -1,17 +1,14 @@
 ﻿#nullable enable
 namespace XrmTools.Core.Helpers;
 
-using Newtonsoft.Json;
 using System;
-using System.Collections;
-using System.Diagnostics.CodeAnalysis;
-using System.Text.Json;
-using System.Text.Json.Serialization;
-using System.Text.Json.Serialization.Metadata;
 using System.Collections.Generic;
 
 internal static class StringHelper
 {
+    public static string FormatWith(this string format, object arg0) => string.Format(format, arg0);
+    public static string FormatWith(this string format, object arg0, object arg1) => string.Format(format, arg0, arg1);
+
     //Removing Microsoft.Xrm.Sdk dependency
     // System.Text.Json Configuration:
     //private static readonly JsonSerializerOptions jsonSerializerOptions = new()

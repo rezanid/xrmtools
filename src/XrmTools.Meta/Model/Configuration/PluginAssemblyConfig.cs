@@ -53,6 +53,9 @@ public sealed class PluginAssemblyConfig : PluginAssembly//, IPluginAssemblyConf
     [JsonPropertyOrder(2)]
     public CodeGenGlobalOptionSetsConfig GlobalOptionSetCodeGen { get; set; } = new();
 
+    [JsonPropertyOrder(3)]
+    public CodeGenOrganizationContextConfig? OrganizationContextConfig { get; set; } = new();
+
     public Solution? Solution { get; set; }
 
     public new ICollection<PluginTypeConfig> PluginTypes { get; set; } = [];

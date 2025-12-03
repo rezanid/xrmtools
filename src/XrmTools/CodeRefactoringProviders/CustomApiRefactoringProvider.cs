@@ -129,7 +129,8 @@ public class CustomApiRefactoringProvider : CodeRefactoringProvider
     {
         if (string.IsNullOrWhiteSpace(customApi.UniqueName))
         {
-            // It is impossible for a CustomApi to not have a UniqueName, but if it does, we remove the attribute.
+            // It is impossible for a CustomApi to not have a UniqueName, but if
+            // it doesn't, we'll remove the attribute.
             editor.RemoveNode(attributeNode);
             return;
         }

@@ -52,6 +52,7 @@ internal class CSharpXrmMetaParser(
         AttributeData? solutionAttribute = null;
         List<AttributeData> codeGenPrefixAttribute = [];
         AttributeData? codeGenGlobalOptionSetsAttribute = null;
+        AttributeData? codeGenOrgContextAttribute = null;
         //List<EntityConfig> entityConfigs = [];
         foreach (var attr in assemblySymbol.GetAttributes())
         {
@@ -70,6 +71,10 @@ internal class CSharpXrmMetaParser(
             else if (attr.AttributeClass?.ToDisplayString() == typeof(CodeGenGlobalOptionSetAttribute).FullName)
             {
                 codeGenGlobalOptionSetsAttribute = attr;
+            }
+            else if (attr.AttributeClass?.ToDisplayString() == typeof(CodeGenOrganizationContextAttribute).FullName)
+            {
+                codeGenOrgContextAttribute = attr;
             }
             //else if (attr.AttributeClass?.ToDisplayString() == typeof(EntityAttribute).FullName)
             //{
@@ -111,6 +116,15 @@ internal class CSharpXrmMetaParser(
         if (codeGenGlobalOptionSetsAttribute != null)
         {
             pluginAssemblyConfig.GlobalOptionSetCodeGen.SetPropertiesFromAttribute(codeGenGlobalOptionSetsAttribute);
+        }
+
+        if (codeGenOrgContextAttribute != null)
+        {
+            pluginAssemblyConfig.OrganizationContextConfig?.SetPropertiesFromAttribute(codeGenOrgContextAttribute);
+        }
+        else
+        {
+            pluginAssemblyConfig.OrganizationContextConfig = null;
         }
 
         if (assemblyAttribute == null) return pluginAssemblyConfig;
