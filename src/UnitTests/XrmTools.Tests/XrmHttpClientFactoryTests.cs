@@ -41,7 +41,7 @@ public class XrmHttpClientFactoryTests
     public async Task CreateHttpClientAsync_Should_Throw_When_No_Environment_Selected()
     {
         // Arrange
-        _environmentProviderMock.Setup(x => x.GetActiveEnvironmentAsync()).ReturnsAsync((DataverseEnvironment)null);
+        _environmentProviderMock.Setup(x => x.GetActiveEnvironmentAsync(true)).ReturnsAsync((DataverseEnvironment)null);
 
         // Act
         Func<Task> act = async () => await _factory.CreateClientAsync();
@@ -55,7 +55,7 @@ public class XrmHttpClientFactoryTests
     {
         // Arrange
         var environment = new DataverseEnvironment { Name = "Test", ConnectionString = string.Empty };
-        _environmentProviderMock.Setup(x => x.GetActiveEnvironmentAsync()).ReturnsAsync(environment);
+        _environmentProviderMock.Setup(x => x.GetActiveEnvironmentAsync(true)).ReturnsAsync(environment);
 
         // Act
         Func<Task> act = async () => await _factory.CreateClientAsync(environment);
@@ -69,10 +69,10 @@ public class XrmHttpClientFactoryTests
     {
         // Arrange
         var environment = CreateFakeEnvironment();
-        _environmentProviderMock.Setup(x => x.GetActiveEnvironmentAsync()).ReturnsAsync(environment);
+        _environmentProviderMock.Setup(x => x.GetActiveEnvironmentAsync(true)).ReturnsAsync(environment);
 
         var authResult = CreateFakeAuthenticationResult();
-        _authenticationServiceMock.Setup(x => x.AuthenticateAsync(It.IsAny<DataverseEnvironment>(), It.IsAny<Action<string>>(), It.IsAny<CancellationToken>())).ReturnsAsync(authResult);
+        _authenticationServiceMock.Setup(x => x.AuthenticateAsync(It.IsAny<DataverseEnvironment>(), true, It.IsAny<Action<string>>(), It.IsAny<CancellationToken>())).ReturnsAsync(authResult);
 
         // Act
         var client = await _factory.CreateClientAsync(environment);
@@ -88,7 +88,7 @@ public class XrmHttpClientFactoryTests
     {
         // Arrange
         var environment = CreateFakeEnvironment();
-        _environmentProviderMock.Setup(x => x.GetActiveEnvironmentAsync()).ReturnsAsync(environment);
+        _environmentProviderMock.Setup(x => x.GetActiveEnvironmentAsync(true)).ReturnsAsync(environment);
 
         var validToken = CreateFakeAuthenticationResult();
  
@@ -101,7 +101,7 @@ public class XrmHttpClientFactoryTests
         // Assert
         client.Should().NotBeNull();
         client.DefaultRequestHeaders.Authorization.Parameter.Should().Be(validToken.AccessToken);
-        _authenticationServiceMock.Verify(x => x.AuthenticateAsync(It.IsAny<DataverseEnvironment>(), It.IsAny<Action<string>>(), It.IsAny<CancellationToken>()), Times.Never);
+        _authenticationServiceMock.Verify(x => x.AuthenticateAsync(It.IsAny<DataverseEnvironment>(), true, It.IsAny<Action<string>>(), It.IsAny<CancellationToken>()), Times.Never);
     }
 
     [Fact]
@@ -109,14 +109,14 @@ public class XrmHttpClientFactoryTests
     {
         // Arrange
         var environment = CreateFakeEnvironment();
-        _environmentProviderMock.Setup(x => x.GetActiveEnvironmentAsync()).ReturnsAsync(environment);
+        _environmentProviderMock.Setup(x => x.GetActiveEnvironmentAsync(true)).ReturnsAsync(environment);
 
         var expiredToken = CreateFakeAuthenticationResult(isValid: false);
         typeof(XrmHttpClientFactory).GetField("_tokenCache", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance)
             .SetValue(_factory, new ConcurrentDictionary<string, AuthenticationResult> { [environment.ConnectionString] = expiredToken });
 
         var newToken = CreateFakeAuthenticationResult();
-        _authenticationServiceMock.Setup(x => x.AuthenticateAsync(It.IsAny<DataverseEnvironment>(), It.IsAny<Action<string>>(), It.IsAny<CancellationToken>())).ReturnsAsync(newToken);
+        _authenticationServiceMock.Setup(x => x.AuthenticateAsync(It.IsAny<DataverseEnvironment>(), true, It.IsAny<Action<string>>(), It.IsAny<CancellationToken>())).ReturnsAsync(newToken);
 
         // Act
         var client = await _factory.CreateClientAsync(environment);
@@ -156,7 +156,7 @@ public class XrmHttpClientFactoryTests
         var authResult = CreateFakeAuthenticationResult();
 
         _authenticationServiceMock
-            .Setup(x => x.AuthenticateAsync(It.IsAny<DataverseEnvironment>(), It.IsAny<Action<string>>(), It.IsAny<CancellationToken>()))
+            .Setup(x => x.AuthenticateAsync(It.IsAny<DataverseEnvironment>(), true, It.IsAny<Action<string>>(), It.IsAny<CancellationToken>()))
             .Returns(async () =>
             {
                 await Task.Delay(100);
@@ -172,7 +172,7 @@ public class XrmHttpClientFactoryTests
         await Task.WhenAll(tasks);
 
         // Assert
-        _authenticationServiceMock.Verify(x => x.AuthenticateAsync(It.IsAny<DataverseEnvironment>(), It.IsAny<Action<string>>(), It.IsAny<CancellationToken>()), Times.Once);
+        _authenticationServiceMock.Verify(x => x.AuthenticateAsync(It.IsAny<DataverseEnvironment>(), true, It.IsAny<Action<string>>(), It.IsAny<CancellationToken>()), Times.Once);
         foreach (var client in tasks)
         {
             client.Result.DefaultRequestHeaders.Authorization.Parameter.Should().Be(authResult.AccessToken);
@@ -187,7 +187,7 @@ public class XrmHttpClientFactoryTests
         var authResult = CreateFakeAuthenticationResult();
         var call = 0;
         _authenticationServiceMock
-            .Setup(x => x.AuthenticateAsync(It.IsAny<DataverseEnvironment>(), It.IsAny<Action<string>>(), It.IsAny<CancellationToken>()))
+            .Setup(x => x.AuthenticateAsync(It.IsAny<DataverseEnvironment>(), true, It.IsAny<Action<string>>(), It.IsAny<CancellationToken>()))
             .Returns(() =>
             {
                 call++;
@@ -205,7 +205,7 @@ public class XrmHttpClientFactoryTests
         // Second call should retry and succeed
         var client = await _factory.CreateClientAsync(environment);
         client.DefaultRequestHeaders.Authorization.Parameter.Should().Be(authResult.AccessToken);
-        _authenticationServiceMock.Verify(x => x.AuthenticateAsync(It.IsAny<DataverseEnvironment>(), It.IsAny<Action<string>>(), It.IsAny<CancellationToken>()), Times.Exactly(2));
+        _authenticationServiceMock.Verify(x => x.AuthenticateAsync(It.IsAny<DataverseEnvironment>(), true, It.IsAny<Action<string>>(), It.IsAny<CancellationToken>()), Times.Exactly(2));
     }
 
     [Fact]
@@ -217,7 +217,7 @@ public class XrmHttpClientFactoryTests
 
         var tcs = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
         _authenticationServiceMock
-            .Setup(x => x.AuthenticateAsync(It.IsAny<DataverseEnvironment>(), It.IsAny<Action<string>>(), It.IsAny<CancellationToken>()))
+            .Setup(x => x.AuthenticateAsync(It.IsAny<DataverseEnvironment>(), true, It.IsAny<Action<string>>(), It.IsAny<CancellationToken>()))
             .Returns(async () =>
             {
                 await Task.Delay(150);
@@ -238,7 +238,7 @@ public class XrmHttpClientFactoryTests
         var client = await stillWaiting;
         client.DefaultRequestHeaders.Authorization.Parameter.Should().Be(authResult.AccessToken);
 
-        _authenticationServiceMock.Verify(x => x.AuthenticateAsync(It.IsAny<DataverseEnvironment>(), It.IsAny<Action<string>>(), It.IsAny<CancellationToken>()), Times.Once);
+        _authenticationServiceMock.Verify(x => x.AuthenticateAsync(It.IsAny<DataverseEnvironment>(), true, It.IsAny<Action<string>>(), It.IsAny<CancellationToken>()), Times.Once);
     }
 
     private AuthenticationResult CreateFakeAuthenticationResult(bool isValid = true, string name = "FakeToken")

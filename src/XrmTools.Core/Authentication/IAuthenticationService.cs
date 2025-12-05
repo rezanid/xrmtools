@@ -9,6 +9,6 @@ internal interface IAuthenticationService
 {
     Task<AuthenticationResult> AuthenticateAsync(
         DataverseEnvironment environment,
-        Action<string> onMessageForUser,
-        CancellationToken cancellationToken);
+        bool allowInteraction,
+        Action<string> onMessageForUser, CancellationToken cancellationToken);
 }

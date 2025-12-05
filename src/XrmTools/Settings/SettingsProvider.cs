@@ -3,6 +3,7 @@ namespace XrmTools.Settings;
 using Community.VisualStudio.Toolkit;
 using System;
 using System.Collections.Generic;
+using System.ComponentModel.Composition;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Runtime.InteropServices;
@@ -63,6 +64,7 @@ public interface ISettingsProvider
 }
 
 [ComVisible(true)]
+[Export(typeof(ISettingsProvider))]
 public class SettingsProvider : ISettingsProvider
 {
     enum ResolveScope { Project, Solution }

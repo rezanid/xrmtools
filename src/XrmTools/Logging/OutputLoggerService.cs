@@ -7,7 +7,9 @@ using System.Collections.Concurrent;
 using System.Diagnostics.CodeAnalysis;
 using XrmTools.Logging.Compatibility;
 using System;
+using System.ComponentModel.Composition;
 
+[Export(typeof(IOutputLoggerService))]
 public class OutputLoggerService : IOutputLoggerService
 {
     private readonly ConcurrentQueue<string> logQueue = new();

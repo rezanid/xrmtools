@@ -89,7 +89,7 @@ internal class EnvironmentEditorViewModel : ViewModelBase
         };
 
         var environments = await _environmentProvider.GetAvailableEnvironmentsAsync();
-        var activeEnvironment = await _environmentProvider.GetActiveEnvironmentAsync();
+        var activeEnvironment = await _environmentProvider.GetActiveEnvironmentAsync(true);
         Environments.Clear();
         foreach (var environment in environments)
         {
@@ -237,7 +237,7 @@ internal class EnvironmentEditorViewModel : ViewModelBase
             });
             if (env.IsChecked)
             {
-                await _environmentProvider.SetActiveEnvironmentAsync(options.Environments[^1]).ConfigureAwait(false);
+                await _environmentProvider.SetActiveEnvironmentAsync(options.Environments[^1], true).ConfigureAwait(false);
             }
         }
         if (SelectedEnvironment != null)

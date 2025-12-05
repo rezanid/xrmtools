@@ -59,7 +59,7 @@ internal class ManageEnvironmentsCommand : BaseCommand<ManageEnvironmentsCommand
 
         if (args.OutValue != IntPtr.Zero)
         {
-            var activeEnvironment = await EnvironmentProvider.GetActiveEnvironmentAsync();
+            var activeEnvironment = await EnvironmentProvider.GetActiveEnvironmentAsync(true);
             var environmentName = activeEnvironment?.Name ?? DefaultItem;
             Marshal.GetNativeVariantForObject(environmentName, args.OutValue);
         }
@@ -88,7 +88,7 @@ internal class ManageEnvironmentsCommand : BaseCommand<ManageEnvironmentsCommand
             await VS.MessageBox.ShowErrorAsync("Manage Environments", $"Environment '{name}' not found.");
             return;
         }
-        await EnvironmentProvider.SetActiveEnvironmentAsync(environment);
+        await EnvironmentProvider.SetActiveEnvironmentAsync(environment, true);
     }
 }
 

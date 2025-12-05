@@ -1,5 +1,8 @@
 ﻿namespace XrmTools.Authentication;
 using Microsoft.Identity.Client;
+using Microsoft.Identity.Client.Extensibility;
+using Microsoft.Internal.VisualStudio.PlatformUI;
+using Microsoft.VisualStudio.Shell;
 using System;
 using System.Linq;
 using System.Threading;
@@ -15,9 +18,9 @@ internal class IntegratedAuthenticator : DelegatingAuthenticator
     {
         cancellationToken.ThrowIfCancellationRequested();
 
-        // Fresh app per attempt to avoid sticky broker state
-        // Previously we cached the app instances in an AsyncDictionary<AuthenticationParameters, IPublicClientApplication>
-        var app = (await CreateClientAppAsync(parameters, cancellationToken)).AsPublicClient();
+        var appBase = await CreateClientAppAsync(parameters, cancellationToken).ConfigureAwait(false);
+        var app = appBase.AsPublicClient()
+                  ?? throw new InvalidOperationException("IntegratedAuthenticator requires a public client application.");
 
         if (clearTokenCache)
         {
@@ -25,32 +28,41 @@ internal class IntegratedAuthenticator : DelegatingAuthenticator
         }
 
         var accounts = await app.GetAccountsAsync().ConfigureAwait(false);
-        var firstAccount = accounts.FirstOrDefault(a => string.Equals(a.HomeAccountId?.TenantId, parameters.Tenant, StringComparison.OrdinalIgnoreCase));
+        var firstAccount = accounts
+            .FirstOrDefault(
+            a => string.Equals(a.HomeAccountId?.TenantId,
+                   parameters.Tenant,
+                   StringComparison.OrdinalIgnoreCase));
 
-        try
+        if (firstAccount is not null)
         {
-            return await app.AcquireTokenSilent(parameters.Scopes, firstAccount)
-                .ExecuteAsync(cancellationToken)
-                .ConfigureAwait(false);
-        }
-        catch (MsalUiRequiredException)
-        {
-            // continue to interactive
-        }
-        catch (OperationCanceledException)
-        {
-            throw;
+            try
+            {
+                return await app.AcquireTokenSilent(parameters.Scopes, firstAccount)
+                                .ExecuteAsync(cancellationToken)
+                                .ConfigureAwait(false);
+            }
+            catch (MsalUiRequiredException)
+            {
+                // fall through to interactive
+            }
+            catch (OperationCanceledException)
+            {
+                throw;
+            }
         }
 
-        // Interactive using embedded web view to avoid WAM hangs
-        // Add a hard timeout guard so we never wait forever if the broker/webview fails to signal cancel on repeated attempts
+        await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync(cancellationToken);
+
         var builder = app.AcquireTokenInteractive(parameters.Scopes)
-            .WithPrompt(Prompt.SelectAccount)
-            .WithUseEmbeddedWebView(true);
+            .WithParentActivityOrWindow(WindowHelper.GetDialogOwnerHandle())
+            .WithPrompt(Prompt.SelectAccount);
 
+        // ExecuteAsync guarded with a timeout
         var execTask = builder.ExecuteAsync(cancellationToken);
-        var timeoutTask = Task.Delay(TimeSpan.FromSeconds(60));
-        var completed = await Task.WhenAny(execTask, timeoutTask).ConfigureAwait(false);
+        var timeoutTask = Task.Delay(TimeSpan.FromMinutes(2), cancellationToken);
+
+        var completed = await Task.WhenAny(execTask, timeoutTask).ConfigureAwait(true);
         if (completed != execTask)
         {
             throw new OperationCanceledException("Interactive authentication timed out.", cancellationToken);
@@ -58,9 +70,12 @@ internal class IntegratedAuthenticator : DelegatingAuthenticator
 
         try
         {
-            return await execTask.ConfigureAwait(false);
+            return await execTask.ConfigureAwait(true);
         }
-        catch (MsalException ex) when (ex.ErrorCode == "authentication_canceled" || ex.ErrorCode == "access_denied" || ex.ErrorCode == "user_canceled")
+        catch (MsalException ex) when (
+            ex.ErrorCode == "authentication_canceled" ||
+            ex.ErrorCode == "access_denied" ||
+            ex.ErrorCode == "user_canceled")
         {
             throw new OperationCanceledException("User cancelled the authentication.", ex, cancellationToken);
         }

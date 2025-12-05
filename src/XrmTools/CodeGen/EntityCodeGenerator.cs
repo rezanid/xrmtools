@@ -113,7 +113,7 @@ internal class EntityCodeGenerator : BaseCodeGeneratorWithSite
                 return Encoding.UTF8.GetBytes("// No entity definition found for entity code generation.");
             }
 
-            var currentEnvironment = await EnvironmentProvider.GetActiveEnvironmentAsync();
+            var currentEnvironment = await EnvironmentProvider.GetActiveEnvironmentAsync(false);
             if (currentEnvironment == null || currentEnvironment == DataverseEnvironment.Empty)
             {
                 return Encoding.UTF8.GetBytes(
@@ -137,9 +137,10 @@ internal class EntityCodeGenerator : BaseCodeGeneratorWithSite
                 throw;
             }
 
+            await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync();
+
             var inputFile = await PhysicalFile.FromFileAsync(inputFileName);
 
-            await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync();
             if (inputFile is null || inputFile.FindParent(SolutionItemType.Project) is not Project project)
             {
                 return Encoding.UTF8.GetBytes(
@@ -198,8 +199,6 @@ internal class EntityCodeGenerator : BaseCodeGeneratorWithSite
 
             string? generatedCode = null;
 
-            await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync();
-
             if (project.IsSdkStyle())
             {
                 var lastGenFileName = await inputFile.GetAttributeAsync("LastGenOutput");
@@ -223,7 +222,8 @@ internal class EntityCodeGenerator : BaseCodeGeneratorWithSite
         {
             return await XrmMetaDataService.ParseEntitiesAsync(inputFileName);
         }
-        else if (".yml".Equals(Path.GetExtension(inputFileName), StringComparison.OrdinalIgnoreCase))
+        else if (".yml".Equals(Path.GetExtension(inputFileName), StringComparison.OrdinalIgnoreCase) ||
+            ".yaml".Equals(Path.GetExtension(inputFileName), StringComparison.OrdinalIgnoreCase))
         {
             return ParseYamlInputFile(inputFileName, inputFileContent);
         }

@@ -2,11 +2,14 @@
 namespace XrmTools.Tokens;
 
 using System;
+using System.ComponentModel.Composition;
 
 /// <summary>
 /// Can replace tokens of the form {cred:target:key} with the value of the specified key in the specified credential target.
 /// For example {cred:MyApp:username} would retrieve the username from the credential named "MyApp".
 /// </summary>
+[Export(typeof(ITokenExpander))]
+[method: ImportingConstructor]
 public class CredentialTokenExpander(ICredentialManager credentialManager) : ITokenExpander
 {
     public bool CanExpand(string token) => token.StartsWith("cred:");

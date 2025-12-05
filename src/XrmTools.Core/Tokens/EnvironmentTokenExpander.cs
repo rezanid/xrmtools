@@ -1,7 +1,9 @@
 ﻿#nullable enable
 namespace XrmTools.Tokens;
 using System;
+using System.ComponentModel.Composition;
 
+[Export(typeof(ITokenExpander))]
 public class EnvironmentTokenExpander : ITokenExpander
 {
     public bool CanExpand(string token) => token.StartsWith("env:");

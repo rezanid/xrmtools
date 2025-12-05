@@ -6,8 +6,8 @@ using System.Threading.Tasks;
 
 public interface IEnvironmentProvider
 {
-    Task<DataverseEnvironment?> GetActiveEnvironmentAsync();
+    Task<DataverseEnvironment?> GetActiveEnvironmentAsync(bool allowInteraction);
     Task<IList<DataverseEnvironment>> GetAvailableEnvironmentsAsync();
-    Task SetActiveEnvironmentAsync(DataverseEnvironment environment);
+    Task SetActiveEnvironmentAsync(DataverseEnvironment environment, bool allowInteraction);
 }
 #nullable restore

@@ -111,9 +111,9 @@ public class PluginCodeGenerator : BaseCodeGeneratorWithSite
                 return null;
             }
 
-            var inputFile = await PhysicalFile.FromFileAsync(inputFileName);
-
             await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync();
+
+            var inputFile = await PhysicalFile.FromFileAsync(inputFileName);
 
             if (inputFile is null || inputFile.FindParent(SolutionItemType.Project) is not Project project)
             {
@@ -138,7 +138,7 @@ public class PluginCodeGenerator : BaseCodeGeneratorWithSite
                 InputFileName = inputFileName
             };
 
-            var currentEnvironment = await EnvironmentProvider.GetActiveEnvironmentAsync();
+            var currentEnvironment = await EnvironmentProvider.GetActiveEnvironmentAsync(true);
             if (currentEnvironment == null || currentEnvironment == DataverseEnvironment.Empty)
             {
                 return Encoding.UTF8.GetBytes(
