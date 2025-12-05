@@ -4,7 +4,7 @@ Xrm Tools is a Visual Studio extension that aims to make Power Platform developm
 ## Main Features
 
 * Define plugin registration entirely in code using attributes.
-* Intellisense for entities, attributes and more based on connected environment.
+* Intellisense for entities, attributes and more based on connected Dataverse environment.
 * Supports traditional and packaged plugins (dependent assemblies).
 * [Solution aware plugins](https://github.com/rezanid/xrmtools/wiki/Solution%E2%80%90Aware-Plugins)
 * [Environment management at User, Solution or Project level](https://github.com/rezanid/xrmtools/wiki/Environment-Management)
