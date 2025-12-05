@@ -141,13 +141,7 @@ namespace {{ first_plugin_type?.namespace ?? config.default_namespace }}
 		public {{model.organization_context_config.name}}(IOrganizationService service) : base(service) { }
 	{{~for entity_definition in model.entity_definitions~}}
 
-		public IQueryable<{{entity_definition.schema_name}}> {{entity_definition.schema_name}}Set
-		{ 
-			get 
-			{ 
-				return this.CreateQuery<{{entity_definition.schema_name}}>(); 
-			} 
-		}
+		public IQueryable<{{entity_definition.schema_name}}> {{entity_definition.schema_name}}Set => CreateQuery<{{entity_definition.schema_name}}>();
 	{{~end~}}
 	}
 {{~end~}}

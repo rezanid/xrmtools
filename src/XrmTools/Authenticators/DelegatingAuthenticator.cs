@@ -159,13 +159,14 @@ internal abstract class DelegatingAuthenticator : IAuthenticator
         string tenantId = null)
     {
         var builder = PublicClientApplicationBuilder.Create(clientId);
-        
+
         if (!string.IsNullOrEmpty(authority)) builder.WithAuthority(authority);
         if (!string.IsNullOrEmpty(redirectUri)) builder.WithRedirectUri(redirectUri);
         if (!string.IsNullOrEmpty(tenantId)) builder.WithTenantId(tenantId);
-
+        
         var publicClientApp = builder.WithLogging((level, message, pii) =>
         {
+            Debug.Print(message);
             // TODO: Replace the following line when logging is in-place.
             // PartnerSession.Instance.DebugMessages.Enqueue($"[MSAL] {level} {message}");
         }).Build();

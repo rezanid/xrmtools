@@ -29,7 +29,7 @@ public class WebApiService(
 {
     private string? _sessionToken = null;
 
-    public async Task<Uri?> GetBaseUrlAsync() => (await environmentProvider.GetActiveEnvironmentAsync().ConfigureAwait(false))?.BaseServiceUrl;
+    public async Task<Uri?> GetBaseUrlAsync() => (await environmentProvider.GetActiveEnvironmentAsync(true).ConfigureAwait(false))?.BaseServiceUrl;
 
     /// <summary>
     /// Processes requests and returns responses. Manages Service Protection Limit errors.

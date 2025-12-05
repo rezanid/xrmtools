@@ -30,24 +30,20 @@ internal class XrmHttpClientFactory : IXrmHttpClientFactory, System.IAsyncDispos
     private readonly ConcurrentDictionary<string, AuthenticationResult> _tokenCache = new();
     // Ensures only one authentication flow runs per environment/connection string at a time
     private readonly ConcurrentDictionary<string, AsyncLazy<AuthenticationResult>> _inflightAuth = new();
-    private readonly TimeProvider timeProvider;
-    private readonly IEnvironmentProvider environmentProvider;
-    private readonly IAuthenticationService authenticationService;
-    private readonly ILogger<XrmHttpClientFactory> logger;
     private bool disposedValue;
 
-    [ImportingConstructor]
-    public XrmHttpClientFactory(
-        TimeProvider timeProvider,
-        IEnvironmentProvider environmentProvider,
-        IAuthenticationService authenticationService,
-        ILogger<XrmHttpClientFactory> logger)
+    TimeProvider TimeProvider { get; set; } = TimeProvider.System;
+
+    [Import]
+    IEnvironmentProvider EnvironmentProvider { get; set; } = null!;
+    [Import]
+    IAuthenticationService AuthenticationService { get; set; } = null!;
+    [Import]
+    ILogger<XrmHttpClientFactory> Logger { get; set; } = null!;
+
+    public XrmHttpClientFactory()
     {
-        timer = new AsyncTimer(async _ => await RecycleHandlersAsync(), TimeSpan.FromMinutes(1), TimeSpan.FromMinutes(1), timeProvider);
-        this.timeProvider = timeProvider;
-        this.environmentProvider = environmentProvider;
-        this.authenticationService = authenticationService;
-        this.logger = logger;
+        timer = new AsyncTimer(async _ => await RecycleHandlersAsync(), TimeSpan.FromMinutes(1), TimeSpan.FromMinutes(1), TimeProvider);
     }
 
     // Explicit interface methods without CancellationToken for compatibility
@@ -56,11 +52,11 @@ internal class XrmHttpClientFactory : IXrmHttpClientFactory, System.IAsyncDispos
 
     public async Task<XrmHttpClient> CreateClientAsync(CancellationToken cancellationToken = default)
     {
-        var environment = await environmentProvider.GetActiveEnvironmentAsync();
+        var environment = await EnvironmentProvider.GetActiveEnvironmentAsync(true);
         return environment == null || environment == DataverseEnvironment.Empty ? throw new InvalidOperationException("No environment selected.") : await CreateClientAsync(environment, cancellationToken);
     }
 
-    public async Task<XrmHttpClient> CreateClientAsync(DataverseEnvironment environment, CancellationToken cancellationToken = default)
+    public async Task<AuthenticationResult?> PreAuthenticateAsync(DataverseEnvironment environment, bool allowInteraction, CancellationToken cancellationToken = default)
     {
         if (environment == null) throw new ArgumentNullException(nameof(environment));
 
@@ -71,7 +67,7 @@ internal class XrmHttpClientFactory : IXrmHttpClientFactory, System.IAsyncDispos
 
         // Authenticate with a timeout to avoid waiting indefinitely, and deduplicate concurrent requests per environment
         AuthenticationResult? authResult = null;
-        if (environment != DataverseEnvironment.Empty && (!_tokenCache.TryGetValue(environment.ConnectionString!, out authResult) || authResult.ExpiresOn <= timeProvider.GetUtcNow().Add(TokenExpirySkew)))
+        if (environment != DataverseEnvironment.Empty && (!_tokenCache.TryGetValue(environment.ConnectionString!, out authResult) || authResult.ExpiresOn <= TimeProvider.GetUtcNow().Add(TokenExpirySkew)))
         {
             var key = environment.ConnectionString!;
             var lazy = _inflightAuth.GetOrAdd(key, _ => new AsyncLazy<AuthenticationResult>(async () =>
@@ -82,7 +78,7 @@ internal class XrmHttpClientFactory : IXrmHttpClientFactory, System.IAsyncDispos
                 try
                 {
                     // Use only the timeout CTS for the shared single-flight to avoid one caller cancelling others
-                    var result = await authenticationService.AuthenticateAsync(environment, msg => logger.LogInformation(msg), timeoutCts.Token).ConfigureAwait(false);
+                    var result = await AuthenticationService.AuthenticateAsync(environment, allowInteraction, msg => Logger.LogInformation(msg), timeoutCts.Token).ConfigureAwait(false);
                     _tokenCache[key] = result;
                     return result;
                 }
@@ -92,7 +88,7 @@ internal class XrmHttpClientFactory : IXrmHttpClientFactory, System.IAsyncDispos
                 }
                 catch (Exception ex)
                 {
-                    logger.LogError(ex, "Authentication failed.");
+                    Logger.LogError(ex, "Authentication failed.");
                     throw;
                 }
             }, null));
@@ -121,6 +117,20 @@ internal class XrmHttpClientFactory : IXrmHttpClientFactory, System.IAsyncDispos
                 _inflightAuth.TryRemove(key, out _);
             }
         }
+
+        return authResult;
+    }
+
+    public async Task<XrmHttpClient> CreateClientAsync(DataverseEnvironment environment, CancellationToken cancellationToken = default)
+    {
+        if (environment == null) throw new ArgumentNullException(nameof(environment));
+
+        if (environment != DataverseEnvironment.Empty && string.IsNullOrEmpty(environment.ConnectionString))
+        {
+            throw new InvalidOperationException($"Environment '{environment.Name}' connection string is empty.");
+        }
+
+        AuthenticationResult? authResult = await PreAuthenticateAsync(environment, true, cancellationToken).ConfigureAwait(false);
 
         var handlerEntry = _handlerPool.GetOrAdd(environment, _ => new Lazy<HttpMessageHandlerEntry>(() => CreateHandlerEntry(environment))).Value;
 
@@ -154,7 +164,7 @@ internal class XrmHttpClientFactory : IXrmHttpClientFactory, System.IAsyncDispos
         var handler = environment == DataverseEnvironment.Empty ?
             new PolicyHandler(new HttpClientHandler() { AllowAutoRedirect = false }, CreateDefaultPolicy()) :
             new PolicyHandler(CreateHandler(environment), CreateDefaultPolicy());
-        return new (handler, timeProvider.GetUtcNow());
+        return new (handler, TimeProvider.GetUtcNow());
     }
 
     private HttpClientHandler CreateHandler(DataverseEnvironment environment)
@@ -205,7 +215,7 @@ internal class XrmHttpClientFactory : IXrmHttpClientFactory, System.IAsyncDispos
         }
         catch (Exception ex)
         {
-            logger.LogError(ex, $"Exception during handler recycling: {ex.Message}");
+            Logger.LogError(ex, $"Exception during handler recycling: {ex.Message}");
         }
     }
 

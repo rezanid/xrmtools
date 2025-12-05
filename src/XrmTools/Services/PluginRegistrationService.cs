@@ -159,7 +159,7 @@ internal sealed class PluginRegistrationService(
 
         try
         {
-            environment = await _environmentProvider.GetActiveEnvironmentAsync();
+            environment = await _environmentProvider.GetActiveEnvironmentAsync(true);
             var errMessage = environment is null
                 ? "No active environment found. Please connect to an environment and try again."
                 : environment.BaseServiceUrl is null

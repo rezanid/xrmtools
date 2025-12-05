@@ -7,6 +7,7 @@ using EnvDTE80;
 using Microsoft;
 using Microsoft.VisualStudio;
 using Microsoft.VisualStudio.CommandBars;
+using Microsoft.VisualStudio.ComponentModelHost;
 using Microsoft.VisualStudio.Shell;
 using Microsoft.VisualStudio.Shell.Interop;
 using Microsoft.VisualStudio.TaskStatusCenter;
@@ -21,12 +22,10 @@ using System.Runtime.InteropServices;
 using System.Threading;
 using XrmTools.Commands;
 using XrmTools.Environments;
-using XrmTools.FetchXml.Schema;
 using XrmTools.Helpers;
 using XrmTools.Logging;
 using XrmTools.Options;
 using XrmTools.Settings;
-using XrmTools.Tokens;
 using XrmTools.UI.InfoBars;
 using XrmTools.Xrm.Generators;
 using Task = System.Threading.Tasks.Task;
@@ -52,9 +51,9 @@ using Task = System.Threading.Tasks.Task;
 [Guid(PackageGuids.XrmToolsPackageIdString)]
 [ProvideAutoLoad(UIContextGuids80.SolutionExists, PackageAutoLoadFlags.BackgroundLoad)]
 [ProvideCodeGenerator(typeof(EntityCodeGenerator), EntityCodeGenerator.Name, EntityCodeGenerator.Description, true, ProjectSystem = ProvideCodeGeneratorAttribute.CSharpProjectGuid, RegisterCodeBase = true)]
-[ProvideCodeGeneratorExtension(EntityCodeGenerator.Name, ".yaml")]
+[ProvideCodeGeneratorExtension(EntityCodeGenerator.Name, ".entity.yaml")]
 [ProvideCodeGenerator(typeof(PluginCodeGenerator), PluginCodeGenerator.Name, PluginCodeGenerator.Description, true, ProjectSystem = ProvideCodeGeneratorAttribute.CSharpProjectGuid, RegisterCodeBase = true)]
-[ProvideCodeGeneratorExtension(PluginCodeGenerator.Name, ".def.json")]
+[ProvideCodeGeneratorExtension(PluginCodeGenerator.Name, ".plugin.json")]
 [ProvideCodeGenerator(typeof(FetchXml.CodeGen.FetchXmlCodeGenerator), "XrmTools FetchXML Generator", "Generates C# code from FetchXML files.", true, ProjectSystem = ProvideCodeGeneratorAttribute.CSharpProjectGuid, RegisterCodeBase = true)]
 [ProvideCodeGeneratorExtension("XrmTools FetchXML Generator", ".fetch")]
 [ProvideMenuResource("Menus.ctmenu", 1)]
@@ -114,31 +113,22 @@ public sealed partial class XrmToolsPackage : ToolkitPackage
 {
     private static readonly object _lock = new();
 
-    // It has been observed that VS can call the constructor of the package twice! causing multiple instances of the singleton
-    // services to be created. To avoid side effects, we store them in static fields.
-    private readonly static IOutputLoggerService _loggerService;
-    private readonly static IEnvironmentProvider _environmentProvider;
-    private readonly static ISettingsProvider _settingsProvider;
-    private readonly static ITokenExpanderService _tokenExpanderService;
 
     public const string SolutionPersistanceKey = "XrmToolsProperies";
     private static readonly ExplicitInterfaceInvoker<Package> implicitInvoker = new();
     public DTE2? Dte;
 
-    [Export(typeof(TimeProvider))] internal TimeProvider TimeProvider { get => TimeProvider.System; }
-    [Export(typeof(IOutputLoggerService))] internal IOutputLoggerService OutputLoggerService { get => _loggerService; }
-    [Export(typeof(IEnvironmentProvider))] internal IEnvironmentProvider EnvironmentProvider { get => _environmentProvider; }
-    [Export(typeof(ISettingsProvider))] internal ISettingsProvider SettingsProvider { get => _settingsProvider; }
-    [Export(typeof(ITokenExpanderService))] internal ITokenExpanderService TokenExpanderService { get => _tokenExpanderService; }
+    [Import]
+    IOutputLoggerService OutputLoggerService { get; set; } = null!;
+
+    [Import]
+    IEnvironmentProvider EnvironmentProvider { get; set; } = null!;
+
+    [Import]
+    ISettingsProvider SettingsProvider { get; set; } = null!;
 
     static XrmToolsPackage()
     {
-        _loggerService = new OutputLoggerService();
-        _settingsProvider = new SettingsProvider();
-        _environmentProvider = new DataverseEnvironmentProvider(_settingsProvider);
-        _tokenExpanderService = new TokenExpanderService([
-            new CredentialTokenExpander(new CredentialManager()),
-            new EnvironmentTokenExpander()]);
         AppDomain.CurrentDomain.AssemblyResolve += CurrentDomain_AssemblyResolve;
     }
 
@@ -166,6 +156,16 @@ public sealed partial class XrmToolsPackage : ToolkitPackage
         await base.InitializeAsync(cancellationToken, progress);
         // Ensure FetchXml XSD embedded schema is loaded early (non-blocking errors logged only)
         //FetchXmlSchemaLoader.EnsureLoaded(_loggerService);
+
+        try
+        {
+            var componentModel = await GetServiceAsync(typeof(SComponentModel)) as IComponentModel;
+            componentModel?.DefaultCompositionService.SatisfyImportsOnce(this);
+        }
+        catch (Exception ex)
+        {
+            throw;
+        }
 
         foreach (var key in SettingsProvider.SolutionUserSettings.Keys)
         {

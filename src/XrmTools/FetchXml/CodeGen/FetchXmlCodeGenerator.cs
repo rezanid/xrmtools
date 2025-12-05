@@ -69,9 +69,10 @@ internal sealed class FetchXmlCodeGenerator : BaseCodeGeneratorWithSite
     { 
         try
         {
+            await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync();
+
             var inputFile = await PhysicalFile.FromFileAsync(inputFileName);
 
-            await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync();
             if (inputFile is null || inputFile.FindParent(SolutionItemType.Project) is not Project project)
             {
                 return Encoding.UTF8.GetBytes(
