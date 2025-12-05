@@ -30,6 +30,18 @@ Xrm Tools is a Visual Studio extension that aims to make Power Platform developm
 XRM Tools enables you to define and implement Power Platform plugins and custom APIs entirely as code. The attributes in your source code are the [single source of truth](https://en.wikipedia.org/wiki/Single_source_of_truth).
 By brining plugin registrations to the code you will benefit from Git and the entire echosystem that you have around the code. You are able to review the code and trace the history of every change and the reason behind them. Your team mates are able to just clone the code and know where to test (if you manage the environment at solution or project file level).
 
+## IntelliSense and Code Gen Curb Typos
+
+Power Platform plugin development involves referring to tables, columns and other metadata stored in Dataverse. It's a very common source of bug to make typos when referring to metadata stored in Dataverse. Xrm Tools, curbs these issues by providing IntelliSense that is environment aware. Code generation will turn your plugins, custom APIs, entities and other artifacts into typed plugins and entities (aka early-bound) to take it even easier to develop for Power Platform. You will also benefit from dependency injection if you like. All the features are designed in an opt-in way, so you can use them or not. You can continue writing the same code as before or use any feature you like. This will make it possible to use Xrm Tools in your existing projects without changing your code.
+
+## Quick and Reliable Deployments
+
+By defining plugin and custom API registrations in code, Xrm Tools enables your to deploy your assemblies and plugins with just one click. During the deployment, Xrm Tools checks the environment and find the best way to update your existing registrations. You can even register single plugins or entire projects.
+
+## FetchXml Designer in IDE
+
+The integrated FetchXML Designer let's you write and test your queries in Visual Studio and you can save the query as part of your project. Saving the query will generate code that can be used from your plugins or APIs.
+
 # Where to start
 The best way to start using Xrm Tools is:
 * [Getting Started](https://github.com/rezanid/xrmtools/wiki/Getting-started) guide in the [Wiki](https://github.com/rezanid/xrmtools/wiki)
