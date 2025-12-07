@@ -111,6 +111,25 @@ internal abstract class XrmCompletionSource(
         return new CompletionContext([.. messages.Select(message => new CompletionItem(message.Name, this))]);
     }
 
+    /// <summary>
+    /// List of all unmanaged solutions from Power Platform environment.
+    /// </summary>
+    protected async Task<CompletionContext> GetSolutionCompletionsAsync(CancellationToken cancellationToken)
+    {
+        using var solutionRepository = repositoryFactory.CreateRepository<ISolutionRepository>();
+        if (solutionRepository == null) return CompletionContext.Empty;
+        try
+        {
+            var solutions = await solutionRepository.GetUnmanagedAsync(cancellationToken).ConfigureAwait(false);
+            return new CompletionContext([.. solutions.Select(ToCompletionItem)]);
+        }
+        catch (Exception ex)
+        {
+            logger.LogError("An error occurred while retrieving solution metadata. " + ex.ToString());
+            return CompletionContext.Empty;
+        }
+    }
+
     private CompletionItem ToCompletionItem(EntityMetadata entity)
     {
         var (filters, icon) = entity switch
@@ -151,6 +170,14 @@ internal abstract class XrmCompletionSource(
             _ => (XrmAttributeCompletionFilters.MiscColumnFilters, XrmAttributeCompletionFilters.MiscColumnIcon)
         };
         return new CompletionItem(attribute.LogicalName, this, icon, filter);
+    }
+
+    private CompletionItem ToCompletionItem(Solution solution)
+    {
+        // Use the UniqueName as the display text for the completion item
+        var displayText = solution.UniqueName ?? string.Empty;
+        var description = solution.FriendlyName ?? solution.Description ?? string.Empty;
+        return new CompletionItem(displayText, this);
     }
 
     private bool IsSupportedAttribute(AttributeMetadata attribute) => attribute.IsValidForRead && attribute.AttributeOf is null;
