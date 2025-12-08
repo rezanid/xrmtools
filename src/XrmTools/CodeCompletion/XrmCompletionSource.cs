@@ -176,7 +176,6 @@ internal abstract class XrmCompletionSource(
     {
         // Use the UniqueName as the display text for the completion item
         var displayText = solution.UniqueName ?? string.Empty;
-        var description = solution.FriendlyName ?? solution.Description ?? string.Empty;
         return new CompletionItem(displayText, this);
     }
 
