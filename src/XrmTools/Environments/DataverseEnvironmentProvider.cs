@@ -35,12 +35,6 @@ public class DataverseEnvironmentProvider : IEnvironmentProvider
 
         if (environment?.IsValid != true) return null;
 
-        try
-        {
-            await HttpClientFactory.PreAuthenticateAsync(environment, allowInteraction);
-        }
-        catch (Exception) { }
-
         return environment;
     }
 

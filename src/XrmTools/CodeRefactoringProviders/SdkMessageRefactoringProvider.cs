@@ -125,7 +125,7 @@ public class SdkMessageRefactoringProvider : CodeRefactoringProvider
 
             bool isReferenceType = typeSymbol.IsReferenceType;
             bool useNullable = field.Optional == true && (!isReferenceType || isNullableEnabled);
-            var applyNullForgiving = !useNullable && isReferenceType;
+            var applyNullForgiving = isNullableEnabled;
             bool isRequired = isNullableEnabled && field.Optional != true && typeSymbol.IsReferenceType;
 
             var typeSyntax = CreateTypeSyntax(editor, typeSymbol, useNullable);
@@ -175,7 +175,9 @@ public class SdkMessageRefactoringProvider : CodeRefactoringProvider
     private static AttributeListSyntax CreateDataContractAttribute(SemanticModel semanticModel, SyntaxGenerator generator)
     {
         var dataContractSymbol = semanticModel.Compilation.GetTypeByMetadataName("System.Runtime.Serialization.DataContractAttribute");
-        return SyntaxFactory.AttributeList(
+        return dataContractSymbol is null
+            ? throw new InvalidOperationException("DataContractAttribute type not found in compilation.")
+            : SyntaxFactory.AttributeList(
             SyntaxFactory.SingletonSeparatedList(
                 SyntaxFactory.Attribute((NameSyntax)generator.TypeExpression(dataContractSymbol))
                     .WithArgumentList(SyntaxFactory.AttributeArgumentList(SyntaxFactory.SingletonSeparatedList(
