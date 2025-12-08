@@ -5,3 +5,4 @@
 .DS_Store
 *.snk
 /src/Testbed/XrmGenTestClassic/Entities.model.json
+.nuget/
