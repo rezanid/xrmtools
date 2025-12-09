@@ -33,6 +33,7 @@ internal class RepositoryFactory(IWebApiService service, ILogger<RepositoryFacto
         if (type.IsAssignableFrom(typeof(IEntityMetadataRepository))) return new EntityMetadataRepository(service, logger) as T;
         if (type.IsAssignableFrom(typeof(ISystemRepository))) return new SystemRepository(service, logger) as T;
         if (type.IsAssignableFrom(typeof(ISdkMessageRepository))) return new SdkMessageRepository(service, logger) as T;
+        if (type.IsAssignableFrom(typeof(ISolutionRepository))) return new SolutionRepository(service, logger) as T;
         throw new NotSupportedException($"{type.Name} is not a supported repository.");
     }
 }

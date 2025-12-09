@@ -18,9 +18,9 @@ using XrmTools.Logging.Compatibility;
 using XrmTools.Meta.Attributes;
 using XrmTools.Xrm.Repositories;
 
-internal sealed class XrmPluginDefinitionCompletionSource(
+internal sealed class XrmCSharpCompletionSource(
     ILogger logger, IRepositoryFactory repositoryFactory, VisualStudioWorkspace workspace) 
-    : XrmCompletionSource(logger, repositoryFactory, workspace)
+    : XrmCompletionSourceBase(logger, repositoryFactory, workspace)
 {
     const int StepCtorArgumentMessageIndex = 0;
     const int StepCtorArgumentEntityIndex = 1;
@@ -28,6 +28,7 @@ internal sealed class XrmPluginDefinitionCompletionSource(
     const int ImageCtorArgumentFilteringAttributesIndex = 1;
     const int EntityCtorArgumentEntityIndex = 0;
     const int EntityCtorArgumentAttributesIndex = 1;
+    const int SolutionCtorArgumentUniqueNameIndex = 0;
 
     public override async Task<CompletionContext> GetCompletionContextAsync(
         IAsyncCompletionSession session,
@@ -101,6 +102,13 @@ internal sealed class XrmPluginDefinitionCompletionSource(
         if (IsCustomApiOrRequestOrResponseProxyAttribute(attributeSyntax, semanticModel) && argumentIndex == 0)
         {
             return await GetMessageCompletionsWhenVisibleAsync(cancellationToken).ConfigureAwait(false);
+        }
+
+        if (IsSolutionAttribute(attributeSyntax, semanticModel) && argumentIndex == SolutionCtorArgumentUniqueNameIndex)
+        {
+            return node.IsKind(Microsoft.CodeAnalysis.CSharp.SyntaxKind.StringLiteralExpression) ?
+                await GetSolutionCompletionsAsync(cancellationToken).ConfigureAwait(false) :
+                CompletionContext.Empty;
         }
 
         return CompletionContext.Empty;
@@ -190,6 +198,13 @@ internal sealed class XrmPluginDefinitionCompletionSource(
         var symbolInfo = semanticModel.GetSymbolInfo(attributeSyntax);
         var symbol = (symbolInfo.Symbol ?? symbolInfo.CandidateSymbols.FirstOrDefault()) as IMethodSymbol;
         return symbol?.ContainingType.Name is "CustomApiAttribute" or "RequestProxyAttribute" or "ResponseProxyAttribute";
+    }
+
+    private bool IsSolutionAttribute(AttributeSyntax attributeSyntax, SemanticModel semanticModel)
+    {
+        var symbolInfo = semanticModel.GetSymbolInfo(attributeSyntax);
+        var symbol = (symbolInfo.Symbol ?? symbolInfo.CandidateSymbols.FirstOrDefault()) as IMethodSymbol;
+        return symbol?.ContainingType.Name == nameof(SolutionAttribute);
     }
 
     private int GetArgumentIndexAtPosition(SeparatedSyntaxList<AttributeArgumentSyntax> arguments, int position)

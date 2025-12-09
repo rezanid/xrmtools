@@ -8,6 +8,7 @@
     <ID Name="ApplyToDataverse" Value="10" />
     <ID Name="Dataverse" Value="20" />
     <ID Name="XrmTools" Value="30" />
+    <ID Name="DataverseSolution" Value="40" />
   </Symbols>
   <Images>
     <Image Guid="$(AssetsGuid)" ID="$(ApplyToDataverse)">
@@ -29,6 +30,8 @@
         <Size Value="256" />
       </Source>
     </Image>
+    <Image Guid="$(AssetsGuid)" ID="$(DataverseSolution)">
+      <Source Uri="$(Resources)/DataverseSolution.xaml" />
+    </Image>
   </Images>
-  <ImageLists />
 </ImageManifest>

@@ -16,6 +16,7 @@
       <IDSymbol name="ApplyToDataverse" value="10" />
       <IDSymbol name="Dataverse" value="20"/>
       <IDSymbol name="XrmTools" value="30"/>
+      <IDSymbol name="DataverseSolution" value="40"/>
     </GuidSymbol>
   </Symbols>
 </CommandTable>
