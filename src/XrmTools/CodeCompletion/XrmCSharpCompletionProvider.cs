@@ -18,12 +18,12 @@ using XrmTools.Xrm.Repositories;
 
 [Export(typeof(IAsyncCompletionSourceProvider))]
 [ContentType("CSharp")]
-[Name(nameof(XrmPluginCompletionProvider))]
-//[TextViewRole(PredefinedTextViewRoles.Editable)]
+[Name(nameof(XrmCSharpCompletionProvider))]
+[TextViewRole(PredefinedTextViewRoles.Editable)]
 [method: ImportingConstructor]
-internal class XrmPluginCompletionProvider(
+internal class XrmCSharpCompletionProvider(
     [Import(typeof(SVsServiceProvider))] IServiceProvider serviceProvider,
-    [Import] ILogger<XrmPluginCompletionProvider> logger,
+    [Import] ILogger<XrmCSharpCompletionProvider> logger,
     [Import] IRepositoryFactory repositoryFactory,
     [Import] ITextStructureNavigatorSelectorService structureNavigatorSelector) : IAsyncCompletionSourceProvider
 {
@@ -47,7 +47,7 @@ internal class XrmPluginCompletionProvider(
 
             var componentModel = (IComponentModel)Package.GetGlobalService(typeof(SComponentModel));
             var workspace = componentModel.GetService<VisualStudioWorkspace>();
-            return new XrmPluginDefinitionCompletionSource(logger, repositoryFactory, workspace);
+            return new XrmCSharpCompletionSource(logger, repositoryFactory, workspace);
         });
     }
 

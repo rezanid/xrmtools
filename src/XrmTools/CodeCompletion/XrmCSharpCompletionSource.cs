@@ -18,9 +18,9 @@ using XrmTools.Logging.Compatibility;
 using XrmTools.Meta.Attributes;
 using XrmTools.Xrm.Repositories;
 
-internal sealed class XrmPluginDefinitionCompletionSource(
+internal sealed class XrmCSharpCompletionSource(
     ILogger logger, IRepositoryFactory repositoryFactory, VisualStudioWorkspace workspace) 
-    : XrmCompletionSource(logger, repositoryFactory, workspace)
+    : XrmCompletionSourceBase(logger, repositoryFactory, workspace)
 {
     const int StepCtorArgumentMessageIndex = 0;
     const int StepCtorArgumentEntityIndex = 1;

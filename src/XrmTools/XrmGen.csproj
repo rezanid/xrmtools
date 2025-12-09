@@ -63,7 +63,8 @@
     <Compile Include="Analyzers\CSharpXrmMetaDataService.cs" />
     <Compile Include="Analyzers\CSharpXrmMetaParser.cs" />
     <Compile Include="CodeCompletion\XrmAttributeCompletionFilters.cs" />
-    <Compile Include="CodeCompletion\XrmCompletionSource.cs" />
+    <Compile Include="CodeCompletion\XrmCompletionSourceBase.cs" />
+    <Compile Include="CodeCompletion\XrmSolutionCompletionFilters.cs" />
     <Compile Include="CodeCompletion\XrmEntityCompletionFilters.cs" />
     <Content Include="CodeGenTemplates\FetchXml.sbncs">
       <IncludeInVSIX>true</IncludeInVSIX>
@@ -116,8 +117,8 @@
     <Compile Include="Authenticators\DeviceCodeAuthenticator.cs" />
     <Compile Include="Authenticators\IntegratedAuthenticator.cs" />
     <Compile Include="Classifiers\XrmStringClassifierProvider.cs" />
-    <Compile Include="CodeCompletion\XrmPluginCompletionProvider.cs" />
-    <Compile Include="CodeCompletion\XrmPluginDefinitionCompletionSource.cs" />
+    <Compile Include="CodeCompletion\XrmCSharpCompletionProvider.cs" />
+    <Compile Include="CodeCompletion\XrmCSharpCompletionSource.cs" />
     <Compile Include="CodeGen\Constants.cs" />
     <Compile Include="CodeGen\EntityCodeGenerator.cs" />
     <Compile Include="CodeGen\PluginCodeGenerator.cs" />
@@ -241,6 +242,7 @@
     <Compile Include="Xrm\Repositories\PluginTypeRepository.cs" />
     <Compile Include="Xrm\Repositories\RepositoryFactory.cs" />
     <Compile Include="Xrm\Repositories\SdkMessageRepository.cs" />
+    <Compile Include="Xrm\Repositories\SolutionRepository.cs" />
     <Compile Include="Xrm\Repositories\SystemRepository.cs" />
     <Compile Include="Xrm\Repositories\XrmRepository.cs" />
     <Compile Include="Logging\OutputLogger.cs" />
@@ -284,10 +286,7 @@
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
       <IncludeInVSIX>true</IncludeInVSIX>
     </Content>
-    <Content Include="Resources\XrmTools_256.png">
-      <IncludeInVSIX>true</IncludeInVSIX>
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </Content>
+    <Resource Include="Resources\XrmTools_256.png" />
     <Content Include="UI\WebResources\preview.html" />
     <Content Include="UI\WebResources\themes\prism.css" />
     <Content Include="UI\WebResources\prism.js" />
@@ -495,6 +494,9 @@
   </ItemGroup>
   <ItemGroup>
     <Resource Include="Resources\Dataverse.xaml">
+      <SubType>Designer</SubType>
+    </Resource>
+    <Resource Include="Resources\DataverseSolution.xaml">
       <SubType>Designer</SubType>
     </Resource>
     <Page Include="UI\AssemblySelectionDialog.xaml">

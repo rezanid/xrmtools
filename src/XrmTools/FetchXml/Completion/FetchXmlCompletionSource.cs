@@ -20,7 +20,7 @@ using XrmTools.Xrm.Repositories;
 internal sealed class FetchXmlCompletionSource(
     ILogger logger,
     IRepositoryFactory repositoryFactory,
-    VisualStudioWorkspace workspace) : XrmCompletionSource(logger, repositoryFactory, workspace)
+    VisualStudioWorkspace workspace) : XrmCompletionSourceBase(logger, repositoryFactory, workspace)
 {
     public override CompletionStartData InitializeCompletion(CompletionTrigger trigger, SnapshotPoint triggerLocation, CancellationToken cancellationToken)
     {

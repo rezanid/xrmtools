@@ -17,8 +17,9 @@ using XrmTools.WebApi.Entities;
 using XrmTools.WebApi.Types;
 using XrmTools.Xrm;
 using XrmTools.Xrm.Repositories;
+using Solution = WebApi.Entities.Solution;
 
-internal abstract class XrmCompletionSource(
+internal abstract class XrmCompletionSourceBase(
     ILogger logger, IRepositoryFactory repositoryFactory, VisualStudioWorkspace workspace) : IAsyncCompletionSource
 {
     protected readonly ILogger logger = logger;
@@ -176,7 +177,7 @@ internal abstract class XrmCompletionSource(
     {
         // Use the UniqueName as the display text for the completion item
         var displayText = solution.UniqueName ?? string.Empty;
-        return new CompletionItem(displayText, this);
+        return new CompletionItem(displayText, this, XrmSolutionCompletionFilters.SolutionIcon, XrmSolutionCompletionFilters.SolutionFilters);
     }
 
     private bool IsSupportedAttribute(AttributeMetadata attribute) => attribute.IsValidForRead && attribute.AttributeOf is null;
