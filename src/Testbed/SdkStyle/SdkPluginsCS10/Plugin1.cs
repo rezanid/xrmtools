@@ -1,5 +1,6 @@
 using Microsoft.Xrm.Sdk;
 using System;
+using XrmTools.Meta.Attributes;
 
 namespace SdkPluginsCS10
 {
@@ -7,7 +8,9 @@ namespace SdkPluginsCS10
     /// Plugin development guide: https://docs.microsoft.com/powerapps/developer/common-data-service/plug-ins
     /// Best practices and guidance: https://docs.microsoft.com/powerapps/developer/common-data-service/best-practices/business-logic/
     /// </summary>
-    public class Plugin1 : PluginBase
+    [Plugin]
+    [Step("Create", "account", "name", Stages.PostOperation, ExecutionMode.Asynchronous)]
+    public partial class Plugin1 : PluginBase
     {
         public Plugin1(string unsecureConfiguration, string secureConfiguration)
             : base(typeof(Plugin1))
