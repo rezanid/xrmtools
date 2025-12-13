@@ -130,7 +130,7 @@
     <value>Failed to acquire DTE from Visual Studio. Consequently {0} is not initialized successfully.</value>
   </data>
   <data name="PluginGenerator.DeserializationError" xml:space="preserve">
-    <value>Failed to deserialize plugin definition from {inputFileName}.</value>
+    <value>Failed to infer plugin definition from {inputFileName}.</value>
   </data>
   <data name="PluginGenerator.NullTemplate" xml:space="preserve">
     <value>The template provided for plugin code generation is empty. Please check the file in the following path: {0}</value>
@@ -145,7 +145,7 @@ Error details: {1}</value>
   <data name="PluginGenerator.TemplatePathNotFound" xml:space="preserve">
     <value>The path provided for plugin code generator was not found. Path: {0}</value>
   </data>
-  <data name="PluginGenerator.TemplatePathNotSet" xml:space="preserve">
+  <data name="CodeGen.TemplatePathNotSet" xml:space="preserve">
     <value>Configuration does not contain the path to template file.</value>
   </data>
   <data name="EnvironmentInvalid" xml:space="preserve">
@@ -184,9 +184,6 @@ Error details: {1}</value>
   <data name="PluginGenerator.TemplateNotSet" xml:space="preserve">
     <value>Did you forget to add [Plugin] attribute to your plugin class? If not it can be your code generation template is not correctly setup. You need to create a Scriban template for the code generator to work. For more information please visit https://rezanid.github.io/xrmtools/docs/howto/write-a-plugin-template.</value>
   </data>
-  <data name="PluginGenerator.TemplateFileNotFound" xml:space="preserve">
-    <value>The template file not found. It might have moved to another location. Please make sure that you have set the right template and try again. Missing file: {0}</value>
-  </data>
   <data name="MissingServiceDependency" xml:space="preserve">
     <value>Missing {0} service dependency. {1} is not available.</value>
   </data>
@@ -195,5 +192,21 @@ Error details: {1}</value>
   </data>
   <data name="PluginGenerator.InvalidInputFile" xml:space="preserve">
     <value>Input file is not a valid .cs, .json or .yml file. Please provide a valid input file.</value>
+  </data>
+  <data name="CodeGen.InputFileError" xml:space="preserve">
+    <value>Failed to parse the input file for code generation. Please review the input file and try again.
+File path: {0} 
+Error: {1}</value>
+  </data>
+  <data name="CodeGen.InputModel_Empty" xml:space="preserve">
+    <value>Input is empty. Code generation needs some input to generate code. Please make sure your have properly used attributes from XrmTools.Meta.Attributes.
+Input file path: {0}</value>
+  </data>
+  <data name="CodeGen.InputFileOrProjectMissing" xml:space="preserve">
+    <value>Unable to find input file or its parent project.
+Input file path: {0}</value>
+  </data>
+  <data name="CodeGen.TemplateNotFound" xml:space="preserve">
+    <value>The template file not found. It might have moved to another location. This is exceptional! your Xrm Tools installation might be damaged. Try reinstalling Xrm Tools.</value>
   </data>
 </root>

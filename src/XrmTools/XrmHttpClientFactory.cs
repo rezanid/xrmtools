@@ -32,14 +32,14 @@ internal class XrmHttpClientFactory : IXrmHttpClientFactory, System.IAsyncDispos
     private readonly ConcurrentDictionary<string, AsyncLazy<AuthenticationResult>> _inflightAuth = new();
     private bool disposedValue;
 
-    TimeProvider TimeProvider { get; set; } = TimeProvider.System;
+    internal TimeProvider TimeProvider { get; set; } = TimeProvider.System;
 
     [Import]
-    IEnvironmentProvider EnvironmentProvider { get; set; } = null!;
+    internal IEnvironmentProvider EnvironmentProvider { get; set; } = null!;
     [Import]
-    IAuthenticationService AuthenticationService { get; set; } = null!;
+    internal IAuthenticationService AuthenticationService { get; set; } = null!;
     [Import]
-    ILogger<XrmHttpClientFactory> Logger { get; set; } = null!;
+    internal ILogger<XrmHttpClientFactory> Logger { get; set; } = null!;
 
     public XrmHttpClientFactory()
     {
@@ -79,6 +79,7 @@ internal class XrmHttpClientFactory : IXrmHttpClientFactory, System.IAsyncDispos
                 {
                     // Use only the timeout CTS for the shared single-flight to avoid one caller cancelling others
                     var result = await AuthenticationService.AuthenticateAsync(environment, allowInteraction, msg => Logger.LogInformation(msg), timeoutCts.Token).ConfigureAwait(false);
+                    environment.IsAutehnticated = true;
                     _tokenCache[key] = result;
                     return result;
                 }

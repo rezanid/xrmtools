@@ -30,14 +30,14 @@ internal class TemplatedCodeGenerator(IValidationService validationService) : IX
     public string GenerateCode(PluginAssemblyConfig inputModel)
     {
         if (Config == null) { throw new InvalidOperationException("Config is not set."); }
-        if (string.IsNullOrWhiteSpace(Config.TemplateFilePath)) { throw new InvalidOperationException(Resources.Strings.PluginGenerator_TemplatePathNotSet); }
+        if (string.IsNullOrWhiteSpace(Config.TemplateFilePath)) { throw new InvalidOperationException(Resources.Strings.CodeGen_TemplatePathNotSet); }
         return GenerateCodeUsingScribanTemplate(inputModel);
     }
 
     public string GenerateCode(FetchQuery inputModel)
     {
         if (Config == null) { throw new InvalidOperationException("Config is not set."); }
-        if (string.IsNullOrWhiteSpace(Config.TemplateFilePath)) { throw new InvalidOperationException(Resources.Strings.PluginGenerator_TemplatePathNotSet); }
+        if (string.IsNullOrWhiteSpace(Config.TemplateFilePath)) { throw new InvalidOperationException(Resources.Strings.CodeGen_TemplatePathNotSet); }
         return GenerateCodeUsingScribanTemplate(inputModel);
     }
 

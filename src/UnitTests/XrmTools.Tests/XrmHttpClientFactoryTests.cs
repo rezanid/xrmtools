@@ -29,12 +29,13 @@ public class XrmHttpClientFactoryTests
         _authenticationServiceMock = new Mock<IAuthenticationService>();
         _loggerMock = new Mock<ILogger<XrmHttpClientFactory>>();
 
-        _factory = new XrmHttpClientFactory(
-            _timeProvider,
-            _environmentProviderMock.Object,
-            _authenticationServiceMock.Object,
-            _loggerMock.Object
-        );
+        _factory = new XrmHttpClientFactory
+        {
+            TimeProvider = _timeProvider,
+            EnvironmentProvider = _environmentProviderMock.Object,
+            AuthenticationService = _authenticationServiceMock.Object,
+            Logger = _loggerMock.Object
+        };
     }
     
     [Fact]

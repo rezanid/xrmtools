@@ -1,6 +1,7 @@
 ﻿#nullable enable
 namespace XrmTools;
 
+using Microsoft.VisualStudio.Shell;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel.Composition;
@@ -34,6 +35,8 @@ public class DataverseEnvironmentProvider : IEnvironmentProvider
         };
 
         if (environment?.IsValid != true) return null;
+
+        await VerifyAuthenticatedAsync(environment, allowInteraction).ConfigureAwait(false);
 
         return environment;
     }
@@ -74,11 +77,7 @@ public class DataverseEnvironmentProvider : IEnvironmentProvider
                 break;
         }
 
-        try
-        {
-            await HttpClientFactory.PreAuthenticateAsync(environment, allowInteraction);
-        }
-        catch (Exception) { }
+        await VerifyAuthenticatedAsync(environment, allowInteraction).ConfigureAwait(false);
 
         EnvironmentChanged?.Invoke(environment);
     }
@@ -117,5 +116,22 @@ public class DataverseEnvironmentProvider : IEnvironmentProvider
     private void SetEnvironmentInSolutionUserFile(DataverseEnvironment? environment) => SettingsProvider.SolutionUserSettings.EnvironmentUrl(environment?.Url);
     private async Task SetEnvironmentInProjectAsync(DataverseEnvironment? environment) => await SettingsProvider.ProjectSettings.EnvironmentUrlAsync(environment?.Url);
     private async Task SetEnvironmentInProjectUserFileAsync(DataverseEnvironment? environment) => await SettingsProvider.ProjectUserSettings.EnvironmentUrlAsync(environment?.Url);
+    private async Task VerifyAuthenticatedAsync(
+        DataverseEnvironment environment,
+        bool allowInteraction)
+    {
+        if (environment?.IsValid != true) return;
+        if (environment.IsAutehnticated) return;
+
+        try
+        {
+            if (allowInteraction)
+            {
+                await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync();
+            }
+            await HttpClientFactory.PreAuthenticateAsync(environment, allowInteraction);
+        }
+        catch (Exception) { }
+    }
 }
 #nullable restore

@@ -69,6 +69,8 @@
     <Content Include="CodeGenTemplates\FetchXml.sbncs">
       <IncludeInVSIX>true</IncludeInVSIX>
     </Content>
+    <Compile Include="CodeGen\BaseCodeGeneratorWithSiteAsync.cs" />
+    <Compile Include="CodeGen\EntityCodeGenerator.cs" />
     <Compile Include="CodeRefactoringProviders\PluginRefactoringProvider.cs" />
     <Compile Include="CodeRefactoringProviders\PropertyGenerator.cs" />
     <Compile Include="CodeRefactoringProviders\SdkMessageRefactoringProvider.cs" />
@@ -120,7 +122,6 @@
     <Compile Include="CodeCompletion\XrmCSharpCompletionProvider.cs" />
     <Compile Include="CodeCompletion\XrmCSharpCompletionSource.cs" />
     <Compile Include="CodeGen\Constants.cs" />
-    <Compile Include="CodeGen\EntityCodeGenerator.cs" />
     <Compile Include="CodeGen\PluginCodeGenerator.cs" />
     <Compile Include="CodeGen\TemplateFileGenerator.cs" />
     <Compile Include="CodeGen\TemplatePathFinder.cs" />
