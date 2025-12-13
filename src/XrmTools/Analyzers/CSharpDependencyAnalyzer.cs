@@ -27,7 +27,7 @@ public class CSharpDependencyAnalyzer : ICSharpDependencyAnalyzer
         var implementationMap = BuildImplementationMap(compilation);
         var providerProperties = DiscoverProviderProperties(rootType);
         var dependedOn = new HashSet<INamedTypeSymbol>(SymbolEqualityComparer.Default);
-        return BuildNode(rootType, null, null, compilation, implementationMap, dependedOn, providerProperties);
+        return BuildNode(rootType, null, null, compilation, implementationMap, dependedOn, providerProperties, true);
     }
 
     private static string? TryGetDependencyNameFromAttributes(IEnumerable<AttributeData> attributes)
@@ -106,8 +106,8 @@ public class CSharpDependencyAnalyzer : ICSharpDependencyAnalyzer
         Compilation compilation,
         Dictionary<ITypeSymbol, INamedTypeSymbol> implementationMap,
         HashSet<INamedTypeSymbol> dependedOn,
-        ProviderMap providerMap
-        )
+        ProviderMap providerMap,
+        bool isRoot = false)
     {
         var node = new Dependency
         {
@@ -188,81 +188,84 @@ public class CSharpDependencyAnalyzer : ICSharpDependencyAnalyzer
         }
 
         // Analyze constructor parameters
-        var ctor = SelectConstructor(typeSymbol);
-        if (ctor is not null)
+        if (!isRoot)
         {
-            var stringIndex = 0; // root-level string #1 => Config, #2 => SecureConfig
-            foreach (var param in ctor.Parameters)
+            var ctor = SelectConstructor(typeSymbol);
+            if (ctor is not null)
             {
-                var pDepName = TryGetDependencyNameFromAttributes(param.GetAttributes());
-
-                if (SymbolEqualityComparer.Default.Equals(param.Type, serviceProviderType))
+                var stringIndex = 0; // root-level string #1 => Config, #2 => SecureConfig
+                foreach (var param in ctor.Parameters)
                 {
-                    node.Dependencies.Add(new Dependency
+                    var pDepName = TryGetDependencyNameFromAttributes(param.GetAttributes());
+
+                    if (SymbolEqualityComparer.Default.Equals(param.Type, serviceProviderType))
                     {
-                        PropertyName = param.Name,
-                        FullTypeName = param.Type.ToDisplayString(),
-                        ShortTypeName = param.Name,
-                        IsProperty = false,
-                        IsDisposable = IsDisposable(param.Type as INamedTypeSymbol),
-                        ProvidedByName = pDepName
-                    });
-                    continue;
-                }
+                        node.Dependencies.Add(new Dependency
+                        {
+                            PropertyName = param.Name,
+                            FullTypeName = param.Type.ToDisplayString(),
+                            ShortTypeName = param.Name,
+                            IsProperty = false,
+                            IsDisposable = IsDisposable(param.Type as INamedTypeSymbol),
+                            ProvidedByName = pDepName
+                        });
+                        continue;
+                    }
 
-                if (param.Type.SpecialType == SpecialType.System_String && (pDepName?.EndsWith("config", System.StringComparison.OrdinalIgnoreCase) ?? false || param.Name.StartsWith("config", System.StringComparison.OrdinalIgnoreCase) || param.Name.StartsWith("secureconfig", System.StringComparison.OrdinalIgnoreCase)))
-                {
-                    var special = pDepName ?? (param.Name.StartsWith("config", System.StringComparison.OrdinalIgnoreCase) ? "Config" : "SecureConfig");
-                    stringIndex++;
-
-                    node.Dependencies.Add(new Dependency
+                    if (param.Type.SpecialType == SpecialType.System_String && (pDepName?.EndsWith("config", System.StringComparison.OrdinalIgnoreCase) ?? false || param.Name.StartsWith("config", System.StringComparison.OrdinalIgnoreCase) || param.Name.StartsWith("secureconfig", System.StringComparison.OrdinalIgnoreCase)))
                     {
-                        PropertyName = param.Name,
-                        FullTypeName = param.Type.ToDisplayString(),
-                        ShortTypeName = param.Type.Name,
-                        ResolvedFullTypeName = param.Type.ToDisplayString(),
-                        ResolvedShortTypeName = param.Type.Name,
-                        Dependencies = [],
-                        IsProperty = false,
-                        IsDisposable = false,
-                        ProvidedByName = pDepName ?? special,
-                        ProvidedByProperty = pDepName ?? special
-                    });
-                    continue;
-                }
+                        var special = pDepName ?? (param.Name.StartsWith("config", System.StringComparison.OrdinalIgnoreCase) ? "Config" : "SecureConfig");
+                        stringIndex++;
 
-                var paramResolvedType = ResolveType(param.Type, implementationMap);
-                if (paramResolvedType is not INamedTypeSymbol depSymbol || depSymbol.ContainingType != null)
-                    continue;
+                        node.Dependencies.Add(new Dependency
+                        {
+                            PropertyName = param.Name,
+                            FullTypeName = param.Type.ToDisplayString(),
+                            ShortTypeName = param.Type.Name,
+                            ResolvedFullTypeName = param.Type.ToDisplayString(),
+                            ResolvedShortTypeName = param.Type.Name,
+                            Dependencies = [],
+                            IsProperty = false,
+                            IsDisposable = false,
+                            ProvidedByName = pDepName ?? special,
+                            ProvidedByProperty = pDepName ?? special
+                        });
+                        continue;
+                    }
 
-                if (providerMap.TryResolve(param.Type, pDepName, out var providerPropName))
-                {
-                    node.Dependencies.Add(new Dependency
+                    var paramResolvedType = ResolveType(param.Type, implementationMap);
+                    if (paramResolvedType is not INamedTypeSymbol depSymbol || depSymbol.ContainingType != null)
+                        continue;
+
+                    if (providerMap.TryResolve(param.Type, pDepName, out var providerPropName))
                     {
-                        PropertyName = param.Name,
-                        FullTypeName = param.Type.ToDisplayString(),
-                        ShortTypeName = param.Type.Name,
-                        ResolvedFullTypeName = paramResolvedType.ToDisplayString(),
-                        ResolvedShortTypeName = paramResolvedType.Name,
-                        Dependencies = [],
-                        IsProperty = false,
-                        IsDisposable = IsDisposable(depSymbol),
-                        ProvidedByProperty = providerPropName,
-                        ProvidedByName = pDepName
-                    });
-                    continue;
-                }
+                        node.Dependencies.Add(new Dependency
+                        {
+                            PropertyName = param.Name,
+                            FullTypeName = param.Type.ToDisplayString(),
+                            ShortTypeName = param.Type.Name,
+                            ResolvedFullTypeName = paramResolvedType.ToDisplayString(),
+                            ResolvedShortTypeName = paramResolvedType.Name,
+                            Dependencies = [],
+                            IsProperty = false,
+                            IsDisposable = IsDisposable(depSymbol),
+                            ProvidedByProperty = providerPropName,
+                            ProvidedByName = pDepName
+                        });
+                        continue;
+                    }
 
-                if (!dependedOn.Contains(depSymbol))
-                {
-                    var newDependedOn = new HashSet<INamedTypeSymbol>(dependedOn, SymbolEqualityComparer.Default)
+                    if (!dependedOn.Contains(depSymbol))
                     {
-                        depSymbol
-                    };
+                        var newDependedOn = new HashSet<INamedTypeSymbol>(dependedOn, SymbolEqualityComparer.Default)
+                        {
+                            depSymbol
+                        };
 
-                    var childNode = BuildNode(depSymbol, param.Type as INamedTypeSymbol, param.Name, compilation, implementationMap, newDependedOn, providerMap);
-                    childNode.IsProperty = false;
-                    node.Dependencies.Add(childNode);
+                        var childNode = BuildNode(depSymbol, param.Type as INamedTypeSymbol, param.Name, compilation, implementationMap, newDependedOn, providerMap);
+                        childNode.IsProperty = false;
+                        node.Dependencies.Add(childNode);
+                    }
                 }
             }
         }

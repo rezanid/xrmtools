@@ -9,10 +9,10 @@ namespace XrmGenTestClassic.Queries
 <fetch >
 	<entity name=""contact"">
 		<attribute name=""fullname"" />
-		<attribute name=""telephone1""/>
 		<attribute name=""lastname""/>
 		<attribute name=""firstname""/>
 		<attribute name=""telephone1""/>
+		<attribute name=""telephone2""/>
 	</entity>
 </fetch>";
         public static EntityCollection QueryContacts(this IOrganizationService service) => service.RetrieveMultiple(new FetchExpression(Contacts));

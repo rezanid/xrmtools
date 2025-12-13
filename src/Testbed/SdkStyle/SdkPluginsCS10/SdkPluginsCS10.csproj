@@ -27,10 +27,32 @@
     <PackageReference Include="Microsoft.CrmSdk.CoreAssemblies" Version="9.0.2.*" PrivateAssets="All" />
     <PackageReference Include="Microsoft.PowerApps.MSBuild.Plugin" Version="1.*" PrivateAssets="All" />
     <PackageReference Include="Microsoft.NETFramework.ReferenceAssemblies" Version="1.0.*" PrivateAssets="All" />
-    <PackageReference Include="XrmTools.Meta.Attributes" Version="1.0.57">
+    <PackageReference Include="XrmTools.Meta.Attributes" Version="1.0.58">
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageReference>
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Update="Entities.cs">
+      <Generator>XrmTools Entity Generator</Generator>
+      <LastGenOutput>Entities.g.cs</LastGenOutput>
+    </Compile>
+    <Compile Update="Entities.g.cs">
+      <DesignTime>True</DesignTime>
+      <AutoGen>True</AutoGen>
+      <DependentUpon>Entities.cs</DependentUpon>
+    </Compile>
+    <Compile Update="Plugin1.cs">
+      <LastGenOutput>Plugin1.g.cs</LastGenOutput>
+      <Generator>XrmTools Plugin Code Generator</Generator>
+      <IsXrmPlugin>True</IsXrmPlugin>
+    </Compile>
+    <Compile Update="Plugin1.g.cs">
+      <AutoGen>True</AutoGen>
+      <DesignTime>True</DesignTime>
+      <DependentUpon>Plugin1.cs</DependentUpon>
+    </Compile>
   </ItemGroup>
 
   <Import Project="$(PowerAppsTargetsPath)\Microsoft.PowerApps.VisualStudio.Plugin.targets" Condition="Exists('$(PowerAppsTargetsPath)\Microsoft.PowerApps.VisualStudio.Plugin.targets')" />

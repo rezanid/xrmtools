@@ -13,10 +13,10 @@ namespace XrmGenTestClassic
 	/// <summary>
 	/// Display Name: Contact
 	/// </summary>
-	[GeneratedCode("TemplatedCodeGenerator", "1.4.2.0")]
+	[GeneratedCode("TemplatedCodeGenerator", "1.5.0.3")]
 	[EntityLogicalName("contact")]
 	[global::System.Diagnostics.CodeAnalysis.ExcludeFromCodeCoverage]
-	public partial class ApiContact : Microsoft.Xrm.Sdk.Entity
+	public partial class Contact : Microsoft.Xrm.Sdk.Entity
 	{
 		public partial class Meta 
 		{
@@ -32,23 +32,23 @@ namespace XrmGenTestClassic
 				public const string FirstName = "firstname";
 				public const string LastName = "lastname";
 
-				public static bool TryGet(string logicalName, out string attribute)
+				public static bool TryGet(string memberName, out string logicalName)
 				{
-					switch (logicalName)
+					switch (memberName)
 					{
-						case nameof(Description): attribute = Description; return true;
-						case nameof(FirstName): attribute = FirstName; return true;
-						case nameof(LastName): attribute = LastName; return true;
-						default: attribute = null; return false;
+						case nameof(Description): logicalName = Description; return true;
+						case nameof(FirstName): logicalName = FirstName; return true;
+						case nameof(LastName): logicalName = LastName; return true;
+						default: logicalName = null; return false;
 					}
 				}
+				public static IEnumerable<string> GetAll() => 
+					new string[] {Description,FirstName,LastName,};
 
-				public string this[string logicalName]
-				{
-					get => TryGet(logicalName, out var value)
-						? value
-						: throw new ArgumentException("Invalid attribute logical name.", nameof(logicalName));
-				}
+				public static string Get(string memberName)
+					=> TryGet(memberName, out var logicalName)
+						? logicalName
+						: throw new ArgumentException("Invalid attribute logical name.", nameof(memberName));
 			}
 		}
 
@@ -85,15 +85,15 @@ namespace XrmGenTestClassic
 			get => TryGetAttributeValue("lastname", out string value) ? value : null;
 			set => this["lastname"] = value;
 		}
-		public ApiContact() : base(Meta.EntityLogicalName) { }
-		public ApiContact(Guid id) : base(Meta.EntityLogicalName, id) { }
-		public ApiContact(string keyName, object keyValue) : base(Meta.EntityLogicalName, keyName, keyValue) { }
-		public ApiContact(KeyAttributeCollection keyAttributes) : base(Meta.EntityLogicalName, keyAttributes) { }
+		public Contact() : base(Meta.EntityLogicalName) { }
+		public Contact(Guid id) : base(Meta.EntityLogicalName, id) { }
+		public Contact(string keyName, object keyValue) : base(Meta.EntityLogicalName, keyName, keyValue) { }
+		public Contact(KeyAttributeCollection keyAttributes) : base(Meta.EntityLogicalName, keyAttributes) { }
 	}
 	/// <summary>
 	/// Display Name: Account
 	/// </summary>
-	[GeneratedCode("TemplatedCodeGenerator", "1.4.2.0")]
+	[GeneratedCode("TemplatedCodeGenerator", "1.5.0.3")]
 	[EntityLogicalName("account")]
 	[global::System.Diagnostics.CodeAnalysis.ExcludeFromCodeCoverage]
 	public partial class Account : Microsoft.Xrm.Sdk.Entity
@@ -112,23 +112,23 @@ namespace XrmGenTestClassic
 				public const string Description = "description";
 				public const string Name = "name";
 
-				public static bool TryGet(string logicalName, out string attribute)
+				public static bool TryGet(string memberName, out string logicalName)
 				{
-					switch (logicalName)
+					switch (memberName)
 					{
-						case nameof(AccountRatingCode): attribute = AccountRatingCode; return true;
-						case nameof(Description): attribute = Description; return true;
-						case nameof(Name): attribute = Name; return true;
-						default: attribute = null; return false;
+						case nameof(AccountRatingCode): logicalName = AccountRatingCode; return true;
+						case nameof(Description): logicalName = Description; return true;
+						case nameof(Name): logicalName = Name; return true;
+						default: logicalName = null; return false;
 					}
 				}
+				public static IEnumerable<string> GetAll() => 
+					new string[] {AccountRatingCode,Description,Name,};
 
-				public string this[string logicalName]
-				{
-					get => TryGet(logicalName, out var value)
-						? value
-						: throw new ArgumentException("Invalid attribute logical name.", nameof(logicalName));
-				}
+				public static string Get(string memberName)
+					=> TryGet(memberName, out var logicalName)
+						? logicalName
+						: throw new ArgumentException("Invalid attribute logical name.", nameof(memberName));
 			}
 
 			public partial class OptionSets

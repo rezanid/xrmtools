@@ -13,7 +13,7 @@ using XrmTools;
 
 namespace XrmGenTestClassic
 {
-    [GeneratedCode("TemplatedCodeGenerator", "1.5.0.2")]
+    [GeneratedCode("TemplatedCodeGenerator", "1.5.0.3")]
     public partial class ContactGreetingPlugin
     {
         /// <summary>
