@@ -24,7 +24,6 @@ namespace XrmTools
     {
         public const int ApplyToDataverse = 0x000A;
         public const int Dataverse = 0x0014;
-        public const int XrmTools = 0x001E;
         public const int DataverseSolution = 0x0028;
     }
 }

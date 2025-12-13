@@ -15,7 +15,6 @@
     <GuidSymbol name="AssetsGuid" value="{b11584c1-89bd-47a3-b6a4-05b05dd5fc13}">
       <IDSymbol name="ApplyToDataverse" value="10" />
       <IDSymbol name="Dataverse" value="20"/>
-      <IDSymbol name="XrmTools" value="30"/>
       <IDSymbol name="DataverseSolution" value="40"/>
     </GuidSymbol>
   </Symbols>

@@ -6,7 +6,7 @@
         <Description xml:space="preserve">Xrm Tools is a Visual Studio extension that aims to make Power Platform development feel native within Visual Studio. You will get Intellisense support for your Plugins, generate boiler plate code, typed entities and more right from within Visual Studio. You have full control over code generation using Scriban templates.</Description>
         <MoreInfo>https://github.com/rezanid/xrmtools</MoreInfo>
         <GettingStartedGuide>Resources\GettingStarted.html</GettingStartedGuide>
-        <Icon>Resources\XrmTools_256.png</Icon>
+        <Icon>Resources\PackageIcon.png</Icon>
         <PreviewImage>Resources\Write-Plugin.gif</PreviewImage>
         <Tags>Power Platform, Dataverse, Power Apps, XRM, Code Generator</Tags>
     </Metadata>

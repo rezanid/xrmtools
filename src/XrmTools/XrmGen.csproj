@@ -287,7 +287,10 @@
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
       <IncludeInVSIX>true</IncludeInVSIX>
     </Content>
-    <Resource Include="Resources\XrmTools_256.png" />
+    <Content Include="Resources\PackageIcon.png">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <IncludeInVSIX>true</IncludeInVSIX>
+    </Content>
     <Content Include="UI\WebResources\preview.html" />
     <Content Include="UI\WebResources\themes\prism.css" />
     <Content Include="UI\WebResources\prism.js" />
