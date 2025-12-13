@@ -59,9 +59,10 @@ internal class ManageEnvironmentsCommand : BaseCommand<ManageEnvironmentsCommand
 
         if (args.OutValue != IntPtr.Zero)
         {
+            await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync();
             var activeEnvironment = await EnvironmentProvider.GetActiveEnvironmentAsync(true);
             var environmentName = activeEnvironment?.Name ?? DefaultItem;
-            Marshal.GetNativeVariantForObject(environmentName, args.OutValue);
+            if (args.OutValue != IntPtr.Zero) Marshal.GetNativeVariantForObject(environmentName, args.OutValue);
         }
         else if (args.InValue is string selected)
         {

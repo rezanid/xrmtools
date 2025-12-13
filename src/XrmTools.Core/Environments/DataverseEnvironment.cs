@@ -65,6 +65,9 @@ public record DataverseEnvironment
     [Browsable(false)]
     public bool IsValid { get => isValidConnectionString; }
 
+    [Browsable(false)]
+    public bool IsAutehnticated { get; set; }
+
     public virtual bool Equals(DataverseEnvironment? other)
     {
         if (other is null) return false;
@@ -88,5 +91,6 @@ public record DataverseEnvironment
     }
 
     public static DataverseEnvironment Empty => new();
+
 }
 #nullable restore

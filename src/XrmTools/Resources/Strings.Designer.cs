@@ -19,7 +19,7 @@ namespace XrmTools.Resources {
     // class via a tool like ResGen or Visual Studio.
     // To add or remove a member, edit your .ResX file then rerun ResGen
     // with the /str option, or rebuild your VS project.
-    [global::System.CodeDom.Compiler.GeneratedCodeAttribute("System.Resources.Tools.StronglyTypedResourceBuilder", "17.0.0.0")]
+    [global::System.CodeDom.Compiler.GeneratedCodeAttribute("System.Resources.Tools.StronglyTypedResourceBuilder", "18.0.0.0")]
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
     [global::System.Runtime.CompilerServices.CompilerGeneratedAttribute()]
     internal class Strings {
@@ -57,6 +57,55 @@ namespace XrmTools.Resources {
             }
             set {
                 resourceCulture = value;
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Failed to parse the input file for code generation. Please review the input file and try again.
+        ///File path: {0} 
+        ///Error: {1}.
+        /// </summary>
+        internal static string CodeGen_InputFileError {
+            get {
+                return ResourceManager.GetString("CodeGen.InputFileError", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Unable to find input file or its parent project.
+        ///Input file path: {0}.
+        /// </summary>
+        internal static string CodeGen_InputFileOrProjectMissing {
+            get {
+                return ResourceManager.GetString("CodeGen.InputFileOrProjectMissing", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Input is empty. Code generation needs some input to generate code. Please make sure your have properly used attributes from XrmTools.Meta.Attributes.
+        ///Input file path: {0}.
+        /// </summary>
+        internal static string CodeGen_InputModel_Empty {
+            get {
+                return ResourceManager.GetString("CodeGen.InputModel_Empty", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to The template file not found. It might have moved to another location. This is exceptional! your Xrm Tools installation might be damaged. Try reinstalling Xrm Tools..
+        /// </summary>
+        internal static string CodeGen_TemplateNotFound {
+            get {
+                return ResourceManager.GetString("CodeGen.TemplateNotFound", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Configuration does not contain the path to template file..
+        /// </summary>
+        internal static string CodeGen_TemplatePathNotSet {
+            get {
+                return ResourceManager.GetString("CodeGen.TemplatePathNotSet", resourceCulture);
             }
         }
         
@@ -214,7 +263,7 @@ namespace XrmTools.Resources {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to Failed to deserialize plugin definition from {inputFileName}..
+        ///   Looks up a localized string similar to Failed to infer plugin definition from {inputFileName}..
         /// </summary>
         internal static string PluginGenerator_DeserializationError {
             get {
@@ -251,15 +300,6 @@ namespace XrmTools.Resources {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to The template file not found. It might have moved to another location. Please make sure that you have set the right template and try again. Missing file: {0}.
-        /// </summary>
-        internal static string PluginGenerator_TemplateFileNotFound {
-            get {
-                return ResourceManager.GetString("PluginGenerator.TemplateFileNotFound", resourceCulture);
-            }
-        }
-        
-        /// <summary>
         ///   Looks up a localized string similar to The path provided for plugin code generator is invalid. Path: {0}.
         /// </summary>
         internal static string PluginGenerator_TemplateInvalidPath {
@@ -283,15 +323,6 @@ namespace XrmTools.Resources {
         internal static string PluginGenerator_TemplatePathNotFound {
             get {
                 return ResourceManager.GetString("PluginGenerator.TemplatePathNotFound", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   Looks up a localized string similar to Configuration does not contain the path to template file..
-        /// </summary>
-        internal static string PluginGenerator_TemplatePathNotSet {
-            get {
-                return ResourceManager.GetString("PluginGenerator.TemplatePathNotSet", resourceCulture);
             }
         }
     }

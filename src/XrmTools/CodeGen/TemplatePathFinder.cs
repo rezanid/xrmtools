@@ -42,10 +42,10 @@ public class TemplatePathFinder(ISettingsProvider settings, ILogger<TemplatePath
             return configuredPath!;
         }
 
-        var activeProject = await VS.Solutions.GetActiveProjectAsync();
-        if (activeProject is not null)
+        var project = await VS.Solutions.GetActiveProjectAsync();
+        if (project is not null)
         {
-            var projectDir = Path.GetDirectoryName(activeProject.FullPath);
+            var projectDir = Path.GetDirectoryName(project.FullPath);
             var path = Path.Combine(projectDir, Constants.ScribanTemplatesFolderName, templateFileName);
             if (File.Exists(path))
             {

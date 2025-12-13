@@ -6,7 +6,6 @@ using Microsoft.VisualStudio;
 using Microsoft.VisualStudio.ComponentModelHost;
 using Microsoft.VisualStudio.Shell;
 using Microsoft.VisualStudio.Shell.Interop;
-using Microsoft.VisualStudio.TextTemplating.VSHost;
 using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
@@ -15,6 +14,7 @@ using System.ComponentModel.DataAnnotations;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Linq;
+using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -35,13 +35,17 @@ using XrmTools.Xrm.Repositories;
 using YamlDotNet.Serialization;
 using YamlDotNet.Serialization.NamingConventions;
 
-internal class EntityCodeGenerator : BaseCodeGeneratorWithSite
+/// <summary>
+/// Async implementation will be used by VS for CPS projects (SDK-style).
+/// </summary>
+[Guid("3F079096-10E2-4A60-A918-AADDE458B0FE")]
+public sealed class EntityCodeGenerator : BaseCodeGeneratorWithSiteAsync
 {
     public const string Name = "XrmTools Entity Generator";
-    public const string Description = "Generates entity classes from metadata";
+    public const string Description = "Generates typed entities from entity declarations.";
 
     [Import]
-    public IXrmCodeGenerator? Generator { get; set; }
+    internal IXrmCodeGenerator? Generator { get; set; }
 
     [Import]
     internal IRepositoryFactory RepositoryFactory { get; set; }
@@ -50,7 +54,7 @@ internal class EntityCodeGenerator : BaseCodeGeneratorWithSite
     public IEnvironmentProvider EnvironmentProvider { get; set; }
 
     [Import]
-    internal ILogger<EntityCodeGenerator> Logger {  get; set; }
+    internal ILogger<EntityCodeGenerator> Logger { get; set; }
 
     [Import]
     internal ITemplateFinder TemplateFinder { get; set; }
@@ -64,12 +68,12 @@ internal class EntityCodeGenerator : BaseCodeGeneratorWithSite
     [Import]
     internal ISettingsProvider SettingsProvider { get; set; }
 
-    public override string GetDefaultExtension() => ".g.cs";
+    protected override string GetDefaultExtension() => ".g.cs";
 
     public EntityCodeGenerator() => SatisfyImports();
 
     [MemberNotNull(
-        nameof(Generator), nameof(RepositoryFactory), nameof(EnvironmentProvider), 
+        nameof(Generator), nameof(RepositoryFactory), nameof(EnvironmentProvider),
         nameof(Logger), nameof(TemplateFinder), nameof(TemplateFileGenerator),
         nameof(SettingsProvider), nameof(XrmMetaDataService))]
     private void SatisfyImports()
@@ -88,132 +92,122 @@ internal class EntityCodeGenerator : BaseCodeGeneratorWithSite
 
     [SuppressMessage("CodeQuality", "IDE0079:Remove unnecessary suppression", Justification = "The following supression is necessary for ThreadHelper.JoinableTaskFactory.Run")]
     [SuppressMessage("Usage", "VSTHRD102:Implement internal logic asynchronously", Justification = "This method is cosidered the entry point for code generation.")]
-    protected override byte[]? GenerateCode(string inputFileName, string inputFileContent)
+    protected override async Task<byte[]?> GenerateCodeAsync(
+        string inputFileName, string inputFileContent, string defaultNamespace,
+        IVsGeneratorProgress generateProgress, CancellationToken cancellationToken = default)
     {
         if (string.IsNullOrWhiteSpace(inputFileContent)) { return null; }
         if (Generator is null) { return Encoding.UTF8.GetBytes("// No generator found."); }
 
-        return ThreadHelper.JoinableTaskFactory.Run(async () =>
+        PluginAssemblyConfig? inputModel = null;
+
+        try
         {
-            var templateFilePath = await TemplateFinder.FindEntityTemplatePathAsync(InputFilePath);
-            if (templateFilePath is null)
-            { 
-                Logger.LogTrace("No template found for entity code generation.");
-                Logger.LogInformation("Creating default templates.");
-                await TemplateFileGenerator.GenerateTemplatesAsync();
-                templateFilePath = await TemplateFinder.FindEntityTemplatePathAsync(InputFilePath) ?? string.Empty;
-                Logger.LogCritical("Still no template found for entity code generation.");
-                if (templateFilePath == string.Empty) return Encoding.UTF8.GetBytes("// No template found for entity code generation.");
-            }
+            inputModel = await GetInputModelFromFileAsync(inputFileName, inputFileContent);
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, Strings.CodeGen_InputFileError, inputFileName);
+            return Encoding.UTF8.GetBytes("/* " + string.Format(Strings.CodeGen_InputFileError, inputFileName, ex.Message) + " */");
+        }
 
-            var inputModel = await GetInputModelFromFileAsync(inputFileName, inputFileContent);
+        if (inputModel == null || !inputModel.Entities.Any())
+        {
+            Logger.LogWarning(string.Format(Strings.CodeGen_InputModel_Empty, inputFileName));
+            return null;
+        }
 
-            if (inputModel?.Entities?.Any() != true) 
-            { 
-                return Encoding.UTF8.GetBytes("// No entity definition found for entity code generation.");
-            }
+        var inputFile = await PhysicalFile.FromFileAsync(inputFileName);
 
-            var currentEnvironment = await EnvironmentProvider.GetActiveEnvironmentAsync(false);
-            if (currentEnvironment == null || currentEnvironment == DataverseEnvironment.Empty)
+        //await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync();
+
+        if (inputFile is null || inputFile.FindParent(SolutionItemType.Project) is not Project project)
+        {
+            return Encoding.UTF8.GetBytes(
+                "/*" + string.Format(Strings.CodeGen_InputFileOrProjectMissing, inputFileName) + "*/");
+        }
+
+        var templateFilePath = await TemplateFinder.FindEntityTemplatePathAsync(inputFileName);
+
+        if (string.IsNullOrEmpty(templateFilePath))
+        {
+            return Encoding.UTF8.GetBytes("// " + Strings.CodeGen_TemplateNotFound);
+        }
+
+        var currentEnvironment = await EnvironmentProvider.GetActiveEnvironmentAsync(false);
+        if (currentEnvironment == null || currentEnvironment == DataverseEnvironment.Empty)
+        {
+            return Encoding.UTF8.GetBytes(
+                "// Code generation failed because active environment has not been setup.\r\n" +
+                "// Please go to Tools > Options > XRM Tools to setup the environment and set the current environment.");
+        }
+
+        try
+        {
+            using var cts = new CancellationTokenSource(120000);
+            await AddEntityMetadataToEntityConfigAsync(inputModel, cts.Token).ConfigureAwait(false);
+        }
+        catch (OperationCanceledException)
+        {
+            Logger.LogWarning("Metadata retrieval was canceled.");
+            throw;
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Failed to retrieve metadata for code generation");
+            throw;
+        }
+
+        if (inputModel.GlobalOptionSetCodeGen.Mode == Meta.Attributes.GlobalOptionSetGenerationMode.GlobalOptionSetFile)
+        {
+            inputModel.GlobalOptionSetDefinitions = inputModel.EntityDefinitions.Union(inputModel.OtherEntityDefinitions ?? [])
+                .SelectMany(e => e?.Attributes.FilterGlobalEnumAttributes())
+                .Select(a => a.OptionSet)
+                .Where(o => o?.Name != null)
+                .GroupBy(o => o!.Name!)
+                .Select(g => g.First())
+                .ToList()!;
+
+            // Generate GlobalOptionSets.cs file if there are any global option sets.
+            if (inputModel.GlobalOptionSetDefinitions.Any())
             {
-                return Encoding.UTF8.GetBytes(
-                    "// Code generation failed because active environment has not been setup." +
-                    " Please go to Tools > Options > XRM Tools to setup the environment and set the current environment.");
-            }
-
-            try
-            {
-                using var cts = new CancellationTokenSource(120000);
-                await AddEntityMetadataToEntityConfigAsync(inputModel, cts.Token).ConfigureAwait(false);
-            }
-            catch (OperationCanceledException)
-            {
-                Logger.LogWarning("Metadata retrieval was canceled.");
-                throw;
-            }
-            catch (Exception ex)
-            {
-                Logger.LogError(ex, "Failed to retrieve metadata for code generation");
-                throw;
-            }
-
-            await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync();
-
-            var inputFile = await PhysicalFile.FromFileAsync(inputFileName);
-
-            if (inputFile is null || inputFile.FindParent(SolutionItemType.Project) is not Project project)
-            {
-                return Encoding.UTF8.GetBytes(
-                    "// Xrm Tools Entity Code Generator was not able to find the parent project of the input file " +
-                    InputFilePath);
-            }
-            if (inputModel.GlobalOptionSetCodeGen.Mode == Meta.Attributes.GlobalOptionSetGenerationMode.GlobalOptionSetFile)
-            {
-                inputModel.GlobalOptionSetDefinitions = inputModel.EntityDefinitions.Union(inputModel.OtherEntityDefinitions ?? [])
-                    .SelectMany(e => e.Attributes.FilterGlobalEnumAttributes())
-                    .Select(a => a.OptionSet)
-                    .Where(o => o?.Name != null)
-                    .GroupBy(o => o!.Name!)
-                    .Select(g => g.First())
-                    .ToList()!;
-
-                // Generate GlobalOptionSets.cs file if there are any global option sets.
-                if (inputModel.GlobalOptionSetDefinitions.Any())
+                Generator.Config = new XrmCodeGenConfig
                 {
-                    Generator.Config = new XrmCodeGenConfig
-                    {
-                        DefaultNamespace = GetDefaultNamespace() + ".OptionSets",
-                        TemplateFilePath = await TemplateFinder.FindGlobalOptionSetsTemplatePathAsync(),
-                        InputFileName = inputFileName
-                    };
+                    DefaultNamespace = defaultNamespace + ".OptionSets",
+                    TemplateFilePath = await TemplateFinder.FindGlobalOptionSetsTemplatePathAsync(),
+                    InputFileName = inputFileName
+                };
 
-                    var globalOptionSetFileName = await SettingsProvider.GlobalOptionSetsFilePathAsync();
-                    var globalOptionSetCode = Generator.GenerateCode(inputModel);
-                    File.WriteAllText(globalOptionSetFileName, globalOptionSetCode);
-                    await project.AddExistingFilesAsync(globalOptionSetFileName!);
-                }
+                var globalOptionSetFileName = await SettingsProvider.GlobalOptionSetsFilePathAsync();
+                var globalOptionSetCode = Generator.GenerateCode(inputModel);
+                File.WriteAllText(globalOptionSetFileName, globalOptionSetCode);
+                await project.AddExistingFilesAsync(globalOptionSetFileName!);
             }
+        }
 
-            Generator.Config = new XrmCodeGenConfig
+        Generator.Config = new XrmCodeGenConfig
+        {
+            DefaultNamespace = defaultNamespace,
+            TemplateFilePath = templateFilePath,
+            InputFileName = inputFileName
+        };
+
+        if (GeneralOptions.Instance.LogLevel == LogLevel.Trace)
+        {
+            var serializedConfig = JsonConvert.SerializeObject(inputModel, new JsonSerializerSettings
             {
-                //TODO: The GetDefaultNamespace is not required. The FileNamespace is never empty even when not set.
-                DefaultNamespace = string.IsNullOrWhiteSpace(FileNamespace) ? GetDefaultNamespace() : FileNamespace,
-                TemplateFilePath = templateFilePath,
-                InputFileName = inputFileName
-            };
+                ContractResolver = new PolymorphicContractResolver()
+            });
+            File.WriteAllText(Path.ChangeExtension(inputFileName, ".model.json"), serializedConfig);
+        }
 
-            if (GeneralOptions.Instance.LogLevel == LogLevel.Trace)
-            {
-                var serializedConfig = JsonConvert.SerializeObject(inputModel, new JsonSerializerSettings
-                {
-                    ContractResolver = new PolymorphicContractResolver()
-                });
-                File.WriteAllText(Path.ChangeExtension(inputFileName, ".model.json"), serializedConfig);
-            }
+        var validation = Generator.IsValid(inputModel);
+        if (validation != ValidationResult.Success)
+        {
+            return Encoding.UTF8.GetBytes("// " + validation.ErrorMessage);
+        }
 
-            var validation = Generator.IsValid(inputModel);
-            if (validation != ValidationResult.Success)
-            {
-                return Encoding.UTF8.GetBytes("// " + validation.ErrorMessage);
-            }
-
-            string? generatedCode = null;
-
-            if (project.IsSdkStyle())
-            {
-                var lastGenFileName = await inputFile.GetAttributeAsync("LastGenOutput");
-                if (string.IsNullOrWhiteSpace(lastGenFileName))
-                {
-                    lastGenFileName = Path.ChangeExtension(Path.GetFileName(inputFileName), ".g.cs");
-                    await inputFile.TrySetAttributeAsync(PhysicalFileAttribute.LastGenOutput, lastGenFileName);
-                }
-                var lastGenFilePath = Path.Combine(Path.GetDirectoryName(inputFileName), lastGenFileName);
-                generatedCode = Generator.GenerateCode(inputModel);
-                File.WriteAllText(lastGenFilePath, "// SDK-Style Code Gen\r\n" + generatedCode);
-            }
-            generatedCode ??= Generator.GenerateCode(inputModel);
-            return Encoding.UTF8.GetBytes(generatedCode);
-        });
+        return Encoding.UTF8.GetBytes(Generator.GenerateCode(inputModel));
     }
 
     private async Task<PluginAssemblyConfig?> GetInputModelFromFileAsync(string inputFileName, string inputFileContent)
@@ -222,8 +216,7 @@ internal class EntityCodeGenerator : BaseCodeGeneratorWithSite
         {
             return await XrmMetaDataService.ParseEntitiesAsync(inputFileName);
         }
-        else if (".yml".Equals(Path.GetExtension(inputFileName), StringComparison.OrdinalIgnoreCase) ||
-            ".yaml".Equals(Path.GetExtension(inputFileName), StringComparison.OrdinalIgnoreCase))
+        else if (".yml".Equals(Path.GetExtension(inputFileName), StringComparison.OrdinalIgnoreCase))
         {
             return ParseYamlInputFile(inputFileName, inputFileContent);
         }
@@ -246,13 +239,13 @@ internal class EntityCodeGenerator : BaseCodeGeneratorWithSite
         return null;
     }
 
-    private string GetDefaultNamespace()
+    private string GetDefaultNamespace(string inputFileName)
     {
         ThreadHelper.ThrowIfNotOnUIThread();
         if (GetService(typeof(IVsHierarchy)) is IVsHierarchy hierarchy)
         {
             // Get the current item ID
-            hierarchy.ParseCanonicalName(InputFilePath, out var itemId);
+            hierarchy.ParseCanonicalName(inputFileName, out var itemId);
 
             if (hierarchy.GetProperty(itemId, (int)__VSHPROPID.VSHPROPID_DefaultNamespace, out var defaultNamespace) == VSConstants.S_OK)
             {

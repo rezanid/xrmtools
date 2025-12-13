@@ -15,6 +15,7 @@ using System.ComponentModel.DataAnnotations;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Linq;
+using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -33,14 +34,12 @@ using XrmTools.Settings;
 using XrmTools.WebApi.Entities;
 using XrmTools.Xrm.Generators;
 using XrmTools.Xrm.Repositories;
-using static XrmTools.Helpers.ProjectExtensions;
 
-public class PluginCodeGenerator : BaseCodeGeneratorWithSite
+[Guid("D00D4722-DBDD-4297-A41F-66543E64CE07")]
+public class PluginCodeGenerator : BaseCodeGeneratorWithSiteAsync
 {
-    public const string Name = Vsix.Name + " Plugin Code Generator";
-    public const string Description = "Generates plugin code from .dej.json file.";
-
-    private bool disposed = false;
+    public const string Name = "XrmTools Plugin Code Generator";
+    public const string Description = "Generates typed plugin code from plugin declarations.";
 
     [Import]
     IXrmCodeGenerator Generator { get; set; }
@@ -66,7 +65,7 @@ public class PluginCodeGenerator : BaseCodeGeneratorWithSite
     [Import]
     internal IXrmMetaDataService XrmMetaDataService { get; set; }
 
-    public override string GetDefaultExtension() => ".g.cs";
+    protected override string GetDefaultExtension() => ".g.cs";
 
     public PluginCodeGenerator() => SatisfyImports();
 
@@ -89,113 +88,86 @@ public class PluginCodeGenerator : BaseCodeGeneratorWithSite
 
     [SuppressMessage("CodeQuality", "IDE0079:Remove unnecessary suppression", Justification = "The following supression is necessary for ThreadHelper.JoinableTaskFactory.Run")]
     [SuppressMessage("Usage", "VSTHRD104:Offer async methods", Justification = "This method is considered the entry point for code generation.")]
-    protected override byte[]? GenerateCode(string inputFileName, string inputFileContent)
+    protected async override Task<byte[]?> GenerateCodeAsync(
+        string inputFileName, string inputFileContent, string defaultNamespace,
+        IVsGeneratorProgress generateProgress, CancellationToken cancellationToken = default)
     {
         if (string.IsNullOrWhiteSpace(inputFileContent)) { return null; }
-        if (Generator is null) { return Encoding.UTF8.GetBytes("// No generator found."); }
-        
-        return ThreadHelper.JoinableTaskFactory.Run(async () =>
+        if (Generator is null) { return Encoding.UTF8.GetBytes("// No code generation engine is availabel."); }
+
+        PluginAssemblyConfig? inputModel;
+        try
         {
-            PluginAssemblyConfig? inputModel = null;
-            try
-            {
-                inputModel = await GetInputModelFromFileAsync(inputFileName, inputFileContent);
-            }
-            catch (Exception ex)
-            {
-                Logger.LogError(ex, "Parsing input file filed due to an error.");
-            }
-            if (inputModel == null)
-            {
-                Logger.LogWarning("Failed to parse input file for code generation. Please review the input file and try again.");
-                return null;
-            }
+            inputModel = await GetInputModelFromFileAsync(inputFileName, inputFileContent);
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, Strings.CodeGen_InputFileError, inputFileName);
+            return Encoding.UTF8.GetBytes("/* " + string.Format(Strings.CodeGen_InputFileError, inputFileName, ex.Message) + " */");
+        }
 
-            await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync();
+        if (inputModel == null || !inputModel.PluginTypes.Any())
+        {
+            Logger.LogWarning(string.Format(Strings.CodeGen_InputModel_Empty, inputFileName));
+            return null;
+        }
 
-            var inputFile = await PhysicalFile.FromFileAsync(inputFileName);
+        //await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync();
 
-            if (inputFile is null || inputFile.FindParent(SolutionItemType.Project) is not Project project)
+        var templateFilePath = await TemplateFinder.FindPluginTemplatePathAsync(inputFileName);
+
+        if (string.IsNullOrEmpty(templateFilePath))
+        {
+            return Encoding.UTF8.GetBytes("// " + Strings.CodeGen_TemplateNotFound);
+        }
+
+        Generator.Config = new XrmCodeGenConfig
+        {
+            DefaultNamespace = defaultNamespace,
+            TemplateFilePath = templateFilePath,
+            InputFileName = inputFileName
+        };
+
+        var currentEnvironment = await EnvironmentProvider.GetActiveEnvironmentAsync(true);
+        if (currentEnvironment == null || currentEnvironment == DataverseEnvironment.Empty)
+        {
+            return Encoding.UTF8.GetBytes(
+                "// Code generation failed because active environment has not been setup." +
+                " Please go to Tools > Options > XRM Tools to setup the environment and set the current environment.");
+        }
+
+        try
+        {
+            using var cts = new CancellationTokenSource(120000);
+            await AddEntityMetadataToPluginDefinitionAsync(inputModel!, cts.Token).ConfigureAwait(false);
+        }
+        catch (OperationCanceledException)
+        {
+            Logger.LogWarning("Metadata retrieval was canceled.");
+            throw;
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Failed to retrieve metadata for code generation");
+            throw;
+        }
+
+        if (GeneralOptions.Instance.LogLevel == LogLevel.Trace)
+        {
+            var serializedConfig = JsonConvert.SerializeObject(inputModel, new JsonSerializerSettings
             {
-                return Encoding.UTF8.GetBytes("// Unable to find the input file or its project.");
-            }
+                ContractResolver = new PolymorphicContractResolver()
+            });
+            File.WriteAllText(Path.ChangeExtension(inputFileName, ".model.json"), serializedConfig);
+        }
 
-            var templateFilePath = await GetTemplateFilePathAsync(inputModel, project);
+        var validation = Generator.IsValid(inputModel);
+        if (validation != ValidationResult.Success)
+        {
+            return Encoding.UTF8.GetBytes("// " + validation.ErrorMessage);
+        }
 
-            if (string.IsNullOrEmpty(templateFilePath))
-            {
-                return Encoding.UTF8.GetBytes("// " + Strings.PluginGenerator_TemplateNotSet);
-            }
-            if (!File.Exists(templateFilePath))
-            {
-                return Encoding.UTF8.GetBytes("// " + string.Format(Strings.PluginGenerator_TemplateFileNotFound, templateFilePath));
-            }
-
-            Generator.Config = new XrmCodeGenConfig
-            {
-                DefaultNamespace = string.IsNullOrWhiteSpace(FileNamespace) ? GetDefaultNamespace() : FileNamespace,
-                TemplateFilePath = templateFilePath,
-                InputFileName = inputFileName
-            };
-
-            var currentEnvironment = await EnvironmentProvider.GetActiveEnvironmentAsync(true);
-            if (currentEnvironment == null || currentEnvironment == DataverseEnvironment.Empty)
-            {
-                return Encoding.UTF8.GetBytes(
-                    "// Code generation failed because active environment has not been setup." +
-                    " Please go to Tools > Options > XRM Tools to setup the environment and set the current environment.");
-            }
-
-            try
-            {
-                using var cts = new CancellationTokenSource(120000);
-                await AddEntityMetadataToPluginDefinitionAsync(inputModel!, cts.Token).ConfigureAwait(false);
-            }
-            catch (OperationCanceledException)
-            {
-                Logger.LogWarning("Metadata retrieval was canceled.");
-                throw;
-            }
-            catch (Exception ex)
-            {
-                Logger.LogError(ex, "Failed to retrieve metadata for code generation");
-                throw;
-            }
-
-            if (GeneralOptions.Instance.LogLevel == LogLevel.Trace)
-            {
-                var serializedConfig = JsonConvert.SerializeObject(inputModel, new JsonSerializerSettings
-                {
-                    ContractResolver = new PolymorphicContractResolver()
-                });
-                File.WriteAllText(Path.ChangeExtension(inputFileName, ".model.json"), serializedConfig);
-            }
-
-            var validation = Generator.IsValid(inputModel);
-            if (validation != ValidationResult.Success)
-            {
-                return Encoding.UTF8.GetBytes("// " + validation.ErrorMessage);
-            }
-
-            string? generatedCode = null;
-
-            await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync();
-
-            if (project.IsSdkStyle())
-            {
-                var lastGenFileName = await inputFile.GetAttributeAsync("LastGenOutput");
-                if (string.IsNullOrWhiteSpace(lastGenFileName))
-                {
-                    lastGenFileName = Path.ChangeExtension(Path.GetFileName(inputFileName), ".g.cs");
-                    await inputFile.TrySetAttributeAsync(PhysicalFileAttribute.LastGenOutput, lastGenFileName);
-                }
-                var lastGenFilePath = Path.Combine(Path.GetDirectoryName(inputFileName), lastGenFileName);
-                generatedCode = Generator.GenerateCode(inputModel);
-                File.WriteAllText(lastGenFilePath, "// SDK-Style Code Gen\r\n" + generatedCode);
-            }
-            generatedCode ??= Generator.GenerateCode(inputModel);
-            return Encoding.UTF8.GetBytes(Generator.GenerateCode(inputModel));
-        });
+        return Encoding.UTF8.GetBytes(Generator.GenerateCode(inputModel));
     }
 
     private async Task<PluginAssemblyConfig?> GetInputModelFromFileAsync(string inputFileName, string inputFileContent)
@@ -208,48 +180,6 @@ public class PluginCodeGenerator : BaseCodeGeneratorWithSite
         //{
         //    return ParseJsonInputFile(inputFileName, inputFileContent);
         //}
-        return null;
-    }
-
-    private async Task<string?> GetTemplateFilePathAsync(PluginAssemblyConfig config, Project project)
-    {
-        if (config == null) return null;
-        bool isTemplatePlugin = config.PluginTypes?.Any() ?? false;
-        bool isTemplateEntity = config.Entities?.Any() ?? false;
-        if (!isTemplatePlugin && !isTemplateEntity) 
-        {
-            Logger.LogWarning("Input model for code generation neither contains any plugin nor entity definition.");
-            return null;
-        }
-
-        string? templateFilePath;
-        if (isTemplatePlugin)
-        {
-            templateFilePath = await TemplateFinder.FindPluginTemplatePathAsync(InputFilePath);
-        }
-        else
-        {
-            templateFilePath = await TemplateFinder.FindEntityTemplatePathAsync(InputFilePath);
-        }
-        if (templateFilePath != null) return templateFilePath;
-
-        Logger.LogTrace("No template found for " + (isTemplatePlugin ? "plugin code generation." : "entity code generation."));
-        Logger.LogInformation("Atempting to create plugin default templates.");
-
-        await TemplateFileGenerator.GenerateTemplatesAsync(project, false);
-
-        Logger.LogInformation("Default template generation completed.");
-
-        if (isTemplatePlugin)
-        {
-            templateFilePath = await TemplateFinder.FindPluginTemplatePathAsync(InputFilePath);
-        }
-        else
-        {
-            templateFilePath = await TemplateFinder.FindEntityTemplatePathAsync(InputFilePath);
-        }
-        if (templateFilePath != null) return templateFilePath;
-        Logger.LogCritical("Still, no template found for " + (isTemplatePlugin ? "plugin generation." : "entity generation."));
         return null;
     }
 
@@ -328,13 +258,13 @@ public class PluginCodeGenerator : BaseCodeGeneratorWithSite
         }
     }
 
-    private string GetDefaultNamespace()
+    private string GetDefaultNamespace(string inputFilePath)
     {
         ThreadHelper.ThrowIfNotOnUIThread();
         if (GetService(typeof(IVsHierarchy)) is IVsHierarchy hierarchy)
         {
             // Get the current item ID
-            hierarchy.ParseCanonicalName(InputFilePath, out var itemId);
+            hierarchy.ParseCanonicalName(inputFilePath, out var itemId);
 
             if (hierarchy.GetProperty(itemId, (int)__VSHPROPID.VSHPROPID_DefaultNamespace, out object defaultNamespace) == VSConstants.S_OK)
             {
@@ -412,32 +342,5 @@ public class PluginCodeGenerator : BaseCodeGeneratorWithSite
         }
         config.EntityDefinitions = entityDefinitions.Values;
     }
-
-    #region IDisposable Support
-    protected override void Dispose(bool disposing)
-    {
-        if (!disposed)
-        {
-            if (disposing)
-            {
-                // Dispose managed resources
-                if (RepositoryFactory is IDisposable disposableFactory)
-                {
-                    disposableFactory.Dispose();
-                }
-            }
-
-            // Free unmanaged resources (if any)
-            // Nope!
-            disposed = true;
-        }
-
-        // Call the base class's Dispose method
-        base.Dispose(disposing);
-    }
-
-    // Finalizer to ensure resources are released if Dispose is not called
-    ~PluginCodeGenerator() => Dispose(false);
-    #endregion
 }
 #nullable restore
