@@ -5,7 +5,7 @@
     <VSToolsPath Condition="'$(VSToolsPath)' == ''">$(MSBuildExtensionsPath32)\Microsoft\VisualStudio\v$(VisualStudioVersion)</VSToolsPath>
   </PropertyGroup>
   <PropertyGroup>
-    <SignAssembly>true</SignAssembly>
+    <SignAssembly>false</SignAssembly>
   </PropertyGroup>
   <PropertyGroup>
     <AssemblyOriginatorKeyFile>..\key.snk</AssemblyOriginatorKeyFile>
@@ -464,9 +464,6 @@
     </PackageReference>
     <PackageReference Include="Scriban">
       <Version>6.2.1</Version>
-    </PackageReference>
-    <PackageReference Include="StrongNamer">
-      <Version>0.2.5</Version>
     </PackageReference>
     <PackageReference Include="System.Reflection.MetadataLoadContext">
       <Version>8.0.0</Version>
