@@ -40,7 +40,7 @@ env:
   COVERAGE_DIR: "artifacts/coverage"
 
 jobs:
-  build-and-test:
+  build:
     name: Build & Test
     runs-on: windows-latest
 
