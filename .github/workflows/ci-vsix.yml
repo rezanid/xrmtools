@@ -92,14 +92,29 @@ jobs:
         with:
           fetch-depth: 0
 
-      - uses: actions/download-artifact@v4
+      - name: Download VSIX artifact
+        uses: actions/download-artifact@v4
         with:
           name: vsix
+          path: _staging
+
+      - name: Locate VSIX (from artifact)
+        id: locate_vsix
+        shell: pwsh
+        run: |
+          $files = Get-ChildItem -Path "$env:GITHUB_WORKSPACE\_staging" -Recurse -Filter *.vsix
+          if ($files.Count -eq 0) { throw "No .vsix found in downloaded artifact." }
+          if ($files.Count -gt 1) {
+            $files | ForEach-Object { Write-Host $_.FullName }
+            throw "Multiple .vsix files found in artifact. Narrow the search."
+          }
+          "vsix=$($files[0].FullName)" | Out-File -Append $env:GITHUB_OUTPUT
+          Write-Host "Using VSIX: $($files[0].FullName)"
 
       - name: Publish to Open VSIX Gallery (nightly)
         uses: timheuer/openvsixpublish@v1
         with:
-          vsix-file: "**/*.vsix"
+          vsix-file: ${{ steps.locate_vsix.outputs.vsix }}
 
       - name: Guard - nightly tag must not already exist
         shell: pwsh
