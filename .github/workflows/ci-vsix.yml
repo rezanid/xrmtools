@@ -30,7 +30,6 @@ env:
 
   SOLUTION_PATH: "src/XrmGen.sln"
   VSIX_PROJECT_DIR: "src/XrmTools/"
-  VSIX_PROJECT_PATH: "${{ env.VSIX_PROJECT_DIR }}XrmGen.csproj"
   NUGET_PROJECT_PATH: "src/XrmTools.Meta.Attributes/XrmTools.Meta.Attributes.msbuildproj"
 
   VSIX_MANIFEST_PATH: "src/XrmTools/source.extension.vsixmanifest"
