@@ -76,7 +76,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: vsix
-          path: ${{VSIX_PROJECT_DIR}}_built/**/*.vsix
+          path: ${{env.VSIX_PROJECT_DIR}}_built/**/*.vsix
 
   publish_openvsix_and_tag:
     name: Publish Nightly (Open VSIX) + Tag
