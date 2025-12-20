@@ -45,7 +45,7 @@ jobs:
     runs-on: windows-latest
 
     outputs:
-      vsix-version: ${{ steps.vsix-version.outputs.version-number }}
+      version: ${{ steps.vsix_version.outputs['version-number'] }}
 
     steps:
       - name: Checkout
