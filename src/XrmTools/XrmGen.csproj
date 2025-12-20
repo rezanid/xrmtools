@@ -291,9 +291,10 @@
     <Content Include="UI\WebResources\preview.html" />
     <Content Include="UI\WebResources\themes\prism.css" />
     <Content Include="UI\WebResources\prism.js" />
-    <Content Include="..\..\LICENSE.md">
-      <Link>Resources\LICENSE.md</Link>
+    <Content Include="..\..\LICENSE.txt">
+      <Link>Resources\LICENSE.txt</Link>
       <IncludeInVSIX>true</IncludeInVSIX>
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
     <Content Include="CodeGenTemplates\BigInt.sbncs">
       <IncludeInVSIX>true</IncludeInVSIX>
@@ -373,6 +374,8 @@
     <Content Include="FetchXmlViewer\assets\index-Df-1zudZ.js.map">
       <IncludeInVSIX>true</IncludeInVSIX>
     </Content>
+    <None Include="FetchXmlViewer.WebAssets.targets" />
+    <None Include="IncludeNuGetResolvedAssets.targets" />
     <None Include="PrepareImageManifest.targets" />
     <Resource Include="Schemas\Fetch.xsd">
       <SubType>Designer</SubType>
