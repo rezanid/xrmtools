@@ -36,6 +36,7 @@ using XrmTools;
 [assembly: AssemblyVersion(Vsix.Version)]
 [assembly: AssemblyFileVersion(Vsix.Version)]
 [assembly: InternalsVisibleTo("XrmTools.Tests")]
+[assembly: InternalsVisibleTo("DynamicProxyGenAssembly2")]
 
 [assembly: ProvideCodeBase(
     AssemblyName = @"XrmTools.Core",

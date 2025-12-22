@@ -1,0 +1,13 @@
+{
+  "$schema": "http://json.schemastore.org/vsix-publish",
+  "identity": {
+    "internalName": "XrmTools"
+  },
+  "publisher": "rezanid",
+  "overview": "README.md",
+  "priceCategory": "free",
+  "categories": [ "tools", "coding", "setup and deployment" ],
+  "qna": false,
+  "private": false,
+  "repo": "https://github.com/rezanid/xrmtools"
+}
