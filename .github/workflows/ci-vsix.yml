@@ -2,17 +2,17 @@ name: CI - VSIX
 
 on:
   pull_request:
-    branches: [52-cicd]
+    branches: [main]
     paths-ignore:
-      - "**.md"
+      - "**/*.md"
       - "docs/**"
       - ".github/**"
-      - "!.github/workflows/ci.yml"
+      - "!.github/workflows/ci-vsix.yml"
       - "src/XrmTools.Meta.Attributes/**" 
   push:
-    branches: [52-cicd]
+    branches: [main]
     paths-ignore:
-      - "**.md"
+      - "**/*.md"
       - "docs/**"
       - "src/XrmTools.Meta.Attributes/**" 
   workflow_dispatch:
@@ -20,6 +20,7 @@ on:
 permissions:
   contents: write # required to push tags
   actions: read
+  checks: write   # publish dorny test report checks
 
 concurrency:
   group: ci-${{ github.workflow }}-${{ github.ref }}
@@ -30,14 +31,10 @@ env:
 
   SOLUTION_PATH: "src/XrmGen.sln"
   VSIX_PROJECT_DIR: "src/XrmTools/"
-  NUGET_PROJECT_PATH: "src/XrmTools.Meta.Attributes/XrmTools.Meta.Attributes.msbuildproj"
-
   VSIX_MANIFEST_PATH: "src/XrmTools/source.extension.vsixmanifest"
   VSIX_MANIFEST_SOURCE_PATH: "src/XrmTools/source.extension.cs"
 
-  ARTIFACTS_DIR: "artifacts"
   TEST_RESULTS_DIR: "artifacts/test-results"
-  COVERAGE_DIR: "artifacts/coverage"
 
 jobs:
   build:
@@ -53,12 +50,12 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Setup MSBuild
+      - name: Setup Build Tooling
         uses: timheuer/bootstrap-dotnet@v1
         with:
           msbuild: 'true'
+          sdk: 'true'
           nuget: 'false'
-          sdk: 'false'
 
       - name: Stamp VSIX revision from run number
         id: vsix_version
@@ -72,11 +69,50 @@ jobs:
       - name: Build
         run: msbuild "${{ env.SOLUTION_PATH }}" /v:m -restore /p:Configuration=${{ env.CONFIGURATION }} /p:OutDir=_built\
 
+      - name: Create test results folder
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force -Path "${{ env.TEST_RESULTS_DIR }}" | Out-Null
+
+      - name: Run unit tests (SDK-style) + TRX
+        shell: pwsh
+        run: |
+          dotnet test "${{ env.SOLUTION_PATH }}" `
+            -c "${{ env.CONFIGURATION }}" `
+            --no-build `
+            --logger "trx;LogFileName=test-results-${{ github.run_id }}.trx" `
+            --results-directory "${{ env.TEST_RESULTS_DIR }}"
+
+      - name: Publish test report (PR Checks)
+        if: ${{ always() }}
+        uses: dorny/test-reporter@v1
+        with:
+          name: Unit Tests
+          path: ${{ env.TEST_RESULTS_DIR }}/*.trx
+          reporter: dotnet-trx
+          fail-on-error: true
+
+      - name: Upload test results artifact
+        if: ${{ always() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results
+          path: ${{ env.TEST_RESULTS_DIR }}
+
       - name: Upload VSIX artifact
         uses: actions/upload-artifact@v4
         with:
           name: vsix
           path: ${{env.VSIX_PROJECT_DIR}}_built/**/*.vsix
+
+      - name: Build summary
+        if: ${{ always() }}
+        shell: pwsh
+        run: |
+          $v = "${{ steps.vsix_version.outputs['version-number'] }}"
+          "### Build summary" | Out-File -Append $env:GITHUB_STEP_SUMMARY
+          "- Version stamped: **$v**" | Out-File -Append $env:GITHUB_STEP_SUMMARY
+          "- Configuration: **${{ env.CONFIGURATION }}**" | Out-File -Append $env:GITHUB_STEP_SUMMARY
 
   publish_openvsix_and_tag:
     name: Publish Nightly (Open VSIX) + Tag
@@ -85,10 +121,11 @@ jobs:
     runs-on: windows-latest
 
     env:
-      NIGHTLY_TAG: nightly/${{ needs.build.outputs.version }}
+      NIGHTLY_TAG: nightly/vsix/${{ needs.build.outputs.version }}
 
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout (for tagging)
+        uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
@@ -115,6 +152,12 @@ jobs:
         uses: timheuer/openvsixpublish@v1
         with:
           vsix-file: ${{ steps.locate_vsix.outputs.vsix }}
+
+      - name: Guard - version output must not be empty
+        shell: pwsh
+        run: |
+          $v = "${{ needs.build.outputs.version }}"
+          if ([string]::IsNullOrWhiteSpace($v)) { throw "Version output is empty; refusing to tag nightly/." }
 
       - name: Guard - nightly tag must not already exist
         shell: pwsh

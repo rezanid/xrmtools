@@ -1,0 +1,179 @@
+name: Release - Marketplace
+
+on:
+  workflow_dispatch:
+    inputs:
+      nightly_tag:
+        description: "Nightly tag to promote (e.g. nightly/1.2.3.456)"
+        required: true
+      release_title:
+        description: "Optional GitHub Release title (default: v<version>)"
+        required: false
+        default: ""
+      prerelease:
+        description: "Create GitHub Release as prerelease?"
+        required: false
+        type: boolean
+        default: false
+
+permissions:
+  contents: write   # create tag + GitHub release
+  actions: read
+
+concurrency:
+  group: release-marketplace
+  cancel-in-progress: false
+
+env:
+  CONFIGURATION: "Release"
+  SOLUTION_PATH: "src/XrmGen.sln"
+  VSIX_PROJECT_DIR: "src/XrmTools/"
+  VSIX_MANIFEST_PATH: "src/XrmTools/source.extension.vsixmanifest"
+  VSIX_MANIFEST_SOURCE_PATH: "src/XrmTools/source.extension.cs"
+
+jobs:
+  list_nightlies:
+    name: List recent nightlies
+    runs-on: ubuntu-latest
+    steps:
+      - name: Show latest nightly/* tags in summary
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const tags = await github.paginate(github.rest.repos.listTags, {
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              per_page: 100
+            });
+
+            const nightly = tags
+              .map(t => t.name)
+              .filter(n => n.startsWith('nightly/vsix/'))
+              .slice(0, 30);
+
+            let body = `### Recent nightly tags (top ${nightly.length})\n`;
+            body += nightly.length ? nightly.map(t => `- \`${t}\``).join('\n') : 'No nightly tags found.';
+            await core.summary.addRaw(body + '\n').write();
+
+  release:
+    name: Promote nightly to Marketplace
+    needs: list_nightlies
+    runs-on: windows-latest
+
+    environment: vs-marketplace
+
+    steps:
+      - name: Derive version from nightly tag
+        id: derive
+        shell: pwsh
+        run: |
+          $tag = "${{ inputs.nightly_tag }}".Trim()
+
+          if (-not $tag.StartsWith("nightly/vsix/")) {
+            throw "nightly_tag must start with 'nightly/vsix/'. Got: '$tag'"
+          }
+
+          $version = $tag.Substring("nightly/vsix/".Length).Trim()
+          if ([string]::IsNullOrWhiteSpace($version)) { throw "Nightly tag has no version segment: '$tag'" }
+
+          "version=$version" >> $env:GITHUB_OUTPUT
+          "nightly_tag=$tag" >> $env:GITHUB_OUTPUT
+
+      - name: Checkout nightly tag
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ steps.derive.outputs.nightly_tag }}
+          fetch-depth: 0
+
+      - name: Guard - nightly tag must exist
+        shell: pwsh
+        run: |
+          git fetch --tags --force
+          $t = "${{ steps.derive.outputs.nightly_tag }}"
+          if (-not (git tag -l $t)) { throw "Nightly tag '$t' does not exist. Aborting." }
+
+      - name: Guard - nightly tag commit must be on main
+        shell: pwsh
+        run: |
+          git fetch origin main --depth=1
+          git fetch --tags --force
+
+          $tag = "${{ steps.derive.outputs.nightly_tag }}"
+          $sha = (git rev-list -n 1 $tag).Trim()
+
+          # Is tag commit reachable from main?
+          git merge-base --is-ancestor $sha origin/main
+          if ($LASTEXITCODE -ne 0) {
+            throw "Tag '$tag' (commit $sha) is not on main. Refusing to release."
+          }
+
+          Write-Host "OK: $tag ($sha) is on main."
+
+      - name: Guard - release tag must not already exist
+        shell: pwsh
+        run: |
+          git fetch --tags --force
+          $releaseTag = "vsix/${{ steps.derive.outputs.version }}"
+          if (git tag -l $releaseTag) {
+            throw "Release tag '$releaseTag' already exists. Refusing to publish same version twice."
+          }
+
+      - name: Setup build tooling (MSBuild + .NET)
+        uses: timheuer/bootstrap-dotnet@v1
+        with:
+          msbuild: "true"
+          sdk: "true"
+          nuget: "false"
+
+      - name: Stamp VSIX version (exact)
+        id: vsix_version
+        uses: timheuer/vsix-version-stamp@v2
+        with:
+          manifest-file: ${{ env.VSIX_MANIFEST_PATH }}
+          vsix-token-source-file: ${{ env.VSIX_MANIFEST_SOURCE_PATH }}
+          version-number: ${{ steps.derive.outputs.version }}
+
+      - name: Build (after stamping)
+        run: msbuild "${{ env.SOLUTION_PATH }}" /v:m -restore /p:Configuration=${{ env.CONFIGURATION }} /p:OutDir=_built\
+
+      - name: Locate built VSIX
+        id: locate_vsix
+        shell: pwsh
+        run: |
+          $root = Join-Path $env:GITHUB_WORKSPACE "${{ env.VSIX_PROJECT_DIR }}_built"
+          if (-not (Test-Path $root)) { throw "Expected VSIX output folder not found: $root" }
+
+          $files = Get-ChildItem -Path $root -Recurse -Filter *.vsix
+          if ($files.Count -eq 0) { throw "No .vsix produced under: $root" }
+          if ($files.Count -gt 1) {
+            $files | ForEach-Object { Write-Host $_.FullName }
+            throw "Multiple .vsix files found under: $root. Narrow the search (by name) if needed."
+          }
+
+          "vsix=$($files[0].FullName)" | Out-File -Append $env:GITHUB_OUTPUT
+          Write-Host "VSIX: $($files[0].FullName)"
+
+      - name: Publish to Visual Studio Marketplace
+        uses: cezarypiatek/VsixPublisherAction@1.0
+        with:
+          extension-file: ${{ steps.locate_vsix.outputs.vsix }}
+          publish-manifest-file: "vs-publish.json"
+          personal-access-code: ${{ secrets.VS_PUBLISHER_ACCESS_TOKEN }}
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: vsix/${{ steps.derive.outputs.version }}
+          name: ${{ inputs.release_title != '' && inputs.release_title || format('Xrm Tools v{0}', steps.derive.outputs.version) }}
+          prerelease: ${{ inputs.prerelease }}
+          generate_release_notes: true
+          files: ${{ steps.locate_vsix.outputs.vsix }}
+
+      - name: Summary
+        shell: pwsh
+        run: |
+          $nightly = "${{ steps.derive.outputs.nightly_tag }}"
+          $version = "${{ steps.derive.outputs.version }}"
+          "### Marketplace release published" | Out-File -Append $env:GITHUB_STEP_SUMMARY
+          "- Nightly: **$nightly**" | Out-File -Append $env:GITHUB_STEP_SUMMARY
+          "- Release tag: **vsix/$version**" | Out-File -Append $env:GITHUB_STEP_SUMMARY

@@ -1,11 +1,14 @@
-# What is Xrm Tools
+# What is Xrm Tools [![CI - VSIX](https://github.com/rezanid/xrmtools/actions/workflows/ci-vsix.yml/badge.svg?branch=main)](https://github.com/rezanid/xrmtools/actions/workflows/ci-vsix.yml)
 Xrm Tools is a Visual Studio extension that aims to make Power Platform development feel native within Visual Studio. You will get Intellisense support for your Plugins, generate boiler plate code, typed entities and more right from within Visual Studio. You also have full control over the code generation using [Scriban](https://github.com/scriban/scriban) templates.
 
-## Main Features
+## Features
 
-* Define plugin registration entirely in code using attributes.
-* Intellisense for entities, attributes and more based on connected Dataverse environment.
-* Supports traditional and packaged plugins (dependent assemblies).
+* Native FetchXML authoring experience with full IntelliSense support that knows your entities, along with live preview and code generation.
+* Define plugins and custom APIs entirely in code using attributes.
+* Register plugins and custom APIs with a click.
+* Intellisense for Power Platform metadata (e.g. entities, attributes, messages).
+* Supports both traditional and packaged plugins (dependent assemblies).
+* Supports SDK-style and classic projects.
 * [Solution aware plugins](https://github.com/rezanid/xrmtools/wiki/Solution%E2%80%90Aware-Plugins)
 * [Environment management at User, Solution or Project level](https://github.com/rezanid/xrmtools/wiki/Environment-Management)
 * [Secure secret managment using Windows Credential Management or environment variables](https://github.com/rezanid/xrmtools/wiki/Connection-String-Secrets)
@@ -13,9 +16,19 @@ Xrm Tools is a Visual Studio extension that aims to make Power Platform developm
 * One-click plugin / assembly registration.
 * [Fully customizable code generation templates](https://github.com/rezanid/xrmtools/wiki/Customizing-Code-Generation-Templates).
 * Supports CSharp v12.0 via PolySharp.
-* FetchXML editor and automatic code generation at save.
 * [Retro-fit to your existing plugins using smart code-fixers (aka bulb actions)](https://github.com/rezanid/xrmtools/wiki/Enabling-Xrm-Tools-for-Old-plugins)
 * [Easily call Custom APIs and Actions from your plugin](https://github.com/rezanid/xrmtools/wiki/Calling-Custom-APIs-Action-and-Other-Messages)
+
+## Preview
+
+### Environment Setup
+![Environment Setup](https://rezanid.gallerycdn.vsassets.io/extensions/rezanid/xrmtools/1.5.4/1765665214854/xrmtools-environment-setup.gif)
+
+### Writing a Plugin
+![Writing a Plugin](https://rezanid.gallerycdn.vsassets.io/extensions/rezanid/xrmtools/1.5.4/1765665214854/Write-Plugin.gif)
+
+### Registering a Plugin
+![Registering a Plugin](https://rezanid.gallerycdn.vsassets.io/extensions/rezanid/xrmtools/1.5.4/1765665214854/Write-Plugin.gif)
 
 ## Xrm Tools is a good citizen in Visual Studio
 * XrmTools does not need admin privileges and will not apply any system-wide change in your machine nor the configuration of your Visual Studio or projects. 
@@ -48,9 +61,10 @@ The best way to start using Xrm Tools is:
 * YouTube Videos:
   * [Short - Why Xrm Tools](https://www.youtube.com/shorts/nnoKjmEwEVY)
   * [Building a Hello World Plugin](https://www.youtube.com/watch?v=6E2AE8vrEbI)
-  * [Enabling Code Generation and Dependency Injection](https://www.youtube.com/watch?v=C6XR08AckP0)
-  * [Building Custom APIs](https://youtu.be/VkbgbgRRD5I?si=hbGBm-bYmNZAZH3W)
-  * [Converting old plugins to Xrm Tools in seconds](https://youtu.be/_f8uMrxdkD4?si=Icd3IXMgU7ix5lPA)
+  * [Enabling Code Generation and Dependency Injection](https://youtu.be/lceVNZ6MDzI)
+  * [Building Custom APIs](https://youtu.be/VkbgbgRRD5I)
+  * [Calling Dataverse Messages (Custom APIs, Actions, etc.)](https://youtu.be/OQzqyeFZ_wI)
+  * [Converting old plugins to Xrm Tools in seconds](https://youtu.be/_f8uMrxdkD4)
 
 # Learn more
 To learn more about Xrm Tools extension for Visual Studio check the [wiki](https://github.com/rezanid/xrmtools/wiki)
