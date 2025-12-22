@@ -133,7 +133,7 @@ public class XrmHttpClientFactoryTests
         // Arrange
         var environment = CreateFakeEnvironment();
         var handler = new FakeHttpMessageHandler();
-        var handlerEntry = new HttpMessageHandlerEntry(handler, _timeProvider.GetUtcNow());
+        var handlerEntry = new HttpMessageHandlerEntry(handler, _timeProvider.GetUtcNow(), _timeProvider);
         var handlerPool = new ConcurrentDictionary<DataverseEnvironment, Lazy<HttpMessageHandlerEntry>>(
             [new(
                 environment, new(() => handlerEntry))]);
@@ -142,7 +142,12 @@ public class XrmHttpClientFactoryTests
         _ = handlerPool.TryGetValue(environment, out var lazyHandler) ? lazyHandler.Value : null;
 
         // Act
-        _timeProvider.Advance(handlerEntry.Lifetime);
+        _timeProvider.Advance(handlerEntry.Lifetime + TimeSpan.FromSeconds(1));
+
+        // Force a recycle pass (timer tick) deterministically
+        typeof(XrmHttpClientFactory)
+            .GetMethod("RecycleHandlersAsync", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance)!
+            .Invoke(_factory, null);
 
         // Assert
         handlerEntry.CanDispose().Should().BeTrue();

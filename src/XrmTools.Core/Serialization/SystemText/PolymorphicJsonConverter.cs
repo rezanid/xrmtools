@@ -22,7 +22,7 @@ public class PolymorphicJsonConverter<TBase> : JsonConverter<TBase>
         using var doc = JsonDocument.ParseValue(ref reader);
         var root = doc.RootElement;
 
-        var derivedType = Resolver.ResolveType(root) ?? typeToConvert;// throw new JsonException($"Unable to resolve derived type for {typeof(TBase).Name}.");
+        var derivedType = Resolver.ResolveType(root) ?? throw new JsonException($"Unable to resolve derived type for {typeof(TBase).Name}.");
         var json = root.GetRawText();
 
         var newOptions = GetStrippedOptions(options);

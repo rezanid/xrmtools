@@ -60,7 +60,7 @@ internal class XrmHttpClientFactory : IXrmHttpClientFactory, System.IAsyncDispos
     {
         if (environment == null) throw new ArgumentNullException(nameof(environment));
 
-        if (environment != DataverseEnvironment.Empty && string.IsNullOrEmpty(environment.ConnectionString))
+        if (string.IsNullOrEmpty(environment.ConnectionString))
         {
             throw new InvalidOperationException($"Environment '{environment.Name}' connection string is empty.");
         }
@@ -165,12 +165,23 @@ internal class XrmHttpClientFactory : IXrmHttpClientFactory, System.IAsyncDispos
         var handler = environment == DataverseEnvironment.Empty ?
             new PolicyHandler(new HttpClientHandler() { AllowAutoRedirect = false }, CreateDefaultPolicy()) :
             new PolicyHandler(CreateHandler(environment), CreateDefaultPolicy());
-        return new (handler, TimeProvider.GetUtcNow());
+        return new(handler, TimeProvider.GetUtcNow(), TimeProvider);
     }
 
     private HttpClientHandler CreateHandler(DataverseEnvironment environment)
     {
-        var proxyAddress = GeneralOptions.Instance.Proxy;
+        // GeneralOptions.Instance comes from VS option infrastructure (BaseOptionModel).
+        // In unit tests / non-VS hosts, accessing it can throw; treat as "no proxy".
+        string? proxyAddress = null;
+        try
+        {
+            proxyAddress = GeneralOptions.Instance?.Proxy;
+        }
+        catch
+        {
+            proxyAddress = null;
+        }
+
         var useProxy = !string.IsNullOrWhiteSpace(proxyAddress);
         var handler = new HttpClientHandler()
         {
@@ -179,7 +190,7 @@ internal class XrmHttpClientFactory : IXrmHttpClientFactory, System.IAsyncDispos
         };
         if (useProxy)
         {
-            handler.Proxy = new WebProxy(proxyAddress);
+            handler.Proxy = new WebProxy(proxyAddress!);
             handler.UseProxy = true;
         }
         else
