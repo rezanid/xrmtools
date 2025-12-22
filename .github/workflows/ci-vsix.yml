@@ -35,6 +35,7 @@ env:
   VSIX_MANIFEST_SOURCE_PATH: "src/XrmTools/source.extension.cs"
 
   TEST_RESULTS_DIR: "artifacts/test-results"
+  VSIX_STAGING_DIR: "artifacts/vsix"
 
 jobs:
   build:
