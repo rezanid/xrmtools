@@ -67,7 +67,7 @@ jobs:
           build-number: ${{ github.run_number }}
 
       - name: Build
-        run: msbuild "${{ env.SOLUTION_PATH }}" /v:m -restore /p:Configuration=${{ env.CONFIGURATION }} /p:OutDir=_built\
+        run: msbuild "${{ env.SOLUTION_PATH }}" /v:m -restore /p:Configuration=${{ env.CONFIGURATION }}
 
       - name: Create test results folder
         shell: pwsh
@@ -99,11 +99,34 @@ jobs:
           name: test-results
           path: ${{ env.TEST_RESULTS_DIR }}
 
+      - name: Stage VSIX
+        id: stage_vsix
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force -Path "${{ env.VSIX_STAGING_DIR }}" | Out-Null
+
+          $searchRoot = Join-Path $env:GITHUB_WORKSPACE "${{ env.VSIX_PROJECT_DIR }}"
+          $files = Get-ChildItem -Path $searchRoot -Recurse -Filter *.vsix |
+            Where-Object { $_.FullName -notmatch '\\obj\\' }
+
+          if ($files.Count -eq 0) { throw "No .vsix produced under: $searchRoot" }
+          if ($files.Count -gt 1) {
+            $files | ForEach-Object { Write-Host $_.FullName }
+            throw "Multiple .vsix files produced under: $searchRoot. Narrow by name if needed."
+          }
+
+          $vsix = $files[0]
+          $dest = Join-Path $env:GITHUB_WORKSPACE "${{ env.VSIX_STAGING_DIR }}\$($vsix.Name)"
+          Copy-Item $vsix.FullName -Destination $dest -Force
+
+          "vsix_path=$dest" | Out-File -Append $env:GITHUB_OUTPUT
+          Write-Host "Staged VSIX: $dest"
+
       - name: Upload VSIX artifact
         uses: actions/upload-artifact@v4
         with:
           name: vsix
-          path: ${{env.VSIX_PROJECT_DIR}}_built/**/*.vsix
+          path: ${{ env.VSIX_STAGING_DIR }}/*.vsix
 
       - name: Build summary
         if: ${{ always() }}

@@ -30,6 +30,7 @@ env:
   VSIX_PROJECT_DIR: "src/XrmTools/"
   VSIX_MANIFEST_PATH: "src/XrmTools/source.extension.vsixmanifest"
   VSIX_MANIFEST_SOURCE_PATH: "src/XrmTools/source.extension.cs"
+  VSIX_STAGING_DIR: "artifacts/vsix"
 
 jobs:
   list_nightlies:
@@ -134,40 +135,46 @@ jobs:
           version-number: ${{ steps.derive.outputs.version }}
 
       - name: Build (after stamping)
-        run: msbuild "${{ env.SOLUTION_PATH }}" /v:m -restore /p:Configuration=${{ env.CONFIGURATION }} /p:OutDir=_built\
+        run: msbuild "${{ env.SOLUTION_PATH }}" /v:m -restore /p:Configuration=${{ env.CONFIGURATION }}
 
-      - name: Locate built VSIX
-        id: locate_vsix
+      - name: Stage VSIX (deterministic)
+        id: stage_vsix
         shell: pwsh
         run: |
-          $root = Join-Path $env:GITHUB_WORKSPACE "${{ env.VSIX_PROJECT_DIR }}_built"
-          if (-not (Test-Path $root)) { throw "Expected VSIX output folder not found: $root" }
+          New-Item -ItemType Directory -Force -Path "${{ env.VSIX_STAGING_DIR }}" | Out-Null
 
-          $files = Get-ChildItem -Path $root -Recurse -Filter *.vsix
-          if ($files.Count -eq 0) { throw "No .vsix produced under: $root" }
+          $searchRoot = Join-Path $env:GITHUB_WORKSPACE "${{ env.VSIX_PROJECT_DIR }}"
+          $files = Get-ChildItem -Path $searchRoot -Recurse -Filter *.vsix |
+            Where-Object { $_.FullName -notmatch '\\obj\\' }
+
+          if ($files.Count -eq 0) { throw "No .vsix produced under: $searchRoot" }
           if ($files.Count -gt 1) {
             $files | ForEach-Object { Write-Host $_.FullName }
-            throw "Multiple .vsix files found under: $root. Narrow the search (by name) if needed."
+            throw "Multiple .vsix files produced under: $searchRoot. Narrow by name if needed."
           }
 
-          "vsix=$($files[0].FullName)" | Out-File -Append $env:GITHUB_OUTPUT
-          Write-Host "VSIX: $($files[0].FullName)"
+          $vsix = $files[0]
+          $dest = Join-Path $env:GITHUB_WORKSPACE "${{ env.VSIX_STAGING_DIR }}\$($vsix.Name)"
+          Copy-Item $vsix.FullName -Destination $dest -Force
+
+          "vsix=$dest" | Out-File -Append $env:GITHUB_OUTPUT
+          Write-Host "Staged VSIX: $dest"
 
       - name: Publish to Visual Studio Marketplace
         uses: cezarypiatek/VsixPublisherAction@1.0
         with:
-          extension-file: ${{ steps.locate_vsix.outputs.vsix }}
+          extension-file: ${{ steps.stage_vsix.outputs.vsix }}
           publish-manifest-file: "vs-publish.json"
           personal-access-code: ${{ secrets.VS_PUBLISHER_ACCESS_TOKEN }}
 
-      - name: Create GitHub Release
+      - name: Create GitHub Release (tag = vsix/<version>)
         uses: softprops/action-gh-release@v2
         with:
           tag_name: vsix/${{ steps.derive.outputs.version }}
           name: ${{ inputs.release_title != '' && inputs.release_title || format('Xrm Tools v{0}', steps.derive.outputs.version) }}
           prerelease: ${{ inputs.prerelease }}
           generate_release_notes: true
-          files: ${{ steps.locate_vsix.outputs.vsix }}
+          files: ${{ steps.stage_vsix.outputs.vsix }}
 
       - name: Summary
         shell: pwsh
