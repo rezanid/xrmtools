@@ -15,6 +15,16 @@ on:
         required: false
         type: boolean
         default: false
+      draft_release:
+        description: "Create GitHub Release as draft?"
+        required: false
+        type: boolean
+        default: true
+      dry_run:
+        description: "Dry run: build, stage, and optionally create draft release, but do NOT publish to Marketplace"
+        required: false
+        type: boolean
+        default: false
 
 permissions:
   contents: write   # create tag + GitHub release
@@ -161,6 +171,7 @@ jobs:
           Write-Host "Staged VSIX: $dest"
 
       - name: Publish to Visual Studio Marketplace
+        if: ${{ !inputs.dry_run }}
         uses: cezarypiatek/VsixPublisherAction@1.0
         with:
           extension-file: ${{ steps.stage_vsix.outputs.vsix }}
@@ -173,6 +184,7 @@ jobs:
           tag_name: vsix/${{ steps.derive.outputs.version }}
           name: ${{ inputs.release_title != '' && inputs.release_title || format('Xrm Tools v{0}', steps.derive.outputs.version) }}
           prerelease: ${{ inputs.prerelease }}
+          draft: ${{ inputs.draft_release }}
           generate_release_notes: true
           files: ${{ steps.stage_vsix.outputs.vsix }}
 
