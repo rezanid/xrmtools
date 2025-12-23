@@ -38,6 +38,7 @@ namespace {{config.default_namespace}}
             {{~ end ~}}
             {{~ else ~}}
             // Replace {{{{param.name}}}} with provided value
+            // Note: The {{...}} syntax is specific to parameters and unlikely to appear in FetchXML data
             fetchXml = fetchXml.Replace("{{{{{{param.name}}}}}}", {{param.name}});
             {{~ end ~}}
             {{~ end ~}}
