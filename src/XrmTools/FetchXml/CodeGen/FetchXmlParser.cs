@@ -12,6 +12,7 @@ using System.Threading.Tasks;
 internal class FetchXmlParser
 {
     private static readonly Regex FxSettingIncludingCommentChars = new(@"^\s*<!--\s*fx\.(.+?)\s*:\s*(.+?)\s*--!?>\s*$", RegexOptions.IgnoreCase | RegexOptions.Compiled);
+    private static readonly Regex InlineParameterPattern = new(@"\{\{(\w+)(?::([^}]*))?\}\}", RegexOptions.Compiled);
 
     public async Task<Model.FetchQuery> ParseAsync(XmlDocumentSyntax doc, CancellationToken cancellationToken = default)
     {
@@ -28,11 +29,15 @@ internal class FetchXmlParser
         // Parse fx.* settings from the input text before the <fetch> element
         CollectFxSettings(doc, query.Settings);
 
-        // Parse root attributes
+        // Parse root attributes and collect inline parameters
         foreach (var attr in fetchElement.Attributes)
         {
             var name = attr.Key ?? string.Empty;
             var val = attr.Value ?? string.Empty;
+            
+            // Collect inline parameters from attribute values
+            CollectInlineParameters(val, query.Parameters);
+            
             switch (name.ToLowerInvariant())
             {
                 case "version": query.Version = val; break;
@@ -58,6 +63,9 @@ internal class FetchXmlParser
             ?? throw new FormatException("<entity> element is required under <fetch>.");
 
         query.Entity = ParseEntity(entityElement, cancellationToken);
+        
+        // Collect <param> elements from entity and its children
+        CollectParamElements(entityElement, query.Parameters);
 
         return await Task.FromResult(query).ConfigureAwait(false);
     }
@@ -77,11 +85,15 @@ internal class FetchXmlParser
         // Parse fx.* settings from the input text before the <fetch> element
         CollectFxSettings(fetchXml, query.Settings);
 
-        // Parse root attributes
+        // Parse root attributes and collect inline parameters
         foreach (var attr in root.Attributes)
         {
             var name = attr.Key ?? string.Empty;
             var val = attr.Value ?? string.Empty;
+            
+            // Collect inline parameters from attribute values
+            CollectInlineParameters(val, query.Parameters);
+            
             switch (name.ToLowerInvariant())
             {
                 case "version": query.Version = val; break;
@@ -108,6 +120,10 @@ internal class FetchXmlParser
             throw new FormatException("<entity> element is required under <fetch>.");
 
         query.Entity = ParseEntity(entityElement, cancellationToken);
+        
+        // Collect <param> elements from entity and its children
+        CollectParamElements(entityElement, query.Parameters);
+        
         return Task.FromResult(query);
     }
 
@@ -454,6 +470,105 @@ internal class FetchXmlParser
                 // Stop at the first element (likely <fetch>)
                 break;
             }
+        }
+    }
+
+    /// <summary>
+    /// Collects inline parameters from a string value (e.g., "{{paramName}}" or "{{paramName:defaultValue}}")
+    /// </summary>
+    private static void CollectInlineParameters(string value, IList<Model.FetchParameter> parameters)
+    {
+        if (string.IsNullOrEmpty(value)) return;
+        
+        var matches = InlineParameterPattern.Matches(value);
+        foreach (Match match in matches)
+        {
+            if (match.Success && match.Groups.Count >= 2)
+            {
+                var paramName = match.Groups[1].Value;
+                var defaultValue = match.Groups.Count >= 3 && match.Groups[2].Success ? match.Groups[2].Value : null;
+                
+                // Check if parameter already exists
+                if (!parameters.Any(p => string.Equals(p.Name, paramName, StringComparison.OrdinalIgnoreCase)))
+                {
+                    parameters.Add(new Model.FetchParameter
+                    {
+                        Name = paramName,
+                        DefaultValue = defaultValue,
+                        IsElement = false
+                    });
+                }
+            }
+        }
+    }
+
+    /// <summary>
+    /// Recursively collects <param> elements from an XML element and its children
+    /// </summary>
+    private static void CollectParamElements(IXmlElement element, IList<Model.FetchParameter> parameters)
+    {
+        if (element == null) return;
+        
+        foreach (var child in element.Elements)
+        {
+            if (StringEquals(child.Name, "param"))
+            {
+                // Parse <param> element
+                var paramName = child.Attributes.FirstOrDefault(a => string.Equals(a.Key, "name", StringComparison.OrdinalIgnoreCase))?.Value;
+                if (!string.IsNullOrEmpty(paramName))
+                {
+                    // Get inner XML as default value
+                    var defaultValue = TryGetElementInnerXml(child);
+                    
+                    // Check if parameter already exists
+                    if (!parameters.Any(p => string.Equals(p.Name, paramName, StringComparison.OrdinalIgnoreCase)))
+                    {
+                        parameters.Add(new Model.FetchParameter
+                        {
+                            Name = paramName,
+                            DefaultValue = defaultValue,
+                            IsElement = true
+                        });
+                    }
+                }
+            }
+            else
+            {
+                // Also collect inline parameters from attributes of all elements
+                foreach (var attr in child.Attributes)
+                {
+                    CollectInlineParameters(attr.Value, parameters);
+                }
+                
+                // Recurse into child elements
+                CollectParamElements(child, parameters);
+            }
+        }
+    }
+
+    /// <summary>
+    /// Gets the inner XML content of an element (all child nodes as XML string)
+    /// </summary>
+    private static string TryGetElementInnerXml(IXmlElement element)
+    {
+        if (element == null) return string.Empty;
+        
+        try
+        {
+            // Get all child elements and convert to XML string
+            var childElements = element.Elements.ToList();
+            if (childElements.Count > 0)
+            {
+                // Use ToFullString() to get the XML representation
+                return string.Join("", childElements.Select(e => e.AsNode?.ToFullString() ?? string.Empty)).Trim();
+            }
+            
+            // If no child elements, try to get text content
+            return TryGetElementInnerText(element);
+        }
+        catch
+        {
+            return string.Empty;
         }
     }
 }
