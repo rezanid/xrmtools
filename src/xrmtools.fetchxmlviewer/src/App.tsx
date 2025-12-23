@@ -6,6 +6,7 @@ import { ModuleRegistry, AllCommunityModule } from 'ag-grid-community'
 ModuleRegistry.registerModules([AllCommunityModule])
 
 import { AgGridReact } from 'ag-grid-react'
+import { ParameterDialog, type FetchParameter } from './ParameterDialog'
 
 interface HostEnvelope {
   v: number
@@ -13,6 +14,7 @@ interface HostEnvelope {
   requestId?: string
   elapsedMs?: number
   error?: { code?: string; message: string }
+  parameters?: FetchParameter[]
 }
 
 function defaultTransform(rows: any[]): any[] { return rows }
@@ -35,6 +37,8 @@ function App() {
   const [lastRunMs, setLastRunMs] = useState<number | null>(null)
   const [error, setError] = useState<{ code?: string, message: string } | null | undefined>(null)
   const [currentRequestId, setCurrentRequestId] = useState<string | null>(null)
+  const [parameters, setParameters] = useState<FetchParameter[]>([])
+  const [showParamDialog, setShowParamDialog] = useState(false)
 
   const defaultColDef: ColDef = { flex: 1 }
 
@@ -91,6 +95,12 @@ function App() {
             setError(msg.error)
           }
           break
+        case 'fetchxml/request-parameters':
+          if (msg.parameters && msg.parameters.length > 0) {
+            setParameters(msg.parameters)
+            setShowParamDialog(true)
+          }
+          break
       }
     }
     webview.addEventListener('message', handler)
@@ -125,6 +135,27 @@ function App() {
   }, [setDataIntoGrid, autoSizeCols])
 
   const onGridReady = useCallback((params: any) => { gridApiRef.current = params.api }, [])
+
+  // Parameter dialog handlers
+  const handleParamOk = useCallback((values: Record<string, string>) => {
+    const webview = (window as any).chrome?.webview
+    setShowParamDialog(false)
+    try {
+      webview?.postMessage({ v: 1, kind: 'fetchxml/parameters-provided', parameters: values })
+    } catch (e) {
+      console.error(e)
+    }
+  }, [])
+
+  const handleParamCancel = useCallback(() => {
+    const webview = (window as any).chrome?.webview
+    setShowParamDialog(false)
+    try {
+      webview?.postMessage({ v: 1, kind: 'fetchxml/parameters-cancelled' })
+    } catch (e) {
+      console.error(e)
+    }
+  }, [])
 
   // Unified action button: Refresh when idle, Cancel when loading
   const onActionClick = useCallback(() => {
@@ -170,6 +201,13 @@ function App() {
           <AgGridReact gridOptions={gridOptions} columnDefs={columnDefs} rowData={rowData} defaultColDef={defaultColDef} />
         </div>
       </div>
+      {showParamDialog && (
+        <ParameterDialog
+          parameters={parameters}
+          onOk={handleParamOk}
+          onCancel={handleParamCancel}
+        />
+      )}
     </div>
   )
 }

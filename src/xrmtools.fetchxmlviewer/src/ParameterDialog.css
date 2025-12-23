@@ -1,0 +1,223 @@
+.param-dialog-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.param-dialog {
+  background: var(--app-bg);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  width: 700px;
+  max-width: 90vw;
+  max-height: 80vh;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
+}
+
+.param-dialog-header {
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.param-dialog-header h2 {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--app-fg);
+}
+
+.param-dialog-content {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.param-list {
+  width: 200px;
+  border-right: 1px solid var(--border-color);
+  display: flex;
+  flex-direction: column;
+  background: var(--app-bg);
+}
+
+.param-list-header {
+  padding: 12px 16px;
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  color: var(--app-fg);
+  opacity: 0.7;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.param-item {
+  padding: 10px 16px;
+  cursor: pointer;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid var(--border-color);
+  transition: background-color 0.15s;
+}
+
+.param-item:hover {
+  background: var(--btn-bg);
+}
+
+.param-item--selected {
+  background: var(--btn-bg);
+  border-left: 3px solid #0969da;
+  padding-left: 13px;
+}
+
+@media (prefers-color-scheme: dark) {
+  .param-item--selected {
+    border-left-color: #58a6ff;
+  }
+}
+
+.param-item-name {
+  font-size: 14px;
+  color: var(--app-fg);
+  font-family: monospace;
+}
+
+.param-item-default {
+  font-size: 12px;
+  color: #22863a;
+  font-weight: bold;
+}
+
+@media (prefers-color-scheme: dark) {
+  .param-item-default {
+    color: #3fb950;
+  }
+}
+
+.param-editor {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  padding: 16px;
+  overflow: auto;
+}
+
+.param-editor-header {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-bottom: 12px;
+}
+
+.param-editor-name {
+  font-size: 16px;
+  font-weight: 600;
+  font-family: monospace;
+  color: var(--app-fg);
+}
+
+.param-editor-hint {
+  font-size: 12px;
+  color: var(--app-fg);
+  opacity: 0.6;
+}
+
+.param-editor-input,
+.param-editor-textarea {
+  width: 100%;
+  padding: 8px 12px;
+  font-size: 14px;
+  font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  background: var(--app-bg);
+  color: var(--app-fg);
+  box-sizing: border-box;
+}
+
+.param-editor-textarea {
+  flex: 1;
+  min-height: 200px;
+  resize: vertical;
+}
+
+.param-editor-input:focus,
+.param-editor-textarea:focus {
+  outline: 2px solid #0969da;
+  outline-offset: -1px;
+}
+
+@media (prefers-color-scheme: dark) {
+  .param-editor-input:focus,
+  .param-editor-textarea:focus {
+    outline-color: #58a6ff;
+  }
+}
+
+.param-editor-empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  color: var(--app-fg);
+  opacity: 0.5;
+  font-size: 14px;
+}
+
+.param-dialog-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  padding: 16px 20px;
+  border-top: 1px solid var(--border-color);
+}
+
+.param-btn {
+  padding: 8px 16px;
+  font-size: 14px;
+  font-weight: 500;
+  border-radius: 6px;
+  border: 1px solid var(--border-color);
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.param-btn--secondary {
+  background: var(--btn-bg);
+  color: var(--btn-fg);
+}
+
+.param-btn--secondary:hover {
+  filter: brightness(1.05);
+}
+
+.param-btn--primary {
+  background: #0969da;
+  color: #ffffff;
+  border-color: #0969da;
+}
+
+.param-btn--primary:hover {
+  background: #0860ca;
+}
+
+@media (prefers-color-scheme: dark) {
+  .param-btn--primary {
+    background: #1f6feb;
+    border-color: #1f6feb;
+  }
+  
+  .param-btn--primary:hover {
+    background: #388bfd;
+  }
+}
