@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<!-- Example 2: Value-based parameter without default value -->
+<fetch distinct='false' aggregate='true'>
+  <entity name="{{entityName}}">
+    <attribute name='accountid' aggregate='count' alias='account_count' />
+  </entity>
+</fetch>
