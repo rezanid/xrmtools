@@ -12,15 +12,28 @@ namespace {{config.default_namespace}}
             var fetchXml = @"{{escape_verbatim(model.raw)}}";
             {{~ for param in model.parameters ~}}
             {{~ if param.is_element ~}}
-            // Replace <param name="{{param.name}}" /> with provided XML or default
+            // Replace <param name="{{param.name}}" /> or <param name="{{param.name}}">...</param> with provided XML
             if (!string.IsNullOrEmpty({{param.name}}))
             {
+                // Handle self-closing tag
                 fetchXml = fetchXml.Replace("<param name=\"{{param.name}}\" />", {{param.name}});
+                // Handle tag with content - use regex to replace entire param element
+                fetchXml = System.Text.RegularExpressions.Regex.Replace(
+                    fetchXml, 
+                    @"<param\s+name=""{{param.name}}""[^>]*>.*?</param>", 
+                    {{param.name}}, 
+                    System.Text.RegularExpressions.RegexOptions.Singleline);
             }
             {{~ if param.default_value ~}}
             else
             {
+                // Replace with default value
                 fetchXml = fetchXml.Replace("<param name=\"{{param.name}}\" />", @"{{escape_verbatim(param.default_value)}}");
+                fetchXml = System.Text.RegularExpressions.Regex.Replace(
+                    fetchXml, 
+                    @"<param\s+name=""{{param.name}}""[^>]*>.*?</param>", 
+                    @"{{escape_verbatim(param.default_value)}}", 
+                    System.Text.RegularExpressions.RegexOptions.Singleline);
             }
             {{~ end ~}}
             {{~ else ~}}
