@@ -12,6 +12,7 @@ using System.Threading.Tasks;
 internal class FetchXmlParser
 {
     private static readonly Regex FxSettingIncludingCommentChars = new(@"^\s*<!--\s*fx\.(.+?)\s*:\s*(.+?)\s*--!?>\s*$", RegexOptions.IgnoreCase | RegexOptions.Compiled);
+    private static readonly Regex ValueParameterRegex = new(@"\{\{(\w+)(?::([^}]*))?\}\}", RegexOptions.Compiled);
 
     public async Task<Model.FetchQuery> ParseAsync(XmlDocumentSyntax doc, CancellationToken cancellationToken = default)
     {
@@ -58,6 +59,9 @@ internal class FetchXmlParser
             ?? throw new FormatException("<entity> element is required under <fetch>.");
 
         query.Entity = ParseEntity(entityElement, cancellationToken);
+
+        // Collect parameters from the entire document
+        CollectParameters(fetchElement, query.Parameters);
 
         return await Task.FromResult(query).ConfigureAwait(false);
     }
@@ -108,6 +112,10 @@ internal class FetchXmlParser
             throw new FormatException("<entity> element is required under <fetch>.");
 
         query.Entity = ParseEntity(entityElement, cancellationToken);
+        
+        // Collect parameters from the entire document
+        CollectParameters(root, query.Parameters);
+        
         return Task.FromResult(query);
     }
 
@@ -455,5 +463,92 @@ internal class FetchXmlParser
                 break;
             }
         }
+    }
+
+    private static void CollectParameters(IXmlElement element, System.Collections.Generic.List<Model.FetchParameter> parameters)
+    {
+        if (element == null) return;
+
+        // Check for <param> elements
+        foreach (var child in element.Elements)
+        {
+            if (StringEquals(child.Name, "param"))
+            {
+                var param = ParseParamElement(child);
+                if (param != null && !parameters.Any(p => p.Name == param.Name))
+                {
+                    parameters.Add(param);
+                }
+            }
+            else
+            {
+                // Recursively collect parameters from child elements
+                CollectParameters(child, parameters);
+            }
+        }
+
+        // Check for {{paramName}} or {{paramName:defaultValue}} in attribute values
+        foreach (var attr in element.Attributes)
+        {
+            var val = attr.Value ?? string.Empty;
+            var matches = ValueParameterRegex.Matches(val);
+            foreach (System.Text.RegularExpressions.Match match in matches)
+            {
+                var paramName = match.Groups[1].Value;
+                var defaultValue = match.Groups.Count > 2 && match.Groups[2].Success ? match.Groups[2].Value : null;
+                
+                if (!parameters.Any(p => p.Name == paramName))
+                {
+                    parameters.Add(new Model.FetchParameter
+                    {
+                        Name = paramName,
+                        DefaultValue = defaultValue,
+                        IsElementParameter = false
+                    });
+                }
+            }
+        }
+    }
+
+    private static Model.FetchParameter ParseParamElement(IXmlElement paramEl)
+    {
+        var param = new Model.FetchParameter
+        {
+            IsElementParameter = true
+        };
+
+        // Get the name attribute
+        foreach (var attr in paramEl.Attributes)
+        {
+            if (string.Equals(attr.Key, "name", StringComparison.OrdinalIgnoreCase))
+            {
+                param.Name = attr.Value ?? string.Empty;
+                break;
+            }
+        }
+
+        if (string.IsNullOrEmpty(param.Name))
+        {
+            return null; // Invalid param element without name
+        }
+
+        // Get inner XML as default value
+        var innerXml = GetInnerXml(paramEl);
+        param.InnerXml = innerXml;
+        param.DefaultValue = innerXml;
+
+        return param;
+    }
+
+    private static string GetInnerXml(IXmlElement element)
+    {
+        if (element == null) return string.Empty;
+
+        var sb = new System.Text.StringBuilder();
+        foreach (var child in element.Elements)
+        {
+            sb.Append(child.ToFullString());
+        }
+        return sb.ToString();
     }
 }
