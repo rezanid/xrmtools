@@ -135,15 +135,16 @@ private async Task<FetchQueryResultModel> ExecuteFetchXmlAsync(
         }
         
         // Replace parameters in the FetchXML
-        var fetchXml = FetchXmlParameterReplacer.ReplaceParameters(
-            document.XmlDocument.ToFullString(), 
+        var updatedDocument = FetchXmlParameterReplacer.ReplaceParameters(
+            document.XmlDocument, 
             values, 
             updateDefaults: false);
+        var fetchXml = updatedDocument.ToFullString();
         
         // Optionally: Save defaults back to file
-        // var updatedXml = FetchXmlParameterReplacer.UpdateDefaultValues(
-        //     originalFetchXml, query.Parameters, values);
-        // await File.WriteAllTextAsync(filePath, updatedXml);
+        // var updatedDocWithDefaults = FetchXmlParameterReplacer.UpdateDefaultValues(
+        //     document.XmlDocument, query.Parameters, values);
+        // await File.WriteAllTextAsync(filePath, updatedDocWithDefaults.ToFullString());
         
         // Continue with modified FetchXML...
     }
@@ -178,8 +179,9 @@ Tests verify:
 
 ### FetchXmlParameterReplacer
 Static utility class providing:
-- `ReplaceParameters`: Replace parameters with values (optionally updating defaults)
-- `UpdateDefaultValues`: Update FetchXML to persist default values
+- `ReplaceParameters(XmlDocumentSyntax, Dictionary<string, string>, bool)`: Replace parameters with values using XML syntax tree
+- `UpdateDefaultValues(XmlDocumentSyntax, List<FetchParameter>, Dictionary<string, string>)`: Update FetchXML to persist default values
+- Uses XmlDocumentSyntax for type-safe XML manipulation instead of RegEx
 - Proper XML escaping for replaced values
 
 ## Future Enhancements

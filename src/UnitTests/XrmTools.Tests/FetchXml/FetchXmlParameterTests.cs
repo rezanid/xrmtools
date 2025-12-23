@@ -1,7 +1,10 @@
 namespace XrmTools.Tests.FetchXml;
 
+using System.Collections.Generic;
 using System.Threading.Tasks;
+using Microsoft.Language.Xml;
 using Xunit;
+using XrmTools.FetchXml;
 using XrmTools.FetchXml.CodeGen;
 
 public class FetchXmlParameterTests
@@ -136,5 +139,156 @@ public class FetchXmlParameterTests
         Assert.Contains(result.Parameters, p => p.Name == "entityName" && !p.IsElementParameter);
         Assert.Contains(result.Parameters, p => p.Name == "filterXml" && p.IsElementParameter);
         Assert.Contains(result.Parameters, p => p.Name == "cityName" && !p.IsElementParameter);
+    }
+
+    [Fact]
+    public void ReplaceParameters_ReplacesElementParameter()
+    {
+        // Arrange
+        var fetchXml = @"<fetch>
+  <entity name=""account"">
+    <param name='filterXml' />
+  </entity>
+</fetch>";
+        var document = Parser.ParseText(fetchXml);
+        var parameters = new Dictionary<string, string>
+        {
+            ["filterXml"] = "<filter><condition attribute='name' operator='eq' value='Test' /></filter>"
+        };
+
+        // Act
+        var result = FetchXmlParameterReplacer.ReplaceParameters(document, parameters, updateDefaults: false);
+
+        // Assert
+        var resultString = result.ToFullString();
+        Assert.Contains("<filter><condition attribute='name' operator='eq' value='Test' /></filter>", resultString);
+        Assert.DoesNotContain("<param", resultString);
+    }
+
+    [Fact]
+    public void ReplaceParameters_ReplacesValueParameter()
+    {
+        // Arrange
+        var fetchXml = @"<fetch>
+  <entity name=""{{entityName}}"">
+    <attribute name='accountid' />
+  </entity>
+</fetch>";
+        var document = Parser.ParseText(fetchXml);
+        var parameters = new Dictionary<string, string>
+        {
+            ["entityName"] = "contact"
+        };
+
+        // Act
+        var result = FetchXmlParameterReplacer.ReplaceParameters(document, parameters, updateDefaults: false);
+
+        // Assert
+        var resultString = result.ToFullString();
+        Assert.Contains("name=\"contact\"", resultString);
+        Assert.DoesNotContain("{{entityName}}", resultString);
+    }
+
+    [Fact]
+    public void ReplaceParameters_ReplacesValueParameterWithDefault()
+    {
+        // Arrange
+        var fetchXml = @"<fetch>
+  <entity name=""{{entityName:account}}"">
+    <attribute name='accountid' />
+  </entity>
+</fetch>";
+        var document = Parser.ParseText(fetchXml);
+        var parameters = new Dictionary<string, string>
+        {
+            ["entityName"] = "contact"
+        };
+
+        // Act
+        var result = FetchXmlParameterReplacer.ReplaceParameters(document, parameters, updateDefaults: false);
+
+        // Assert
+        var resultString = result.ToFullString();
+        Assert.Contains("name=\"contact\"", resultString);
+        Assert.DoesNotContain("{{entityName", resultString);
+    }
+
+    [Fact]
+    public void ReplaceParameters_UpdatesDefaultValueForElementParameter()
+    {
+        // Arrange
+        var fetchXml = @"<fetch>
+  <entity name=""account"">
+    <param name='filterXml'>
+      <filter><condition attribute='oldfield' operator='eq' value='old' /></filter>
+    </param>
+  </entity>
+</fetch>";
+        var document = Parser.ParseText(fetchXml);
+        var parameters = new Dictionary<string, string>
+        {
+            ["filterXml"] = "<filter><condition attribute='newfield' operator='eq' value='new' /></filter>"
+        };
+
+        // Act
+        var result = FetchXmlParameterReplacer.ReplaceParameters(document, parameters, updateDefaults: true);
+
+        // Assert
+        var resultString = result.ToFullString();
+        Assert.Contains("<param name='filterXml'><filter><condition attribute='newfield' operator='eq' value='new' /></filter></param>", resultString);
+    }
+
+    [Fact]
+    public void ReplaceParameters_UpdatesDefaultValueForValueParameter()
+    {
+        // Arrange
+        var fetchXml = @"<fetch>
+  <entity name=""{{entityName:account}}"">
+    <attribute name='accountid' />
+  </entity>
+</fetch>";
+        var document = Parser.ParseText(fetchXml);
+        var parameters = new Dictionary<string, string>
+        {
+            ["entityName"] = "contact"
+        };
+
+        // Act
+        var result = FetchXmlParameterReplacer.ReplaceParameters(document, parameters, updateDefaults: true);
+
+        // Assert
+        var resultString = result.ToFullString();
+        Assert.Contains("{{entityName:contact}}", resultString);
+    }
+
+    [Fact]
+    public void ReplaceParameters_HandlesMultipleParameters()
+    {
+        // Arrange
+        var fetchXml = @"<fetch>
+  <entity name=""{{entityName:account}}"">
+    <attribute name='accountid' />
+    <param name='filterXml' />
+    <order attribute='{{orderBy:name}}' />
+  </entity>
+</fetch>";
+        var document = Parser.ParseText(fetchXml);
+        var parameters = new Dictionary<string, string>
+        {
+            ["entityName"] = "contact",
+            ["filterXml"] = "<filter><condition attribute='statecode' operator='eq' value='0' /></filter>",
+            ["orderBy"] = "createdon"
+        };
+
+        // Act
+        var result = FetchXmlParameterReplacer.ReplaceParameters(document, parameters, updateDefaults: false);
+
+        // Assert
+        var resultString = result.ToFullString();
+        Assert.Contains("name=\"contact\"", resultString);
+        Assert.Contains("<filter><condition attribute='statecode' operator='eq' value='0' /></filter>", resultString);
+        Assert.Contains("attribute='createdon'", resultString);
+        Assert.DoesNotContain("<param", resultString);
+        Assert.DoesNotContain("{{", resultString);
     }
 }
