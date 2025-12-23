@@ -483,10 +483,10 @@ internal class FetchXmlParser
         var matches = InlineParameterPattern.Matches(value);
         foreach (Match match in matches)
         {
-            if (match.Success && match.Groups.Count >= 2)
+            if (match.Success && match.Groups.Count > 1)
             {
                 var paramName = match.Groups[1].Value;
-                var defaultValue = match.Groups.Count >= 3 && match.Groups[2].Success ? match.Groups[2].Value : null;
+                var defaultValue = match.Groups.Count > 2 && match.Groups[2].Success ? match.Groups[2].Value : null;
                 
                 // Check if parameter already exists
                 if (!parameters.Any(p => string.Equals(p.Name, paramName, StringComparison.OrdinalIgnoreCase)))

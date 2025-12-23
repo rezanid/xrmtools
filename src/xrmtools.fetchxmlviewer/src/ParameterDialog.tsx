@@ -62,10 +62,14 @@ export function ParameterDialog({ parameters, onOk, onCancel }: ParameterDialogP
                 key={param.name}
                 className={`param-item ${selectedParam === param.name ? 'param-item--selected' : ''}`}
                 onClick={() => handleParamClick(param.name)}
+                role="button"
+                tabIndex={0}
+                onKeyDown={e => e.key === 'Enter' && handleParamClick(param.name)}
+                aria-label={`Parameter ${param.name}${param.defaultValue ? ' with default value' : ''}`}
               >
                 <div className="param-item-name">{param.name}</div>
                 {param.defaultValue && (
-                  <div className="param-item-default" title="Has default value">✓</div>
+                  <div className="param-item-default" title="Has default value" aria-label="Has default value">✓</div>
                 )}
               </div>
             ))}

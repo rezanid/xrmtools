@@ -7,7 +7,7 @@ namespace {{config.default_namespace}}
     {
 {{- if model.parameters.size > 0 }}
         {{~ # Generate method with parameters ~}}
-        public static EntityCollection Query{{config.input_file_name}}(this IOrganizationService service{{for param in model.parameters}}, string {{param.name}}{{if param.default_value}} = {{if param.is_element}}null{{else}}"{{param.default_value}}"{{end}}{{end}}{{end}})
+        public static EntityCollection Query{{config.input_file_name}}(this IOrganizationService service{{for param in model.parameters}}, string {{param.name}}{{if param.default_value}} = {{if param.is_element}}null{{else}}@"{{escape_verbatim(param.default_value)}}"{{end}}{{end}}{{end}})
         {
             var fetchXml = @"{{escape_verbatim(model.raw)}}";
             {{~ for param in model.parameters ~}}

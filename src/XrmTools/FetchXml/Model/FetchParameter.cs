@@ -10,12 +10,12 @@ public sealed class FetchParameter
     /// <summary>
     /// Parameter name (required)
     /// </summary>
-    public string Name { get; set; }
+    public required string Name { get; set; }
     
     /// <summary>
     /// Default value (optional). Can be XML string for <param> elements or simple value for inline parameters.
     /// </summary>
-    public string DefaultValue { get; set; }
+    public string? DefaultValue { get; set; }
     
     /// <summary>
     /// Whether the parameter is defined as an element (<param>) vs inline ({{name}})
