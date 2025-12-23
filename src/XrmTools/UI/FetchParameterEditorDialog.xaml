@@ -10,7 +10,7 @@
              mc:Ignorable="d" 
              Width="700" Height="450" MinWidth="600" MinHeight="400"
              d:DesignHeight="450" d:DesignWidth="700" d:DataContext="{d:DesignInstance Type=local:FetchParameterEditorViewModel, IsDesignTimeCreatable=True}"
-             Title="FetchXML Parameters" toolkit:Themes.UseVsTheme="True"
+             Title="FetchXML Parameter Editor" toolkit:Themes.UseVsTheme="True"
              p:FocusHelper.FocusTarget="{Binding ElementName=ValueTextBox}">
     <p:DialogWindow.Resources>
         <BooleanToVisibilityConverter x:Key="BooleanToVisibilityConverter"/>

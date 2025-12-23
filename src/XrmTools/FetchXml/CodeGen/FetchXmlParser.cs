@@ -495,7 +495,7 @@ internal class FetchXmlParser
             foreach (System.Text.RegularExpressions.Match match in matches)
             {
                 var paramName = match.Groups[1].Value;
-                var defaultValue = match.Groups.Count > 2 && match.Groups[2].Success ? match.Groups[2].Value : null;
+                var defaultValue = match.Groups[2].Success ? match.Groups[2].Value : null;
                 
                 if (!parameters.Any(p => p.Name == paramName))
                 {

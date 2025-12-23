@@ -68,7 +68,7 @@ internal static class FetchXmlParameterReplacer
             if (updateDefaults)
             {
                 // Update to include default: <param name='paramName'>value</param>
-                var pattern = $@"<param\s+name\s*=\s*['""{paramName}['""](?:\s*/)?>(?:.*?</param>|)";
+                var pattern = $@"<param\s+name\s*=\s*['\""{paramName}['\""]\s*(?:/)?>\s*(?:.*?</param>)?";
                 result = Regex.Replace(result, pattern, 
                     $"<param name='{paramName}'>{paramValue}</param>", 
                     RegexOptions.IgnoreCase | RegexOptions.Singleline);
@@ -76,7 +76,7 @@ internal static class FetchXmlParameterReplacer
             else
             {
                 // Replace with value directly
-                var pattern = $@"<param\s+name\s*=\s*['""{paramName}['""](?:\s*/)?>(?:.*?</param>|)";
+                var pattern = $@"<param\s+name\s*=\s*['\""{paramName}['\""]\s*(?:/)?>\s*(?:.*?</param>)?";
                 result = Regex.Replace(result, pattern, paramValue, RegexOptions.IgnoreCase | RegexOptions.Singleline);
             }
         }

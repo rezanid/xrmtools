@@ -19,7 +19,9 @@ namespace {{config.default_namespace}}
 {{~ else ~}}
             // Replace {{{{param.name}}}} with provided value
             fetchXml = fetchXml.Replace("{{{{param.name}}}}", {{param.name}});
+{{~ if param.default_value ~}}
             fetchXml = fetchXml.Replace("{{{{param.name}}:{{param.default_value}}}}", {{param.name}});
+{{~ end ~}}
 {{~ end ~}}
 {{~ end ~}}
             return service.RetrieveMultiple(new FetchExpression(fetchXml));
