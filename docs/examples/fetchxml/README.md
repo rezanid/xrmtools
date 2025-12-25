@@ -98,24 +98,44 @@ var results5 = service.QueryExample5(
     cityName: "Seattle");  // Override default
 ```
 
-## Integration with Preview
+## Auto-named parameters
 
-When opening a FetchXML file with parameters in Visual Studio:
-1. If auto-preview is enabled and there are parameters without defaults, a dialog will appear
-2. The dialog lists all parameters (left side) and allows entering values (right side)
-3. Required parameters (without defaults) are marked with a red asterisk (*)
-4. Clicking OK triggers the preview with the provided values
-5. The provided values are saved back to the FetchXML as default values
+When no name is provided in the `<param>` element, an automatic name will be generated based on the parameter type and position. For example:
 
-## Parameter Dialog Features
+```xml
+<param />
+```
+This will generate a parameter named `p1` for the first unnamed parameter in the query.
 
-- **Parameter List:** Shows all parameters with their names and default values (if any)
-- **Value Editor:** 
-  - Multi-line text box for element parameters (XML content)
-  - Single-line text box for value parameters
-- **Visual Indicators:**
-  - Red asterisk (*) for required parameters
-  - Gray italic text showing default values
-- **Buttons:**
-  - **OK:** Validates all required parameters have values, then proceeds with preview
-  - **Cancel:** Cancels the operation and closes the dialog
+Generated method signature:
+```csharp
+public static EntityCollection QueryExample1(
+    this IOrganizationService service,
+    string p1)
+```
+
+When no name is provided in a value-based parameter, an automatic name will also be generated:
+```xml
+<entity name="{{}}" />
+```
+This will generate a parameter named `p1` for the value-based parameter in the query.
+
+Generated method signature:
+```csharp
+public static EntityCollection QueryExample2(
+    this IOrganizationService service,
+    string p1)
+```
+
+A parameter with no name can also have a default value:
+```xml
+<entity name="{{:defaultValue}}" />
+```
+
+This will generate a parameter named `p1` with a default value.
+Generated method signature:
+```csharp
+public static EntityCollection QueryExample3(
+    this IOrganizationService service,
+    string p1 = "defaultValue")
+```
