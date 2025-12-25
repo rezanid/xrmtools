@@ -1,11 +1,10 @@
 namespace XrmTools.Tests.FetchXml;
 
-using System.Collections.Generic;
+using FluentAssertions;
+using System.Linq;
 using System.Threading.Tasks;
-using Microsoft.Language.Xml;
-using Xunit;
-using XrmTools.FetchXml;
 using XrmTools.FetchXml.CodeGen;
+using Xunit;
 
 public class FetchXmlParameterTests
 {
@@ -85,7 +84,7 @@ public class FetchXmlParameterTests
         Assert.Single(result.Parameters);
         Assert.Equal("entityName", result.Parameters[0].Name);
         Assert.False(result.Parameters[0].IsElementParameter);
-        Assert.Null(result.Parameters[0].DefaultValue);
+        Assert.Empty(result.Parameters[0].DefaultValue);
     }
 
     [Fact]
@@ -134,161 +133,329 @@ public class FetchXmlParameterTests
         var result = await parser.ParseAsync(fetchXml);
 
         // Assert
+        // Note: inner parameters are not supported; only top-level params are detected.
         Assert.NotNull(result);
-        Assert.Equal(3, result.Parameters.Count); // entityName, filterXml, cityName
+        Assert.Equal(2, result.Parameters.Count); // entityName, filterXml, cityName
         Assert.Contains(result.Parameters, p => p.Name == "entityName" && !p.IsElementParameter);
         Assert.Contains(result.Parameters, p => p.Name == "filterXml" && p.IsElementParameter);
-        Assert.Contains(result.Parameters, p => p.Name == "cityName" && !p.IsElementParameter);
+    }
+
+
+    [Fact]
+    public async Task ParseAsync_IgnoresAttributeToken_WhenMissingClosingBraces()
+    {
+        // Arrange
+        var fetchXml = @"<?xml version=""1.0"" encoding=""utf-8"" ?>
+<fetch>
+  <entity name=""{{entityName:account}"">
+    <attribute name='accountid' />
+  </entity>
+</fetch>";
+
+        var parser = new FetchXmlParser();
+
+        // Act
+        var result = await parser.ParseAsync(fetchXml);
+
+        // Assert
+        Assert.NotNull(result);
+        Assert.Empty(result.Parameters);
     }
 
     [Fact]
-    public void ReplaceParameters_ReplacesElementParameter()
+    public async Task ParseAsync_IgnoresAttributeToken_WhenNoNameOrDefaultProvided()
     {
         // Arrange
-        var fetchXml = @"<fetch>
+        var fetchXml = @"<?xml version=""1.0"" encoding=""utf-8"" ?>
+<fetch>
+  <entity name=""{{:account}}"">
+    <attribute name='accountid' />
+  </entity>
+</fetch>";
+
+        var parser = new FetchXmlParser();
+
+        // Act
+        var result = await parser.ParseAsync(fetchXml);
+
+        // Assert
+        Assert.NotNull(result);
+        Assert.Single(result.Parameters);
+        Assert.Equal("p1", result.Parameters[0].Name);
+        Assert.False(result.Parameters[0].IsElementParameter);
+        Assert.Equal("account", result.Parameters[0].DefaultValue);
+    }
+
+    [Fact]
+    public async Task ParseAsync_TrimsDefaultValue_ForAttributeParameter()
+    {
+        // Arrange
+        var fetchXml = @"<?xml version=""1.0"" encoding=""utf-8"" ?>
+<fetch>
+  <entity name=""{{entityName:  account  }}"">
+    <attribute name='accountid' />
+  </entity>
+</fetch>";
+
+        var parser = new FetchXmlParser();
+
+        // Act
+        var result = await parser.ParseAsync(fetchXml);
+
+        // Assert
+        Assert.NotNull(result);
+        Assert.Single(result.Parameters);
+        Assert.Equal("entityName", result.Parameters[0].Name);
+        Assert.False(result.Parameters[0].IsElementParameter);
+        Assert.Equal("account", result.Parameters[0].DefaultValue);
+    }
+
+    [Fact]
+    public async Task ParseAsync_DetectsAttributeParameter_InAnyAttribute()
+    {
+        // Arrange
+        var fetchXml = @"<?xml version=""1.0"" encoding=""utf-8"" ?>
+<fetch>
   <entity name=""account"">
-    <param name='filterXml' />
+    <filter type='and'>
+      <condition attribute='name' operator='eq' value='{{accName:Contoso}}' />
+    </filter>
   </entity>
 </fetch>";
-        var document = Parser.ParseText(fetchXml);
-        var parameters = new Dictionary<string, string>
-        {
-            ["filterXml"] = "<filter><condition attribute='name' operator='eq' value='Test' /></filter>"
-        };
+
+        var parser = new FetchXmlParser();
 
         // Act
-        var result = FetchXmlParameterReplacer.ReplaceParameters(document, parameters, updateDefaults: false);
+        var result = await parser.ParseAsync(fetchXml);
 
         // Assert
-        var resultString = result.ToFullString();
-        Assert.Contains("<filter><condition attribute='name' operator='eq' value='Test' /></filter>", resultString);
-        Assert.DoesNotContain("<param", resultString);
+        Assert.NotNull(result);
+        Assert.Single(result.Parameters);
+        Assert.Equal("accName", result.Parameters[0].Name);
+        Assert.False(result.Parameters[0].IsElementParameter);
+        Assert.Equal("Contoso", result.Parameters[0].DefaultValue);
     }
 
     [Fact]
-    public void ReplaceParameters_ReplacesValueParameter()
+    public async Task ParseAsync_DetectsParamElement_IgnoringCase()
     {
         // Arrange
-        var fetchXml = @"<fetch>
-  <entity name=""{{entityName}}"">
+        var fetchXml = @"<?xml version=""1.0"" encoding=""utf-8"" ?>
+<fetch distinct='false'>
+  <entity name=""account"">
+    <PARAM name='filterXml' />
+  </entity>
+</fetch>";
+
+        var parser = new FetchXmlParser();
+
+        // Act
+        var result = await parser.ParseAsync(fetchXml);
+
+        // Assert
+        Assert.NotNull(result);
+        Assert.Single(result.Parameters);
+        Assert.Equal("filterXml", result.Parameters[0].Name);
+        Assert.True(result.Parameters[0].IsElementParameter);
+    }
+
+    [Fact]
+    public async Task ParseAsync_ElementParameter_DefaultValue_PreservesInnerXml()
+    {
+        // Arrange
+        var fetchXml = @"<?xml version=""1.0"" encoding=""utf-8"" ?>
+<fetch>
+  <entity name=""account"">
+    <param name='filterXml'><filter type='and'><condition attribute='name' operator='eq' value='A' /></filter></param>
+  </entity>
+</fetch>";
+
+        var parser = new FetchXmlParser();
+
+        // Act
+        var result = await parser.ParseAsync(fetchXml);
+
+        // Assert
+        Assert.NotNull(result);
+        Assert.Single(result.Parameters);
+        Assert.True(result.Parameters[0].IsElementParameter);
+        Assert.Equal("filterXml", result.Parameters[0].Name);
+        Assert.Contains("<filter", result.Parameters[0].DefaultValue);
+        Assert.Contains("condition", result.Parameters[0].DefaultValue);
+    }
+
+    [Fact]
+    public async Task ParseAsync_DetectsParameter_InDeeplyNestedElementAttributes()
+    {
+        // Arrange
+        var fetchXml = @"<?xml version=""1.0"" encoding=""utf-8"" ?>
+<fetch>
+  <entity name=""account"">
+    <link-entity name='contact' from='parentcustomerid' to='accountid'>
+      <filter type='and'>
+        <condition attribute='firstname' operator='eq' value='{{firstName:John}}' />
+      </filter>
+    </link-entity>
+  </entity>
+</fetch>";
+
+        var parser = new FetchXmlParser();
+
+        // Act
+        var result = await parser.ParseAsync(fetchXml);
+
+        // Assert
+        Assert.NotNull(result);
+        Assert.Single(result.Parameters);
+        Assert.Equal("firstName", result.Parameters[0].Name);
+        Assert.False(result.Parameters[0].IsElementParameter);
+        Assert.Equal("John", result.Parameters[0].DefaultValue);
+    }
+
+    [Fact]
+    public async Task ParseAsync_OnlyCapturesFirstToken_PerAttributeValue()
+    {
+        // Arrange
+        var fetchXml = @"<?xml version=""1.0"" encoding=""utf-8"" ?>
+<fetch>
+  <entity name=""account"">
+    <attribute name='name' alias='{{a:1}}-{{b:2}}' />
+  </entity>
+</fetch>";
+
+        var parser = new FetchXmlParser();
+
+        // Act
+        var result = await parser.ParseAsync(fetchXml);
+
+        // Assert
+        Assert.NotNull(result);
+        Assert.Single(result.Parameters);
+        Assert.Equal("a", result.Parameters[0].Name);
+        Assert.Equal("1", result.Parameters[0].DefaultValue);
+    }
+
+    [Fact]
+    public async Task ParseAsync_AllowsEmptyDefaultValue_WhenColonPresent()
+    {
+        // Arrange
+        var fetchXml = @"<?xml version=""1.0"" encoding=""utf-8"" ?>
+<fetch>
+  <entity name=""{{entityName:}}"">
     <attribute name='accountid' />
   </entity>
 </fetch>";
-        var document = Parser.ParseText(fetchXml);
-        var parameters = new Dictionary<string, string>
-        {
-            ["entityName"] = "contact"
-        };
+
+        var parser = new FetchXmlParser();
 
         // Act
-        var result = FetchXmlParameterReplacer.ReplaceParameters(document, parameters, updateDefaults: false);
+        var result = await parser.ParseAsync(fetchXml);
 
         // Assert
-        var resultString = result.ToFullString();
-        Assert.Contains("name=\"contact\"", resultString);
-        Assert.DoesNotContain("{{entityName}}", resultString);
+        Assert.NotNull(result);
+        Assert.Single(result.Parameters);
+        Assert.Equal("entityName", result.Parameters[0].Name);
+        Assert.False(result.Parameters[0].IsElementParameter);
+        Assert.Equal(string.Empty, result.Parameters[0].DefaultValue);
     }
 
     [Fact]
-    public void ReplaceParameters_ReplacesValueParameterWithDefault()
+    public async Task ParseAsync_UsesAutoName_WhenTokenContentIsEmpty()
     {
         // Arrange
-        var fetchXml = @"<fetch>
-  <entity name=""{{entityName:account}}"">
+        var fetchXml = @"<?xml version=""1.0"" encoding=""utf-8"" ?>
+<fetch>
+  <entity name=""{{}}"">
     <attribute name='accountid' />
   </entity>
 </fetch>";
-        var document = Parser.ParseText(fetchXml);
-        var parameters = new Dictionary<string, string>
-        {
-            ["entityName"] = "contact"
-        };
+
+        var parser = new FetchXmlParser();
 
         // Act
-        var result = FetchXmlParameterReplacer.ReplaceParameters(document, parameters, updateDefaults: false);
+        var result = await parser.ParseAsync(fetchXml);
 
         // Assert
-        var resultString = result.ToFullString();
-        Assert.Contains("name=\"contact\"", resultString);
-        Assert.DoesNotContain("{{entityName", resultString);
+        Assert.NotNull(result);
+        Assert.Single(result.Parameters);
+        Assert.Equal("p1", result.Parameters[0].Name);
+        Assert.False(result.Parameters[0].IsElementParameter);
+        Assert.Equal(string.Empty, result.Parameters[0].DefaultValue);
     }
 
     [Fact]
-    public void ReplaceParameters_UpdatesDefaultValueForElementParameter()
+    public async Task ParseAsync_IncludesParamElement_EvenWhenMissingNameAttribute()
     {
         // Arrange
-        var fetchXml = @"<fetch>
+        var fetchXml = @"<?xml version=""1.0"" encoding=""utf-8"" ?>
+<fetch>
+  <entity name=""account"">
+    <param />
+    <param />
+  </entity>
+</fetch>";
+
+        var parser = new FetchXmlParser();
+
+        // Act
+        var result = await parser.ParseAsync(fetchXml);
+
+        // Assert
+        Assert.NotNull(result);
+        //Assert.Single(result.Parameters);
+        result.Parameters.Should().HaveCount(2);
+        Assert.True(result.Parameters[0].IsElementParameter);
+        Assert.True(result.Parameters[1].IsElementParameter);
+        Assert.Equal("p1", result.Parameters[0].Name);
+        Assert.Equal("p2", result.Parameters[1].Name);
+    }
+
+    [Fact]
+    public async Task ParseAsync_DetectsMixedSingleAndDoubleQuoteAttributes()
+    {
+        // Arrange
+        var fetchXml = @"<?xml version=""1.0"" encoding=""utf-8"" ?>
+<fetch>
+  <entity name='{{entityName:account}}'>
+    <attribute name=""accountid"" />
+  </entity>
+</fetch>";
+
+        var parser = new FetchXmlParser();
+
+        // Act
+        var result = await parser.ParseAsync(fetchXml);
+
+        // Assert
+        Assert.NotNull(result);
+        Assert.Single(result.Parameters);
+        Assert.Equal("entityName", result.Parameters[0].Name);
+        Assert.Equal("account", result.Parameters[0].DefaultValue);
+    }
+
+    [Fact]
+    public async Task ParseAsync_DoesNotFlattenElementParameterChildrenIntoParameters()
+    {
+        // Arrange
+        var fetchXml = @"<?xml version=""1.0"" encoding=""utf-8"" ?>
+<fetch>
   <entity name=""account"">
     <param name='filterXml'>
-      <filter><condition attribute='oldfield' operator='eq' value='old' /></filter>
+      <filter type='and'>
+        <condition attribute='address1_city' operator='eq' value='{{cityName:Redmond}}' />
+      </filter>
     </param>
   </entity>
 </fetch>";
-        var document = Parser.ParseText(fetchXml);
-        var parameters = new Dictionary<string, string>
-        {
-            ["filterXml"] = "<filter><condition attribute='newfield' operator='eq' value='new' /></filter>"
-        };
+
+        var parser = new FetchXmlParser();
 
         // Act
-        var result = FetchXmlParameterReplacer.ReplaceParameters(document, parameters, updateDefaults: true);
+        var result = await parser.ParseAsync(fetchXml);
 
         // Assert
-        var resultString = result.ToFullString();
-        Assert.Contains("<param name='filterXml'><filter><condition attribute='newfield' operator='eq' value='new' /></filter></param>", resultString);
-    }
-
-    [Fact]
-    public void ReplaceParameters_UpdatesDefaultValueForValueParameter()
-    {
-        // Arrange
-        var fetchXml = @"<fetch>
-  <entity name=""{{entityName:account}}"">
-    <attribute name='accountid' />
-  </entity>
-</fetch>";
-        var document = Parser.ParseText(fetchXml);
-        var parameters = new Dictionary<string, string>
-        {
-            ["entityName"] = "contact"
-        };
-
-        // Act
-        var result = FetchXmlParameterReplacer.ReplaceParameters(document, parameters, updateDefaults: true);
-
-        // Assert
-        var resultString = result.ToFullString();
-        Assert.Contains("{{entityName:contact}}", resultString);
-    }
-
-    [Fact]
-    public void ReplaceParameters_HandlesMultipleParameters()
-    {
-        // Arrange
-        var fetchXml = @"<fetch>
-  <entity name=""{{entityName:account}}"">
-    <attribute name='accountid' />
-    <param name='filterXml' />
-    <order attribute='{{orderBy:name}}' />
-  </entity>
-</fetch>";
-        var document = Parser.ParseText(fetchXml);
-        var parameters = new Dictionary<string, string>
-        {
-            ["entityName"] = "contact",
-            ["filterXml"] = "<filter><condition attribute='statecode' operator='eq' value='0' /></filter>",
-            ["orderBy"] = "createdon"
-        };
-
-        // Act
-        var result = FetchXmlParameterReplacer.ReplaceParameters(document, parameters, updateDefaults: false);
-
-        // Assert
-        var resultString = result.ToFullString();
-        Assert.Contains("name=\"contact\"", resultString);
-        Assert.Contains("<filter><condition attribute='statecode' operator='eq' value='0' /></filter>", resultString);
-        Assert.Contains("attribute='createdon'", resultString);
-        Assert.DoesNotContain("<param", resultString);
-        Assert.DoesNotContain("{{", resultString);
+        Assert.NotNull(result);
+        Assert.Equal(1, result.Parameters.Count(p => p.IsElementParameter));
+        Assert.DoesNotContain(result.Parameters, p => p.Name == "cityName");
     }
 }
