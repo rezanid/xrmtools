@@ -19,7 +19,7 @@
 
   <PropertyGroup>
     <!-- Allow override by the consumer if they want a different location or to disable the copy -->
-    <XrmToolsSchemasDir Condition="'$(XrmToolsSchemasDir)'==''">$(MSBuildProjectDirectory).xrmtools/schemas/</XrmToolsSchemasDir>
+    <XrmToolsSchemasDir Condition="'$(XrmToolsSchemasDir)'==''">$(MSBuildProjectDirectory)/.xrmtools/schemas/</XrmToolsSchemasDir>
     <XrmToolsCopySchemas Condition="'$(XrmToolsCopySchemas)'==''">true</XrmToolsCopySchemas>
   </PropertyGroup>
 
