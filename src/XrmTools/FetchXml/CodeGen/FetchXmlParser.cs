@@ -14,7 +14,10 @@ internal class FetchXmlParser
     private static readonly Regex FxSettingIncludingCommentChars = new(@"^\s*<!--\s*fx\.(.+?)\s*:\s*(.+?)\s*--!?>\s*$", RegexOptions.IgnoreCase | RegexOptions.Compiled);
     private static readonly Regex ValueParameterRegex = new(@"\{\{(\w+)(?::([^}]*))?\}\}", RegexOptions.Compiled);
 
-    public async Task<Model.FetchQuery> ParseAsync(XmlDocumentSyntax doc, CancellationToken cancellationToken = default)
+    public async Task<Model.FetchQuery> ParseAsync(
+        XmlDocumentSyntax doc,
+        string rawDocument,
+        CancellationToken cancellationToken = default)
     {
         if (doc == null) throw new ArgumentNullException(nameof(doc));
 
@@ -61,7 +64,11 @@ internal class FetchXmlParser
         query.Entity = ParseEntity(entityElement, cancellationToken);
 
         // Collect parameters from the entire document
-        CollectParameters(fetchElement, query.Parameters);
+        (string defaultDocument, string tokenizedDocument, List<Model.FetchParameter> parameters) = FetchXmlParameterParser.ParseParameters(doc, rawDocument);
+        query.Parameters = parameters;
+        query.Parameters.Sort();
+        query.Defaulted = defaultDocument;
+        query.Tokenized = tokenizedDocument;
 
         return await Task.FromResult(query).ConfigureAwait(false);
     }
@@ -72,51 +79,8 @@ internal class FetchXmlParser
         cancellationToken.ThrowIfCancellationRequested();
 
         var doc = Parser.ParseText(fetchXml);
-        var root = doc?.Root;
-        if (root == null || !StringEquals(root.Name, "fetch"))
-            throw new FormatException("Root element must be <fetch>.");
 
-        var query = new Model.FetchQuery();
-
-        // Parse fx.* settings from the input text before the <fetch> element
-        CollectFxSettings(fetchXml, query.Settings);
-
-        // Parse root attributes
-        foreach (var attr in root.Attributes)
-        {
-            var name = attr.Key ?? string.Empty;
-            var val = attr.Value ?? string.Empty;
-            switch (name.ToLowerInvariant())
-            {
-                case "version": query.Version = val; break;
-                case "distinct": query.Distinct = ParseBool(val); break;
-                case "no-lock": query.NoLock = ParseBool(val); break;
-                case "returntotalrecordcount": query.ReturnTotalRecordCount = ParseBool(val); break;
-                case "aggregate": query.Aggregate = ParseBool(val); break;
-                case "count": query.Count = ParseInt(val); break;
-                case "page": query.Page = ParseInt(val); break;
-                case "top": query.Top = ParseInt(val); break;
-                case "paging-cookie": query.PagingCookie = val; break;
-                case "output-format": query.OutputFormat = val; break;
-                case "mapping": query.Mapping = val; break;
-                case "min-active-row-version": query.MinActiveRowVersion = val; break;
-                default:
-                    query.Extras[name] = val;
-                    break;
-            }
-        }
-
-        // Find entity
-        var entityElement = root.Elements.FirstOrDefault(e => StringEquals(e.Name, "entity"));
-        if (entityElement == null)
-            throw new FormatException("<entity> element is required under <fetch>.");
-
-        query.Entity = ParseEntity(entityElement, cancellationToken);
-        
-        // Collect parameters from the entire document
-        CollectParameters(root, query.Parameters);
-        
-        return Task.FromResult(query);
+        return ParseAsync(doc, fetchXml, cancellationToken);
     }
 
     private static Model.FetchEntity ParseEntity(IXmlElement entityElement, CancellationToken ct)
@@ -392,8 +356,6 @@ internal class FetchXmlParser
     }
 
     private static bool StringEquals(string a, string b) => string.Equals(a, b, StringComparison.OrdinalIgnoreCase);
-    private static bool StringEquals(string a, IXmlElement el) => string.Equals(a, el?.Name, StringComparison.OrdinalIgnoreCase);
-    private static bool StringEquals(IXmlElement el, string b) => string.Equals(el?.Name, b, StringComparison.OrdinalIgnoreCase);
 
     private static bool? ParseBool(string s)
     {
@@ -413,31 +375,6 @@ internal class FetchXmlParser
     {
         if (string.IsNullOrWhiteSpace(s)) return null;
         return string.Equals(s, "inner", StringComparison.OrdinalIgnoreCase) ? Model.JoinType.Inner : Model.JoinType.Outer;
-    }
-
-    private static void CollectFxSettings(string fetchXml, IDictionary<string, string> settings)
-    {
-        if (string.IsNullOrEmpty(fetchXml)) return;
-        var idxFetch = fetchXml.IndexOf("<fetch", StringComparison.OrdinalIgnoreCase);
-        if (idxFetch < 0) return;
-        var header = fetchXml.Substring(0, idxFetch);
-        var lines = header.Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries);
-        foreach (var raw in lines)
-        {
-            var line = raw.Trim();
-            if (line.Length == 0) continue;
-            // strip comment markers if present
-            if (line.StartsWith("<!--")) line = line.Substring(4);
-            if (line.EndsWith("-->")) line = line.Substring(0, line.Length - 3);
-            if (line.EndsWith("--!>")) line = line.Substring(0, line.Length - 4);
-            line = line.Trim();
-            if (!line.StartsWith("fx.", StringComparison.OrdinalIgnoreCase)) continue;
-            var colon = line.IndexOf(':');
-            if (colon <= 3) continue;
-            var key = line.Substring(3, colon - 3).Trim();
-            var value = line.Substring(colon + 1).Trim();
-            if (key.Length > 0) settings[key] = value;
-        }
     }
 
     private static void CollectFxSettings(XmlDocumentSyntax doc, IDictionary<string, string> settings)
@@ -463,92 +400,5 @@ internal class FetchXmlParser
                 break;
             }
         }
-    }
-
-    private static void CollectParameters(IXmlElement element, System.Collections.Generic.List<Model.FetchParameter> parameters)
-    {
-        if (element == null) return;
-
-        // Check for <param> elements
-        foreach (var child in element.Elements)
-        {
-            if (StringEquals(child.Name, "param"))
-            {
-                var param = ParseParamElement(child);
-                if (param != null && !parameters.Any(p => p.Name == param.Name))
-                {
-                    parameters.Add(param);
-                }
-            }
-            else
-            {
-                // Recursively collect parameters from child elements
-                CollectParameters(child, parameters);
-            }
-        }
-
-        // Check for {{paramName}} or {{paramName:defaultValue}} in attribute values
-        foreach (var attr in element.Attributes)
-        {
-            var val = attr.Value ?? string.Empty;
-            var matches = ValueParameterRegex.Matches(val);
-            foreach (System.Text.RegularExpressions.Match match in matches)
-            {
-                var paramName = match.Groups[1].Value;
-                var defaultValue = match.Groups[2].Success ? match.Groups[2].Value : null;
-                
-                if (!parameters.Any(p => p.Name == paramName))
-                {
-                    parameters.Add(new Model.FetchParameter
-                    {
-                        Name = paramName,
-                        DefaultValue = defaultValue,
-                        IsElementParameter = false
-                    });
-                }
-            }
-        }
-    }
-
-    private static Model.FetchParameter ParseParamElement(IXmlElement paramEl)
-    {
-        var param = new Model.FetchParameter
-        {
-            IsElementParameter = true
-        };
-
-        // Get the name attribute
-        foreach (var attr in paramEl.Attributes)
-        {
-            if (string.Equals(attr.Key, "name", StringComparison.OrdinalIgnoreCase))
-            {
-                param.Name = attr.Value ?? string.Empty;
-                break;
-            }
-        }
-
-        if (string.IsNullOrEmpty(param.Name))
-        {
-            return null; // Invalid param element without name
-        }
-
-        // Get inner XML as default value
-        var innerXml = GetInnerXml(paramEl);
-        param.InnerXml = innerXml;
-        param.DefaultValue = innerXml;
-
-        return param;
-    }
-
-    private static string GetInnerXml(IXmlElement element)
-    {
-        if (element == null) return string.Empty;
-
-        var sb = new System.Text.StringBuilder();
-        foreach (var child in element.Elements)
-        {
-            sb.Append(child.ToFullString());
-        }
-        return sb.ToString();
     }
 }

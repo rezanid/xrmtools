@@ -11,6 +11,7 @@ using System.Threading.Tasks;
 using XrmTools.Logging.Compatibility;
 using XrmTools.Options;
 
+//TODO: Isn't it better to fully parse FetchXml in here, instead of just Entity name?
 public class FetchXmlDocument : IDisposable
 {
     private readonly ILogger _logger;
@@ -22,6 +23,7 @@ public class FetchXmlDocument : IDisposable
     private string _lastParsedText;
     private int _lastParsedVersion;
     public XmlDocumentSyntax XmlDocument { get; private set; }
+    public string RawXml => _lastParsedText;
     public string FileName { get; }
     public string EntityName { get; private set; }
     public bool IsParsing { get; private set; }
@@ -215,7 +217,7 @@ public class FetchXmlDocument : IDisposable
         {
             return string.Empty;
         }
-        var fetchElement = doc.Root;
+        var fetchElement = doc.Root.AsSyntaxElement;
         if (fetchElement is null || !string.Equals(fetchElement.Name, "fetch", StringComparison.OrdinalIgnoreCase))
         {
             return string.Empty;
@@ -225,8 +227,10 @@ public class FetchXmlDocument : IDisposable
         {
             return string.Empty;
         }
-        var nameAttr = entityElement.Attributes.FirstOrDefault(kv => string.Equals(kv.Key, "name", StringComparison.OrdinalIgnoreCase));
-        return nameAttr.Value ?? string.Empty;
+
+        var nameAttr = entityElement.Attributes.FirstOrDefault(attr => "name".Equals(attr.Name));
+        var attrParam = FetchXmlParameterParser.TryParseParamAttribute(nameAttr);
+        return attrParam?.DefaultValue ?? nameAttr.Value ?? string.Empty;
     }
 
     private void OptionsSaved(GeneralOptions obj)

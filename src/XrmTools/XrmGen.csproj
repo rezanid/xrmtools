@@ -91,6 +91,7 @@
     <Compile Include="FetchXml\FetchQueryResultModel.cs" />
     <Compile Include="FetchXml\FetchXmlContentTypeDefinitions.cs" />
     <Compile Include="FetchXml\FetchXmlOptions.cs" />
+    <Compile Include="FetchXml\FetchXmlParameterParser.cs" />
     <Compile Include="FetchXml\Margin\Browser.cs" />
     <Compile Include="FetchXml\Margin\BrowserMargin.cs" />
     <Compile Include="FetchXml\Margin\BrowserMarginProvider.cs" />
@@ -102,6 +103,7 @@
     <Compile Include="FetchXml\Model\FetchLinkEntity.cs" />
     <Compile Include="FetchXml\Model\FetchNode.cs" />
     <Compile Include="FetchXml\Model\FetchOrder.cs" />
+    <Compile Include="FetchXml\Model\FetchParameter.cs" />
     <Compile Include="FetchXml\Model\FetchQuery.cs" />
     <Compile Include="FetchXml\Model\FetchValue.cs" />
     <Compile Include="FetchXml\FetchXmlDocumentInitializer.cs" />
@@ -179,6 +181,7 @@
       <DependentUpon>EnvironmentSelectorDialog.xaml</DependentUpon>
     </Compile>
     <Compile Include="UI\EnvironmentSelectorViewModel.cs" />
+    <Compile Include="UI\InverseBooleanToVisibilityConverter.cs" />
     <Compile Include="Validation\CodeGenPluginAssemblyValidator.cs" />
     <Compile Include="Validation\WebApiPluginAssemblyValidator.cs" />
     <Compile Include="WebApi\Methods\Create.cs" />
@@ -377,9 +380,6 @@
     <None Include="FetchXmlViewer.WebAssets.targets" />
     <None Include="IncludeNuGetResolvedAssets.targets" />
     <None Include="PrepareImageManifest.targets" />
-    <Resource Include="Schemas\Fetch.xsd">
-      <SubType>Designer</SubType>
-    </Resource>
     <None Include="source.extension.vsixmanifest">
       <SubType>Designer</SubType>
       <Generator>VsixManifestGenerator</Generator>
