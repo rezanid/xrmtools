@@ -15,7 +15,6 @@ using XrmTools.Core.Repositories;
 using XrmTools.FetchXml.CodeGen;
 using XrmTools.Logging.Compatibility;
 using XrmTools.Options;
-using XrmTools.UI;
 using XrmTools.WebApi;
 using XrmTools.WebApi.Methods;
 using XrmTools.Xrm.Repositories;
@@ -405,11 +404,11 @@ internal class BrowserMargin : DockPanel, IWpfTextViewMargin
         try
         {
             stopwatch = Stopwatch.StartNew();
-            var result = await webApi.FetchXmlAsync(entity.EntitySetName, queryToExecute, false, cancellationToken).ConfigureAwait(false);
+            var response = await webApi.FetchXmlAsync(entity.EntitySetName, queryToExecute, false, cancellationToken).ConfigureAwait(false);
             stopwatch.Stop();
             return new FetchQueryResultModel
             {
-                Result = result.Records.ToString(Newtonsoft.Json.Formatting.None),
+                Result = response.Records.ToString(Newtonsoft.Json.Formatting.None),
                 ElapsedMs = stopwatch.ElapsedMilliseconds,
             };
         }

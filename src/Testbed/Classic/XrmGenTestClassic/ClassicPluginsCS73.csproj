@@ -110,11 +110,6 @@
       <DesignTime>True</DesignTime>
       <DependentUpon>Entities.cs</DependentUpon>
     </Compile>
-    <Compile Include="Queries\Contacts.g.cs">
-      <AutoGen>True</AutoGen>
-      <DesignTime>True</DesignTime>
-      <DependentUpon>Contacts.fetch</DependentUpon>
-    </Compile>
     <Compile Include="ValidationService.cs" />
     <Compile Include="AccountGreetingPlugin.cs">
       <Generator>Xrm Tools Plugin Code Generator</Generator>
@@ -155,7 +150,6 @@
     <None Include="packages.config" />
     <None Include="Queries\Contacts.fetch">
       <Generator>XrmTools FetchXML Generator</Generator>
-      <LastGenOutput>Contacts.g.cs</LastGenOutput>
     </None>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />

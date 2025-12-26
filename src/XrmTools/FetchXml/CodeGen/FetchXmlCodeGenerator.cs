@@ -15,6 +15,7 @@ using System.Collections.Generic;
 using System.ComponentModel.Composition;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
+using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -28,9 +29,10 @@ using XrmTools.Xrm.Generators;
 /// <summary>
 /// Single-file generator for FetchXML.
 /// </summary>
+[Guid("6DCA658A-7E96-437D-8CE3-40A4276B359A")]
 internal sealed class FetchXmlCodeGenerator : BaseCodeGeneratorWithSiteAsync
 {
-    public const string Name = "XrmTools FetchXml Generator";
+    public const string Name = "XrmTools FetchXML Generator";
     public const string Description = "Generates Fetch Query code from FetchXML.";
 
     [Import]

@@ -77,3 +77,9 @@ using XrmTools;
 [assembly: ProvideCodeBase(
     AssemblyName = @"System.Net.Http.Formatting",
     CodeBase = @"$PackageFolder$\System.Net.Http.Formatting.dll")]
+
+// The following is important for Microsoft.Identity.Client, when authenticating
+// otherwise there is a chance of FileNotFound: Assembly not found exception.
+[assembly: ProvideCodeBase(
+    AssemblyName = @"Microsoft.IdentityModel.Abstractions",
+    CodeBase = @"$PackageFolder$\Microsoft.IdentityModel.Abstractions.dll")]

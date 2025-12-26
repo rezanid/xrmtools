@@ -56,6 +56,7 @@ using Task = System.Threading.Tasks.Task;
 [ProvideCodeGeneratorExtension(PluginCodeGenerator.Name, ".plugin.json")]
 [ProvideCodeGenerator(typeof(FetchXml.CodeGen.FetchXmlCodeGenerator), "XrmTools FetchXML Generator", "Generates C# code from FetchXML files.", true, ProjectSystem = ProvideCodeGeneratorAttribute.CSharpProjectGuid, RegisterCodeBase = true)]
 [ProvideCodeGeneratorExtension("XrmTools FetchXML Generator", ".fetch")]
+[ProvideFileIcon(".fetch", "KnownMonikers.XMLFile")]
 [ProvideMenuResource("Menus.ctmenu", 1)]
 // Decide the visibility of our commands when the commands are NOT yet loaded.
 [ProvideUIContextRule(PackageGuids.SetCustomToolEntitiesCmdUIRuleString,
