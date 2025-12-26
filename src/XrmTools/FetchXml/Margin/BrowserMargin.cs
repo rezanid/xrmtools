@@ -12,8 +12,10 @@ using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 using XrmTools.Core.Repositories;
+using XrmTools.FetchXml.CodeGen;
 using XrmTools.Logging.Compatibility;
 using XrmTools.Options;
+using XrmTools.UI;
 using XrmTools.WebApi;
 using XrmTools.WebApi.Methods;
 using XrmTools.Xrm.Repositories;
@@ -391,15 +393,19 @@ internal class BrowserMargin : DockPanel, IWpfTextViewMargin
         {
             return new FetchQueryResultModel { Result = "null", ElapsedMs = 0 };
         }
+        var parser = new FetchXmlParser();
+        var query = await parser.ParseAsync(document.XmlDocument, document.RawXml, cancellationToken).ConfigureAwait(false);
+        var queryToExecute = string.IsNullOrEmpty(query.Defaulted) ? document.RawXml : query.Defaulted;
+
         using var repo = repositoryFactory.CreateRepository<IEntityMetadataRepository>();
         var entity = await repo.GetAsync(document.EntityName, cancellationToken).ConfigureAwait(false);
 
+
         Stopwatch stopwatch = null;
-        string fetchXml = document.XmlDocument.ToFullString();
         try
         {
             stopwatch = Stopwatch.StartNew();
-            var result = await webApi.FetchXmlAsync(entity.EntitySetName, fetchXml, false, cancellationToken).ConfigureAwait(false);
+            var result = await webApi.FetchXmlAsync(entity.EntitySetName, queryToExecute, false, cancellationToken).ConfigureAwait(false);
             stopwatch.Stop();
             return new FetchQueryResultModel
             {
@@ -413,7 +419,7 @@ internal class BrowserMargin : DockPanel, IWpfTextViewMargin
             {
                 Error = ex.ODataError is not null
                 ? System.Text.Json.JsonSerializer.Serialize(ex.ODataError.Error)
-                : $"{{\"message\":\"{ex.Message}\"}}"
+                : $"{{\"message\":\"{System.Text.Json.JsonEncodedText.Encode(ex.Message)}\"}}"
             };
         }
         catch (Exception ex)

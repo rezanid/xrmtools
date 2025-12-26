@@ -67,5 +67,12 @@ public sealed class FetchQuery
     /// </summary>
     public System.Collections.Generic.Dictionary<string, string> Extras { get; } = new System.Collections.Generic.Dictionary<string, string>(System.StringComparer.OrdinalIgnoreCase);
 
+    /// <summary>
+    /// Parameters detected in the FetchXML query
+    /// </summary>
+    public System.Collections.Generic.List<FetchParameter> Parameters { get; set; } = [];
+
     public string Raw { get; set; }
+    public string Tokenized { get; set; }
+    public string Defaulted { get; set; }
 }

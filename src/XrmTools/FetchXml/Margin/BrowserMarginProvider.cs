@@ -16,7 +16,10 @@ using XrmTools.Xrm.Repositories;
 [ContentType(FetchXmlContentTypeDefinitions.ContentTypeName)]
 [TextViewRole(PredefinedTextViewRoles.Debuggable)] // This is to prevent the margin from loading in the diff view
 [method:ImportingConstructor]
-internal class PreviewMarginVerticalProvider(IWebApiService webApi, IRepositoryFactory repositoryFactory, ILogger<PreviewMarginVerticalProvider> logger) : IWpfTextViewMarginProvider
+internal class PreviewMarginVerticalProvider(
+    IWebApiService webApi,
+    IRepositoryFactory repositoryFactory,
+    ILogger<PreviewMarginVerticalProvider> logger) : IWpfTextViewMarginProvider
 {
     private BrowserMargin _browserMargin;
 
@@ -54,7 +57,10 @@ internal class PreviewMarginVerticalProvider(IWebApiService webApi, IRepositoryF
 [ContentType(FetchXmlContentTypeDefinitions.ContentTypeName)]
 [TextViewRole(PredefinedTextViewRoles.Debuggable)] // This is to prevent the margin from loading in the diff view
 [method:ImportingConstructor]
-internal class PreviewMarginHorizontalProvider(IWebApiService webApi, IRepositoryFactory repositoryFactory, ILogger<PreviewMarginHorizontalProvider> logger) : IWpfTextViewMarginProvider
+internal class PreviewMarginHorizontalProvider(
+    IWebApiService webApi,
+    IRepositoryFactory repositoryFactory,
+    ILogger<PreviewMarginHorizontalProvider> logger) : IWpfTextViewMarginProvider
 {
     private BrowserMargin _browserMargin;
 

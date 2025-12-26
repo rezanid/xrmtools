@@ -5,7 +5,17 @@ namespace {{config.default_namespace}}
 {
     internal static partial class FetchQueries
     {
+{{~ if model.parameters.size > 0 ~}}
+        public static EntityCollection Query{{config.input_file_name}}(
+            this IOrganizationService service{{for param in model.parameters}},
+            string {{param.name}}{{if !(param.default_value.empty?)}} = @"{{escape_verbatim(param.default_value)}}"{{end}}{{end}})
+        {
+            var fetchXml = $@"{{escape_verbatim(model.tokenized)}}";
+            return service.RetrieveMultiple(new FetchExpression(fetchXml));
+        }
+{{~ else ~}}
         public const string {{config.input_file_name}} = @"{{escape_verbatim(model.raw)}}";
         public static EntityCollection Query{{config.input_file_name}}(this IOrganizationService service) => service.RetrieveMultiple(new FetchExpression({{config.input_file_name}}));
+{{~ end ~}}
     }
 }

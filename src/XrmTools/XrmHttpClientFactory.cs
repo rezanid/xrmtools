@@ -60,7 +60,7 @@ internal class XrmHttpClientFactory : IXrmHttpClientFactory, System.IAsyncDispos
     {
         if (environment == null) throw new ArgumentNullException(nameof(environment));
 
-        if (string.IsNullOrEmpty(environment.ConnectionString))
+        if (environment != DataverseEnvironment.Empty && string.IsNullOrEmpty(environment.ConnectionString))
         {
             throw new InvalidOperationException($"Environment '{environment.Name}' connection string is empty.");
         }

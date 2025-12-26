@@ -79,7 +79,12 @@ internal sealed class FetchXmlCompletionSource(
                 if (element.Name is "link-entity" && attribute.Name is "to") parentEntityElement = parentEntityElement.Ancestors().FirstOrDefault(e => e.Name is "entity" or "link-entity");
                 if (parentEntityElement is null) return CompletionContext.Empty;
 
-                var entityName = parentEntityElement.Attributes.FirstOrDefault(a => a.Name == "name")?.Value;
+                var entityNameAttribute = parentEntityElement.Attributes.FirstOrDefault(a => a.Name == "name");
+                if (entityNameAttribute is null) return CompletionContext.Empty;
+
+                var attrParam = FetchXmlParameterParser.TryParseParamAttribute(entityNameAttribute);
+                var entityName = attrParam?.DefaultValue ?? entityNameAttribute.Value ?? string.Empty;
+
                 if (string.IsNullOrEmpty(entityName)) return CompletionContext.Empty;
 
                 return await GetAttributeCompletionsAsync(entityName!, [], cancellationToken).ConfigureAwait(false);

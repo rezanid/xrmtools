@@ -88,7 +88,7 @@ internal sealed class FetchXmlCodeGenerator : BaseCodeGeneratorWithSiteAsync
 
         var cleanDocument = CleanupFetchXmlDocument(document);
         var fetchXmlString = cleanDocument.ToFullString();
-        var inputModel = await ParseFetchXmlAsync(cleanDocument, CancellationToken.None).ConfigureAwait(false);
+        var inputModel = await ParseFetchXmlAsync(cleanDocument, fetchXmlString, CancellationToken.None).ConfigureAwait(false);
         inputModel.Raw = fetchXmlString;
 
         Generator.Config = new XrmCodeGenConfig
@@ -130,11 +130,12 @@ internal sealed class FetchXmlCodeGenerator : BaseCodeGeneratorWithSiteAsync
         return document.RemoveNodes(nodeToRemove, SyntaxRemoveOptions.KeepNoTrivia);
     }
 
-    private async Task<Model.FetchQuery> ParseFetchXmlAsync(XmlDocumentSyntax docSyntax, CancellationToken cancellationToken)
+    private async Task<Model.FetchQuery> ParseFetchXmlAsync(
+        XmlDocumentSyntax docSyntax, string rawDocument, CancellationToken cancellationToken)
     {
         if (docSyntax == null) throw new ArgumentNullException(nameof(docSyntax));
         var parser = new FetchXmlParser();
-        return await parser.ParseAsync(docSyntax, cancellationToken).ConfigureAwait(false);
+        return await parser.ParseAsync(docSyntax, rawDocument, cancellationToken).ConfigureAwait(false);
     }
 
     private string GetDefaultNamespace(string inputFilePath)
