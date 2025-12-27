@@ -106,19 +106,39 @@ jobs:
       - name: Guard - nightly tag commit must be on main
         shell: pwsh
         run: |
-          git fetch origin main --depth=1
-          git fetch --tags --force
-
-          $tag = "${{ steps.derive.outputs.nightly_tag }}"
-          $sha = (git rev-list -n 1 $tag).Trim()
-
-          # Is tag commit reachable from main?
-          git merge-base --is-ancestor $sha origin/main
-          if ($LASTEXITCODE -ne 0) {
-            throw "Tag '$tag' (commit $sha) is not on main. Refusing to release."
+          # Ensure we have full history (important for merge-base checks)
+          git fetch --prune --force --tags origin
+          git fetch --prune --force origin main:refs/remotes/origin/main
+      
+          # If repo is shallow for any reason, unshallow it (safe even if not shallow)
+          git rev-parse --is-shallow-repository
+          if ($LASTEXITCODE -eq 0) {
+            $isShallow = (git rev-parse --is-shallow-repository).Trim()
+            if ($isShallow -eq "true") {
+              git fetch --unshallow --prune --force origin
+            }
           }
-
-          Write-Host "OK: $tag ($sha) is on main."
+      
+          $tag = "${{ steps.derive.outputs.nightly_tag }}"
+      
+          # Dereference tag to the underlying commit (handles annotated tags)
+          $sha = (git rev-parse "$tag^{commit}").Trim()
+          $main = "refs/remotes/origin/main"
+      
+          Write-Host "Tag:  $tag"
+          Write-Host "SHA:  $sha"
+          Write-Host "Main: $main"
+      
+          git merge-base --is-ancestor $sha $main
+          if ($LASTEXITCODE -ne 0) {
+            Write-Host "Recent commits on main:"
+            git log --oneline -n 10 $main
+            Write-Host "Commit for tag:"
+            git show -s --oneline $sha
+            throw "Tag '$tag' (commit $sha) is not reachable from origin/main (or history is incomplete). Refusing to release."
+          }
+      
+          Write-Host "OK: $tag ($sha) is reachable from origin/main."
 
       - name: Guard - release tag must not already exist
         shell: pwsh
