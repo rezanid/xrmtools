@@ -6,7 +6,7 @@
   "publisher": "rezanid",
   "overview": "README.md",
   "priceCategory": "free",
-  "categories": [ "coding", "setup and deployment", "framework and libraries" ],
+  "categories": [ "coding" ],
   "qna": false,
   "private": false,
   "repo": "https://github.com/rezanid/xrmtools"
