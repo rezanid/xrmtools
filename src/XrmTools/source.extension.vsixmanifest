@@ -9,7 +9,7 @@
         <GettingStartedGuide>Resources\GettingStarted.html</GettingStartedGuide>
         <Icon>Resources\PackageIcon.png</Icon>
         <PreviewImage>Resources\Write-Plugin.gif</PreviewImage>
-        <Tags>Power Platform, Dataverse, Power Apps, XRM, Code Generator</Tags>
+        <Tags>Power Platform, Dataverse, Power Apps, XRM</Tags>
     </Metadata>
     <Installation>
         <InstallationTarget Id="Microsoft.VisualStudio.Community" Version="[17.0,18.0)">
