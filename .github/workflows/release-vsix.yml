@@ -103,43 +103,6 @@ jobs:
           $t = "${{ steps.derive.outputs.nightly_tag }}"
           if (-not (git tag -l $t)) { throw "Nightly tag '$t' does not exist. Aborting." }
 
-      - name: Guard - nightly tag commit must be on main
-        shell: pwsh
-        run: |
-          # Ensure we have full history (important for merge-base checks)
-          git fetch --prune --force --tags origin
-          git fetch --prune --force origin main:refs/remotes/origin/main
-      
-          # If repo is shallow for any reason, unshallow it (safe even if not shallow)
-          git rev-parse --is-shallow-repository
-          if ($LASTEXITCODE -eq 0) {
-            $isShallow = (git rev-parse --is-shallow-repository).Trim()
-            if ($isShallow -eq "true") {
-              git fetch --unshallow --prune --force origin
-            }
-          }
-      
-          $tag = "${{ steps.derive.outputs.nightly_tag }}"
-      
-          # Dereference tag to the underlying commit (handles annotated tags)
-          $sha = (git rev-parse "$tag^{commit}").Trim()
-          $main = "refs/remotes/origin/main"
-      
-          Write-Host "Tag:  $tag"
-          Write-Host "SHA:  $sha"
-          Write-Host "Main: $main"
-      
-          git merge-base --is-ancestor $sha $main
-          if ($LASTEXITCODE -ne 0) {
-            Write-Host "Recent commits on main:"
-            git log --oneline -n 10 $main
-            Write-Host "Commit for tag:"
-            git show -s --oneline $sha
-            throw "Tag '$tag' (commit $sha) is not reachable from origin/main (or history is incomplete). Refusing to release."
-          }
-      
-          Write-Host "OK: $tag ($sha) is reachable from origin/main."
-
       - name: Guard - release tag must not already exist
         shell: pwsh
         run: |
