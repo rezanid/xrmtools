@@ -3,7 +3,7 @@
     <Metadata>
         <Identity Id="XrmTools.eba3cd26-ffad-444f-b4ef-771d430bacef" Version="1.5.5" Language="en-US" Publisher="Reza Niroomand" />
         <DisplayName>Xrm Tools</DisplayName>
-        <Description xml:space="preserve">Xrm Tools is a Visual Studio extension that makes Power Platform development feel native. It adds IntelliSense for plugins, generates boilerplate and typed entities, and makes FetchXML a first-class language inside Visual Studio, with full control over code generation.</Description>
+        <Description xml:space="preserve">Xrm Tools is a Visual Studio extension that makes Power Platform development feel native, with IntelliSense for plugins, boilerplate and typed entity generation, and first-class FetchXML support.</Description>
         <MoreInfo>https://github.com/rezanid/xrmtools</MoreInfo>
         <License>Resources\LICENSE.txt</License>
         <GettingStartedGuide>Resources\GettingStarted.html</GettingStartedGuide>
