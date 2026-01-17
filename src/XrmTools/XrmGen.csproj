@@ -77,6 +77,8 @@
     <Compile Include="Commands\ManageEnvironmentsCommand.cs" />
     <Compile Include="Commands\NewFetchXmlFileCommand.cs" />
     <Compile Include="Commands\ResetCodeGenTemplatesCommand.cs" />
+    <Compile Include="Commands\UnregisterCommand.cs" />
+    <Compile Include="UI\VsPluginRegistrationUI.cs" />
     <Compile Include="Core\Repositories\ICacheConfiguration.cs" />
     <Compile Include="CustomMonikers.cs">
       <AutoGen>True</AutoGen>
@@ -155,7 +157,7 @@
     <Compile Include="Options\CurrentEnvironmentEditor.cs" />
     <Compile Include="Options\DataverseEnvironmentConverter.cs" />
     <Compile Include="Options\EnumDescriptionConverter.cs" />
-    <Compile Include="Services\IPluginRegistrationUI.cs" />
+    <Compile Include="UI\IPluginRegistrationUI.cs" />
     <Compile Include="Services\PluginRegistrationResult.cs" />
     <Compile Include="Services\RegistrationInput.cs" />
     <Compile Include="Settings\IAsyncXrmToolsSettings.cs" />

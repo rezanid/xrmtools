@@ -73,12 +73,14 @@
         <Strings>
           <ButtonText>Set as template</ButtonText>
           <CommandName>Set as template</CommandName>
+          <CanonicalName></CanonicalName>
         </Strings>
       </Menu>
       <Menu guid="XrmToolsCmdSetId" id="XrmToolsToolbar" type="Toolbar" priority="100">
         <Parent guid="guidSHLMainMenu" id="IDM_VS_CTXT_ITEMNODE" />
         <Strings>
           <ButtonText>Xrm Tools</ButtonText>
+          <CanonicalName></CanonicalName>
         </Strings>
       </Menu>
     </Menus>
@@ -94,7 +96,7 @@
         <Strings>
           <ButtonText>Environment: </ButtonText>
           <ToolTipText>Select the active environment or manage environment list.</ToolTipText>
-          <LocCanonicalName>.XrmTools.ManageEnvironment</LocCanonicalName>
+          <CanonicalName>.XrmTools.ManageEnvironment</CanonicalName>
         </Strings>
       </Combo>
     </Combos>
@@ -111,30 +113,6 @@
               <CommandFlag>DynamicVisibility</CommandFlag>
           If you do not want an image next to your command, remove the Icon node /> -->
       <!-- Each button is a combination of the GUID and a different id -->
-      <!--[Item Context Menu] > "Enable entity code generation"-->
-      <Button guid="XrmToolsCmdSetId" id="SetCustomToolEntityGeneratorCmdId" priority="0x0100" type="Button">
-        <Parent guid="XrmToolsCmdSetId" id="XrmToolsContextMenuGroup" />
-        <Icon guid="ImageCatalogGuid" id="Table" />
-        <CommandFlag>IconIsMoniker</CommandFlag>
-        <CommandFlag>DynamicVisibility</CommandFlag>
-        <CommandFlag>TextChanges</CommandFlag>
-        <Strings>
-          <ButtonText>Entity code generation</ButtonText>
-          <LocCanonicalName>.XrmTools.SetAsEntitiesFile</LocCanonicalName>
-        </Strings>
-      </Button>
-      <!--[Item Context Menu] > "Enable plugin code generation"-->
-      <Button guid="XrmToolsCmdSetId" id="SetCustomToolPluginGeneratorCmdId" priority="0x0100" type="Button">
-        <Parent guid="XrmToolsCmdSetId" id="XrmToolsContextMenuGroup" />
-        <Icon guid="ImageCatalogGuid" id="Part" />
-        <CommandFlag>IconIsMoniker</CommandFlag>
-        <CommandFlag>DynamicVisibility</CommandFlag>
-        <CommandFlag>TextChanges</CommandFlag>
-        <Strings>
-          <ButtonText>Plugin code generation</ButtonText>
-          <LocCanonicalName>.XrmTools.SetAsPluginFile</LocCanonicalName>
-        </Strings>
-      </Button>
       <!--[Item Context Menu] > "Reset code generation templates"-->
       <Button guid="XrmToolsCmdSetId" id="ResetCodeGenTemplatesCmdId" priority="0x0100" type="Button">
         <Parent guid="XrmToolsCmdSetId" id="XrmToolsContextMenuGroup" />
@@ -145,8 +123,32 @@
         <CommandFlag>AllowParams</CommandFlag>
         <Strings>
           <ButtonText>Reset code generation templates</ButtonText>
-          <LocCanonicalName>.XrmTools.ResetTemplates</LocCanonicalName>
+          <CanonicalName>.XrmTools.ResetTemplates</CanonicalName>
         </Strings>
+      </Button>
+      <!--[Item Context Menu] > "Enable plugin code generation"-->
+      <Button guid="XrmToolsCmdSetId" id="SetCustomToolPluginGeneratorCmdId" priority="0x0101" type="Button">
+        <Parent guid="XrmToolsCmdSetId" id="XrmToolsContextMenuGroup" />
+        <Icon guid="ImageCatalogGuid" id="Part" />
+        <CommandFlag>IconIsMoniker</CommandFlag>
+        <CommandFlag>DynamicVisibility</CommandFlag>
+        <CommandFlag>TextChanges</CommandFlag>
+        <Strings>
+          <ButtonText>Plugin code generation</ButtonText>
+          <CanonicalName>.XrmTools.SetAsPluginFile</CanonicalName>
+        </Strings>
+      </Button>
+      <!--[Item Context Menu] > "Enable entity code generation"-->
+      <Button guid="XrmToolsCmdSetId" id="SetCustomToolEntityGeneratorCmdId" priority="0x0102" type="Button">
+        <Parent guid="XrmToolsCmdSetId" id="XrmToolsContextMenuGroup" />
+        <Icon guid="ImageCatalogGuid" id="Table" />
+        <CommandFlag>IconIsMoniker</CommandFlag>
+        <CommandFlag>DynamicVisibility</CommandFlag>
+        <CommandFlag>TextChanges</CommandFlag>
+        <Strings>
+          <ButtonText>Entity code generation</ButtonText>
+          <CanonicalName>.XrmTools.SetAsEntitiesFile</CanonicalName>
+      </Strings>
       </Button>
       <!-- [Item Context Menu] > "Register plugin(s)"-->
       <Button guid="XrmToolsCmdSetId" id="RegisterPluginCmdId" priority="0x100" type="Button">
@@ -156,7 +158,15 @@
         <CommandFlag>DynamicVisibility</CommandFlag>
         <Strings>
           <ButtonText>Register Plugin(s)</ButtonText>
-          <LocCanonicalName>.XrmTools.RegisterPlugin</LocCanonicalName>
+          <CanonicalName>.XrmTools.RegisterPlugin</CanonicalName>
+        </Strings>
+      </Button>
+      <Button guid="XrmToolsCmdSetId" id="UnregisterPluginCmdId" priority="0x202" type="Button">
+        <Parent guid="XrmToolsCmdSetId" id="XrmToolsProjectContextMenuGroup" />
+        <CommandFlag>DynamicVisibility</CommandFlag>
+        <Strings>
+          <ButtonText>Unregister from Dataverse</ButtonText>
+          <CanonicalName>.XrmTools.Unregister</CanonicalName>
         </Strings>
       </Button>
       <Button guid="XrmToolsCmdSetId" id="SetPluginGeneratorTemplateInSolutionCmdId" priority="0x100" type="Button">
@@ -166,7 +176,7 @@
         <CommandFlag>DynamicVisibility</CommandFlag>
         <Strings>
           <ButtonText>Plugin code generator (Solution)</ButtonText>
-          <LocCanonicalName>.XrmTools.SetPluginGeneratorTemplateInSolution</LocCanonicalName>
+          <CanonicalName>.XrmTools.SetPluginGeneratorTemplateInSolution</CanonicalName>
         </Strings>
       </Button>
       <Button guid="XrmToolsCmdSetId" id="SetPluginGeneratorTemplateInProjectCmdId" priority="0x100" type="Button">
@@ -176,7 +186,7 @@
         <CommandFlag>DynamicVisibility</CommandFlag>
         <Strings>
           <ButtonText>Plugin code generator (Project)</ButtonText>
-          <LocCanonicalName>.XrmTools.SetPluginGeneratorTemplateInProject</LocCanonicalName>
+          <CanonicalName>.XrmTools.SetPluginGeneratorTemplateInProject</CanonicalName>
         </Strings>
       </Button>
       <Button guid="XrmToolsCmdSetId" id="SetEntityGeneratorTemplateInSolutionCmdId" priority="0x100" type="Button">
@@ -186,7 +196,7 @@
         <CommandFlag>DynamicVisibility</CommandFlag>
         <Strings>
           <ButtonText>Entity code generator (Solution)</ButtonText>
-          <LocCanonicalName>.XrmTools.SetEntityGeneratorTemplateInSolution</LocCanonicalName>
+          <CanonicalName>.XrmTools.SetEntityGeneratorTemplateInSolution</CanonicalName>
         </Strings>
       </Button>
       <Button guid="XrmToolsCmdSetId" id="SetEntityGeneratorTemplateInProjectCmdId" priority="0x100" type="Button">
@@ -196,7 +206,7 @@
         <CommandFlag>DynamicVisibility</CommandFlag>
         <Strings>
           <ButtonText>Entity code generator (Project)</ButtonText>
-          <LocCanonicalName>.XrmTools.SetEntityGeneratorTemplateInProject</LocCanonicalName>
+          <CanonicalName>.XrmTools.SetEntityGeneratorTemplateInProject</CanonicalName>
         </Strings>
       </Button>
       <!--[Solution Context Menu] > "Set Dataverse Environment..."-->
@@ -207,7 +217,7 @@
         <CommandFlag>DynamicVisibility</CommandFlag>
         <Strings>
           <ButtonText>Set Dataverse Environment...</ButtonText>
-          <LocCanonicalName>.XrmTools.SetEnvironment</LocCanonicalName>
+          <CanonicalName>.XrmTools.SetEnvironment</CanonicalName>
         </Strings>
       </Button>
       <!--[Project Context Menu] > "Add" > "New plugin definition..."-->
@@ -218,7 +228,7 @@
         <CommandFlag>DynamicVisibility</CommandFlag>
         <Strings>
           <ButtonText>New FetchXML file...</ButtonText>
-          <LocCanonicalName>.XrmTools.NewFetchXmlFile</LocCanonicalName>
+          <CanonicalName>.XrmTools.NewFetchXmlFile</CanonicalName>
         </Strings>
       </Button>
       <!--<Button guid="XrmToolsCmdSetId" id="NewPluginDefinitionCmdId" priority="0x0200" type="Button">
@@ -228,7 +238,7 @@
         <CommandFlag>DynamicVisibility</CommandFlag>
         <Strings>
           <ButtonText>New plugin definition...</ButtonText>
-          <LocCanonicalName>.XrmTools.NewPluginDefinition</LocCanonicalName>
+          <CanonicalName>.XrmTools.NewPluginDefinition</CanonicalName>
         </Strings>
       </Button>-->
     </Buttons>
@@ -237,7 +247,7 @@
   <CommandPlacements>
     <!-- Add commands to more locations. We could also do all the placements here as well -->
     <!-- ["Project Context Menu"] > ["Register plugin(s)"] -->
-    <CommandPlacement guid="XrmToolsCmdSetId" id="RegisterPluginCmdId" priority="0x0200">
+    <CommandPlacement guid="XrmToolsCmdSetId" id="RegisterPluginCmdId" priority="0x0201">
       <Parent guid="XrmToolsCmdSetId" id="XrmToolsProjectContextMenuGroup"/>
     </CommandPlacement>
     <!--<CommandPlacement guid="XrmToolsCmdSetId" id="NewPluginDefinitionCmdId" priority="0x0200">
@@ -251,7 +261,7 @@
     <!--<CommandPlacement guid="XrmToolsCmdSetId" id="XrmToolsToolbarGroup" priority="0x0100">
       <Parent guid="XrmToolsCmdSetId" id="XrmToolsToolbar" />
     </CommandPlacement>-->
-    <CommandPlacement guid="XrmToolsCmdSetId" id="ResetCodeGenTemplatesCmdId" priority="0x0200">
+    <CommandPlacement guid="XrmToolsCmdSetId" id="ResetCodeGenTemplatesCmdId" priority="0x0203">
       <Parent guid="XrmToolsCmdSetId" id="XrmToolsProjectContextMenuGroup"/>
     </CommandPlacement>
     <CommandPlacement guid="XrmToolsCmdSetId" id="ResetCodeGenTemplatesCmdId" priority="0x200">
@@ -309,6 +319,7 @@
       <IDSymbol name="ManageEnvironmentCmdId" value="0x0510"/>
       <IDSymbol name="ManageEnvironmenGetListCmdId" value="0x0511"/>
       <IDSymbol name="RegisterPluginCmdId" value="0x0910"/>
+      <IDSymbol name="UnregisterPluginCmdId" value="0x0920"/>
       <IDSymbol name="XrmToolsToolbar" value="0x2000"/>
       <IDSymbol name="XrmToolsToolbarGroup" value="0x2010"/>
       <IDSymbol name="XrmToolsContextSubMenu" value="0x1000"/>

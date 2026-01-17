@@ -5,24 +5,22 @@ using Community.VisualStudio.Toolkit;
 using Microsoft.VisualStudio.ComponentModelHost;
 using Microsoft.VisualStudio.Shell;
 using System;
+using System.Collections.Generic;
 using System.ComponentModel.Composition;
-using System.Diagnostics.CodeAnalysis;
-using System.IO;
 using System.Threading.Tasks;
 using XrmTools.Analyzers;
 using XrmTools.Environments;
 using XrmTools.Helpers;
 using XrmTools.Logging.Compatibility;
-using XrmTools.Resources;
 using XrmTools.Services;
 using XrmTools.UI;
 using XrmTools.WebApi;
 using XrmTools.Xrm.Repositories;
-using static XrmTools.Helpers.ProjectExtensions;
-using Task = System.Threading.Tasks.Task;
+using System.Diagnostics.CodeAnalysis;
+using XrmTools.Resources;
 
-[Command(PackageGuids.XrmToolsCmdSetIdString, PackageIds.RegisterPluginCmdId)]
-internal sealed class RegisterPluginCommand : BaseCommand<RegisterPluginCommand>
+[Command(PackageGuids.XrmToolsCmdSetIdString, PackageIds.UnregisterPluginCmdId)]
+internal sealed class UnregisterCommand : BaseCommand<UnregisterCommand>
 {
     [Import]
     internal IWebApiService WebApiService { get; set; } = null!;
@@ -42,7 +40,7 @@ internal sealed class RegisterPluginCommand : BaseCommand<RegisterPluginCommand>
     [Import]
     internal IPluginRegistrationService PluginRegistrationService { get; set; } = null!;
 
-    protected override async Task ExecuteAsync(OleMenuCmdEventArgs e)
+    override protected async Task ExecuteAsync(OleMenuCmdEventArgs e)
     {
         var activeItem = await VS.Solutions.GetActiveItemAsync();
         if (activeItem is null || activeItem.FullPath is null || !(activeItem.Type is SolutionItemType.Project or SolutionItemType.PhysicalFile)) return;
@@ -54,33 +52,26 @@ internal sealed class RegisterPluginCommand : BaseCommand<RegisterPluginCommand>
             return;
         }
 
-        var projectIsUpToDate = await VS.Build.ProjectIsUpToDateAsync(project);
-        if (!projectIsUpToDate)
-        {
-            var buildSucceeded = await project.BuildAsync();
-            if (!buildSucceeded) return;
-        }
-
-        var generatePackage = project.GetBuildProperty<bool>(BuildProperties.GeneratePackageOnBuild);
-        var nugetFilePath = generatePackage ? Path.Combine(project.FullPath, project.GetOutputPackagePath()) : null;
+        var ui = new VsPluginRegistrationUI();
+        var confirmed = await ui.ConfirmUnregsiterAssemblyAsync(project.Name);
+        if (!confirmed) return;
 
         await VS.StatusBar.StartAnimationAsync(StatusAnimation.General);
-        await VS.StatusBar.ShowMessageAsync("Registering plugin(s)...");
+        await VS.StatusBar.ShowMessageAsync("Unregistering from Dataverse...");
 
         try
         {
             var input = new RegistrationInput(
                 itemFullPath: activeItem.FullPath,
-                isProject: activeItem.Type == SolutionItemType.Project,
-                nugetPackagePath: nugetFilePath);
+                isProject: true,
+                nugetPackagePath: null);
 
-            var ui = new VsPluginRegistrationUI();
-            var result = await PluginRegistrationService!.RegisterAsync(input, ui);
+            var result = await PluginRegistrationService!.UnregisterAsync(input, ui);
 
             if (!result.Succeeded)
             {
                 await VS.StatusBar.EndAnimationAsync(StatusAnimation.General);
-                await VS.StatusBar.ShowMessageAsync("Plugin registration failed.");
+                await VS.StatusBar.ShowMessageAsync("Unregistration failed.");
                 await VS.MessageBox.ShowErrorAsync(Vsix.Name, result.Message);
                 return;
             }
@@ -90,13 +81,14 @@ internal sealed class RegisterPluginCommand : BaseCommand<RegisterPluginCommand>
         catch (Exception ex)
         {
             Logger.LogError(ex, "An unexpected error occurred during plugin registration.");
-            await VS.MessageBox.ShowErrorAsync(Vsix.Name, "Plugin registration failed due to an unexpected error. " + ex.Message);
+            await VS.MessageBox.ShowErrorAsync(Vsix.Name, "Unregistration failed due to an unexpected error. " + ex.Message);
         }
         finally
         {
             await VS.StatusBar.EndAnimationAsync(StatusAnimation.General);
         }
     }
+
 
     protected override async Task InitializeCompletedAsync()
     {
@@ -112,29 +104,6 @@ internal sealed class RegisterPluginCommand : BaseCommand<RegisterPluginCommand>
             Logger?.LogError(ex, "An error occurred while initializing the RegisterPluginCommand.");
             await VS.MessageBox.ShowErrorAsync(Vsix.Name, "An error occurred while initializing the RegisterPluginCommand. " + ex.Message);
             return;
-        }
-    }
-
-    protected override void BeforeQueryStatus(EventArgs e)
-    {
-        ThreadHelper.JoinableTaskFactory.Run(async () =>
-        {
-            var item = await VS.Solutions.GetActiveItemAsync();
-            Command.Visible = await IsVisibleAsync(item).ConfigureAwait(false);
-        });
-
-        static async Task<bool> IsVisibleAsync(SolutionItem? item)
-        {
-            if (item is null)
-                return false;
-
-            if (item.Type == SolutionItemType.Project)
-                return true;
-
-            if (item.Type == SolutionItemType.PhysicalFile && item is PhysicalFile file)
-                return await file.IsXrmPluginFileAsync().ConfigureAwait(false);
-
-            return false;
         }
     }
 

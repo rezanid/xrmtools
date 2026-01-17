@@ -70,6 +70,7 @@ namespace XrmTools
         public const int ManageEnvironmentCmdId = 0x0510;
         public const int ManageEnvironmenGetListCmdId = 0x0511;
         public const int RegisterPluginCmdId = 0x0910;
+        public const int UnregisterPluginCmdId = 0x0920;
         public const int XrmToolsToolbar = 0x2000;
         public const int XrmToolsToolbarGroup = 0x2010;
         public const int XrmToolsContextSubMenu = 0x1000;

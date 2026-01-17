@@ -8,9 +8,9 @@ using System.Runtime.InteropServices;
 [assembly: AssemblyTitle("XrmTools.Core")]
 [assembly: AssemblyDescription("")]
 [assembly: AssemblyConfiguration("")]
-[assembly: AssemblyCompany("AG Insurance")]
+[assembly: AssemblyCompany("Novovio")]
 [assembly: AssemblyProduct("XrmTools.Core")]
-[assembly: AssemblyCopyright("Copyright © AG Insurance 2024")]
+[assembly: AssemblyCopyright("Copyright © Novovio 2024")]
 [assembly: AssemblyTrademark("")]
 [assembly: AssemblyCulture("")]
 
