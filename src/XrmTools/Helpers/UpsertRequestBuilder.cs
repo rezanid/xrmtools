@@ -25,7 +25,7 @@ internal class UpsertRequestBuilder(
 
     public UpsertRequestBuilder WithPackage()
     {
-        var package = _config.Package;
+        var package = _config.Package ?? throw new InvalidOperationException("Package configuration is null.");
         _requests.Add(new UpsertRequest(
             package.ToReference(),
             new JObject

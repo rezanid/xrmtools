@@ -10,9 +10,9 @@ using System.Windows;
 [assembly: AssemblyTitle("XrmTools.UI.Controls")]
 [assembly: AssemblyDescription("")]
 [assembly: AssemblyConfiguration("")]
-[assembly: AssemblyCompany("AG Insurance")]
+[assembly: AssemblyCompany("Novovio")]
 [assembly: AssemblyProduct("XrmTools.UI.Controls")]
-[assembly: AssemblyCopyright("Copyright © AG Insurance 2024")]
+[assembly: AssemblyCopyright("Copyright © Novovio 2024")]
 [assembly: AssemblyTrademark("")]
 [assembly: AssemblyCulture("")]
 

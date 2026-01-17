@@ -190,6 +190,7 @@ public sealed partial class XrmToolsPackage : ToolkitPackage
         await SetCustomToolEntityGeneratorCommand.InitializeAsync(this);
         await SetCustomToolPluginGeneratorCommand.InitializeAsync(this);
         await RegisterPluginCommand.InitializeAsync(this);
+        await UnregisterCommand.InitializeAsync(this);
         await SelectEnvironmentCommand.InitializeAsync(this);
         await ResetCodeGenTemplatesCommand.InitializeAsync(this);
         // The following two commands contirbute to the dropdown combo box for selecting environments.
