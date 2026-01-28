@@ -110,6 +110,7 @@ using Task = System.Threading.Tasks.Task;
 [ProvideService(typeof(ISettingsProvider), IsAsyncQueryable = true, IsCacheable = true, IsFreeThreaded = true)]
 [ProvideOptionPage(typeof(OptionsProvider.GeneralOptions), Vsix.Name, "General", 0, 0, true, SupportsProfiles = true)]
 [ProvideOptionPage(typeof(OptionsProvider.FetchXmlOptions), Vsix.Name, "FetchXML", 0, 0, true, SupportsProfiles = true)]
+[ProvideBindingPath]
 public sealed partial class XrmToolsPackage : ToolkitPackage
 {
     private static readonly object _lock = new();

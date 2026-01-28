@@ -32,6 +32,7 @@ using XrmTools.Resources;
 using XrmTools.Serialization;
 using XrmTools.Settings;
 using XrmTools.WebApi.Entities;
+using XrmTools.Xrm;
 using XrmTools.Xrm.Generators;
 using XrmTools.Xrm.Repositories;
 
@@ -140,6 +141,7 @@ public class PluginCodeGenerator : BaseCodeGeneratorWithSiteAsync
         {
             using var cts = new CancellationTokenSource(120000);
             await AddEntityMetadataToPluginDefinitionAsync(inputModel!, cts.Token).ConfigureAwait(false);
+            await AddMessageMetadataAsync(inputModel!, cts.Token).ConfigureAwait(false);
         }
         catch (OperationCanceledException)
         {
@@ -190,7 +192,7 @@ public class PluginCodeGenerator : BaseCodeGeneratorWithSiteAsync
 
         var entityDefinition = await entityMetadataRepo.GetAsync(logicalName, ct).ConfigureAwait(false);
         if (entityDefinition == null) { return null; }
-        
+
         //NOTE!
         // Logical attributes to avoid unnecessary processing.
         var filteredAttributes =
@@ -341,6 +343,24 @@ public class PluginCodeGenerator : BaseCodeGeneratorWithSiteAsync
             }
         }
         config.EntityDefinitions = entityDefinitions.Values;
+    }
+
+    private async Task AddMessageMetadataAsync(PluginAssemblyConfig config, CancellationToken cancellationToken)
+    {
+
+        foreach (var step in config.PluginTypes.SelectMany(plugin => plugin.Steps).Where(s => !string.IsNullOrWhiteSpace(s.PrimaryEntityName)))
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+
+            var messageName = step.MessageName;
+
+            if (string.IsNullOrWhiteSpace(messageName)) continue;
+
+            using var sdkMessageRepository = RepositoryFactory.CreateRepository<ISdkMessageRepository>();
+            var message = await sdkMessageRepository.GetByNameWithDescendantsNoFiltersAsync(messageName!, cancellationToken).ConfigureAwait(false);
+
+            step.Message = message;
+        }
     }
 }
 #nullable restore
