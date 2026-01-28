@@ -1,0 +1,69 @@
+﻿{{~is_entity_required = false~}}
+{{~for field in step.message.pairs[0].request[0].fields~}}
+{{~field_type = field.clr_parser == null || field.clr_parser == "" ? field.parser : field.clr_parser
+    index_of_comma = field_type | string.index_of ','
+    field_type = index_of_comma > -1 ? (field_type | string.slice 0 index_of_comma) : field_type
+    if (field_type | string.starts_with "System.Nullable`1[[")
+    field_type = field_type | string.slice 19 ((field_type | string.size) - 19 - 2)
+    force_nullable = true
+    end
+    field_type = field_type | last_segment~}}
+{{~if (field_type == "EntityCollection")
+    field_type = entity_type_name + "[]"
+    field_getter = "EntityCollectionOrDefault<" + entity_type_name + ">(" + context_getter + ".InputParameters, \"" + field.name + "\")"
+    is_entity_required = true
+else if (field_type == "Entity" || field_type == "EntitySelector")
+    field_type = entity_type_name
+    field_getter = "EntityOrDefault<" + entity_type_name + ">(" + context_getter + ".InputParameters, \"" + field.name + "\")"
+    is_entity_required = true
+else if (field_type == "DynamicEntityRequestMoniker")
+    field_type = "EntityReference"
+    field_getter = context_getter + ".InputParameters.TryGetValue(\"" + field.name + "\", out EntityReference " + (field.name | string.downcase) + ") ? " + (field.name | string.downcase) + " : default"
+else if (field_type == "MonikerSelector" || field_type == "Microsoft.Xrm.Sdk.EntityReference")
+    field_type = "EntityReference"
+    field_getter = context_getter + ".InputParameters.TryGetValue(\"" + field.name + "\", out EntityReference " + (field.name | string.downcase) + ") ? " + (field.name | string.downcase) + " : default"
+else
+    case field_type
+    when "String"
+        field_type = "string"
+    when "Int32"
+        field_type = "int"
+    when "Int64"
+        field_type = "long"
+    when "Boolean"
+        field_type = "bool"
+    when "Decimal"
+        field_type = "decimal"
+    when "Double"
+        field_type = "double"
+    when "Guid"
+        field_type = "Guid"
+    when "Byte[]"
+        field_type = "byte[]"
+    when "ColumnSetBase"
+        field_type = "ColumnSet"
+    when "Query"
+        field_type = "QueryBase"
+    when "CrmDateTime"
+        field_type = "DateTime"
+    when "SetStateRequestMoniker", "SecurityPrincipal" #team, user or organization
+        field_type = "EntityReference" 
+    when "State" # Not tested on SetState
+        field_type = "OptionSetValue"
+    end
+    field_getter = context_getter + ".InputParameters.TryGetValue(\"" + field.name + "\", out " + field_type + " _" + (field.name | string.downcase) + ") ? _" + (field.name | string.downcase) + " : default"
+end
+if plugintype.is_nullable_enabled && field.optional || force_nullable
+    field_type += "?"
+else if plugintype.is_nullable_enabled && !field.optional
+    field_getter += "!"
+end
+~}}
+public static {{field_type}} {{field.name | string.capitalize}}
+{
+    get => {{field_getter}};
+}
+    
+{{~end~}}
+{{~if is_entity_required~}}
+{{include 'Target.sbncs' entity_type_name}}{{~end~}}
