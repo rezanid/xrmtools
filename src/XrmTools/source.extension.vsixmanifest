@@ -30,5 +30,7 @@
         <Asset Type="Microsoft.VisualStudio.MefComponent" d:Source="Project" d:ProjectName="%CurrentProject%" Path="|%CurrentProject%|" />
         <Asset Type="Microsoft.VisualStudio.MefComponent" d:Source="Project" d:ProjectName="XrmTools.Core" Path="|XrmTools.Core|" />
         <Asset Type="Microsoft.VisualStudio.MefComponent" d:Source="Project" d:ProjectName="XrmTools.WebApi" Path="|XrmTools.WebApi|" />
+        <Asset Type="Microsoft.VisualStudio.MefComponent" d:Source="Project" d:ProjectName="XrmTools.Analyzers" Path="|XrmTools.Analyzers|" />
+        <Asset Type="Microsoft.VisualStudio.Analyzer" d:Source="Project" d:ProjectName="XrmTools.Analyzers" Path="|XrmTools.Analyzers|" />
     </Assets>
 </PackageManifest>

@@ -525,6 +525,12 @@
     </Page>
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="..\XrmTools.Analyzers\XrmTools.Analyzers\XrmTools.Analyzers.csproj">
+      <Project>{1A69067F-158E-4B2D-A9E6-6A729FB41EB0}</Project>
+      <Name>XrmTools.Analyzers</Name>
+      <IncludeOutputGroupsInVSIX>BuiltProjectOutputGroup%3bBuiltProjectOutputGroupDependencies%3bGetCopyToOutputDirectoryItems%3bSatelliteDllsProjectOutputGroup%3b</IncludeOutputGroupsInVSIX>
+      <IncludeOutputGroupsInVSIXLocalOnly>DebugSymbolsProjectOutputGroup%3b</IncludeOutputGroupsInVSIXLocalOnly>
+    </ProjectReference>
     <ProjectReference Include="..\XrmTools.Core\XrmTools.Core.csproj">
       <Project>{4e3f79aa-5694-4dd6-933d-aee2132486a5}</Project>
       <Name>XrmTools.Core</Name>
