@@ -1,71 +1,121 @@
-﻿namespace XrmTools.Analyzers
+﻿#nullable enable
+namespace XrmTools.Analyzers;
+
+using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.CodeActions;
+using Microsoft.CodeAnalysis.CodeFixes;
+using Microsoft.CodeAnalysis.CSharp;
+using Microsoft.CodeAnalysis.CSharp.Syntax;
+using System.Collections.Immutable;
+using System.Composition;
+using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
+
+[ExportCodeFixProvider(LanguageNames.CSharp, Name = nameof(XrmToolsAnalyzersCodeFixProvider)), Shared]
+public class XrmToolsAnalyzersCodeFixProvider : CodeFixProvider
 {
-    using Microsoft.CodeAnalysis;
-    using Microsoft.CodeAnalysis.CodeActions;
-    using Microsoft.CodeAnalysis.CodeFixes;
-    using Microsoft.CodeAnalysis.CSharp;
-    using Microsoft.CodeAnalysis.CSharp.Syntax;
-    using Microsoft.CodeAnalysis.Rename;
-    using Microsoft.CodeAnalysis.Text;
-    using System;
-    using System.Collections.Generic;
-    using System.Collections.Immutable;
-    using System.Composition;
-    using System.Linq;
-    using System.Threading;
-    using System.Threading.Tasks;
+    public sealed override ImmutableArray<string> FixableDiagnosticIds =>
+        ImmutableArray.Create(
+            PluginDependencyAnalyzer.MissingDependencyAttributeId,
+            PluginDependencyAnalyzer.HasSetterOrInitId);
 
-    [ExportCodeFixProvider(LanguageNames.CSharp, Name = nameof(XrmToolsAnalyzersCodeFixProvider)), Shared]
-    public class XrmToolsAnalyzersCodeFixProvider : CodeFixProvider
+    public sealed override FixAllProvider GetFixAllProvider() =>
+        WellKnownFixAllProviders.BatchFixer;
+
+    public sealed override async Task RegisterCodeFixesAsync(CodeFixContext context)
     {
-        public sealed override ImmutableArray<string> FixableDiagnosticIds
+        var root = await context.Document.GetSyntaxRootAsync(context.CancellationToken).ConfigureAwait(false);
+        if (root is null)
+            return;
+
+        var diagnostic = context.Diagnostics.First();
+        var diagnosticSpan = diagnostic.Location.SourceSpan;
+
+        // Find the property declaration
+        var propertyDecl = root
+            .FindToken(diagnosticSpan.Start)
+            .Parent
+            ?.AncestorsAndSelf()
+            .OfType<PropertyDeclarationSyntax>()
+            .FirstOrDefault();
+
+        if (propertyDecl is null)
+            return;
+
+        if (diagnostic.Id == PluginDependencyAnalyzer.MissingDependencyAttributeId)
         {
-            get { return ImmutableArray.Create(PluginDependencyAnalyzer.MissingDependencyAttributeId, PluginDependencyAnalyzer.HasSetterOrInitId); }
-        }
-
-        public sealed override FixAllProvider GetFixAllProvider()
-        {
-            // See https://github.com/dotnet/roslyn/blob/main/docs/analyzers/FixAllProvider.md for more information on Fix All Providers
-            return WellKnownFixAllProviders.BatchFixer;
-        }
-
-        public sealed override async Task RegisterCodeFixesAsync(CodeFixContext context)
-        {
-            var root = await context.Document.GetSyntaxRootAsync(context.CancellationToken).ConfigureAwait(false);
-
-            // TODO: Replace the following code with your own analysis, generating a CodeAction for each fix to suggest
-            var diagnostic = context.Diagnostics.First();
-            var diagnosticSpan = diagnostic.Location.SourceSpan;
-
-            // Find the type declaration identified by the diagnostic.
-            var declaration = root.FindToken(diagnosticSpan.Start).Parent.AncestorsAndSelf().OfType<TypeDeclarationSyntax>().First();
-
-            // Register a code action that will invoke the fix.
             context.RegisterCodeFix(
                 CodeAction.Create(
-                    title: CodeFixResources.CodeFixTitle,
-                    createChangedSolution: c => MakeUppercaseAsync(context.Document, declaration, c),
-                    equivalenceKey: nameof(CodeFixResources.CodeFixTitle)),
+                    title: "Add [Dependency] attribute",
+                    createChangedDocument: c => AddDependencyAttributeAsync(context.Document, propertyDecl, c),
+                    equivalenceKey: "AddDependencyAttribute"),
                 diagnostic);
         }
-
-        private async Task<Solution> MakeUppercaseAsync(Document document, TypeDeclarationSyntax typeDecl, CancellationToken cancellationToken)
+        else if (diagnostic.Id == PluginDependencyAnalyzer.HasSetterOrInitId)
         {
-            // Compute new uppercase name.
-            var identifierToken = typeDecl.Identifier;
-            var newName = identifierToken.Text.ToUpperInvariant();
-
-            // Get the symbol representing the type to be renamed.
-            var semanticModel = await document.GetSemanticModelAsync(cancellationToken);
-            var typeSymbol = semanticModel.GetDeclaredSymbol(typeDecl, cancellationToken);
-
-            // Produce a new solution that has all references to that type renamed, including the declaration.
-            var originalSolution = document.Project.Solution;
-            var optionSet = originalSolution.Workspace.Options;
-            var newSolution = await Renamer.RenameSymbolAsync(document.Project.Solution, typeSymbol, newName, optionSet, cancellationToken).ConfigureAwait(false);
-
-            // Return the new solution with the now-uppercase type name.
-            return newSolution;
+            context.RegisterCodeFix(
+                CodeAction.Create(
+                    title: "Remove setter/init accessor",
+                    createChangedDocument: c => RemoveSetterOrInitAsync(context.Document, propertyDecl, c),
+                    equivalenceKey: "RemoveSetterOrInit"),
+                diagnostic);
         }
     }
+
+    private static async Task<Document> AddDependencyAttributeAsync(
+        Document document,
+        PropertyDeclarationSyntax propertyDecl,
+        CancellationToken cancellationToken)
+    {
+        var root = await document.GetSyntaxRootAsync(cancellationToken).ConfigureAwait(false);
+        if (root is null)
+            return document;
+
+        // Create the [XrmTools.Meta.Attributes.Dependency] attribute
+        var attribute = SyntaxFactory.Attribute(
+            SyntaxFactory.ParseName("XrmTools.Meta.Attributes.Dependency"));
+
+        var attributeList = SyntaxFactory.AttributeList(
+            SyntaxFactory.SingletonSeparatedList(attribute));
+
+        // Add the attribute to the property
+        var newPropertyDecl = propertyDecl.AddAttributeLists(attributeList);
+
+        var newRoot = root.ReplaceNode(propertyDecl, newPropertyDecl);
+        return document.WithSyntaxRoot(newRoot);
+    }
+
+    private static async Task<Document> RemoveSetterOrInitAsync(
+        Document document,
+        PropertyDeclarationSyntax propertyDecl,
+        CancellationToken cancellationToken)
+    {
+        var root = await document.GetSyntaxRootAsync(cancellationToken).ConfigureAwait(false);
+        if (root is null)
+            return document;
+
+        if (propertyDecl.AccessorList is null)
+            return document;
+
+        // Keep only get accessors, remove set/init
+        var accessors = propertyDecl.AccessorList.Accessors
+            .Where(a => a.IsKind(SyntaxKind.GetAccessorDeclaration))
+            .ToList();
+
+        if (accessors.Count == 0)
+            return document;
+
+        // Preserve opening and closing braces trivia from the original accessor list
+        var newAccessorList = SyntaxFactory.AccessorList(
+            propertyDecl.AccessorList.OpenBraceToken,
+            SyntaxFactory.List(accessors),
+            propertyDecl.AccessorList.CloseBraceToken);
+
+        var newPropertyDecl = propertyDecl.WithAccessorList(newAccessorList);
+
+        var newRoot = root.ReplaceNode(propertyDecl, newPropertyDecl);
+        return document.WithSyntaxRoot(newRoot);
+    }
 }
+#nullable restore

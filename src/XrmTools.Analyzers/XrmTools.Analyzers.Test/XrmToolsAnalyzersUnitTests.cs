@@ -30,8 +30,11 @@ namespace XrmTools.Meta.Attributes
     [System.AttributeUsage(System.AttributeTargets.Class, AllowMultiple = false, Inherited = false)]
     public sealed class CustomApiAttribute : System.Attribute { }
 
-    [System.AttributeUsage(System.AttributeTargets.Class, AllowMultiple = false, Inherited = false)]
+    [System.AttributeUsage(System.AttributeTargets.Class, AllowMultiple = true, Inherited = false)]
     public sealed class StepAttribute : System.Attribute { }
+
+    [System.AttributeUsage(System.AttributeTargets.Class, AllowMultiple = true, Inherited = false)]
+    public sealed class ImageAttribute : System.Attribute { }
 }
 
 public abstract class PluginBase : Microsoft.Xrm.Sdk.IPlugin
@@ -176,11 +179,15 @@ public sealed class MyPlugin : PluginBase
 {
     public T Require<T>(int x) => default!;
 
-    public string Foo => Require<string>(123);
+    public string {|#0:Foo|} => Require<string>(123);
 }
 ";
 
-        await VerifyCS.VerifyAnalyzerAsync(test);
+        var expected = new DiagnosticResult(PluginDependencyAnalyzer.MissingDependencyAttributeId, DiagnosticSeverity.Warning)
+            .WithLocation(0)
+            .WithArguments("Foo");
+
+        await VerifyCS.VerifyAnalyzerAsync(test, expected);
     }
 
     [Fact]
@@ -256,6 +263,93 @@ public sealed class MyPlugin : PluginBase
 {
     [Dependency]
     public string Foo => Require<string>();
+}
+";
+
+        await VerifyCS.VerifyAnalyzerAsync(test);
+    }
+
+    [Fact]
+    public async Task Plugin_PluginAttributeMustComeBeforeStep_ReportsXrmTools004()
+    {
+        var test = Preamble + @"
+[XrmTools.Meta.Attributes.Step]
+[XrmTools.Meta.Attributes.Plugin]
+public sealed class {|#0:MyPlugin|} : PluginBase
+{
+}
+";
+
+        var expected = new DiagnosticResult(PluginDependencyAnalyzer.PluginAttributeOrderId, DiagnosticSeverity.Warning)
+            .WithLocation(0)
+            .WithArguments("MyPlugin");
+
+        await VerifyCS.VerifyAnalyzerAsync(test, expected);
+    }
+
+    [Fact]
+    public async Task Plugin_PluginAttributeMustComeBeforeCustomApi_ReportsXrmTools004()
+    {
+        var test = Preamble + @"
+[XrmTools.Meta.Attributes.CustomApi]
+[XrmTools.Meta.Attributes.Plugin]
+public sealed class {|#0:MyPlugin|} : PluginBase
+{
+}
+";
+
+        var expected = new DiagnosticResult(PluginDependencyAnalyzer.PluginAttributeOrderId, DiagnosticSeverity.Warning)
+            .WithLocation(0)
+            .WithArguments("MyPlugin");
+
+        await VerifyCS.VerifyAnalyzerAsync(test, expected);
+    }
+
+    [Fact]
+    public async Task Plugin_ImageBeforeStep_ReportsXrmTools004()
+    {
+        var test = Preamble + @"
+[XrmTools.Meta.Attributes.Plugin]
+[XrmTools.Meta.Attributes.Image]
+[XrmTools.Meta.Attributes.Step]
+public sealed class {|#0:MyPlugin|} : PluginBase
+{
+}
+";
+
+        var expected = new DiagnosticResult(PluginDependencyAnalyzer.PluginAttributeOrderId, DiagnosticSeverity.Warning)
+            .WithLocation(0)
+            .WithArguments("MyPlugin");
+
+        await VerifyCS.VerifyAnalyzerAsync(test, expected);
+    }
+
+    [Fact]
+    public async Task Plugin_ImageAfterStep_IsAllowed()
+    {
+        var test = Preamble + @"
+[XrmTools.Meta.Attributes.Plugin]
+[XrmTools.Meta.Attributes.Step]
+[XrmTools.Meta.Attributes.Image]
+public sealed class MyPlugin : PluginBase
+{
+}
+";
+
+        await VerifyCS.VerifyAnalyzerAsync(test);
+    }
+
+    [Fact]
+    public async Task Plugin_MultipleStepsAndImages_ImageAfterFirstStep_IsAllowed()
+    {
+        var test = Preamble + @"
+[XrmTools.Meta.Attributes.Plugin]
+[XrmTools.Meta.Attributes.Step]
+[XrmTools.Meta.Attributes.Image]
+[XrmTools.Meta.Attributes.Step]
+[XrmTools.Meta.Attributes.Image]
+public sealed class MyPlugin : PluginBase
+{
 }
 ";
 

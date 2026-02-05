@@ -1,4 +1,5 @@
-﻿namespace XrmTools.Analyzers;
+﻿#nullable enable
+namespace XrmTools.Analyzers;
 
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
@@ -14,6 +15,7 @@ public sealed class PluginDependencyAnalyzer : DiagnosticAnalyzer
     public const string MissingDependencyAttributeId = "XrmTools001";
     public const string HasSetterOrInitId = "XrmTools002";
     public const string PluginAttributeCombinationId = "XrmTools003";
+    public const string PluginAttributeOrderId = "XrmTools004";
 
     private static readonly DiagnosticDescriptor MissingDependencyAttributeRule =
         new(
@@ -45,8 +47,18 @@ public sealed class PluginDependencyAnalyzer : DiagnosticAnalyzer
             isEnabledByDefault: true,
             description: "Plugin types must be marked with [Plugin] and represent exactly one of CustomApi or Step.");
 
+    private static readonly DiagnosticDescriptor PluginAttributeOrderRule =
+        new(
+            PluginAttributeOrderId,
+            "Plugin attribute order is invalid",
+            "Plugin type '{0}' has invalid attribute ordering",
+            "Usage",
+            DiagnosticSeverity.Warning,
+            isEnabledByDefault: true,
+            description: "[Plugin] must appear before [Step]/[CustomApi]. For step plugins, [Image] attributes must appear after [Step].");
+
     public override ImmutableArray<DiagnosticDescriptor> SupportedDiagnostics =>
-        ImmutableArray.Create(MissingDependencyAttributeRule, HasSetterOrInitRule, PluginAttributeCombinationRule);
+        [MissingDependencyAttributeRule, HasSetterOrInitRule, PluginAttributeCombinationRule, PluginAttributeOrderRule];
 
     public override void Initialize(AnalysisContext context)
     {
@@ -70,13 +82,14 @@ public sealed class PluginDependencyAnalyzer : DiagnosticAnalyzer
             var pluginAttrSymbol = compilationStart.Compilation.GetTypeByMetadataName("XrmTools.Meta.Attributes.PluginAttribute");
             var customApiAttrSymbol = compilationStart.Compilation.GetTypeByMetadataName("XrmTools.Meta.Attributes.CustomApiAttribute");
             var stepAttrSymbol = compilationStart.Compilation.GetTypeByMetadataName("XrmTools.Meta.Attributes.StepAttribute");
+            var imageAttrSymbol = compilationStart.Compilation.GetTypeByMetadataName("XrmTools.Meta.Attributes.ImageAttribute");
 
             compilationStart.RegisterSyntaxNodeAction(
                 c => AnalyzeProperty(c, pluginSymbol, dependencyAttrSymbol),
                 SyntaxKind.PropertyDeclaration);
 
             compilationStart.RegisterSymbolAction(
-                c => AnalyzePluginTypeAttributes(c, pluginSymbol, pluginAttrSymbol, customApiAttrSymbol, stepAttrSymbol),
+                c => AnalyzePluginTypeAttributes(c, pluginSymbol, pluginAttrSymbol, customApiAttrSymbol, stepAttrSymbol, imageAttrSymbol),
                 SymbolKind.NamedType);
         });
     }
@@ -86,7 +99,8 @@ public sealed class PluginDependencyAnalyzer : DiagnosticAnalyzer
         INamedTypeSymbol pluginSymbol,
         INamedTypeSymbol? pluginAttrSymbol,
         INamedTypeSymbol? customApiAttrSymbol,
-        INamedTypeSymbol? stepAttrSymbol)
+        INamedTypeSymbol? stepAttrSymbol,
+        INamedTypeSymbol? imageAttrSymbol)
     {
         if (pluginAttrSymbol is null || customApiAttrSymbol is null || stepAttrSymbol is null)
             return;
@@ -108,6 +122,22 @@ public sealed class PluginDependencyAnalyzer : DiagnosticAnalyzer
         if (!hasPlugin)
             return;
 
+        // Order rule: [Plugin] must come before [Step]/[CustomApi] (if present)
+        // and for step plugins, any [Image] must come after [Step].
+        if (HasOrderIssue(attrs, pluginAttrSymbol, customApiAttrSymbol, stepAttrSymbol, imageAttrSymbol))
+        {
+            var location = typeSymbol.Locations.FirstOrDefault();
+            if (location is not null)
+            {
+                context.ReportDiagnostic(Diagnostic.Create(
+                    PluginAttributeOrderRule,
+                    location,
+                    typeSymbol.Name));
+            }
+
+            // Keep going; XOR rule may also be violated and should be reported too.
+        }
+
         if (hasCustomApi == hasStep)
         {
             var location = typeSymbol.Locations.FirstOrDefault();
@@ -119,6 +149,60 @@ public sealed class PluginDependencyAnalyzer : DiagnosticAnalyzer
                 location,
                 typeSymbol.Name));
         }
+    }
+
+    private static bool HasOrderIssue(
+        ImmutableArray<AttributeData> attributes,
+        INamedTypeSymbol pluginAttrSymbol,
+        INamedTypeSymbol customApiAttrSymbol,
+        INamedTypeSymbol stepAttrSymbol,
+        INamedTypeSymbol? imageAttrSymbol)
+    {
+        int pluginIndex = -1;
+        int firstStepIndex = -1;
+        int firstCustomApiIndex = -1;
+
+        for (int i = 0; i < attributes.Length; i++)
+        {
+            var ac = attributes[i].AttributeClass;
+            if (ac is null)
+                continue;
+
+            if (pluginIndex < 0 && SymbolEqualityComparer.Default.Equals(ac, pluginAttrSymbol))
+                pluginIndex = i;
+            else if (firstStepIndex < 0 && SymbolEqualityComparer.Default.Equals(ac, stepAttrSymbol))
+                firstStepIndex = i;
+            else if (firstCustomApiIndex < 0 && SymbolEqualityComparer.Default.Equals(ac, customApiAttrSymbol))
+                firstCustomApiIndex = i;
+        }
+
+        if (pluginIndex < 0)
+            return false;
+
+        if (firstStepIndex >= 0 && pluginIndex > firstStepIndex)
+            return true;
+
+        if (firstCustomApiIndex >= 0 && pluginIndex > firstCustomApiIndex)
+            return true;
+
+        if (imageAttrSymbol is null)
+            return false;
+
+        // For step plugins, any [Image] attribute must appear after the first [Step] attribute.
+        if (firstStepIndex >= 0)
+        {
+            for (int i = 0; i < attributes.Length; i++)
+            {
+                var ac = attributes[i].AttributeClass;
+                if (ac is null)
+                    continue;
+
+                if (SymbolEqualityComparer.Default.Equals(ac, imageAttrSymbol) && i < firstStepIndex)
+                    return true;
+            }
+        }
+
+        return false;
     }
 
     private static void AnalyzeProperty(
@@ -212,10 +296,6 @@ public sealed class PluginDependencyAnalyzer : DiagnosticAnalyzer
                 continue;
             }
 
-            // Your definition: Require<T>() must have zero args
-            if (invocation.ArgumentList.Arguments.Count != 0)
-                continue;
-
             // Semantic confirmation: binds to a method named Require with 1 type arg.
             // (Works whether Require is declared or inherited; also covers extension methods.)
             var symbolInfo = semanticModel.GetSymbolInfo(invocation, cancellationToken);
@@ -284,3 +364,4 @@ public sealed class PluginDependencyAnalyzer : DiagnosticAnalyzer
         return false;
     }
 }
+#nullable restore
