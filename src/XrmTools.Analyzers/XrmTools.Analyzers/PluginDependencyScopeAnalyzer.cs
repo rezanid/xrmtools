@@ -96,9 +96,6 @@ public sealed class PluginDependencyScopeAnalyzer : DiagnosticAnalyzer
                 if (expr.Parent is PropertyDeclarationSyntax)
                     continue;
 
-                if (expr.Parent is MemberAccessExpressionSyntax ma && !ReferenceEquals(ma.Name, expr))
-                    continue;
-
                 var symbol = context.SemanticModel.GetSymbolInfo(expr, context.CancellationToken).Symbol;
                 if (symbol is not IPropertySymbol prop)
                     continue;

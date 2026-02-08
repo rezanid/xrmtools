@@ -16,7 +16,7 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Tests", "Tests", "{3F5449B1
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "XrmTools.Meta", "XrmTools.Meta\XrmTools.Meta.csproj", "{838257E1-7F69-8823-AD8A-B1A9AFF47B81}"
 EndProject
-Project("{13B669BE-BB05-4DDF-9536-439F39A36129}") = "XrmTools.Meta.Attributes", "XrmTools.Meta.Attributes\XrmTools.Meta.Attributes.msbuildproj", "{CCC86F4A-CE0C-9CB4-658E-85E08742EB61}"
+Project("{13B669BE-BB05-4DDF-9536-439F39A36129}") = "XrmTools.Meta.Attributes", "XrmTools.Meta.Attributes\XrmTools.Meta.Attributes.csproj", "{CCC86F4A-CE0C-9CB4-658E-85E08742EB61}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "XrmTools.WebApi", "XrmTools.WebApi\XrmTools.WebApi.csproj", "{17D36AC9-15D5-4A4E-99FD-1DF17A0BA610}"
 EndProject

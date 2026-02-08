@@ -242,4 +242,80 @@ public sealed class MyPlugin : PluginBase
 
         await VerifyCS.VerifyAnalyzerAsync(test);
     }
+
+    [Fact]
+    public async Task DependencyMethodCallOutsideUsing_ReportsXrmTools005()
+    {
+        var test = Preamble + @"
+public sealed class MyPlugin : PluginBase
+{
+    [XrmTools.Meta.Attributes.Dependency]
+    public System.Collections.Generic.List<string> Deps => Require<System.Collections.Generic.List<string>>();
+
+    protected System.IDisposable CreateScope(System.IServiceProvider serviceProvider) => null;
+
+    public override void Execute(System.IServiceProvider serviceProvider)
+    {
+        {|#0:Deps|}.Add(""value"");
+    }
+}
+";
+
+        var expected = new DiagnosticResult(PluginDependencyScopeAnalyzer.DependencyOutsideScopeId, DiagnosticSeverity.Warning)
+            .WithLocation(0)
+            .WithArguments("Deps");
+
+        await VerifyCS.VerifyAnalyzerAsync(test, expected);
+    }
+
+    [Fact]
+    public async Task DependencyPropertyAccessOutsideUsing_ReportsXrmTools005()
+    {
+        var test = Preamble + @"
+namespace System { public class Uri { public string Host { get; } } }
+
+public sealed class MyPlugin : PluginBase
+{
+    [XrmTools.Meta.Attributes.Dependency]
+    public System.Uri ServiceUri => Require<System.Uri>();
+
+    protected System.IDisposable CreateScope(System.IServiceProvider serviceProvider) => null;
+
+    public override void Execute(System.IServiceProvider serviceProvider)
+    {
+        var host = {|#0:ServiceUri|}.Host;
+    }
+}
+";
+
+        var expected = new DiagnosticResult(PluginDependencyScopeAnalyzer.DependencyOutsideScopeId, DiagnosticSeverity.Warning)
+            .WithLocation(0)
+            .WithArguments("ServiceUri");
+
+        await VerifyCS.VerifyAnalyzerAsync(test, expected);
+    }
+
+    [Fact]
+    public async Task DependencyMethodCallInsideUsing_IsAllowed()
+    {
+        var test = Preamble + @"
+public sealed class MyPlugin : PluginBase
+{
+    [XrmTools.Meta.Attributes.Dependency]
+    public System.Collections.Generic.List<string> Deps => Require<System.Collections.Generic.List<string>>();
+
+    protected System.IDisposable CreateScope(System.IServiceProvider serviceProvider) => null;
+
+    public override void Execute(System.IServiceProvider serviceProvider)
+    {
+        using (CreateScope(serviceProvider))
+        {
+            Deps.Add(""value"");
+        }
+    }
+}
+";
+
+        await VerifyCS.VerifyAnalyzerAsync(test);
+    }
 }
