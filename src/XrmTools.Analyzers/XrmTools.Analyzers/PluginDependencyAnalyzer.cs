@@ -25,7 +25,8 @@ public sealed class PluginDependencyAnalyzer : DiagnosticAnalyzer
             "Usage",
             DiagnosticSeverity.Warning,
             isEnabledByDefault: true,
-            description: "Properties that call Require<T>() should have [Dependency].");
+            description: "Properties that call Require<T>() should have [Dependency].",
+            helpLinkUri: "https://github.com/rezanid/xrmtools/wiki/Analyzers#xrmtools001---missing-dependency");
 
     private static readonly DiagnosticDescriptor HasSetterOrInitRule =
         new(
@@ -35,7 +36,8 @@ public sealed class PluginDependencyAnalyzer : DiagnosticAnalyzer
             "Usage",
             DiagnosticSeverity.Warning,
             isEnabledByDefault: true,
-            description: "Dependency properties are DI facades and must not store state.");
+            description: "Dependency properties are DI facades and must not store state.",
+            helpLinkUri: "https://github.com/rezanid/xrmtools/wiki/Analyzers#xrmtools002---setterinit-on-dependency-property");
 
     private static readonly DiagnosticDescriptor PluginAttributeCombinationRule =
         new(
@@ -45,7 +47,8 @@ public sealed class PluginDependencyAnalyzer : DiagnosticAnalyzer
             "Usage",
             DiagnosticSeverity.Warning,
             isEnabledByDefault: true,
-            description: "Plugin types must be marked with [Plugin] and represent exactly one of CustomApi or Step.");
+            description: "Plugin types must be marked with [Plugin] and represent exactly one of CustomApi or Step.",
+            helpLinkUri: "https://github.com/rezanid/xrmtools/wiki/Analyzers#xrmtools003---invalid-plugin-attribute-combination");
 
     private static readonly DiagnosticDescriptor PluginAttributeOrderRule =
         new(
@@ -55,7 +58,8 @@ public sealed class PluginDependencyAnalyzer : DiagnosticAnalyzer
             "Usage",
             DiagnosticSeverity.Warning,
             isEnabledByDefault: true,
-            description: "[Plugin] must appear before [Step]/[CustomApi]. For step plugins, [Image] attributes must appear after [Step].");
+            description: "[Plugin] must appear before [Step]/[CustomApi]. For step plugins, [Image] attributes must appear after [Step].",
+            helpLinkUri: "https://github.com/rezanid/xrmtools/wiki/Analyzers#xrmtools004---invalid-plugin-attribute-order");
 
     public override ImmutableArray<DiagnosticDescriptor> SupportedDiagnostics =>
         [MissingDependencyAttributeRule, HasSetterOrInitRule, PluginAttributeCombinationRule, PluginAttributeOrderRule];

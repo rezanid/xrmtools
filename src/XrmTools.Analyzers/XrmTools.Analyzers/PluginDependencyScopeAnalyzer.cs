@@ -22,10 +22,11 @@ public sealed class PluginDependencyScopeAnalyzer : DiagnosticAnalyzer
             "Usage",
             DiagnosticSeverity.Warning,
             isEnabledByDefault: true,
-            description: "Dependency properties (Require<T>() facades) must only be accessed while a scope created by CreateScope(serviceProvider) is active.");
+            description: "Dependency properties (Require<T>() facades) must only be accessed while a scope created by CreateScope(serviceProvider) is active.",
+            helpLinkUri: "https://github.com/rezanid/xrmtools/wiki/Analyzers#xrmtools005---dependency-access-outside-createscope");
 
     public override ImmutableArray<DiagnosticDescriptor> SupportedDiagnostics =>
-        ImmutableArray.Create(DependencyOutsideScopeRule);
+        [DependencyOutsideScopeRule];
 
     public override void Initialize(AnalysisContext context)
     {
@@ -48,8 +49,7 @@ public sealed class PluginDependencyScopeAnalyzer : DiagnosticAnalyzer
     {
         var classDecl = (ClassDeclarationSyntax)context.Node;
 
-        var typeSymbol = context.SemanticModel.GetDeclaredSymbol(classDecl, context.CancellationToken) as INamedTypeSymbol;
-        if (typeSymbol is null)
+        if (context.SemanticModel.GetDeclaredSymbol(classDecl, context.CancellationToken) is not INamedTypeSymbol typeSymbol)
             return;
 
         if (!Implements(typeSymbol, pluginSymbol))
