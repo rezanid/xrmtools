@@ -27,7 +27,23 @@ public class XrmToolsAnalyzersCodeFixProvider : CodeFixProvider
         ];
 
     public sealed override FixAllProvider GetFixAllProvider() =>
-        WellKnownFixAllProviders.BatchFixer;
+        new ProxyTypesFixAllProvider();
+
+    private sealed class ProxyTypesFixAllProvider : FixAllProvider
+    {
+        public override async Task<CodeAction?> GetFixAsync(FixAllContext fixAllContext)
+        {
+            if (fixAllContext.DiagnosticIds.Contains(ProxyTypesAssemblyAnalyzer.MissingProxyTypesAssemblyAttributeId))
+            {
+                return CodeAction.Create(
+                    title: "Add [assembly: ProxyTypesAssemblyAttribute]",
+                    createChangedSolution: c => AddProxyTypesAssemblyAttributeFileAsync(fixAllContext.Project, c),
+                    equivalenceKey: "AddProxyTypesAssemblyAttribute");
+            }
+
+            return await WellKnownFixAllProviders.BatchFixer.GetFixAsync(fixAllContext).ConfigureAwait(false);
+        }
+    }
 
     public sealed override async Task RegisterCodeFixesAsync(CodeFixContext context)
     {

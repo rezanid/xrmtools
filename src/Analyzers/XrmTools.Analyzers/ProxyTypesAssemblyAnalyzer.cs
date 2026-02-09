@@ -2,6 +2,7 @@
 namespace XrmTools.Analyzers;
 
 using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.Diagnostics;
 using System.Collections.Immutable;
 using System.Linq;
@@ -47,70 +48,59 @@ public sealed class ProxyTypesAssemblyAnalyzer : DiagnosticAnalyzer
             if (hasProxyAttr)
                 return;
 
-            int reported = 0;
+            Location? entityLocation = null;
+            string? entityTypeName = null;
+            int entityStart = int.MaxValue;
+            object gate = new();
 
             compilationStart.RegisterSymbolAction(symbolContext =>
             {
-                if (Interlocked.Exchange(ref reported, 1) == 1)
-                    return;
-
                 if (symbolContext.Symbol is not INamedTypeSymbol typeSymbol)
                     return;
 
                 if (typeSymbol.TypeKind != TypeKind.Class)
                     return;
 
+                if (typeSymbol.IsAbstract)
+                    return;
+
                 if (!DerivesFrom(typeSymbol, entitySymbol))
                     return;
 
-                // Prefer declaring syntax location (more reliable than Locations in some cases)
                 var syntaxRef = typeSymbol.DeclaringSyntaxReferences.FirstOrDefault();
                 if (syntaxRef is null)
                     return;
 
-                var location = syntaxRef.GetSyntax(symbolContext.CancellationToken).GetLocation();
+                var syntaxNode = syntaxRef.GetSyntax(symbolContext.CancellationToken);
+                var location = syntaxNode switch
+                {
+                    ClassDeclarationSyntax classDecl => classDecl.Identifier.GetLocation(),
+                    _ => syntaxNode.GetLocation()
+                };
 
-                symbolContext.ReportDiagnostic(Diagnostic.Create(
-                    MissingProxyTypesAssemblyAttributeRule,
-                    location,
-                    typeSymbol.Name));
+                var start = location.SourceSpan.Start;
+
+                lock (gate)
+                {
+                    if (start >= entityStart)
+                        return;
+
+                    entityStart = start;
+                    entityLocation = location;
+                    entityTypeName = typeSymbol.Name;
+                }
             }, SymbolKind.NamedType);
 
-            //Location? entityLocation = null;
-            //string? entityTypeName = null;
+            compilationStart.RegisterCompilationEndAction(compilationEnd =>
+            {
+                if (entityLocation is null || entityTypeName is null)
+                    return;
 
-            //compilationStart.RegisterSymbolAction(symbolContext =>
-            //{
-            //    if (entityLocation is not null)
-            //        return;
-
-            //    if (symbolContext.Symbol is not INamedTypeSymbol typeSymbol)
-            //        return;
-
-            //    if (typeSymbol.TypeKind != TypeKind.Class)
-            //        return;
-
-            //    if (!DerivesFrom(typeSymbol, entitySymbol))
-            //        return;
-
-            //    var location = typeSymbol.Locations.FirstOrDefault(static l => l.IsInSource);
-            //    if (location is null)
-            //        return;
-
-            //    if (Interlocked.CompareExchange(ref entityLocation, location, null) is null)
-            //        entityTypeName = typeSymbol.Name;
-            //}, SymbolKind.NamedType);
-
-            //compilationStart.RegisterCompilationEndAction(compilationEnd =>
-            //{
-            //    if (entityLocation is null || entityTypeName is null)
-            //        return;
-
-            //    compilationEnd.ReportDiagnostic(Diagnostic.Create(
-            //        MissingProxyTypesAssemblyAttributeRule,
-            //        entityLocation,
-            //        entityTypeName));
-            //});
+                compilationEnd.ReportDiagnostic(Diagnostic.Create(
+                    MissingProxyTypesAssemblyAttributeRule,
+                    entityLocation,
+                    entityTypeName));
+            });
         });
     }
 
