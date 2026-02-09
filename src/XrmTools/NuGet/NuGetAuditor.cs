@@ -64,7 +64,7 @@ internal sealed class NuGetAuditor
 
                 if (match is null) continue;
 
-                if (comparer.Compare(match.Version, "1.1.0") < 0)
+                if (comparer.Compare(match.Version, "1.1.1") < 0)
                 {
                     outdated.Add((project.Name, match.Version));
                 }
