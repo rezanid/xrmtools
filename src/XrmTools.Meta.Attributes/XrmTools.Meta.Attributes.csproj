@@ -46,8 +46,8 @@
   </ItemGroup>
   
   <ItemGroup>
-    <ProjectReference Include="..\XrmTools.Analyzers\XrmTools.Analyzers.CodeFixes\XrmTools.Analyzers.CodeFixes.csproj" />
-    <ProjectReference Include="..\XrmTools.Analyzers\XrmTools.Analyzers\XrmTools.Analyzers.csproj" />
+    <ProjectReference Include="..\Analyzers\XrmTools.Analyzers.CodeFixes\XrmTools.Analyzers.CodeFixes.csproj" />
+    <ProjectReference Include="..\Analyzers\XrmTools.Analyzers\XrmTools.Analyzers.csproj" />
   </ItemGroup>
 
   <ItemGroup>
