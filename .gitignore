@@ -7,3 +7,4 @@
 **/*.model.json
 .nuget/
 **/nuget.config
+/.vs

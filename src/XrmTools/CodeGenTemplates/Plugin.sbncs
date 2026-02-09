@@ -37,7 +37,7 @@ using XrmTools;
 namespace {{ first_plugin_type?.namespace ?? config.default_namespace }}
 {
     {{~for plugintype in model.plugin_types~}}
-    {{~context_getter = "DependencyScope<" + plugintype.type_name + ">.Current.Require<IPluginExecutionContext>()"~}}
+    {{~context_getter = "Require<IPluginExecutionContext>()"~}}
     {{codegen_attribute}}
     public partial class {{plugintype.type_name | last_segment }}
     {
