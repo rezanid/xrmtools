@@ -379,6 +379,12 @@
     <Content Include="FetchXmlViewer\assets\index-Df-1zudZ.js.map">
       <IncludeInVSIX>true</IncludeInVSIX>
     </Content>
+    <Content Include="CodeGenTemplates\Plugin_Steps.sbncs">
+      <IncludeInVSIX>true</IncludeInVSIX>
+    </Content>
+    <Content Include="CodeGenTemplates\Plugin_Step_Inputs.sbncs">
+      <IncludeInVSIX>true</IncludeInVSIX>
+    </Content>
     <None Include="FetchXmlViewer.WebAssets.targets" />
     <None Include="IncludeNuGetResolvedAssets.targets" />
     <None Include="PrepareImageManifest.targets" />

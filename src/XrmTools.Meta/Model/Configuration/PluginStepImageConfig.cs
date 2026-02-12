@@ -2,7 +2,7 @@
 
 using XrmTools.WebApi.Entities;
 
-public class PluginStepImageConfig : SdkMessageProcessingStepImage//, IMessageProcessingStepImageConfig
+public class PluginStepImageConfig : SdkMessageProcessingStepImage
 {
     public EntityMetadata? MessagePropertyDefinition { get; set; }
 }

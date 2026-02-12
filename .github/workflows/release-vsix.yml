@@ -36,7 +36,7 @@ concurrency:
 
 env:
   CONFIGURATION: "Release"
-  SOLUTION_PATH: "src/XrmGen.sln"
+  SOLUTION_PATH: "src/XrmTools.slnx"
   VSIX_PROJECT_DIR: "src/XrmTools/"
   VSIX_MANIFEST_PATH: "src/XrmTools/source.extension.vsixmanifest"
   VSIX_MANIFEST_SOURCE_PATH: "src/XrmTools/source.extension.cs"

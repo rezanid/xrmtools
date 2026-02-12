@@ -12,7 +12,7 @@ namespace XrmTools
         public const string Name = "Xrm Tools";
         public const string Description = @"Xrm Tools is a Visual Studio extension that makes Power Platform development feel native, with IntelliSense for plugins, boilerplate and typed entity generation, and first-class FetchXML support.";
         public const string Language = "en-US";
-        public const string Version = "1.5.6";
+        public const string Version = "1.5.8";
         public const string Author = "Reza Niroomand";
         public const string Tags = "Power Platform, Dataverse, Power Apps, XRM";
         public const bool IsPreview = false;

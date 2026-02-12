@@ -2,8 +2,10 @@
 namespace XrmTools.Xrm;
 
 using Humanizer;
+using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Net.Http;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -21,10 +23,11 @@ internal interface ISdkMessageRepository : IXrmRepository
     Task<IEnumerable<SdkMessage>> GetForEntitiesAsync(string[] entityLogicalNames, CancellationToken cancellationToken);
     Task<IEnumerable<SdkMessage>> GetVisibleWithDescendantsAsync(CancellationToken cancellationToken);
     Task<SdkMessage?> GetByNameWithDescendantsAsync(string name, CancellationToken cancellationToken);
+    Task<SdkMessage?> GetByNameWithDescendantsNoFiltersAsync(string name, CancellationToken cancellationToken);
     Task<IEnumerable<SdkMessage>> GetVisibleWithoutDescendantsAsync(CancellationToken cancellationToken);
 }
 
-internal class SdkMessageRepository : XrmRepository, ISdkMessageRepository
+internal class SdkMessageRepository(IWebApiService service, ILogger logger) : XrmRepository(service, new SlidingCacheConfiguration()), ISdkMessageRepository
 {
     private const string sdkMessageQueryForEntities = "sdkmessages?$filter=sdkmessageid_sdkmessagefilter/any(n:({0}) and n/iscustomprocessingstepallowed eq true)&$expand=sdkmessageid_sdkmessagefilter($filter=({1}) and iscustomprocessingstepallowed eq true)";
     private const string sdkMessageQuerySingle = "sdkmessages?$filter=sdkmessageid_sdkmessagefilter/any(n:n/primaryobjecttypecode eq '{0}' and n/iscustomprocessingstepallowed eq true)&$expand=sdkmessageid_sdkmessagefilter($filter=primaryobjecttypecode eq '{0}' and iscustomprocessingstepallowed eq true)";
@@ -77,10 +80,24 @@ internal class SdkMessageRepository : XrmRepository, ISdkMessageRepository
         "sdkmessageid_sdkmessagefilter($select=isvisible)" +
         "&$select=name,isprivate,sdkmessageid,customizationlevel";
 
-    public SdkMessageRepository(IWebApiService service, ILogger logger) 
-        : base(service, new SlidingCacheConfiguration())
-    {
-    }
+    private const string SdkMessageQueryByNameNoFilters = "sdkmessages?" +
+        "$filter=name eq '{0}'" + 
+        "&$expand=message_sdkmessagepair(" +
+            "$select=sdkmessagepairid,namespace;" +
+            "$expand=messagepair_sdkmessagerequest(" +
+                "$select=sdkmessagerequestid,name;" +
+                "$expand=messagerequest_sdkmessagerequestfield(" +
+                    "$select=name,optional,position,publicname,clrparser,parser" +
+                ")," +
+                "messagerequest_sdkmessageresponse(" +
+                    "$select=sdkmessageresponseid;" +
+                    "$expand=messageresponse_sdkmessageresponsefield(" +
+                        "$select=publicname,value,clrformatter,name,position" + //formatter,parameterbindinginformation
+                    ")" +
+                ")" +
+            ")" +
+        ")" +
+        "&$select=name,isprivate,sdkmessageid,customizationlevel";
 
     public async Task<IEnumerable<SdkMessage>> GetForEntitiesAsync(string[] entityLogicalNames, CancellationToken cancellationToken)
     {
@@ -179,6 +196,31 @@ internal class SdkMessageRepository : XrmRepository, ISdkMessageRepository
         return await GetOrCreateCacheItemAsync(cacheKey, async () =>
         {
             var response = await service.GetAsync(string.Format(SdkMessageQueryByName, name), cancellationToken).ConfigureAwait(false);
+            var typed = await response.CastAsync<ODataQueryResponse<SdkMessage>>().ConfigureAwait(false);
+            if (typed is not null && typed.Value is not null && typed.Value.Any())
+            {
+                return typed.Value.FirstOrDefault();
+            }
+            return null;
+        }, cancellationToken).ConfigureAwait(false);
+    }
+
+    public async Task<SdkMessage?> GetByNameWithDescendantsNoFiltersAsync(string name, CancellationToken cancellationToken)
+    {
+        var cacheKey = $"SdkMessage_ByName_NoFilters_{name}";
+
+        return await GetOrCreateCacheItemAsync(cacheKey, async () =>
+        {
+            HttpResponseMessage? response;
+            try
+            {
+                response = await service.GetAsync(string.Format(SdkMessageQueryByNameNoFilters, name), cancellationToken).ConfigureAwait(false);
+            }
+            catch (Exception ex)
+            {
+                logger.LogError(ex, "Failed to retrieve SdkMessage metadata from Dataverse.");
+                return null;
+            }
             var typed = await response.CastAsync<ODataQueryResponse<SdkMessage>>().ConfigureAwait(false);
             if (typed is not null && typed.Value is not null && typed.Value.Any())
             {

@@ -20,6 +20,8 @@ end -}}
 #nullable enable
 {{~end~}}
 using Microsoft.Xrm.Sdk;
+using Microsoft.Crm.Sdk.Messages;
+using Microsoft.Xrm.Sdk.Query;
 using Microsoft.Xrm.Sdk.Client;
 using Microsoft.Xrm.Sdk.Extensions;
 using Microsoft.Xrm.Sdk.PluginTelemetry;
@@ -35,63 +37,18 @@ using XrmTools;
 namespace {{ first_plugin_type?.namespace ?? config.default_namespace }}
 {
     {{~for plugintype in model.plugin_types~}}
+    {{~context_getter = "Require<IPluginExecutionContext>()"~}}
     {{codegen_attribute}}
     public partial class {{plugintype.type_name | last_segment }}
     {
         {{~dependencies = plugintype.dependency_graph?.dependencies~}}
         {{include 'InjectDependencies.sbncs'~}}
-    {{~if plugintype.steps.size > 0~}}
-
-    {{~for step in plugintype.steps~}}
-	    {{~target_type_name = (plugintype.steps | array.size > 1 ? step.message_name : '') + 'Target' + step.primary_entity_definition.schema_name~}}
-        {{~target_name = (plugintype.steps | array.size > 1 ? step.message_name : '') + 'Target'~}}
-	    {{include 'Target.sbncs' target_type_name}}
-	    {{~if step.images~}}
-	    {{include 'Images.sbncs'~}}
-	    {{~end~}}
-	    public {{target_type_name}} {{target_name}}
-        {
-            get => EntityOrDefault<{{target_type_name}}>(DependencyScope<{{plugintype.type_name | last_segment }}>.Current.Require<IPluginExecutionContext>().InputParameters, "Target");
-        }
-
-	    {{~for image in step.images~}}
-        {{~image_type_name = (plugintype.steps | array.size > 1 ? step.message_name : '') + image.image_type + (step.primary_entity_definition.schema_name)~}}
-        {{~image_collection_name = image.image_type == 'PreImage' ? 'PreEntityImages' : 'PostEntityImages'~}}
-	    public {{image_type_name}} {{image.name}} { get => EntityOrDefault<{{image_type_name}}>(DependencyScope<{{plugintype.type_name | last_segment }}>.Current.Require<IPluginExecutionContext>().{{image_collection_name}}, "{{image.name}}"); }
-	    {{~end~}}
-    {{~end~}}
-    {{~end~}}
-
-	    private static T{{plugintype.is_nullable_enabled ? "?" : ""}} EntityOrDefault<T>(DataCollection<string, object> keyValues, string key) where T : Entity
-        {
-            if (keyValues is null) return default;
-            return keyValues.TryGetValue(key, out var obj) ? obj is Entity entity ? entity.ToEntity<T>() : default : default;
-        }
-
-        private static T{{plugintype.is_nullable_enabled ? "?" : ""}} EntityOrDefault<T>(DataCollection<string, Entity> keyValues, string key) where T : Entity
-        {
-            if (keyValues is null) return default;
-            return keyValues.TryGetValue(key, out var entity) ? entity?.ToEntity<T>() : default;
-        }
-        {{~if !(plugintype.base_type_methods | find_method "Require")~}}
-
-        private static T Require<T>() => DependencyScope<{{plugintype.type_name | last_segment}}>.Current.Require<T>();
-        private static T Require<T>(string name) => DependencyScope<{{plugintype.type_name | last_segment}}>.Current.Require<T>(name);
+        {{~if plugintype.steps.size > 0}}
+    
+        {{include 'Plugin_Steps.sbncs' plugintype~}}
         {{~end~}}
-        {{~if !(plugintype.base_type_methods | find_method "TryGet")~}}
-
-        private static bool TryGet<T>(out T instance) => DependencyScope<{{plugintype.type_name | last_segment}}>.Current.TryGet(out instance);
-        private static bool TryGet<T>(string name, out T instance) => DependencyScope<{{plugintype.type_name | last_segment}}>.Current.TryGet(name, out instance);
-        {{~end~}}
-        {{~if !(plugintype.base_type_methods | find_method "Set")~}}
-
-        private static T Set<T>(T instance) => DependencyScope<{{plugintype.type_name | last_segment}}>.Current.Set(instance);
-        private static T Set<T>(string name, T instance) => DependencyScope<{{plugintype.type_name | last_segment}}>.Current.Set(name, instance);
-        private static T SetAndTrack<T>(T instance) where T : IDisposable => DependencyScope<{{plugintype.type_name | last_segment}}>.Current.SetAndTrack(instance);
-        private static T SetAndTrack<T>(string name, T instance) where T : IDisposable => DependencyScope<{{plugintype.type_name | last_segment}}>.Current.SetAndTrack(name, instance);
-        {{~end~}}
-    {{~if plugintype.custom_api ~}}
-    {{~if plugintype.custom_api.request_parameters.size > 0~}}
+        {{~if plugintype.custom_api ~}}
+        {{~if plugintype.custom_api.request_parameters.size > 0}}
 
         private static {{plugintype.custom_api.request_type_name}} GetRequest(IExecutionContext context)
         {
@@ -142,8 +99,8 @@ namespace {{ first_plugin_type?.namespace ?? config.default_namespace }}
             {{~end~}}
             return request;
         }
-    {{~end~}}
-    {{~if plugintype.custom_api.response_properties.size > 0~}}
+        {{~end~}}
+        {{~if plugintype.custom_api.response_properties.size > 0~}}
 
         private static void SetResponse(IExecutionContext context, {{plugintype.custom_api.response_type_name}} response)
         {
@@ -187,8 +144,47 @@ namespace {{ first_plugin_type?.namespace ?? config.default_namespace }}
             {{~end~}}
             {{~end~}}
         }
-    {{~end~}}
-    {{~end~}}
+        {{~end~}}
+        {{~end~}}
+        {{~if !(plugintype.base_type_methods | find_method "EntityOrDefault")~}}
+
+	    private static T{{plugintype.is_nullable_enabled ? "?" : ""}} EntityOrDefault<T>(DataCollection<string, object> keyValues, string key) where T : Entity
+        {
+            if (keyValues is null) return default;
+            return keyValues.TryGetValue(key, out var obj) ? obj is Entity entity ? entity.ToEntity<T>() : default : default;
+        }
+        private static T{{plugintype.is_nullable_enabled ? "?" : ""}} EntityOrDefault<T>(DataCollection<string, Entity> keyValues, string key) where T : Entity
+        {
+            if (keyValues is null) return default;
+            return keyValues.TryGetValue(key, out var entity) ? entity?.ToEntity<T>() : default;
+        }
+        {{~end~}}
+        {{~if !(plugintype.base_type_methods | find_method "EntityCollectionOrDefault")~}}
+
+        private static T[] EntityCollectionOrDefault<T>(DataCollection<string, object> keyValues, string key) where T : Entity
+        {
+            if (keyValues is null) return Array.Empty<T>();
+            return keyValues.TryGetValue(key, out var obj) ? obj is EntityCollection entityCollection
+                ? entityCollection.Entities.Select(e => e.ToEntity<T>()).ToArray() : Array.Empty<T>() : Array.Empty<T>();
+        }
+        {{~end~}}
+        {{~if !(plugintype.base_type_methods | find_method "Require")~}}
+
+        private static T Require<T>() => DependencyScope<{{plugintype.type_name | last_segment}}>.Current.Require<T>();
+        private static T Require<T>(string name) => DependencyScope<{{plugintype.type_name | last_segment}}>.Current.Require<T>(name);
+        {{~end~}}
+        {{~if !(plugintype.base_type_methods | find_method "TryGet")~}}
+
+        private static bool TryGet<T>(out T instance) => DependencyScope<{{plugintype.type_name | last_segment}}>.Current.TryGet(out instance);
+        private static bool TryGet<T>(string name, out T instance) => DependencyScope<{{plugintype.type_name | last_segment}}>.Current.TryGet(name, out instance);
+        {{~end~}}
+        {{~if !(plugintype.base_type_methods | find_method "Set")~}}
+
+        private static T Set<T>(T instance) => DependencyScope<{{plugintype.type_name | last_segment}}>.Current.Set(instance);
+        private static T Set<T>(string name, T instance) => DependencyScope<{{plugintype.type_name | last_segment}}>.Current.Set(name, instance);
+        private static T SetAndTrack<T>(T instance) where T : IDisposable => DependencyScope<{{plugintype.type_name | last_segment}}>.Current.SetAndTrack(instance);
+        private static T SetAndTrack<T>(string name, T instance) where T : IDisposable => DependencyScope<{{plugintype.type_name | last_segment}}>.Current.SetAndTrack(name, instance);
+        {{~end~}}
     }
     {{~end~}}
 }
