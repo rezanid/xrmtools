@@ -74,10 +74,26 @@
     <Compile Include="CodeRefactoringProviders\CustomApiRefactoringProvider.cs" />
     <Compile Include="CodeRefactoringProviders\TypeNameParser.cs" />
     <Compile Include="CodeRefactoringProviders\WebApiServiceHelper.cs" />
+    <Compile Include="Commands\ShowDataverseExplorerCommand.cs" />
     <Compile Include="Commands\ManageEnvironmentsCommand.cs" />
     <Compile Include="Commands\NewFetchXmlFileCommand.cs" />
     <Compile Include="Commands\ResetCodeGenTemplatesCommand.cs" />
     <Compile Include="Commands\UnregisterCommand.cs" />
+    <Compile Include="DataverseExplorer\Models\ArtifactNodes.cs" />
+    <Compile Include="DataverseExplorer\Models\ExplorerNodeBase.cs" />
+    <Compile Include="DataverseExplorer\Services\ExplorerDataService.cs" />
+    <Compile Include="DataverseExplorer\Services\IExplorerDataService.cs" />
+    <Compile Include="DataverseExplorer\ViewModels\DataverseExplorerViewModel.cs" />
+    <Compile Include="DataverseExplorer\Views\DataverseExplorerWindow.cs" />
+    <Compile Include="DataverseExplorer\Views\DataverseExplorerWindowControl.xaml.cs">
+      <DependentUpon>DataverseExplorerWindowControl.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="DataverseExplorer\Views\SuppressTreeViewAutoBringToViewBehavior.cs" />
+    <Compile Include="DataverseExplorer\Views\TreeViewItemBringIntoViewBehavior.cs" />
+    <Compile Include="DataverseExplorer\Views\TreeViewLevelToGridLengthConverter.cs" />
+    <Compile Include="DataverseExplorer\Views\TreeViewLevelToIndentConverter.cs" />
+    <Compile Include="DataverseExplorer\Views\TreeViewLevelToIndentPxConverter.cs" />
+    <Compile Include="DataverseExplorer\Views\TreeViewScrollBehavior.cs" />
     <Compile Include="UI\VsPluginRegistrationUI.cs" />
     <Compile Include="Core\Repositories\ICacheConfiguration.cs" />
     <Compile Include="CustomMonikers.cs">
@@ -511,6 +527,10 @@
     <Resource Include="Resources\DataverseSolution.xaml">
       <SubType>Designer</SubType>
     </Resource>
+    <Page Include="DataverseExplorer\Views\DataverseExplorerWindowControl.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
     <Page Include="UI\AssemblySelectionDialog.xaml">
       <SubType>Designer</SubType>
       <Generator>XamlIntelliSenseFileGenerator</Generator>

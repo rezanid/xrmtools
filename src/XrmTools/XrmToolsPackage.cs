@@ -5,6 +5,7 @@ using Community.VisualStudio.Toolkit;
 using EnvDTE;
 using EnvDTE80;
 using Microsoft;
+using Microsoft.CodeAnalysis.Elfie.Diagnostics;
 using Microsoft.VisualStudio;
 using Microsoft.VisualStudio.CommandBars;
 using Microsoft.VisualStudio.ComponentModelHost;
@@ -20,10 +21,13 @@ using System.Linq;
 using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Threading;
+using System.Threading.Tasks;
 using XrmTools.Commands;
+using XrmTools.DataverseExplorer.Services;
 using XrmTools.Environments;
 using XrmTools.Helpers;
 using XrmTools.Logging;
+using XrmTools.Logging.Compatibility;
 using XrmTools.Options;
 using XrmTools.Settings;
 using XrmTools.UI.InfoBars;
@@ -110,6 +114,7 @@ using Task = System.Threading.Tasks.Task;
 [ProvideService(typeof(ISettingsProvider), IsAsyncQueryable = true, IsCacheable = true, IsFreeThreaded = true)]
 [ProvideOptionPage(typeof(OptionsProvider.GeneralOptions), Vsix.Name, "General", 0, 0, true, SupportsProfiles = true)]
 [ProvideOptionPage(typeof(OptionsProvider.FetchXmlOptions), Vsix.Name, "FetchXML", 0, 0, true, SupportsProfiles = true)]
+[ProvideToolWindow(typeof(DataverseExplorer.Views.DataverseExplorerWindow), Window = "DocumentWell", Style = VsDockStyle.Tabbed, DockedWidth = 300, Orientation = ToolWindowOrientation.Left)]
 [ProvideBindingPath]
 public sealed partial class XrmToolsPackage : ToolkitPackage
 {
@@ -128,6 +133,9 @@ public sealed partial class XrmToolsPackage : ToolkitPackage
 
     [Import]
     ISettingsProvider SettingsProvider { get; set; } = null!;
+
+    [Import]
+    IExplorerDataService ExplorerDataService { get; set; } = null!;
 
     static XrmToolsPackage()
     {
@@ -198,6 +206,7 @@ public sealed partial class XrmToolsPackage : ToolkitPackage
         await ManageEnvironmentsCommand.InitializeAsync(this);
         await ManageEnvironmentsGetListCommand.InitializeAsync(this);
         await NewFetchXmlFileCommand.InitializeAsync(this);
+        await ShowDataverseExplorerCommand.InitializeAsync(this);
 
         VS.Events.SolutionEvents.OnAfterOpenSolution += (solution) => OnAfterOpenSolution(solution, cancellationToken);
         VS.Events.SolutionEvents.OnAfterCloseSolution += () => OnAfterCloseSolution(cancellationToken);
@@ -218,6 +227,25 @@ public sealed partial class XrmToolsPackage : ToolkitPackage
             await options.SaveAsync();
         }
     }
+
+    public override IVsAsyncToolWindowFactory GetAsyncToolWindowFactory(Guid toolWindowType)
+    {
+        return toolWindowType.Equals(Guid.Parse(DataverseExplorer.Views.DataverseExplorerWindow.WindowGuidString)) ? this : null!;
+    }
+
+    protected override string GetToolWindowTitle(Type toolWindowType, int id)
+    {
+        return toolWindowType == typeof(DataverseExplorer.Views.DataverseExplorerWindow) ? DataverseExplorer.Views.DataverseExplorerWindow.WindowCaption : base.GetToolWindowTitle(toolWindowType, id);
+    }
+
+    protected override async Task<object> InitializeToolWindowAsync(Type toolWindowType, int id, CancellationToken cancellationToken)
+    {
+        if (toolWindowType == typeof(DataverseExplorer.Views.DataverseExplorerWindow))
+        {
+            return new DataverseExplorer.Views.DataverseExplorerSource { DataService = ExplorerDataService, Logger = new OutputLogger("Xrm Tools", OutputLoggerService) };
+        }
+        return await base.InitializeToolWindowAsync(toolWindowType, id, cancellationToken);
+    }    
 
     private void OnAfterOpenSolution(Community.VisualStudio.Toolkit.Solution? solution, CancellationToken cancellationToken)
     {

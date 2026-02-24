@@ -241,6 +241,14 @@
           <CanonicalName>.XrmTools.NewPluginDefinition</CanonicalName>
         </Strings>
       </Button>-->
+
+      <Button guid="XrmToolsCmdSetId" id="ShowDataverseExplorerCmdId" priority="0x0100" type="Button">
+        <Parent guid="guidSHLMainMenu" id="IDG_VS_WNDO_OTRWNDWS1"/>
+        <Strings>
+          <ButtonText>Show Dataverse Explorer</ButtonText>
+          <CanonicalName>.XrmTools.ShowDataverseExplorer</CanonicalName>
+        </Strings>
+      </Button>
     </Buttons>
   </Commands>
   
@@ -324,6 +332,7 @@
       <IDSymbol name="XrmToolsToolbarGroup" value="0x2010"/>
       <IDSymbol name="XrmToolsContextSubMenu" value="0x1000"/>
       <IDSymbol name="XrmToolsContextSubMenuGroup" value="0x1010"/>
+      <IDSymbol name="ShowDataverseExplorerCmdId" value="0x2001"/>
     </GuidSymbol>
   </Symbols> 
 </CommandTable>
