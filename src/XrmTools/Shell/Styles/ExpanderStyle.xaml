@@ -1,0 +1,71 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:ctrls="clr-namespace:XrmTools.Shell.Controls"
+                    xmlns:styles="clr-namespace:XrmTools.Shell.Styles">
+  <Style TargetType="{x:Type ctrls:Expander}">
+    <Setter Property="Control.Background"
+            Value="{DynamicResource {x:Static styles:ShellColors.ControlFillTransparentBrushKey}}"/>
+    <Setter Property="Control.BorderBrush"
+            Value="{DynamicResource {x:Static styles:ShellColors.ControlStrokeTransparentBrushKey}}"/>
+    <Setter Property="Control.BorderThickness" Value="{x:Static styles:StrokeWidths.Thin}"/>
+    <Setter Property="FrameworkElement.FocusVisualStyle"
+            Value="{x:Static styles:ShellInternalStyles.HeaderFocusVisual}"/>
+    <Setter Property="Control.Foreground"
+            Value="{DynamicResource {x:Static styles:ShellColors.TextFillPrimaryBrushKey}}"/>
+    <Setter Property="Control.HorizontalContentAlignment" Value="Left"/>
+    <Setter Property="FrameworkElement.MinHeight" Value="{x:Static styles:Sizes.ControlMinHeight}"/>
+    <Setter Property="FrameworkElement.MinWidth" Value="{x:Static styles:Sizes.ControlMinWidth}"/>
+    <Setter Property="UIElement.SnapsToDevicePixels" Value="True"/>
+    <Setter Property="FrameworkElement.UseLayoutRounding" Value="True"/>
+    <Setter Property="Control.VerticalContentAlignment" Value="Center"/>
+    <Setter Property="VirtualizingPanel.CacheLength" Value="5"/>
+    <Setter Property="VirtualizingPanel.CacheLengthUnit" Value="Item"/>
+    <Setter Property="Control.Template">
+      <Setter.Value>
+        <ControlTemplate TargetType="{x:Type ctrls:Expander}">
+          <DockPanel>
+            <ctrls:ToggleButton x:Name="HeaderSite" DockPanel.Dock="Top" Foreground="{TemplateBinding Control.Foreground}"
+                                HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch" Kind="Subtle"
+                                Padding="{x:Static styles:Spacings.HorizontalS}"
+                                BorderBrush="{Binding Background, RelativeSource={RelativeSource Self}}"
+                                IsChecked="{Binding IsExpanded, RelativeSource={RelativeSource TemplatedParent}}">
+              <Grid>
+                <Grid.ColumnDefinitions>
+                  <ColumnDefinition Width="Auto"/>
+                  <ColumnDefinition Width="*"/>
+                </Grid.ColumnDefinitions>
+                <Path x:Name="Arrow" Data="{x:Static styles:Geometries.ChevronRightSmall}"
+                      Height="{x:Static styles:Sizes.IconS}" HorizontalAlignment="Center"
+                      Margin="{x:Static styles:Spacings.RightS}" VerticalAlignment="Center"
+                      Width="{x:Static styles:Sizes.IconS}" Fill="{Binding Foreground, ElementName=HeaderSite}"/>
+                <ContentPresenter Grid.Column="1" ContentSource="Header"
+                                  HorizontalAlignment="{TemplateBinding Control.HorizontalContentAlignment}"
+                                  MinHeight="{x:Static styles:Sizes.ContentMinHeight}" RecognizesAccessKey="True"
+                                  VerticalAlignment="{TemplateBinding Control.VerticalContentAlignment}"/>
+              </Grid>
+            </ctrls:ToggleButton>
+            <Border x:Name="Content" Margin="{x:Static styles:Spacings.LeftL}" Visibility="Collapsed">
+              <ContentPresenter DockPanel.Dock="Bottom" Margin="{TemplateBinding Control.Padding}"
+                                MinHeight="{x:Static styles:Sizes.ContentMinHeight}"/>
+            </Border>
+          </DockPanel>
+          <ControlTemplate.Triggers>
+            <Trigger Property="Expander.IsExpanded" Value="True">
+              <Setter TargetName="Arrow" Value="{x:Static styles:Geometries.ChevronDownSmall}" Property="Path.Data"/>
+              <Setter TargetName="Content" Property="UIElement.Visibility" Value="Visible"/>
+            </Trigger>
+            <Trigger Property="UIElement.IsKeyboardFocused" Value="True">
+              <Setter TargetName="HeaderSite" Property="UIElement.Focusable" Value="False"/>
+            </Trigger>
+          </ControlTemplate.Triggers>
+        </ControlTemplate>
+      </Setter.Value>
+    </Setter>
+    <Style.Triggers>
+      <Trigger Property="UIElement.IsEnabled" Value="False">
+        <Setter Property="Control.Foreground"
+                Value="{DynamicResource {x:Static styles:ShellColors.TextFillDisabledBrushKey}}"/>
+      </Trigger>
+    </Style.Triggers>
+  </Style>
+</ResourceDictionary>

@@ -1,0 +1,17 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:styles="clr-namespace:XrmTools.Shell.Styles">
+    <Style x:Key="FocusVisualStyle">
+        <Setter Property="Control.Template">
+            <Setter.Value>
+                <ControlTemplate>
+                    <Border BorderBrush="{DynamicResource {x:Static styles:ShellColors.FocusStrokeOuterBrushKey}}"
+                            BorderThickness="{x:Static styles:StrokeWidths.Thick}"
+                            CornerRadius="{x:Static styles:CornerRadii.FocusRect}"
+                            Margin="{x:Static styles:Spacings.XSNudgeInvert}" SnapsToDevicePixels="True"
+                            UseLayoutRounding="True"/>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+</ResourceDictionary>
