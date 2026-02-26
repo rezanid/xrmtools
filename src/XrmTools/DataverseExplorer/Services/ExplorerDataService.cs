@@ -1,16 +1,20 @@
 #nullable enable
 namespace XrmTools.DataverseExplorer.Services;
 
+using Microsoft.VisualStudio.Imaging;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel.Composition;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using XrmTools.Core.Helpers;
 using XrmTools.Core.Repositories;
 using XrmTools.DataverseExplorer.Models;
 using XrmTools.Logging.Compatibility;
-using XrmTools.Meta.Model.Configuration;
+using XrmTools.WebApi;
+using XrmTools.WebApi.Entities;
+using XrmTools.WebApi.Methods;
 using XrmTools.Xrm.Repositories;
 
 /// <summary>
@@ -18,23 +22,23 @@ using XrmTools.Xrm.Repositories;
 /// Manages data loading from repositories and maintains a simple in-memory index.
 /// </summary>
 [Export(typeof(IExplorerDataService))]
-internal sealed class ExplorerDataService : IExplorerDataService
+[method: ImportingConstructor]
+internal sealed class ExplorerDataService(
+    [Import] IWebApiService webApi,
+    [Import] ILogger<ExplorerDataService> logger) : IExplorerDataService
 {
-    private readonly IPluginAssemblyRepository _assemblyRepository;
-    private readonly IPluginTypeRepository _pluginTypeRepository;
-    private readonly ILogger _logger;
+    private const string assembliesQuery = "pluginassemblies?$select=pluginassemblyid,name,description,publickeytoken,solutionid,version,isolationmode,sourcetype";
+    private const string plugintypesQuery = "plugintypes?" +
+        "$filter=_pluginassemblyid_value eq '{0}'" +
+        "&$select=plugintypeid,name,typename,friendlyname,description,workflowactivitygroupname&" +
+        "$expand=plugintype_sdkmessageprocessingstep(" +
+            "$select=sdkmessageprocessingstepid,name,stage,asyncautodelete,description,filteringattributes,invocationsource,mode,rank,sdkmessageid,statecode,supporteddeployment;" +
+            "$expand=sdkmessageprocessingstepid_sdkmessageprocessingstepimage(" +
+                "$select=sdkmessageprocessingstepimageid,name,imagetype,messagepropertyname,attributes,entityalias))";
+
+    private readonly ILogger _logger = logger;
     private readonly Dictionary<Guid, AssemblyNode> _assemblyCache = [];
     private bool _assembliesLoaded;
-
-    [ImportingConstructor]
-    public ExplorerDataService(
-        [Import] IRepositoryFactory repositoryFactory,
-        [Import] ILogger<IExplorerDataService> logger)
-    {
-        _assemblyRepository = repositoryFactory.CreateRepository<IPluginAssemblyRepository>();
-        _pluginTypeRepository = repositoryFactory.CreateRepository<IPluginTypeRepository>();
-        _logger = logger;
-    }
 
     public async Task<IEnumerable<AssemblyNode>> LoadAssembliesAsync(CancellationToken cancellationToken)
     {
@@ -42,134 +46,131 @@ internal sealed class ExplorerDataService : IExplorerDataService
         {
             return _assemblyCache.Values;
         }
-
+        ODataQueryResponse<PluginAssembly>? queryResponse;
         try
         {
-            var configs = await _assemblyRepository.GetAsync(cancellationToken);
-            _assemblyCache.Clear();
-
-            foreach (var config in configs)
-            {
-                var assemblyId = config.Id ?? Guid.Empty;
-                var node = new AssemblyNode
-                {
-                    Id = assemblyId.ToString(),
-                    AssemblyId = assemblyId,
-                    DisplayName = config.Name ?? "Unknown Assembly",
-                    Description = string.Empty,
-                    PublicKeyToken = config.PublicKeyToken,
-                    Version = config.Version,
-                    IsolationMode = config.IsolationMode?.ToString(),
-                    SourceType = config.SourceType?.ToString(),
-                    AreChildrenLoaded = false
-                };
-                _assemblyCache[assemblyId] = node;
-            }
-
-            _assembliesLoaded = true;
-            return _assemblyCache.Values;
+            queryResponse = await webApi.RetrieveMultipleAsync<PluginAssembly>(
+                assembliesQuery, cancellationToken: cancellationToken);
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error loading assemblies from Dataverse");
+            _logger.LogError(ex, "Error loading assemblies from Dataverse.");
             throw;
         }
-    }
 
-    public async Task<IEnumerable<ExplorerNodeBase>> LoadAssemblyChildrenAsync(
-        AssemblyNode assembly, CancellationToken cancellationToken)
-    {
-        if (assembly.AreChildrenLoaded)
+        _assemblyCache.Clear();
+        foreach (var assembly in queryResponse.Value)
         {
-            return assembly.Children;
+            var assemblyId = assembly.Id ?? Guid.Empty;
+            var node = new AssemblyNode
+            {
+                ImageMoniker = KnownMonikers.Assembly,
+                Id = assemblyId.ToString(),
+                AssemblyId = assemblyId,
+                DisplayName = assembly.Name ?? "Unknown Assembly",
+                Description = string.Empty,
+                PublicKeyToken = assembly.PublicKeyToken,
+                Version = assembly.Version,
+                IsolationMode = assembly.IsolationMode?.ToString(),
+                SourceType = assembly.SourceType?.ToString(),
+                AreChildrenLoaded = false
+            };
+            _assemblyCache[assemblyId] = node;
         }
 
+        _assembliesLoaded = true;
+        return _assemblyCache.Values;
+    }
+
+    public async Task<IEnumerable<ExplorerNodeBase>> LoadAssemblyChildrenAsync(AssemblyNode assembly, CancellationToken cancellationToken)
+    {
+        ODataQueryResponse<PluginType>? queryResponse;
         try
         {
-            var pluginTypes = await _pluginTypeRepository.GetAsync(assembly.AssemblyId, cancellationToken);
-            assembly.Children.Clear();
-
-            foreach (var config in pluginTypes)
-            {
-                var pluginTypeId = config.Id ?? Guid.Empty;
-                var typeNode = new PluginTypeNode
-                {
-                    Id = pluginTypeId.ToString(),
-                    PluginTypeId = pluginTypeId,
-                    DisplayName = config.FriendlyName ?? config.TypeName ?? "Unknown Type",
-                    Description = config.Description ?? string.Empty,
-                    TypeName = config.TypeName,
-                    FriendlyName = config.FriendlyName,
-                    WorkflowActivityGroupName = config.WorkflowActivityGroupName,
-                    Parent = assembly,
-                    AreChildrenLoaded = false
-                };
-
-                // Add steps if they exist
-                if (config.Steps is { Count: > 0 })
-                {
-                    foreach (var step in config.Steps)
-                    {
-                        var stepId = step.Id ?? Guid.Empty;
-                        var stepNode = new PluginStepNode
-                        {
-                            Id = stepId.ToString(),
-                            StepId = stepId,
-                            DisplayName = step.Name ?? "Unknown Step",
-                            Description = step.Description ?? string.Empty,
-                            Stage = step.Stage?.ToString(),
-                            Mode = step.Mode?.ToString(),
-                            Rank = step.Rank,
-                            SdkMessageId = step.Message?.Id?.ToString(),
-                            StateCode = step.StateCode?.ToString(),
-                            AsyncAutoDelete = step.AsyncAutoDelete,
-                            FilteringAttributes = step.FilteringAttributes,
-                            InvocationSource = step.InvocationSource?.ToString(),
-                            SupportedDeployment = step.SupportedDeployment?.ToString(),
-                            Parent = typeNode,
-                            AreChildrenLoaded = false
-                        };
-
-                        // Add images if they exist
-                        if (step.Images is { Count: > 0 })
-                        {
-                            foreach (var image in step.Images)
-                            {
-                                var imageId = image.Id ?? Guid.Empty;
-                                var imageNode = new PluginImageNode
-                                {
-                                    Id = imageId.ToString(),
-                                    ImageId = imageId,
-                                    DisplayName = image.Name ?? image.ImageType?.ToString() ?? "Unknown Image",
-                                    Description = image.Description ?? string.Empty,
-                                    ImageType = image.ImageType?.ToString(),
-                                    MessagePropertyName = image.MessagePropertyName,
-                                    Attributes = image.Attributes,
-                                    EntityAlias = image.EntityAlias,
-                                    Parent = stepNode
-                                };
-                                stepNode.Children.Add(imageNode);
-                            }
-                            stepNode.AreChildrenLoaded = true;
-                        }
-
-                        typeNode.Children.Add(stepNode);
-                    }
-                    typeNode.AreChildrenLoaded = true;
-                }
-
-                assembly.Children.Add(typeNode);
-            }
-
-            assembly.AreChildrenLoaded = true;
-            return assembly.Children;
+            queryResponse= await webApi.RetrieveMultipleAsync<PluginType>(
+                plugintypesQuery.FormatWith(assembly.AssemblyId), cancellationToken: cancellationToken);
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error loading plugin types for assembly {0}", assembly.DisplayName);
             throw;
         }
+        assembly.Children.Clear();
+        foreach (var plugin in queryResponse.Value)
+        {
+            assembly.Children.Add(ConvertToPluginNode(plugin, assembly));
+        }
+        assembly.AreChildrenLoaded = true;
+        return assembly.Children;
     }
+
+    private static PluginTypeNode ConvertToPluginNode(PluginType plugin, AssemblyNode assembly)
+    {
+        var pluginNode = new PluginTypeNode
+        {
+            ImageMoniker = KnownMonikers.Part,
+            Id = (plugin.Id ?? Guid.Empty).ToString(),
+            PluginTypeId = plugin.Id ?? Guid.Empty,
+            DisplayName = plugin.FriendlyName ?? plugin.TypeName ?? "Unknown Type",
+            Description = plugin.Description ?? string.Empty,
+            TypeName = plugin.TypeName,
+            FriendlyName = plugin.FriendlyName,
+            WorkflowActivityGroupName = plugin.WorkflowActivityGroupName,
+            Parent = assembly,
+            AreChildrenLoaded = false
+        };
+        pluginNode.Children.Clear();
+        foreach (var step in plugin.Steps)
+        {
+            pluginNode.Children.Add(ConvertToPluginStepNode(step, pluginNode));
+        }
+        pluginNode.AreChildrenLoaded = true;
+        return pluginNode;
+    }
+
+    private static PluginStepNode ConvertToPluginStepNode(SdkMessageProcessingStep step, PluginTypeNode plugin)
+    {
+        var stepNode = new PluginStepNode
+        {
+            ImageMoniker = KnownMonikers.Step,
+            Id = (step.Id ?? Guid.Empty).ToString(),
+            StepId = step.Id ?? Guid.Empty,
+            DisplayName = step.Name ?? "Unknown Step",
+            Description = step.Description ?? string.Empty,
+            FilteringAttributes = step.FilteringAttributes,
+            AsyncAutoDelete = step.AsyncAutoDelete,
+            InvocationSource = step.InvocationSource.ToString(),
+            Mode = step.Mode.ToString(),
+            Rank = step.Rank,
+            Parent = plugin,
+            SdkMessageId = step.SdkMessageFilter?.SdkMessageId?.ToString(),
+            Stage = step.Stage.ToString(),
+            StateCode = step.StateCode.ToString(),
+            SupportedDeployment = step.SupportedDeployment.ToString(),
+            AreChildrenLoaded = true
+        };
+        stepNode.Children.Clear();
+        foreach (var image in step.Images)
+        {
+            stepNode.Children.Add(ConvertToStepImage(image, stepNode));
+        }
+        stepNode.AreChildrenLoaded = true;
+        return stepNode;
+    }
+
+    private static PluginImageNode ConvertToStepImage(SdkMessageProcessingStepImage image, PluginStepNode step) => new()
+    {
+        ImageMoniker = KnownMonikers.Image,
+        Id = (image.Id ?? Guid.Empty).ToString(),
+        ImageId = image.Id ?? Guid.Empty,
+        ImageType = image.ImageType.ToString(),
+        Description = image.Description ?? string.Empty,
+        DisplayName = image.Name ?? "Unknown Image",
+        EntityAlias = image.EntityAlias ?? string.Empty,
+        Attributes = image.Attributes ?? string.Empty,
+        MessagePropertyName = image.MessagePropertyName ?? string.Empty,
+        Parent = step,
+    };
 
     public Task<IEnumerable<ExplorerNodeBase>> LoadPluginTypeChildrenAsync(
         PluginTypeNode pluginType, CancellationToken cancellationToken)

@@ -11,206 +11,20 @@
              xmlns:catalog="clr-namespace:Microsoft.VisualStudio.Imaging;assembly=Microsoft.VisualStudio.ImageCatalog"
              xmlns:imaging="clr-namespace:Microsoft.VisualStudio.Imaging;assembly=Microsoft.VisualStudio.Imaging"
              xmlns:local="clr-namespace:XrmTools.DataverseExplorer.Views"
+             xmlns:models="clr-namespace:XrmTools.DataverseExplorer.Models"
+             xmlns:ctrls="clr-namespace:XrmTools.Shell.Controls"
              mc:Ignorable="d"
              xmlns:i="http://schemas.microsoft.com/xaml/behaviors"
-             toolkit:Themes.UseVsTheme="True" UseLayoutRounding="True"
+             UseLayoutRounding="True"
              d:DesignHeight="450" d:DesignWidth="800"
              Background="{DynamicResource {x:Static p:ThemedDialogColors.WindowPanelBrushKey}}"
              Foreground="{DynamicResource {x:Static p:ThemedDialogColors.WindowPanelTextBrushKey}}">
+             <!--toolkit:Themes.UseVsTheme="True" -->
     <UserControl.Resources>
-        <BooleanToVisibilityConverter x:Key="BooleanToVisibilityConverter"/>
-        <!--<local:TreeViewLevelToIndentConverter x:Key="TreeViewLevelToIndentConverter"/>-->
-        <local:TreeViewLevelToGridLengthConverter x:Key="TreeViewLevelToGridLengthConverter"/>
-        <local:TreeViewLevelToIndentPxConverter x:Key="TreeViewLevelToIndentPxConverter"/>
-        <!--<PathGeometry x:Key="TreeArrow" Figures="M0,0 L0,5 L5,0z"/>-->
-        <PathGeometry x:Key="TreeArrow" Figures="M0,5 L0,0 5,0" />
-        <PathGeometry x:Key="SelectionAccent" Figures="M0,5 L0,0" />
-        <Style x:Key="ExpandCollapseToggleStyle" TargetType="{x:Type ToggleButton}">
-            <Setter Property="Focusable" Value="False"/>
-            <Setter Property="Width" Value="14"/>
-            <Setter Property="Height" Value="14"/>
-            <Setter Property="Template">
-                <Setter.Value>
-                    <ControlTemplate TargetType="{x:Type ToggleButton}">
-                        <Border Background="Transparent" Width="14" Height="14" Padding="4">
-                            <Path x:Name="ExpandPath"
-                                  Data="{StaticResource TreeArrow}"
-                                  Stretch="Uniform"
-                                  VerticalAlignment="Center" HorizontalAlignment="Center"
-                                  StrokeThickness="1" StrokeEndLineCap="Round"
-                                  Stroke="{DynamicResource {x:Static p:ThemedDialogColors.WindowPanelTextBrushKey}}">
-                                <Path.RenderTransform>
-                                    <RotateTransform Angle="135" CenterY="3" CenterX="4"/>
-                                </Path.RenderTransform>
-                            </Path>
-                        </Border>
-                        <ControlTemplate.Triggers>
-                            <Trigger Property="IsChecked" Value="True">
-                                <Setter Property="RenderTransform" TargetName="ExpandPath">
-                                    <Setter.Value>
-                                        <RotateTransform Angle="225" CenterY="2" CenterX="4"/>
-                                    </Setter.Value>
-                                </Setter>
-                            </Trigger>
-                        </ControlTemplate.Triggers>
-                    </ControlTemplate>
-                </Setter.Value>
-            </Setter>
-        </Style>
-        <Style x:Key="TreeViewItemFocusVisual">
-            <Setter Property="Control.Template">
-                <Setter.Value>
-                    <ControlTemplate>
-                        <Rectangle/>
-                    </ControlTemplate>
-                </Setter.Value>
-            </Setter>
-        </Style>
-        <Style x:Key="TreeViewItemContainerStyle" TargetType="{x:Type TreeViewItem}">
-            <Setter Property="Background" Value="Transparent"/>
-            <Setter Property="HorizontalContentAlignment" Value="{Binding HorizontalContentAlignment, RelativeSource={RelativeSource AncestorType={x:Type ItemsControl}}}"/>
-            <Setter Property="VerticalContentAlignment" Value="{Binding VerticalContentAlignment, RelativeSource={RelativeSource AncestorType={x:Type ItemsControl}}}"/>
-            <Setter Property="Padding" Value="1,0,0,0"/>
-            <Setter Property="Foreground" Value="{DynamicResource {x:Static SystemColors.ControlTextBrushKey}}"/>
-            <Setter Property="FocusVisualStyle" Value="{StaticResource TreeViewItemFocusVisual}"/>
-            <!--<EventSetter Event="RequestBringIntoView" Handler="TreeViewItem_RequestBringIntoView"/>-->
-            <Setter Property="Template">
-                <Setter.Value>
-                    <ControlTemplate TargetType="{x:Type TreeViewItem}">
-                        <Grid>
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="Auto"/>
-                                
-                                <!-- Indent spacer -->
-                                <ColumnDefinition Width="Auto"/>
-
-                                <!-- Expander column -->
-                                <ColumnDefinition Width="Auto" MinWidth="19"/>
-
-                                <!-- Header column -->
-                                <ColumnDefinition Width="*"/>
-                            </Grid.ColumnDefinitions>
-
-                            <Grid.RowDefinitions>
-                                <RowDefinition Height="Auto"/>
-                                <RowDefinition/>
-                            </Grid.RowDefinitions>
-
-                            <!-- FULL ROW SELECTION BACKGROUND -->
-                            <Border x:Name="RowBackground"
-                                    Margin="1"
-                                    BorderBrush="Transparent"
-                                    CornerRadius="4"
-                                    Grid.Row="0"
-                                    Grid.Column="1"
-                                    Grid.ColumnSpan="3"
-                                    Background="Transparent"
-                                    SnapsToDevicePixels="True">
-                                <!--<Border Visibility="Collapsed">-->
-                                    <Path x:Name="Accent"
-                                          Visibility="Collapsed"
-                                          Margin="0,3,0,3"
-                                          Data="{StaticResource SelectionAccent}"
-                                          Stretch="Uniform"
-                                          HorizontalAlignment="Left"
-                                          StrokeThickness="3" StrokeStartLineCap="Round" StrokeEndLineCap="Round"
-                                          Stroke="{DynamicResource {x:Static p:CommonDocumentColors.TitleTextBrushKey}}">
-                                    </Path>
-                                <!--</Border>-->
-                            </Border>
-
-                            <!-- INDENT SPACER -->
-                            <Border Grid.Row="0"
-                                    Grid.Column="1"
-                                    Background="Transparent"
-                                    Width="{Binding RelativeSource={RelativeSource TemplatedParent},
-                                          Converter={StaticResource TreeViewLevelToIndentPxConverter},
-                                          ConverterParameter=16}"/>
-
-                            <!-- EXPANDER -->
-                            <ToggleButton x:Name="Expander"
-                                          Grid.Row="0"
-                                          Grid.Column="2"
-                                          ClickMode="Press"
-                                          IsChecked="{Binding IsExpanded, RelativeSource={RelativeSource TemplatedParent}}"
-                                          Style="{StaticResource ExpandCollapseToggleStyle}"/>
-
-                            <!-- HEADER -->
-                            <Border x:Name="Bd"
-                                    Grid.Row="0"
-                                    Grid.Column="3"
-                                    Background="Transparent"
-                                    Padding="2"
-                                    SnapsToDevicePixels="True">
-
-                                <ContentPresenter x:Name="PART_Header"
-                                                  ContentSource="Header"
-                                                  HorizontalAlignment="Stretch"
-                                                  SnapsToDevicePixels="{TemplateBinding SnapsToDevicePixels}"/>
-                            </Border>
-
-                            <!-- CHILDREN -->
-                            <ItemsPresenter x:Name="ItemsHost"
-                                            Grid.Row="1"
-                                            Grid.Column="1"
-                                            Grid.ColumnSpan="3"/>
-                        </Grid>
-
-                        <ControlTemplate.Triggers>
-
-                            <Trigger Property="IsExpanded" Value="False">
-                                <Setter TargetName="ItemsHost" Property="Visibility" Value="Collapsed"/>
-                            </Trigger>
-
-                            <Trigger Property="HasItems" Value="False">
-                                <Setter TargetName="Expander" Property="Visibility" Value="Hidden"/>
-                            </Trigger>
-
-                            <!-- SELECTION -->
-                            <Trigger Property="IsSelected" Value="True">
-                                <Setter TargetName="Accent"
-                                        Property="Visibility"
-                                        Value="Visible"/>
-                                <Setter TargetName="RowBackground"
-                                        Property="Background"
-                                        Value="{DynamicResource {x:Static p:CommonControlsColors.TextBoxBackgroundBrushKey}}"/>
-                                <Setter Property="Foreground"
-                                        Value="{DynamicResource {x:Static SystemColors.HighlightTextBrushKey}}"/>
-                                <Setter Property="BorderBrush"
-                                        Value="{DynamicResource {x:Static p:TreeViewColors.FocusVisualBorderBrushKey}}"/>
-                            </Trigger>
-
-                        </ControlTemplate.Triggers>
-                    </ControlTemplate>
-                </Setter.Value>
-            </Setter>
-            <Style.Triggers>
-                <Trigger Property="VirtualizingPanel.IsVirtualizing" Value="true">
-                    <Setter Property="ItemsPanel">
-                        <Setter.Value>
-                            <ItemsPanelTemplate>
-                                <VirtualizingStackPanel/>
-                            </ItemsPanelTemplate>
-                        </Setter.Value>
-                    </Setter>
-                </Trigger>
-            </Style.Triggers>
-        </Style>
-        <SolidColorBrush x:Key="ListBorder" Color="#828790"/>
-        <!--<Style x:Key="FocusVisual">
-            <Setter Property="Control.Template">
-                <Setter.Value>
-                    <ControlTemplate>
-                        <Rectangle Margin="2" StrokeDashArray="1 2" Stroke="{DynamicResource {x:Static SystemColors.ControlTextBrushKey}}" SnapsToDevicePixels="true" StrokeThickness="1"/>
-                    </ControlTemplate>
-                </Setter.Value>
-            </Setter>
-        </Style>-->
     </UserControl.Resources>
     <Grid>
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
-            <RowDefinition Height="*"/>
             <RowDefinition Height="*"/>
         </Grid.RowDefinitions>
 
@@ -242,40 +56,20 @@
             </ComboBox>
         </StackPanel>-->
 
-        <!-- Tree View -->
-        <TreeView Grid.Row="1" ItemsSource="{Binding RootNodes}" BorderThickness="0"
-                  VirtualizingPanel.VirtualizationMode="Recycling"
-                  ScrollViewer.CanContentScroll="True"
-                  VirtualizingPanel.ScrollUnit="Item"
-                  VirtualizingPanel.IsVirtualizing="True"
-                  theming:ImageThemingUtilities.ImageBackgroundColor="{Binding Background, RelativeSource={RelativeSource Self}}"
-                  RequestBringIntoView="TreeView_RequestBringIntoView" >
-            <i:Interaction.Behaviors>
-                <local:SuppressTreeViewAutoBringIntoViewBehavior VerticalOnly="True"/>
-            </i:Interaction.Behaviors>
-            <TreeView.Style>
-                <Style TargetType="TreeView">
-                    <Setter Property="Control.Background"
-                  Value="{DynamicResource {x:Static p:TreeViewColors.BackgroundColorKey}}"/>
-                    <Setter Property="Control.Foreground"
-                  Value="{DynamicResource {x:Static p:TreeViewColors.BackgroundTextColorKey}}"/>
-                </Style>
-            </TreeView.Style>
-            <TreeView.ItemContainerStyle>
-                <Style TargetType="TreeViewItem" BasedOn="{StaticResource TreeViewItemContainerStyle}">
-                    <Setter Property="IsExpanded" Value="{Binding IsExpanded}"/>
-                    <EventSetter Event="Expanded" Handler="TreeViewItem_Expanded"/>
-                </Style>
-            </TreeView.ItemContainerStyle>
-            <TreeView.ItemTemplate>
-                <HierarchicalDataTemplate ItemsSource="{Binding Children}">
+        <!--<ctrls:ScrollBar Grid.Row="0" Orientation="Horizontal" Height="16" Margin="2,2,2,2" Value="10" Minimum="0" Maximum="100"/>-->
+        <ctrls:TreeView Grid.Row="1" ItemsSource="{Binding RootNodes}"
+                        ctrls:TreeViewItem.Expanded="TreeViewItem_Expanded">
+            <ctrls:TreeView.ItemTemplate>
+                <HierarchicalDataTemplate ItemsSource="{Binding Children}" DataType="{x:Type models:ExplorerNodeBase}">
                     <StackPanel Orientation="Horizontal" Margin="2">
-                        <imaging:CrispImage Margin="1" Width="16" Height="16" Moniker="{x:Static catalog:KnownMonikers.Assembly}" />
+                        <!--<imaging:CrispImage Margin="1" Width="16" Height="16" Moniker="{x:Static catalog:KnownMonikers.Assembly}" />-->
+                        <imaging:CrispImage Margin="1" Width="16" Height="16" Moniker="{Binding ImageMoniker}" />
                         <TextBlock Text="{Binding DisplayName}" Foreground="{DynamicResource {x:Static p:TreeViewColors.BackgroundTextBrushKey}}"/>
                     </StackPanel>
                 </HierarchicalDataTemplate>
-            </TreeView.ItemTemplate>
-        </TreeView>
+            </ctrls:TreeView.ItemTemplate>
+        </ctrls:TreeView>
+
 
         <!-- Loading Indicator Overlay -->
         <!--<Grid Grid.Row="1" Background="Black" Opacity="0.3" 
@@ -284,73 +78,5 @@
                 <TextBlock Text="Loading..." HorizontalAlignment="Center" Foreground="White"/>
             </StackPanel>
         </Grid>-->
-        <TreeView Grid.Row="2">
-            <TreeViewItem>
-                <TreeViewItem.Header>TEST</TreeViewItem.Header>
-                <TreeViewItem>
-                    <TreeViewItem.Header>Test child 1</TreeViewItem.Header>
-                </TreeViewItem>
-                <TreeViewItem>
-                    <TreeViewItem.Header>Test child 1</TreeViewItem.Header>
-                </TreeViewItem>
-                <TreeViewItem>
-                    <TreeViewItem.Header>Test child 2</TreeViewItem.Header>
-                </TreeViewItem>
-                <TreeViewItem>
-                    <TreeViewItem.Header>Test child 3</TreeViewItem.Header>
-                </TreeViewItem>
-                <TreeViewItem>
-                    <TreeViewItem.Header>Test child 4</TreeViewItem.Header>
-                </TreeViewItem>
-                <TreeViewItem>
-                    <TreeViewItem.Header>Test child 5</TreeViewItem.Header>
-                </TreeViewItem>
-                <TreeViewItem>
-                    <TreeViewItem.Header>Test child 6</TreeViewItem.Header>
-                </TreeViewItem>
-                <TreeViewItem>
-                    <TreeViewItem.Header>Test child 7</TreeViewItem.Header>
-                </TreeViewItem>
-                <TreeViewItem>
-                    <TreeViewItem.Header>Test child 8</TreeViewItem.Header>
-                </TreeViewItem>
-                <TreeViewItem>
-                    <TreeViewItem.Header>Test child 9</TreeViewItem.Header>
-                </TreeViewItem>
-                <TreeViewItem>
-                    <TreeViewItem.Header>Test child 10</TreeViewItem.Header>
-                </TreeViewItem>
-                <TreeViewItem>
-                    <TreeViewItem.Header>Test child 11</TreeViewItem.Header>
-                </TreeViewItem>
-                <TreeViewItem>
-                    <TreeViewItem.Header>Test child 12</TreeViewItem.Header>
-                </TreeViewItem>
-                <TreeViewItem>
-                    <TreeViewItem.Header>Test child 13</TreeViewItem.Header>
-                </TreeViewItem>
-                <TreeViewItem>
-                    <TreeViewItem.Header>Test child 14</TreeViewItem.Header>
-                </TreeViewItem>
-                <TreeViewItem>
-                    <TreeViewItem.Header>Test child 15</TreeViewItem.Header>
-                </TreeViewItem>
-                <TreeViewItem>
-                    <TreeViewItem.Header>Test child 16</TreeViewItem.Header>
-                </TreeViewItem>
-                <TreeViewItem>
-                    <TreeViewItem.Header>Test child 17</TreeViewItem.Header>
-                </TreeViewItem>
-                <TreeViewItem>
-                    <TreeViewItem.Header>Test child 18</TreeViewItem.Header>
-                </TreeViewItem>
-                <TreeViewItem>
-                    <TreeViewItem.Header>Test child 19</TreeViewItem.Header>
-                </TreeViewItem>
-                <TreeViewItem>
-                    <TreeViewItem.Header>Test child 20</TreeViewItem.Header>
-                </TreeViewItem>
-            </TreeViewItem>
-        </TreeView>
     </Grid>
 </UserControl>

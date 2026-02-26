@@ -94,6 +94,54 @@
     <Compile Include="DataverseExplorer\Views\TreeViewLevelToIndentConverter.cs" />
     <Compile Include="DataverseExplorer\Views\TreeViewLevelToIndentPxConverter.cs" />
     <Compile Include="DataverseExplorer\Views\TreeViewScrollBehavior.cs" />
+    <Compile Include="Shell\Controls\Expander.cs" />
+    <Compile Include="Shell\Controls\Indicator.cs" />
+    <Compile Include="Shell\Controls\ListBoxItem.cs" />
+    <Compile Include="Shell\Controls\ScrollBar.cs" />
+    <Compile Include="Shell\Controls\ScrollViewer.cs" />
+    <Compile Include="Shell\Controls\ToggleButton.cs" />
+    <Compile Include="Shell\Controls\TreeView.cs" />
+    <Compile Include="Shell\Controls\TreeViewItem.cs" />
+    <Compile Include="Shell\Conveters\Converters.cs" />
+    <Compile Include="Shell\Helpers\Boxes.cs" />
+    <Compile Include="Shell\Helpers\Property.cs" />
+    <Compile Include="Shell\Styles\ButtonKind.cs" />
+    <Compile Include="Shell\Styles\CornerRadii.cs" />
+    <Compile Include="Shell\Styles\DefaultStyles.cs" />
+    <Compile Include="Shell\Styles\DeferredStyleDictionary.cs" />
+    <Compile Include="Shell\Styles\Feedback.cs" />
+    <Compile Include="Shell\Styles\FocusVisualHeightConverter.cs" />
+    <Compile Include="Shell\Styles\Geometries.cs" />
+    <Compile Include="Shell\Styles\IndentingConverter.cs" />
+    <Compile Include="Shell\Styles\MediaPlaybackMode.cs" />
+    <Compile Include="Shell\Styles\ProgressKind.cs" />
+    <Page Include="Shell\Styles\ButtonBaseStyle.xaml">
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="Shell\Styles\ExpanderStyle.xaml">
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="Shell\Styles\FocusVisualStyle.xaml">
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="Shell\Styles\HeaderFocusVisualStyle.xaml">
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="Shell\Styles\IndicatorStyle.xaml">
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="Shell\Styles\ListBoxItemBaseStyle.xaml">
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="Shell\Styles\ScrollViewerStyle.xaml">
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Compile Include="Shell\Styles\ShellColors.cs" />
+    <Compile Include="Shell\Styles\ShellInternalStyles.cs" />
+    <Compile Include="Shell\Styles\ShellStyles.cs" />
+    <Compile Include="Shell\Styles\Sizes.cs" />
+    <Compile Include="Shell\Styles\Spacings.cs" />
+    <Compile Include="Shell\Styles\StrokeWidths.cs" />
     <Compile Include="UI\VsPluginRegistrationUI.cs" />
     <Compile Include="Core\Repositories\ICacheConfiguration.cs" />
     <Compile Include="CustomMonikers.cs">
@@ -528,6 +576,21 @@
     <Page Include="DataverseExplorer\Views\DataverseExplorerWindowControl.xaml">
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
+    </Page>
+    <Page Include="Shell\Styles\ScrollBarStyle.xaml">
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="Shell\Styles\ToggleButtonStyle.xaml">
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="Shell\Styles\TreeViewItemStyle.xaml">
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="Shell\Styles\TreeViewStyle.xaml">
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="Themes\Generic.xaml">
+      <Generator>MSBuild:Compile</Generator>
     </Page>
     <Page Include="UI\AssemblySelectionDialog.xaml">
       <SubType>Designer</SubType>

@@ -1,6 +1,7 @@
 #nullable enable
 namespace XrmTools.DataverseExplorer.Models;
 
+using Microsoft.VisualStudio.Imaging.Interop;
 using System;
 using System.Collections.ObjectModel;
 
@@ -17,6 +18,7 @@ public abstract class ExplorerNodeBase
     public bool IsExpanded { get; set; }
     public bool IsLoading { get; set; }
     public ExplorerNodeBase? Parent { get; set; }
+    public ImageMoniker ImageMoniker { get; set; }
 
     /// <summary>
     /// Indicates whether this node has children that can be loaded lazily.

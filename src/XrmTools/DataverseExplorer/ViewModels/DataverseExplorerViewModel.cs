@@ -2,9 +2,9 @@
 namespace XrmTools.DataverseExplorer.ViewModels;
 
 using CommunityToolkit.Mvvm.Input;
+using Microsoft.VisualStudio.Imaging;
 using System;
 using System.Collections.ObjectModel;
-using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Input;
@@ -90,6 +90,7 @@ internal class DataverseExplorerViewModel : ViewModelBase
             var categoryNode = new CategoryNode
             {
                 Id = "Assemblies",
+                ImageMoniker = KnownMonikers.Assembly,
                 DisplayName = "Assemblies",
                 Description = "Plugin Assemblies",
                 AreChildrenLoaded = false

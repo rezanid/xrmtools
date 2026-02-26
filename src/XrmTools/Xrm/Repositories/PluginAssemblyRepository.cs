@@ -4,7 +4,6 @@ using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 using XrmTools.Logging.Compatibility;
-using XrmTools.Meta.Model;
 using XrmTools.Meta.Model.Configuration;
 using XrmTools.WebApi;
 
