@@ -26,7 +26,7 @@ public class TreeView : System.Windows.Controls.TreeView
             treeViewItem1.Focus();
             e.Handled = true;
         }
-        if (!(ItemContainerGenerator.ContainerFromItem(obj) is TreeViewItem treeViewItem2))
+        if (ItemContainerGenerator.ContainerFromItem(obj) is not TreeViewItem treeViewItem2)
             return;
         treeViewItem2.Focus();
         e.Handled = true;

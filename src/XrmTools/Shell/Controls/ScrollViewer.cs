@@ -52,39 +52,7 @@ public class ScrollViewer : System.Windows.Controls.ScrollViewer
     private void OnMouseTilt(int tilt)
     {
         if (!IsVisible || tilt == 0 || !IsMouseOver) return;
-
-        if (tilt > 0)
-        {
-            ScrollInfo.MouseWheelLeft();
-            //LineLeft();
-        }
-        else
-        {
-            ScrollInfo.MouseWheelRight();
-            //LineRight();
-        }
+        ScrollInfo.SetHorizontalOffset(tilt + ScrollInfo.HorizontalOffset);
     }
-
-    /*protected override void OnMouseWheel(MouseWheelEventArgs e)
-    {
-        if (ScrollInfo == null || TemplatedParent is TextBoxBase)
-            return;
-        bool flag = Keyboard.PrimaryDevice.Modifiers == ModifierKeys.Shift;
-        if (e.Delta < 0)
-        {
-            if (flag && ScrollInfo.CanHorizontallyScroll)
-                ScrollInfo.MouseWheelRight();
-            else if (ScrollInfo.CanVerticallyScroll)
-                ScrollInfo.MouseWheelDown();
-        }
-        else if (e.Delta > 0)
-        {
-            if (flag && ScrollInfo.CanHorizontallyScroll)
-                ScrollInfo.MouseWheelLeft();
-            else if (ScrollInfo.CanVerticallyScroll)
-                ScrollInfo.MouseWheelUp();
-        }
-        e.Handled = true;
-    }*/
 }
 #nullable restore
