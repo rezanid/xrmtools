@@ -1,8 +1,8 @@
 #nullable enable
 namespace XrmTools.DataverseExplorer.Models;
 
+using Microsoft.VisualStudio.Imaging.Interop;
 using System;
-using XrmTools.Meta.Model.Configuration;
 
 /// <summary>
 /// Represents a Plugin Assembly node in the tree.
@@ -114,6 +114,49 @@ public class CategoryNode : ExplorerNodeBase
     public bool AreChildrenLoaded { get; set; }
 
     public override bool CanLoadChildren => !AreChildrenLoaded;
+}
+
+/// <summary>
+/// Represents a Custom API node in the tree.
+/// </summary>
+public class CustomApiNode : ExplorerNodeBase
+{
+    public Guid CustomApiId { get; set; }
+    public string? Name { get; set; }
+    /// <summary>
+    /// Indicates whether child custom API request parameters have been loaded.
+    /// </summary>
+    public bool AreChildrenLoaded { get; set; }
+    public override bool CanLoadChildren => !AreChildrenLoaded;
+    public override string ArtifactCategory => "Assemblies";
+}
+
+internal class CustomApiParameterNode : ExplorerNodeBase
+{
+    public Guid ParameterId { get; set; }
+    public string? Name { get; set; }
+    public string? ParameterType { get; set; }
+    public bool IsOptional { get; set; }
+    /// <summary>
+    /// Indicates whether child custom API request parameters have been loaded.
+    /// </summary>
+    public bool AreChildrenLoaded { get; set; }
+    public override bool CanLoadChildren => !AreChildrenLoaded;
+    public override string ArtifactCategory => "Assemblies";
+}
+
+
+internal class CustomApiResponseNode : ExplorerNodeBase
+{
+    public Guid ResponseId { get; set; }
+    public string? Name { get; set; }
+    public string? PropertyType { get; set; }
+    /// <summary>
+    /// Indicates whether child custom API request parameters have been loaded.
+    /// </summary>
+    public bool AreChildrenLoaded { get; set; }
+    public override bool CanLoadChildren => !AreChildrenLoaded;
+    public override string ArtifactCategory => "Assemblies";
 }
 
 #nullable restore

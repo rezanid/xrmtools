@@ -9,13 +9,11 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using XrmTools.Core.Helpers;
-using XrmTools.Core.Repositories;
 using XrmTools.DataverseExplorer.Models;
 using XrmTools.Logging.Compatibility;
 using XrmTools.WebApi;
 using XrmTools.WebApi.Entities;
 using XrmTools.WebApi.Methods;
-using XrmTools.Xrm.Repositories;
 
 /// <summary>
 /// Implementation of the explorer data service.
@@ -34,7 +32,10 @@ internal sealed class ExplorerDataService(
         "$expand=plugintype_sdkmessageprocessingstep(" +
             "$select=sdkmessageprocessingstepid,name,stage,asyncautodelete,description,filteringattributes,invocationsource,mode,rank,sdkmessageid,statecode,supporteddeployment;" +
             "$expand=sdkmessageprocessingstepid_sdkmessageprocessingstepimage(" +
-                "$select=sdkmessageprocessingstepimageid,name,imagetype,messagepropertyname,attributes,entityalias))";
+                "$select=sdkmessageprocessingstepimageid,name,imagetype,messagepropertyname,attributes,entityalias))," +
+        "CustomAPIId($select=displayname,uniquename,isfunction,bindingtype,workflowsdkstepenabled,isprivate,statecode,name,allowedcustomprocessingsteptype,executeprivilegename,boundentitylogicalname,description,statuscode;" +
+            "$expand=CustomAPIRequestParameters($select=displayname,uniquename,name,statecode,statuscode,logicalentityname,description,type,isoptional)," +
+            "CustomAPIResponseProperties($select=displayname,uniquename,name,statecode,statuscode,logicalentityname,description,type))";
 
     private readonly ILogger _logger = logger;
     private readonly Dictionary<Guid, AssemblyNode> _assemblyCache = [];
@@ -98,7 +99,17 @@ internal sealed class ExplorerDataService(
         assembly.Children.Clear();
         foreach (var plugin in queryResponse.Value)
         {
-            assembly.Children.Add(ConvertToPluginNode(plugin, assembly));
+            if (plugin.CustomApi is { Count: > 0 })
+            {
+                foreach (var api in plugin.CustomApi)
+                {
+                    assembly.Children.Add(ConvertToCustomApi(api, assembly));
+                }
+            }
+            else
+            {
+                assembly.Children.Add(ConvertToPluginNode(plugin, assembly));
+            }
         }
         assembly.AreChildrenLoaded = true;
         return assembly.Children;
@@ -126,6 +137,53 @@ internal sealed class ExplorerDataService(
         }
         pluginNode.AreChildrenLoaded = true;
         return pluginNode;
+    }
+
+    private static CustomApiNode ConvertToCustomApi(CustomApi api, AssemblyNode assembly)
+    {
+        var apiNode = new CustomApiNode
+        {
+            ImageMoniker = KnownMonikers.WebAPI,
+            Id = (api.Id ?? Guid.Empty).ToString(),
+            CustomApiId = api.Id ?? Guid.Empty,
+            DisplayName = api.DisplayName ?? api.Name ?? "Unknown API",
+            Description = api.Description ?? string.Empty,
+            Name = api.Name,
+            Parent = assembly,
+            AreChildrenLoaded = false
+        };
+        apiNode.Children.Clear();
+        foreach (var input in api.RequestParameters)
+        {
+            apiNode.Children.Add(new CustomApiParameterNode
+            {
+                ImageMoniker = KnownMonikers.Parameter,
+                Id = (input.Id ?? Guid.Empty).ToString(),
+                ParameterId = input.Id ?? Guid.Empty,
+                DisplayName = input.Name ?? "Unknown Input Parameter",
+                Description = string.Empty,
+                Name = input.Name,
+                ParameterType = input.TypeName,
+                IsOptional = input.IsOptional,
+                Parent = apiNode
+            });
+        }
+        foreach (var output in api.ResponseProperties)
+        {
+            apiNode.Children.Add(new CustomApiResponseNode
+            {
+                ImageMoniker = KnownMonikers.Property,
+                Id = (output.Id ?? Guid.Empty).ToString(),
+                ResponseId = output.Id ?? Guid.Empty,
+                DisplayName = output.Name ?? "Unknown Response Property",
+                Description = string.Empty,
+                Name = output.Name,
+                PropertyType = output.TypeName,
+                Parent = apiNode
+            });
+        }
+        apiNode.AreChildrenLoaded = true;
+        return apiNode;
     }
 
     private static PluginStepNode ConvertToPluginStepNode(SdkMessageProcessingStep step, PluginTypeNode plugin)
