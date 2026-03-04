@@ -1,5 +1,5 @@
 ﻿#nullable enable
-namespace XrmTools.Options;
+namespace XrmTools.ComponentModel;
 using System;
 using System.ComponentModel;
 using System.Globalization;

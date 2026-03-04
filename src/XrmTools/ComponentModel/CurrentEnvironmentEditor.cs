@@ -1,5 +1,5 @@
 ﻿#nullable enable
-namespace XrmTools.Options;
+namespace XrmTools.ComponentModel;
 using System;
 using System.Drawing.Design;
 using System.Windows.Forms;
@@ -14,6 +14,7 @@ using System.ComponentModel.Composition;
 using Microsoft.VisualStudio.ComponentModelHost;
 using Microsoft.VisualStudio.Shell;
 using System.Threading;
+using XrmTools.Options;
 
 public class CurrentEnvironmentEditor : UITypeEditor
 {

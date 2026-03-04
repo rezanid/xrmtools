@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using System.Drawing.Design;
 using System.Runtime.InteropServices;
+using XrmTools.ComponentModel;
 using XrmTools.Logging.Compatibility;
 
 internal partial class OptionsProvider
@@ -13,8 +14,11 @@ internal partial class OptionsProvider
     public class GeneralOptions : BaseOptionPage<Options.GeneralOptions> { }
 }
 
+[TypeDescriptionProvider(typeof(DependentPropertiesTypeDescriptionProvider<GeneralOptions>))]
 internal class GeneralOptions : BaseOptionModel<GeneralOptions>
 {
+    private bool _DataverseExplorerSynchronizeWithSolutionExplorer = true;
+
     [Category("Logging")]
     [DisplayName("Logging Level")]
     [Description("Setting the logging level to Trace will have performance implications.")]
@@ -41,6 +45,28 @@ internal class GeneralOptions : BaseOptionModel<GeneralOptions>
     [TypeConverter(typeof(CurrentEnvironmentConverter))]
     [Editor(typeof(CurrentEnvironmentEditor), typeof(UITypeEditor))]
     public DataverseEnvironment CurrentEnvironment { get; set; } = DataverseEnvironment.Empty;
+
+    [Category("Dataverse Explorer")]
+    [DisplayName("Synchronize with Solution Explorer")]
+    [Description("Select the relevant file in the Solution Explorer when possible.")]
+    public bool DataverseExplorerSynchronizeWithSolutionExplorer 
+    {
+        get => _DataverseExplorerSynchronizeWithSolutionExplorer;
+        set
+        {
+            if (_DataverseExplorerSynchronizeWithSolutionExplorer == value)
+                return;
+
+            _DataverseExplorerSynchronizeWithSolutionExplorer = value;
+            TypeDescriptor.Refresh(this);
+        }
+    }
+
+    [Category("Dataverse Explorer")]
+    [DisplayName("Open the selected item in preview tab")]
+    [Description("Open the selected item in preview tab.")]
+    [ReadOnlyWhen(nameof(DataverseExplorerSynchronizeWithSolutionExplorer), false)]
+    public bool DataverseExplorerOpenInPreviewTab { get; set; }
 
     [Category("Advanced")]
     [DisplayName("Proxy")]
