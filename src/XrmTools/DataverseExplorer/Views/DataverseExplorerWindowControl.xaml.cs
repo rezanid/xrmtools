@@ -3,6 +3,7 @@ namespace XrmTools.DataverseExplorer.Views;
 
 using System.Windows;
 using System.Windows.Controls;
+using XrmTools.DataverseExplorer.Models;
 using XrmTools.DataverseExplorer.ViewModels;
 
 /// <summary>
@@ -21,6 +22,14 @@ public partial class DataverseExplorerWindowControl : UserControl
             DataContext is DataverseExplorerViewModel viewModel)
         {
             viewModel.NodeExpandedCommand.Execute(node);
+        }
+    }
+
+    private void TreeView_SelectedItemChanged(object sender, RoutedPropertyChangedEventArgs<object> e)
+    {
+        if (DataContext is DataverseExplorerViewModel viewModel)
+        {
+            viewModel.SelectedNode = e.NewValue as ExplorerNodeBase;
         }
     }
 }

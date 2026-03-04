@@ -3,25 +3,34 @@ namespace XrmTools.DataverseExplorer.Models;
 
 using Microsoft.VisualStudio.Imaging.Interop;
 using System;
+using System.ComponentModel;
 
 /// <summary>
 /// Represents a Plugin Assembly node in the tree.
 /// Can be expanded to show Plugin Types and their Steps/Images.
 /// </summary>
-public class AssemblyNode : ExplorerNodeBase
+internal sealed class AssemblyNode : ExplorerNodeBase
 {
+    [ReadOnly(true)]
     public Guid AssemblyId { get; set; }
+    [ReadOnly(true)]
     public string? PublicKeyToken { get; set; }
+    [ReadOnly(true)]
     public string? Version { get; set; }
+    [ReadOnly(true)]
     public string? IsolationMode { get; set; }
+    [ReadOnly(true)]
     public string? SourceType { get; set; }
 
     /// <summary>
     /// Indicates whether child plugin types have been loaded from Dataverse.
     /// </summary>
+    [Browsable(false)]
     public bool AreChildrenLoaded { get; set; }
 
+    [Browsable(false)]
     public override bool CanLoadChildren => !AreChildrenLoaded;
+    [Browsable(false)]
     public override string ArtifactCategory => "Assemblies";
 }
 
@@ -31,17 +40,24 @@ public class AssemblyNode : ExplorerNodeBase
 /// </summary>
 public class PluginTypeNode : ExplorerNodeBase
 {
+    [ReadOnly(true)]
     public Guid PluginTypeId { get; set; }
+    [ReadOnly(true)]
     public string? TypeName { get; set; }
+    [ReadOnly(true)]
     public string? FriendlyName { get; set; }
+    [ReadOnly(true)]
     public string? WorkflowActivityGroupName { get; set; }
 
     /// <summary>
     /// Indicates whether child steps and images have been loaded from Dataverse.
     /// </summary>
+    [Browsable(false)]
     public bool AreChildrenLoaded { get; set; }
 
+    [Browsable(false)]
     public override bool CanLoadChildren => !AreChildrenLoaded;
+    [Browsable(false)]
     public override string ArtifactCategory => "Assemblies";
 }
 
@@ -51,23 +67,36 @@ public class PluginTypeNode : ExplorerNodeBase
 /// </summary>
 public class PluginStepNode : ExplorerNodeBase
 {
+    [ReadOnly(true)]
     public Guid StepId { get; set; }
+    [ReadOnly(true)]
     public string? Stage { get; set; }
+    [ReadOnly(true)]
     public string? Mode { get; set; }
+    [ReadOnly(true)]
     public int? Rank { get; set; }
+    [ReadOnly(true)]
     public string? SdkMessageId { get; set; }
+    [ReadOnly(true)]
     public string? StateCode { get; set; }
+    [ReadOnly(true)]
     public bool? AsyncAutoDelete { get; set; }
+    [ReadOnly(true)]
     public string? FilteringAttributes { get; set; }
+    [ReadOnly(true)]
     public string? InvocationSource { get; set; }
+    [ReadOnly(true)]
     public string? SupportedDeployment { get; set; }
 
     /// <summary>
     /// Indicates whether child images have been loaded.
     /// </summary>
+    [Browsable(false)]
     public bool AreChildrenLoaded { get; set; }
 
+    [Browsable(false)]
     public override bool CanLoadChildren => !AreChildrenLoaded;
+    [Browsable(false)]
     public override string ArtifactCategory => "Assemblies";
 }
 
@@ -77,13 +106,20 @@ public class PluginStepNode : ExplorerNodeBase
 /// </summary>
 public class PluginImageNode : ExplorerNodeBase
 {
+    [ReadOnly(true)]
     public Guid ImageId { get; set; }
+    [ReadOnly(true)]
     public string? ImageType { get; set; }
+    [ReadOnly(true)]
     public string? MessagePropertyName { get; set; }
+    [ReadOnly(true)]
     public string? Attributes { get; set; }
+    [ReadOnly(true)]
     public string? EntityAlias { get; set; }
 
+    [Browsable(false)]
     public override bool CanLoadChildren => false;
+    [Browsable(false)]
     public override string ArtifactCategory => "Assemblies";
 }
 
@@ -121,41 +157,61 @@ public class CategoryNode : ExplorerNodeBase
 /// </summary>
 public class CustomApiNode : ExplorerNodeBase
 {
+    [ReadOnly(true)]
     public Guid CustomApiId { get; set; }
+    [ReadOnly(true)]
     public string? Name { get; set; }
     /// <summary>
     /// Indicates whether child custom API request parameters have been loaded.
     /// </summary>
+    [Browsable(false)]
     public bool AreChildrenLoaded { get; set; }
+    [Browsable(false)]
     public override bool CanLoadChildren => !AreChildrenLoaded;
+    [Browsable(false)]
     public override string ArtifactCategory => "Assemblies";
+    [Browsable(false)]
+    public string? TypeName { get; set; }
 }
 
 internal class CustomApiParameterNode : ExplorerNodeBase
 {
+    [ReadOnly(true)]
     public Guid ParameterId { get; set; }
+    [ReadOnly(true)]
     public string? Name { get; set; }
+    [ReadOnly(true)]
     public string? ParameterType { get; set; }
+    [ReadOnly(true)]
     public bool IsOptional { get; set; }
     /// <summary>
     /// Indicates whether child custom API request parameters have been loaded.
     /// </summary>
+    [Browsable(false)]
     public bool AreChildrenLoaded { get; set; }
+    [Browsable(false)]
     public override bool CanLoadChildren => !AreChildrenLoaded;
+    [Browsable(false)]
     public override string ArtifactCategory => "Assemblies";
 }
 
 
 internal class CustomApiResponseNode : ExplorerNodeBase
 {
+    [ReadOnly(true)]
     public Guid ResponseId { get; set; }
+    [ReadOnly(true)]
     public string? Name { get; set; }
+    [ReadOnly(true)]
     public string? PropertyType { get; set; }
     /// <summary>
     /// Indicates whether child custom API request parameters have been loaded.
     /// </summary>
+    [Browsable(false)]
     public bool AreChildrenLoaded { get; set; }
+    [Browsable(false)]
     public override bool CanLoadChildren => !AreChildrenLoaded;
+    [Browsable(false)]
     public override string ArtifactCategory => "Assemblies";
 }
 

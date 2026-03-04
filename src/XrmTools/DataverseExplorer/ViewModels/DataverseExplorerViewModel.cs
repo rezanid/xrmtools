@@ -54,8 +54,16 @@ internal class DataverseExplorerViewModel : ViewModelBase
     public ExplorerNodeBase? SelectedNode
     {
         get => _selectedNode;
-        set => SetProperty(ref _selectedNode, value);
+        set
+        {
+            if (SetProperty(ref _selectedNode, value))
+            {
+                SelectedNodeChanged?.Invoke(this, value);
+            }
+        }
     }
+
+    public event EventHandler<ExplorerNodeBase?>? SelectedNodeChanged;
 
     public ICommand RefreshCommand { get; }
     public ICommand CollapseAllCommand { get; }

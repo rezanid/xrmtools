@@ -4,6 +4,7 @@ namespace XrmTools.DataverseExplorer.Models;
 using Microsoft.VisualStudio.Imaging.Interop;
 using System;
 using System.Collections.ObjectModel;
+using System.ComponentModel;
 
 /// <summary>
 /// Base class for all tree nodes in the Dataverse Explorer.
@@ -11,13 +12,21 @@ using System.Collections.ObjectModel;
 /// </summary>
 public abstract class ExplorerNodeBase
 {
+    [Browsable(false)]
     public string Id { get; set; } = string.Empty;
+    [ReadOnly(true)]
     public string DisplayName { get; set; } = string.Empty;
+    [ReadOnly(true)]
     public string Description { get; set; } = string.Empty;
+    [Browsable(false)]
     public ObservableCollection<ExplorerNodeBase> Children { get; } = [];
+    [Browsable(false)]
     public bool IsExpanded { get; set; }
+    [Browsable(false)]
     public bool IsLoading { get; set; }
+    [Browsable(false)]
     public ExplorerNodeBase? Parent { get; set; }
+    [Browsable(false)]
     public ImageMoniker ImageMoniker { get; set; }
 
     /// <summary>

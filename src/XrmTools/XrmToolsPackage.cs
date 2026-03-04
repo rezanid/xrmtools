@@ -242,7 +242,11 @@ public sealed partial class XrmToolsPackage : ToolkitPackage
     {
         if (toolWindowType == typeof(DataverseExplorer.Views.DataverseExplorerWindow))
         {
-            return new DataverseExplorer.Views.DataverseExplorerSource { DataService = ExplorerDataService, Logger = new OutputLogger("Xrm Tools", OutputLoggerService) };
+            return new DataverseExplorer.Views.DataverseExplorerSource
+            { 
+                DataService = ExplorerDataService,
+                Logger = new OutputLogger("Xrm Tools", OutputLoggerService)
+            };
         }
         return await base.InitializeToolWindowAsync(toolWindowType, id, cancellationToken);
     }    

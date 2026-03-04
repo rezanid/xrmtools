@@ -10,7 +10,7 @@ using XrmTools.DataverseExplorer.Models;
 /// Service for loading artifact data from Dataverse and building the explorer tree.
 /// Handles caching and indexing to track what data has been loaded.
 /// </summary>
-public interface IExplorerDataService
+internal interface IExplorerDataService
 {
     /// <summary>
     /// Loads all plugin assemblies from Dataverse.

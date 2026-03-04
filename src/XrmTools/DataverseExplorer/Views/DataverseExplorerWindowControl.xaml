@@ -58,6 +58,7 @@
 
         <!--<ctrls:ScrollBar Grid.Row="0" Orientation="Horizontal" Height="16" Margin="2,2,2,2" Value="10" Minimum="0" Maximum="100"/>-->
         <ctrls:TreeView Grid.Row="1" ItemsSource="{Binding RootNodes}"
+                        SelectedItemChanged="TreeView_SelectedItemChanged"
                         ctrls:TreeViewItem.Expanded="TreeViewItem_Expanded">
             <ctrls:TreeView.ItemTemplate>
                 <HierarchicalDataTemplate ItemsSource="{Binding Children}" DataType="{x:Type models:ExplorerNodeBase}">

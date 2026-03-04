@@ -25,15 +25,15 @@ internal sealed class ExplorerDataService(
     [Import] IWebApiService webApi,
     [Import] ILogger<ExplorerDataService> logger) : IExplorerDataService
 {
-    private const string assembliesQuery = "pluginassemblies?$select=pluginassemblyid,name,description,publickeytoken,solutionid,version,isolationmode,sourcetype";
+    private const string assembliesQuery = "pluginassemblies?$select=name,version,isolationmode,publickeytoken,sourcetype,description&$expand=PackageId($select=name,version,content)";
     private const string plugintypesQuery = "plugintypes?" +
         "$filter=_pluginassemblyid_value eq '{0}'" +
-        "&$select=plugintypeid,name,typename,friendlyname,description,workflowactivitygroupname&" +
+        "&$select=name,typename,friendlyname,description,workflowactivitygroupname&" +
         "$expand=plugintype_sdkmessageprocessingstep(" +
-            "$select=sdkmessageprocessingstepid,name,stage,asyncautodelete,description,filteringattributes,invocationsource,mode,rank,sdkmessageid,statecode,supporteddeployment;" +
+            "$select=name,stage,asyncautodelete,description,filteringattributes,invocationsource,mode,rank,sdkmessageid,statecode,supporteddeployment;" +
             "$expand=sdkmessageprocessingstepid_sdkmessageprocessingstepimage(" +
-                "$select=sdkmessageprocessingstepimageid,name,imagetype,messagepropertyname,attributes,entityalias))," +
-        "CustomAPIId($select=displayname,uniquename,isfunction,bindingtype,workflowsdkstepenabled,isprivate,statecode,name,allowedcustomprocessingsteptype,executeprivilegename,boundentitylogicalname,description,statuscode;" +
+                "$select=name,imagetype,messagepropertyname,attributes,entityalias))," +
+        "CustomAPIId($select=name,displayname,uniquename,isfunction,bindingtype,workflowsdkstepenabled,isprivate,statecode,allowedcustomprocessingsteptype,executeprivilegename,boundentitylogicalname,description,statuscode;" +
             "$expand=CustomAPIRequestParameters($select=displayname,uniquename,name,statecode,statuscode,logicalentityname,description,type,isoptional)," +
             "CustomAPIResponseProperties($select=displayname,uniquename,name,statecode,statuscode,logicalentityname,description,type))";
 
@@ -65,7 +65,7 @@ internal sealed class ExplorerDataService(
             var assemblyId = assembly.Id ?? Guid.Empty;
             var node = new AssemblyNode
             {
-                ImageMoniker = KnownMonikers.Assembly,
+                ImageMoniker = assembly.Package is not null ? KnownMonikers.NuGet : KnownMonikers.Assembly,
                 Id = assemblyId.ToString(),
                 AssemblyId = assemblyId,
                 DisplayName = assembly.Name ?? "Unknown Assembly",
@@ -103,7 +103,7 @@ internal sealed class ExplorerDataService(
             {
                 foreach (var api in plugin.CustomApi)
                 {
-                    assembly.Children.Add(ConvertToCustomApi(api, assembly));
+                    assembly.Children.Add(ConvertToCustomApi(api, plugin, assembly));
                 }
             }
             else
@@ -139,7 +139,7 @@ internal sealed class ExplorerDataService(
         return pluginNode;
     }
 
-    private static CustomApiNode ConvertToCustomApi(CustomApi api, AssemblyNode assembly)
+    private static CustomApiNode ConvertToCustomApi(CustomApi api, PluginType plugin, AssemblyNode assembly)
     {
         var apiNode = new CustomApiNode
         {
@@ -150,6 +150,7 @@ internal sealed class ExplorerDataService(
             Description = api.Description ?? string.Empty,
             Name = api.Name,
             Parent = assembly,
+            TypeName = plugin.TypeName,
             AreChildrenLoaded = false
         };
         apiNode.Children.Clear();
@@ -163,7 +164,7 @@ internal sealed class ExplorerDataService(
                 DisplayName = input.Name ?? "Unknown Input Parameter",
                 Description = string.Empty,
                 Name = input.Name,
-                ParameterType = input.TypeName,
+                ParameterType = input.Type.ToString(),
                 IsOptional = input.IsOptional,
                 Parent = apiNode
             });
@@ -178,7 +179,7 @@ internal sealed class ExplorerDataService(
                 DisplayName = output.Name ?? "Unknown Response Property",
                 Description = string.Empty,
                 Name = output.Name,
-                PropertyType = output.TypeName,
+                PropertyType = output.Type.ToString(),
                 Parent = apiNode
             });
         }

@@ -79,6 +79,9 @@
     <Compile Include="Commands\NewFetchXmlFileCommand.cs" />
     <Compile Include="Commands\ResetCodeGenTemplatesCommand.cs" />
     <Compile Include="Commands\UnregisterCommand.cs" />
+    <Compile Include="ComponentModel\DependentPropertiesTypeDescriptionProvider.cs" />
+    <Compile Include="ComponentModel\DependentPropertyDescriptor.cs" />
+    <Compile Include="ComponentModel\ReadOnlyWhenAttribute.cs" />
     <Compile Include="DataverseExplorer\Models\ArtifactNodes.cs" />
     <Compile Include="DataverseExplorer\Models\ExplorerNodeBase.cs" />
     <Compile Include="DataverseExplorer\Services\ExplorerDataService.cs" />
@@ -94,6 +97,7 @@
     <Compile Include="DataverseExplorer\Views\TreeViewLevelToIndentConverter.cs" />
     <Compile Include="DataverseExplorer\Views\TreeViewLevelToIndentPxConverter.cs" />
     <Compile Include="DataverseExplorer\Views\TreeViewScrollBehavior.cs" />
+    <Compile Include="Helpers\SolutionNavigator.cs" />
     <Compile Include="Shell\Controls\Expander.cs" />
     <Compile Include="Shell\Controls\Indicator.cs" />
     <Compile Include="Shell\Controls\ListBoxItem.cs" />
@@ -217,10 +221,10 @@
     <Compile Include="Services\PluginRegistrationService.cs" />
     <Compile Include="Logging\LoggerFactory.cs" />
     <Compile Include="Logging\OutputLoggerService.cs" />
-    <Compile Include="Options\CurrentEnvironmentConverter.cs" />
-    <Compile Include="Options\CurrentEnvironmentEditor.cs" />
-    <Compile Include="Options\DataverseEnvironmentConverter.cs" />
-    <Compile Include="Options\EnumDescriptionConverter.cs" />
+    <Compile Include="ComponentModel\CurrentEnvironmentConverter.cs" />
+    <Compile Include="ComponentModel\CurrentEnvironmentEditor.cs" />
+    <Compile Include="ComponentModel\DataverseEnvironmentConverter.cs" />
+    <Compile Include="ComponentModel\EnumDescriptionConverter.cs" />
     <Compile Include="UI\IPluginRegistrationUI.cs" />
     <Compile Include="Services\PluginRegistrationResult.cs" />
     <Compile Include="Services\RegistrationInput.cs" />
