@@ -245,7 +245,7 @@
       <Button guid="XrmToolsCmdSetId" id="ShowDataverseExplorerCmdId" priority="0x0100" type="Button">
         <Parent guid="guidSHLMainMenu" id="IDG_VS_WNDO_OTRWNDWS1"/>
         <Strings>
-          <ButtonText>Show Dataverse Explorer</ButtonText>
+          <ButtonText>Dataverse Explorer</ButtonText>
           <CanonicalName>.XrmTools.ShowDataverseExplorer</CanonicalName>
         </Strings>
       </Button>

@@ -17,7 +17,7 @@ using XrmTools.Options;
 
 public static class SolutionNavigator
 {
-    public static async Task SelectProjectInSolutionExplorerAsync(string assemblyName, string? typeName, bool openDocument = false)
+    public static async Task SelectInSolutionExplorerAsync(string assemblyName, string? typeName, bool openDocument = false)
     {
         if (string.IsNullOrWhiteSpace(assemblyName))
         {

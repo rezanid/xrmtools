@@ -1,14 +1,12 @@
 #nullable enable
 namespace XrmTools.DataverseExplorer.Views;
 
-using Community.VisualStudio.Toolkit;
 using Microsoft.VisualStudio.ComponentModelHost;
 using Microsoft.VisualStudio.Imaging;
 using Microsoft.VisualStudio.LanguageServices;
 using Microsoft.VisualStudio.Shell;
 using Microsoft.VisualStudio.Shell.Interop;
 using System;
-using System.Linq;
 using System.Runtime.InteropServices;
 using System.Threading.Tasks;
 using XrmTools.DataverseExplorer.Models;
@@ -16,6 +14,7 @@ using XrmTools.DataverseExplorer.Services;
 using XrmTools.DataverseExplorer.ViewModels;
 using XrmTools.Helpers;
 using XrmTools.Logging.Compatibility;
+using XrmTools.Options;
 
 internal class DataverseExplorerSource
 {
@@ -57,15 +56,6 @@ internal class DataverseExplorerWindow : ToolWindowPane // BaseToolWindow<Datave
         Content = control;
     }
 
-    //[ImportingConstructor]
-    //public DataverseExplorerWindow(IExplorerDataService dataService, ILogger logger) : this()
-    //{
-    //    var control = new DataverseExplorerWindowControl();
-    //    _viewModel = new DataverseExplorerViewModel(dataService, logger);
-    //    control.DataContext = _viewModel;
-    //    Content = control;
-    //}
-
     protected override void OnCreate()
     {
         ThreadHelper.ThrowIfNotOnUIThread();
@@ -89,11 +79,13 @@ internal class DataverseExplorerWindow : ToolWindowPane // BaseToolWindow<Datave
         base.Dispose(disposing);
     }
 
+    [System.Diagnostics.CodeAnalysis.SuppressMessage("Usage", "VSTHRD102:Implement internal logic asynchronously", Justification = "Event Handler")]
     private void OnSelectedNodeChanged(object? sender, ExplorerNodeBase? node)
     {
         ThreadHelper.ThrowIfNotOnUIThread();
         UpdatePropertiesWindowSelection(node);
-        SyncWithProjectSystem(node);
+        ThreadHelper.JoinableTaskFactory.Run(
+            async () => await SyncWithProjectSystemAsync(node));
     }
 
     private void UpdatePropertiesWindowSelection(ExplorerNodeBase? node)
@@ -117,12 +109,20 @@ internal class DataverseExplorerWindow : ToolWindowPane // BaseToolWindow<Datave
         _ = _trackSelection.OnSelectChange(_selectionContainer);
     }
 
-    private void SyncWithProjectSystem(ExplorerNodeBase? node)
+    private async Task SyncWithProjectSystemAsync(ExplorerNodeBase? node)
     {
         if (node == null || node.ArtifactCategory != "Assemblies")
         {
             return;
         }
+
+        var options = await GeneralOptions.GetLiveInstanceAsync();
+        if (!options.DataverseExplorerSynchronizeWithSolutionExplorer)
+        {
+            return;
+        }
+        var openPreview = options.DataverseExplorerOpenInPreviewTab;
+
         AssemblyNode? assemblyNode;
         PluginTypeNode? pluginTypeNode;
         CustomApiNode? customApiNode;
@@ -130,8 +130,7 @@ internal class DataverseExplorerWindow : ToolWindowPane // BaseToolWindow<Datave
         assemblyNode = node as AssemblyNode;
         if (assemblyNode != null)
         {
-            ThreadHelper.JoinableTaskFactory.Run(async () => 
-                await SolutionNavigator.SelectProjectInSolutionExplorerAsync(assemblyNode.DisplayName, null));
+            await SolutionNavigator.SelectInSolutionExplorerAsync(assemblyNode.DisplayName, null);
             return;
         }
         pluginTypeNode = node as PluginTypeNode;
@@ -142,8 +141,7 @@ internal class DataverseExplorerWindow : ToolWindowPane // BaseToolWindow<Datave
             {
                 return;
             }
-            ThreadHelper.JoinableTaskFactory.Run(async () => 
-                await SolutionNavigator.SelectProjectInSolutionExplorerAsync(assemblyNode.DisplayName, pluginTypeNode.TypeName, true));
+            await SolutionNavigator.SelectInSolutionExplorerAsync(assemblyNode.DisplayName, pluginTypeNode.TypeName, openPreview);
         }
         customApiNode = node as CustomApiNode;
         if (customApiNode != null)
@@ -153,8 +151,7 @@ internal class DataverseExplorerWindow : ToolWindowPane // BaseToolWindow<Datave
             {
                 return;
             }
-            ThreadHelper.JoinableTaskFactory.Run(async () =>
-                await SolutionNavigator.SelectProjectInSolutionExplorerAsync(assemblyNode.DisplayName, customApiNode.TypeName, true));
+            await SolutionNavigator.SelectInSolutionExplorerAsync(assemblyNode.DisplayName, customApiNode.TypeName, openPreview);
         }
     }
 
