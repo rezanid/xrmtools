@@ -60,6 +60,11 @@
         <ctrls:TreeView Grid.Row="1" ItemsSource="{Binding RootNodes}"
                         SelectedItemChanged="TreeView_SelectedItemChanged"
                         ctrls:TreeViewItem.Expanded="TreeViewItem_Expanded">
+            <ctrls:TreeView.ItemContainerStyle>
+                <Style TargetType="{x:Type ctrls:TreeViewItem}">
+                    <Setter Property="IsExpanded" Value="{Binding IsExpanded, Mode=TwoWay}" />
+                </Style>
+            </ctrls:TreeView.ItemContainerStyle>
             <ctrls:TreeView.ItemTemplate>
                 <HierarchicalDataTemplate ItemsSource="{Binding Children}" DataType="{x:Type models:ExplorerNodeBase}">
                     <StackPanel Orientation="Horizontal" Margin="2">
