@@ -65,6 +65,9 @@
         <!--Toolbar-->
         <Parent guid="XrmToolsCmdSetId" id="XrmToolsToolbar" />
       </Group>
+      <Group guid="XrmToolsCmdSetId" id="DataverseExplorerToolbarGroup" priority="0x0000">
+        <Parent guid="XrmToolsCmdSetId" id="DataverseExplorerToolbar" />
+      </Group>
     </Groups>
 
     <Menus>
@@ -81,6 +84,14 @@
         <Strings>
           <ButtonText>Xrm Tools</ButtonText>
           <CanonicalName></CanonicalName>
+        </Strings>
+      </Menu>
+      <Menu guid="XrmToolsCmdSetId" id="DataverseExplorerToolbar" type="ToolWindowToolbar" priority="0x0000">
+        <Parent guid="XrmToolsCmdSetId" id="DataverseExplorerToolbar" />
+        <Strings>
+          <ButtonText>Dataverse Explorer</ButtonText>
+          <CommandName>Dataverse Explorer Toolbar</CommandName>
+          <CanonicalName>.XrmTools.DataverseExplorer</CanonicalName>
         </Strings>
       </Menu>
     </Menus>
@@ -241,6 +252,26 @@
           <CanonicalName>.XrmTools.NewPluginDefinition</CanonicalName>
         </Strings>
       </Button>-->
+
+      <Button guid="XrmToolsCmdSetId" id="ShowDataverseExplorerCmdId" priority="0x0100" type="Button">
+        <Parent guid="guidSHLMainMenu" id="IDG_VS_WNDO_OTRWNDWS1"/>
+		<Icon guid="AssetsGuid" id="Dataverse" />
+		<CommandFlag>IconIsMoniker</CommandFlag>
+        <Strings>
+          <ButtonText>Dataverse Explorer</ButtonText>
+          <CanonicalName>.XrmTools.ShowDataverseExplorer</CanonicalName>
+        </Strings>
+      </Button>
+
+      <Button guid="XrmToolsCmdSetId" id="RefreshDataverseExplorerCmdId" priority="0x0100" type="Button">
+        <Parent guid="XrmToolsCmdSetId" id="DataverseExplorerToolbarGroup" />
+        <Icon guid="ImageCatalogGuid" id="Refresh" />
+        <CommandFlag>IconIsMoniker</CommandFlag>
+        <Strings>
+          <ButtonText>Refresh</ButtonText>
+          <CanonicalName>.XrmTools.DataverseExplorer.Refresh</CanonicalName>
+        </Strings>
+      </Button>
     </Buttons>
   </Commands>
   
@@ -324,6 +355,10 @@
       <IDSymbol name="XrmToolsToolbarGroup" value="0x2010"/>
       <IDSymbol name="XrmToolsContextSubMenu" value="0x1000"/>
       <IDSymbol name="XrmToolsContextSubMenuGroup" value="0x1010"/>
+      <IDSymbol name="ShowDataverseExplorerCmdId" value="0x2001"/>
+      <IDSymbol name="RefreshDataverseExplorerCmdId" value="0x2002"/>
+      <IDSymbol name="DataverseExplorerToolbar" value="0x2020"/>
+      <IDSymbol name="DataverseExplorerToolbarGroup" value="0x2021"/>
     </GuidSymbol>
   </Symbols> 
 </CommandTable>

@@ -16,8 +16,8 @@ public class CustomApiRequestParameter : Entity<CustomApiRequestParameter>
     public CustomApiFieldType Type { get; set; }
     public string? LogicalEntityName { get; set; }
     public bool IsOptional { get; set; } = false;
-    [JsonPropertyName("customapiresponsepropertyid")]
-    [JsonProperty("customapiresponsepropertyid")]
+    [JsonPropertyName("customapirequestparameterid")]
+    [JsonProperty("customapirequestparameterid")]
     public override Guid? Id { get; set; }
     [System.Text.Json.Serialization.JsonIgnore]
     [Newtonsoft.Json.JsonIgnore]

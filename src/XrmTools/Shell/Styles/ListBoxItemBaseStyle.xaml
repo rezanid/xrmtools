@@ -1,0 +1,60 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:ctrls="clr-namespace:XrmTools.Shell.Controls"
+                    xmlns:styles="clr-namespace:XrmTools.Shell.Styles">
+    <Style x:Key="ListBoxItemBaseStyle" TargetType="{x:Type ListBoxItem}">
+        <Setter Property="Control.Background"
+            Value="{DynamicResource {x:Static styles:ShellColors.ControlFillTransparentBrushKey}}"/>
+        <Setter Property="Control.BorderBrush"
+            Value="{DynamicResource {x:Static styles:ShellColors.ControlStrokeTransparentBrushKey}}"/>
+        <Setter Property="Control.BorderThickness" Value="{x:Static styles:StrokeWidths.Thin}"/>
+        <Setter Property="FrameworkElement.FocusVisualStyle" Value="{x:Static styles:ShellStyles.FocusVisual}"/>
+        <Setter Property="Control.Foreground"
+            Value="{DynamicResource {x:Static styles:ShellColors.TextFillPrimaryBrushKey}}"/>
+        <Setter Property="Control.HorizontalContentAlignment" Value="Stretch"/>
+        <Setter Property="FrameworkElement.MinHeight" Value="{x:Static styles:Sizes.ControlMinHeight}"/>
+        <Setter Property="FrameworkElement.MinWidth" Value="{x:Static styles:Sizes.ControlMinWidth}"/>
+        <Setter Property="Control.Padding" Value="{x:Static styles:Spacings.HorizontalS}"/>
+        <Setter Property="Control.VerticalContentAlignment" Value="Center"/>
+        <Setter Property="Control.Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="{x:Type ListBoxItem}">
+                    <Border Background="{TemplateBinding Control.Background}"
+                  BorderBrush="{TemplateBinding Control.BorderBrush}"
+                  BorderThickness="{TemplateBinding Control.BorderThickness}"
+                  CornerRadius="{x:Static styles:CornerRadii.M}">
+                        <DockPanel>
+                            <ctrls:Indicator x:Name="Indicator"/>
+                            <ContentPresenter HorizontalAlignment="{TemplateBinding Control.HorizontalContentAlignment}"
+                                Margin="{TemplateBinding Control.Padding}" MinHeight="{x:Static styles:Sizes.ContentMinHeight}"
+                                VerticalAlignment="{TemplateBinding Control.VerticalContentAlignment}"/>
+                        </DockPanel>
+                    </Border>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="ListBoxItem.IsSelected" Value="False">
+                            <Setter TargetName="Indicator" Property="Border.Background" Value="Transparent"/>
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+        <Style.Triggers>
+            <Trigger Property="UIElement.IsEnabled" Value="False">
+                <Setter Property="Control.Foreground"
+                Value="{DynamicResource {x:Static styles:ShellColors.TextFillDisabledBrushKey}}"/>
+            </Trigger>
+            <Trigger Property="UIElement.IsMouseOver" Value="True">
+                <Setter Property="Control.Background"
+                Value="{DynamicResource {x:Static styles:ShellColors.SubtleFillSecondaryBrushKey}}"/>
+                <Setter Property="Control.BorderBrush"
+                Value="{DynamicResource {x:Static styles:ShellColors.ControlStrokeSecondaryBrushKey}}"/>
+            </Trigger>
+            <Trigger Property="ListBoxItem.IsSelected" Value="True">
+                <Setter Property="Control.Background"
+                Value="{DynamicResource {x:Static styles:ShellColors.SubtleFillSecondaryBrushKey}}"/>
+                <Setter Property="Control.BorderBrush"
+                Value="{DynamicResource {x:Static styles:ShellColors.ControlStrokeSecondaryBrushKey}}"/>
+            </Trigger>
+        </Style.Triggers>
+    </Style>
+</ResourceDictionary>

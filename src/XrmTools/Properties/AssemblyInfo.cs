@@ -3,6 +3,7 @@ using System.Reflection;
 using System.Resources;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using System.Windows;
 using XrmTools;
 
 // General Information about an assembly is controlled through the following 
@@ -37,6 +38,7 @@ using XrmTools;
 [assembly: AssemblyFileVersion(Vsix.Version)]
 [assembly: InternalsVisibleTo("XrmTools.Tests")]
 [assembly: InternalsVisibleTo("DynamicProxyGenAssembly2")]
+[assembly: ThemeInfo(ResourceDictionaryLocation.None, ResourceDictionaryLocation.SourceAssembly)]
 
 [assembly: ProvideCodeBase(
     AssemblyName = @"XrmTools.Core",

@@ -1,8 +1,9 @@
 ﻿#nullable enable
-namespace XrmTools.Options;
+namespace XrmTools.ComponentModel;
 using System;
 using System.ComponentModel;
 using System.Linq;
+using XrmTools.Options;
 
 public class CurrentEnvironmentConverter : TypeConverter
 {

@@ -22,7 +22,7 @@ public sealed class ProxyTypesAssemblyAnalyzer : DiagnosticAnalyzer
             DiagnosticSeverity.Warning,
             isEnabledByDefault: true,
             description: "Assemblies that define entity types should declare ProxyTypesAssemblyAttribute.",
-            helpLinkUri: "https://github.com/rezanid/xrmtools/wiki/Analyzers#xrmtools006---missing-proxytypesassembly-attribute",
+            helpLinkUri: "https://github.com/rezanid/xrmtools/wiki/Analyzers#xrmtools010---missing-assembly-proxytypesassemblyattribute",
             customTags: ["CompilationEnd"]);
 
     public override ImmutableArray<DiagnosticDescriptor> SupportedDiagnostics =>

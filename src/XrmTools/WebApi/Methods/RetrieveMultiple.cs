@@ -43,7 +43,8 @@ internal static partial class Extensions
         this IWebApiService service,
         string queryUri,
         int? maxPageSize = null,
-        bool includeAnnotations = false)
+        bool includeAnnotations = false,
+        CancellationToken cancellationToken = default)
     {
         var request = new RetrieveMultipleRequest(
             queryUri: queryUri,
@@ -51,9 +52,9 @@ internal static partial class Extensions
             includeAnnotations: includeAnnotations);
         try
         {
-            using var response = await service.SendAsync<HttpResponseMessage>(request: request).ConfigureAwait(false);
+            using var response = await service.SendAsync<HttpResponseMessage>(request: request, cancellationToken).ConfigureAwait(false);
             using var stream = await response.Content.ReadAsStreamAsync().ConfigureAwait(false);
-            var result =  await JsonSerializer.DeserializeAsync<ODataQueryResponse<T>>(stream, SerializerOptions).ConfigureAwait(false);
+            var result =  await JsonSerializer.DeserializeAsync<ODataQueryResponse<T>>(stream, SerializerOptions, cancellationToken).ConfigureAwait(false);
             return result!;
         }
         catch (Exception)

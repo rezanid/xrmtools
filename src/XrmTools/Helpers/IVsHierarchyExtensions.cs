@@ -65,7 +65,12 @@ internal static class IVsHierarchyExtensions
         if (frame == null)
             return;
 
-        frame.Show();
+        if (frame.IsVisible() != 0)
+        {
+            // Calling Show() if SolutionExplorer is already visible, will cause SelectionChange event
+            // for each part of the selected node in the DataverseExplorer's tree up until the root node!
+            frame.Show();
+        }
 
         // Get the IVsUIHierarchyWindow behind Solution Explorer
         frame.GetProperty((int)__VSFPROPID.VSFPROPID_DocView, out object docView);

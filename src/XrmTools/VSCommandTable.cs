@@ -75,5 +75,9 @@ namespace XrmTools
         public const int XrmToolsToolbarGroup = 0x2010;
         public const int XrmToolsContextSubMenu = 0x1000;
         public const int XrmToolsContextSubMenuGroup = 0x1010;
+        public const int ShowDataverseExplorerCmdId = 0x2001;
+        public const int RefreshDataverseExplorerCmdId = 0x2002;
+        public const int DataverseExplorerToolbar = 0x2020;
+        public const int DataverseExplorerToolbarGroup = 0x2021;
     }
 }
