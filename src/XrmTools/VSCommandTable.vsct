@@ -91,7 +91,7 @@
         <Strings>
           <ButtonText>Dataverse Explorer</ButtonText>
           <CommandName>Dataverse Explorer Toolbar</CommandName>
-          <CanonicalName></CanonicalName>
+          <CanonicalName>.XrmTools.DataverseExplorer</CanonicalName>
         </Strings>
       </Menu>
     </Menus>
@@ -255,6 +255,8 @@
 
       <Button guid="XrmToolsCmdSetId" id="ShowDataverseExplorerCmdId" priority="0x0100" type="Button">
         <Parent guid="guidSHLMainMenu" id="IDG_VS_WNDO_OTRWNDWS1"/>
+		<Icon guid="AssetsGuid" id="Dataverse" />
+		<CommandFlag>IconIsMoniker</CommandFlag>
         <Strings>
           <ButtonText>Dataverse Explorer</ButtonText>
           <CanonicalName>.XrmTools.ShowDataverseExplorer</CanonicalName>
