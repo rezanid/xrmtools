@@ -28,6 +28,8 @@ public abstract class ExplorerNodeBase
     public ExplorerNodeBase? Parent { get; set; }
     [Browsable(false)]
     public ImageMoniker ImageMoniker { get; set; }
+    [Browsable(false)]
+    public DateTime? ModifiedOn { get; set; }
 
     /// <summary>
     /// Indicates whether this node has children that can be loaded lazily.

@@ -2,12 +2,16 @@
 namespace XrmTools.DataverseExplorer.Views;
 
 using System.ComponentModel.Design;
+using Microsoft.Internal.VisualStudio.PlatformUI;
+using Microsoft.VisualStudio;
 using Microsoft.VisualStudio.ComponentModelHost;
 using Microsoft.VisualStudio.Imaging;
 using Microsoft.VisualStudio.LanguageServices;
+using Microsoft.VisualStudio.PlatformUI;
 using Microsoft.VisualStudio.Shell;
 using Microsoft.VisualStudio.Shell.Interop;
 using System;
+using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using System.Threading.Tasks;
 using XrmTools.DataverseExplorer.Models;
@@ -34,6 +38,9 @@ internal class DataverseExplorerWindow : ToolWindowPane // BaseToolWindow<Datave
     private ITrackSelection? _trackSelection;
     private readonly SelectionContainer _selectionContainer = new();
     private readonly VisualStudioWorkspace _workspace;
+    private IVsEnumWindowSearchOptions? _searchOptions;
+    private IVsEnumWindowSearchFilters? _searchFilters;
+    private WindowSearchBooleanOption? _matchCaseOption;
     
     public ILogger Logger { get; set; }
 
@@ -62,6 +69,83 @@ internal class DataverseExplorerWindow : ToolWindowPane // BaseToolWindow<Datave
     public Task RefreshAsync()
     {
         return _viewModel?.RefreshAsync() ?? Task.CompletedTask;
+    }
+
+    public override bool SearchEnabled => true;
+
+    public WindowSearchBooleanOption MatchCaseOption
+    {
+        get
+        {
+            return _matchCaseOption ??= new WindowSearchBooleanOption("Match case", "Match case", false);
+        }
+    }
+
+    public override IVsEnumWindowSearchOptions SearchOptionsEnum
+    {
+        get
+        {
+            if (_searchOptions == null)
+            {
+                var list = new List<IVsWindowSearchOption> { MatchCaseOption };
+                _searchOptions = new WindowSearchOptionEnumerator(list);
+            }
+
+            return _searchOptions;
+        }
+    }
+
+    public override IVsEnumWindowSearchFilters SearchFiltersEnum
+    {
+        get
+        {
+            if (_searchFilters == null)
+            {
+                var list = new List<IVsWindowSearchFilter>
+                {
+                    new WindowSearchSimpleFilter("Updated in last 3 hours", "Updated in last 3 hours", "updated", "3h")
+                };
+                _searchFilters = new WindowSearchFilterEnumerator(list);
+            }
+
+            return _searchFilters;
+        }
+    }
+
+    public override void ProvideSearchSettings(IVsUIDataSource pSearchSettings)
+    {
+        Utilities.SetValue(
+            pSearchSettings,
+            SearchSettingsDataSource.SearchStartTypeProperty.Name,
+            (uint)VSSEARCHSTARTTYPE.SST_INSTANT);
+        Utilities.SetValue(
+            pSearchSettings,
+            SearchSettingsDataSource.ControlMaxWidthProperty.Name,
+            (uint)10000);
+    }
+
+    public override IVsSearchTask? CreateSearch(uint dwCookie, IVsSearchQuery pSearchQuery, IVsSearchCallback pSearchCallback)
+    {
+        if (_viewModel == null || pSearchQuery == null || pSearchCallback == null)
+        {
+            return null;
+        }
+
+        return new DataverseExplorerSearchTask(dwCookie, pSearchQuery, pSearchCallback, this);
+    }
+
+    public override void ClearSearch()
+    {
+        if (_viewModel == null)
+        {
+            return;
+        }
+
+        ThreadHelper.JoinableTaskFactory.Run(async () =>
+        {
+            await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync();
+            await _viewModel.ClearSearchAsync();
+        });
     }
 
     protected override void OnCreate()
@@ -168,6 +252,59 @@ internal class DataverseExplorerWindow : ToolWindowPane // BaseToolWindow<Datave
         if (_viewModel != null)
         {
             await _viewModel.InitializeAsync();
+        }
+    }
+
+    private async Task<uint> ApplySearchAsync(string searchQuery)
+    {
+        if (_viewModel == null)
+        {
+            return 0;
+        }
+
+        var updatedFilter = "updated:\"3h\"";
+        var filterIndex = searchQuery.IndexOf(updatedFilter, StringComparison.OrdinalIgnoreCase);
+        var updatedLastThreeHours = filterIndex >= 0;
+        var searchText = updatedLastThreeHours
+            ? (searchQuery.Remove(filterIndex, updatedFilter.Length)).Trim()
+            : searchQuery;
+
+        return await _viewModel.ApplySearchAsync(searchText, MatchCaseOption.Value, updatedLastThreeHours);
+    }
+
+    private sealed class DataverseExplorerSearchTask(
+        uint cookie,
+        IVsSearchQuery searchQuery,
+        IVsSearchCallback searchCallback,
+        DataverseExplorerWindow toolWindow)
+        : VsSearchTask(cookie, searchQuery, searchCallback)
+    {
+        protected override void OnStartSearch()
+        {
+            ErrorCode = VSConstants.S_OK;
+            try
+            {
+                var resultCount = ThreadHelper.JoinableTaskFactory.Run(async () =>
+                {
+                    await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync();
+                    return await toolWindow.ApplySearchAsync(SearchQuery.SearchString);
+                });
+                SearchResults = resultCount;
+            }
+            catch
+            {
+                ErrorCode = VSConstants.E_FAIL;
+                SearchResults = 0;
+            }
+            finally
+            {
+                base.OnStartSearch();
+            }
+        }
+
+        protected override void OnStopSearch()
+        {
+            SearchResults = 0;
         }
     }
 }

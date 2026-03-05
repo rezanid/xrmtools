@@ -25,15 +25,15 @@ internal sealed class ExplorerDataService(
     [Import] IWebApiService webApi,
     [Import] ILogger<ExplorerDataService> logger) : IExplorerDataService
 {
-    private const string assembliesQuery = "pluginassemblies?$select=name,version,isolationmode,publickeytoken,sourcetype,description&$expand=PackageId($select=name,version,content)";
+    private const string assembliesQuery = "pluginassemblies?$select=name,version,isolationmode,publickeytoken,sourcetype,description,modifiedon&$expand=PackageId($select=name,version,content)";
     private const string plugintypesQuery = "plugintypes?" +
         "$filter=_pluginassemblyid_value eq '{0}'" +
-        "&$select=name,typename,friendlyname,description,workflowactivitygroupname&" +
+        "&$select=name,typename,friendlyname,description,workflowactivitygroupname,modifiedon&" +
         "$expand=plugintype_sdkmessageprocessingstep(" +
-            "$select=name,stage,asyncautodelete,description,filteringattributes,invocationsource,mode,rank,sdkmessageid,statecode,supporteddeployment;" +
+            "$select=name,stage,asyncautodelete,description,filteringattributes,invocationsource,mode,rank,sdkmessageid,statecode,supporteddeployment,modifiedon;" +
             "$expand=sdkmessageprocessingstepid_sdkmessageprocessingstepimage(" +
-                "$select=name,imagetype,messagepropertyname,attributes,entityalias))," +
-        "CustomAPIId($select=name,displayname,uniquename,isfunction,bindingtype,workflowsdkstepenabled,isprivate,statecode,allowedcustomprocessingsteptype,executeprivilegename,boundentitylogicalname,description,statuscode;" +
+                "$select=name,imagetype,messagepropertyname,attributes,entityalias,modifiedon))," +
+        "CustomAPIId($select=name,displayname,uniquename,isfunction,bindingtype,workflowsdkstepenabled,isprivate,statecode,allowedcustomprocessingsteptype,executeprivilegename,boundentitylogicalname,description,statuscode,modifiedon;" +
             "$expand=CustomAPIRequestParameters($select=displayname,uniquename,name,statecode,statuscode,logicalentityname,description,type,isoptional)," +
             "CustomAPIResponseProperties($select=displayname,uniquename,name,statecode,statuscode,logicalentityname,description,type))";
 
@@ -74,6 +74,7 @@ internal sealed class ExplorerDataService(
                 Version = assembly.Version,
                 IsolationMode = assembly.IsolationMode?.ToString(),
                 SourceType = assembly.SourceType?.ToString(),
+                ModifiedOn = assembly.ModifiedOn,
                 AreChildrenLoaded = false
             };
             _assemblyCache[assemblyId] = node;
@@ -127,6 +128,7 @@ internal sealed class ExplorerDataService(
             TypeName = plugin.TypeName,
             FriendlyName = plugin.FriendlyName,
             WorkflowActivityGroupName = plugin.WorkflowActivityGroupName,
+            ModifiedOn = plugin.ModifiedOn,
             Parent = assembly,
             AreChildrenLoaded = false
         };
@@ -149,6 +151,7 @@ internal sealed class ExplorerDataService(
             DisplayName = api.DisplayName ?? api.Name ?? "Unknown API",
             Description = api.Description ?? string.Empty,
             Name = api.Name,
+            ModifiedOn = api.ModifiedOn,
             Parent = assembly,
             TypeName = plugin.TypeName,
             AreChildrenLoaded = false
@@ -166,6 +169,7 @@ internal sealed class ExplorerDataService(
                 Name = input.Name,
                 ParameterType = input.Type.ToString(),
                 IsOptional = input.IsOptional,
+                ModifiedOn = null,
                 Parent = apiNode
             });
         }
@@ -180,6 +184,7 @@ internal sealed class ExplorerDataService(
                 Description = string.Empty,
                 Name = output.Name,
                 PropertyType = output.Type.ToString(),
+                ModifiedOn = null,
                 Parent = apiNode
             });
         }
@@ -206,6 +211,7 @@ internal sealed class ExplorerDataService(
             Stage = step.Stage.ToString(),
             StateCode = step.StateCode.ToString(),
             SupportedDeployment = step.SupportedDeployment.ToString(),
+            ModifiedOn = step.ModifiedOn,
             AreChildrenLoaded = true
         };
         stepNode.Children.Clear();
@@ -228,6 +234,7 @@ internal sealed class ExplorerDataService(
         EntityAlias = image.EntityAlias ?? string.Empty,
         Attributes = image.Attributes ?? string.Empty,
         MessagePropertyName = image.MessagePropertyName ?? string.Empty,
+        ModifiedOn = image.ModifiedOn,
         Parent = step,
     };
 
