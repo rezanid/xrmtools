@@ -84,7 +84,7 @@ internal class DataverseExplorerViewModel : ViewModelBase
         await RefreshAsync();
     }
 
-    private async Task RefreshAsync()
+    public async Task RefreshAsync()
     {
         try
         {

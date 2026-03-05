@@ -1,6 +1,7 @@
 #nullable enable
 namespace XrmTools.DataverseExplorer.Views;
 
+using System.ComponentModel.Design;
 using Microsoft.VisualStudio.ComponentModelHost;
 using Microsoft.VisualStudio.Imaging;
 using Microsoft.VisualStudio.LanguageServices;
@@ -45,6 +46,8 @@ internal class DataverseExplorerWindow : ToolWindowPane // BaseToolWindow<Datave
 
         BitmapImageMoniker = KnownMonikers.Search;
         Caption = WindowCaption;
+        ToolBar = new CommandID(PackageGuids.XrmToolsCmdSetId, PackageIds.DataverseExplorerToolbar);
+        ToolBarLocation = (int)VSTWT_LOCATION.VSTWT_TOP;
 
         Logger = source.Logger;
         DataService = source.DataService;
@@ -54,6 +57,11 @@ internal class DataverseExplorerWindow : ToolWindowPane // BaseToolWindow<Datave
         _viewModel.SelectedNodeChanged += OnSelectedNodeChanged;
         control.DataContext = _viewModel;
         Content = control;
+    }
+
+    public Task RefreshAsync()
+    {
+        return _viewModel?.RefreshAsync() ?? Task.CompletedTask;
     }
 
     protected override void OnCreate()

@@ -74,6 +74,7 @@
     <Compile Include="CodeRefactoringProviders\CustomApiRefactoringProvider.cs" />
     <Compile Include="CodeRefactoringProviders\TypeNameParser.cs" />
     <Compile Include="CodeRefactoringProviders\WebApiServiceHelper.cs" />
+    <Compile Include="Commands\RefreshDataverseExplorerCommand.cs" />
     <Compile Include="Commands\ShowDataverseExplorerCommand.cs" />
     <Compile Include="Commands\ManageEnvironmentsCommand.cs" />
     <Compile Include="Commands\NewFetchXmlFileCommand.cs" />

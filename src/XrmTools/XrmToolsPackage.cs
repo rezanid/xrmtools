@@ -207,6 +207,7 @@ public sealed partial class XrmToolsPackage : ToolkitPackage
         await ManageEnvironmentsGetListCommand.InitializeAsync(this);
         await NewFetchXmlFileCommand.InitializeAsync(this);
         await ShowDataverseExplorerCommand.InitializeAsync(this);
+        await RefreshDataverseExplorerCommand.InitializeAsync(this);
 
         VS.Events.SolutionEvents.OnAfterOpenSolution += (solution) => OnAfterOpenSolution(solution, cancellationToken);
         VS.Events.SolutionEvents.OnAfterCloseSolution += () => OnAfterCloseSolution(cancellationToken);
