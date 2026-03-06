@@ -12,7 +12,7 @@
         public string Name { get; set; } = string.Empty;
         public string UniqueName { get; }
         public string Description { get; set; } = string.Empty;
-        public ProcessingStepTypes StepType { get; set; } = ProcessingStepTypes.SyncAndAsync;
+        public ProcessingStepTypes StepType { get; set; } = ProcessingStepTypes.None;
         public BindingTypes BindingType { get; set; } = BindingTypes.Global;
         public string BoundEntityLogicalName { get; set; } = string.Empty;
         public string ExecutePrivilegeName { get; set; } = string.Empty;
