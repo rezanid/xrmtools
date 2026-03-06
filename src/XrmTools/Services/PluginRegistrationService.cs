@@ -414,8 +414,10 @@ internal sealed class PluginRegistrationService(
     private async Task<Dictionary<string, SdkMessage>> FetchSdkMessagesAsync(PluginAssemblyConfig config, CancellationToken cancellationToken)
     {
         var stepEntities = config.PluginTypes
-            .SelectMany(p => p.Steps.Select(s => s.PrimaryEntityName))
+            .SelectMany(p => p.Steps.Select(s => s.PrimaryEntityName)
+            .Where(s => !string.IsNullOrEmpty(s)))
             .Distinct()
+            .Union(["none"])
             .ToArray();
 
         if (stepEntities == null || stepEntities.Length == 0)
