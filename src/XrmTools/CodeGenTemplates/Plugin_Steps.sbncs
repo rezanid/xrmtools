@@ -1,4 +1,5 @@
 {{~for step in plugintype.steps~}}
+{{~if step.primary_entity_definition~}}
 {{~entity_type_name = step.message_name + step.primary_entity_definition.schema_name + "Entity"~}}
 {{~if (plugintype.steps | array.size > 1) || (plugintype.steps[0].message.pairs[0].request[0].fields | array.size > 1)~}}
 public static class {{(plugintype.steps | array.size > 1) ? step.message_name : ""}}InputParameters
@@ -27,6 +28,7 @@ public {{image_type_name}}[] {{image.name}}s
 }
 {{~else~}}
 public {{image_type_name}} {{image.name}} { get => EntityOrDefault<{{image_type_name}}>(DependencyScope<{{plugintype.type_name | last_segment }}>.Current.Require<IPluginExecutionContext>().{{image_collection_name}}, "{{image.name}}"); }
+{{~end~}}
 {{~end~}}
 {{~end~}}
 {{~end~}}
