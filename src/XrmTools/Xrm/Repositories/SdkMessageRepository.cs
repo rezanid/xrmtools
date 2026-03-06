@@ -29,7 +29,7 @@ internal interface ISdkMessageRepository : IXrmRepository
 
 internal class SdkMessageRepository(IWebApiService service, ILogger logger) : XrmRepository(service, new SlidingCacheConfiguration()), ISdkMessageRepository
 {
-    private const string sdkMessageQueryForEntities = "sdkmessages?$filter=sdkmessageid_sdkmessagefilter/any(n:({0}) and n/iscustomprocessingstepallowed eq true)&$expand=sdkmessageid_sdkmessagefilter($filter=({1}) and iscustomprocessingstepallowed eq true)";
+    private const string sdkMessageQueryForEntities = "sdkmessages?$select=name&$filter=sdkmessageid_sdkmessagefilter/any(n:({0}) and n/iscustomprocessingstepallowed eq true)&$expand=sdkmessageid_sdkmessagefilter($filter=({1}) and iscustomprocessingstepallowed eq true;$select=primaryobjecttypecode)";
     private const string sdkMessageQuerySingle = "sdkmessages?$filter=sdkmessageid_sdkmessagefilter/any(n:n/primaryobjecttypecode eq '{0}' and n/iscustomprocessingstepallowed eq true)&$expand=sdkmessageid_sdkmessagefilter($filter=primaryobjecttypecode eq '{0}' and iscustomprocessingstepallowed eq true)";
     private const string sdkMessageQueryForPlugins_WithExpand = "sdkmessages?$select=name&$filter=sdkmessageid_sdkmessagefilter/any(n:n/iscustomprocessingstepallowed eq true)&$expand=sdkmessageid_sdkmessagefilter($filter=iscustomprocessingstepallowed eq true)";
     private const string sdkMessageQueryForPlugins = "sdkmessages?$count=true&$select=name&$filter=sdkmessageid_sdkmessagefilter/any(f:f/iscustomprocessingstepallowed eq true)";
