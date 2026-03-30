@@ -2,10 +2,9 @@
 
 using Newtonsoft.Json.Converters;
 using System;
-using System.Text.Json.Serialization;
 
 [Serializable]
-[JsonConverter(typeof(StringEnumConverter))]
+[Newtonsoft.Json.JsonConverter(typeof(StringEnumConverter))]
 public enum StringFormat
 {
     Email,

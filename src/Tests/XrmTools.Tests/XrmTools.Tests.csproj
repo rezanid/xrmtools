@@ -72,7 +72,7 @@
     </ProjectReference>
     <ProjectReference Include="..\..\XrmTools\XrmTools.csproj">
       <Project>{592264a3-7b0d-40c5-a879-b2222676c532}</Project>
-      <Name>XrmGen</Name>
+      <Name>XrmTools</Name>
     </ProjectReference>
   </ItemGroup>
 </Project>

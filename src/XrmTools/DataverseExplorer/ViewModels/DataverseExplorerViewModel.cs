@@ -109,8 +109,27 @@ internal class DataverseExplorerViewModel : ViewModelBase
             }
             categoryNode.AreChildrenLoaded = true;
 
+            var tablesCategoryNode = new CategoryNode
+            {
+                Id = "Tables",
+                ImageMoniker = KnownMonikers.Table,
+                DisplayName = "Tables",
+                Description = "Dataverse Tables",
+                AreChildrenLoaded = false,
+            };
+            tablesCategoryNode.SetArtifactCategory("Tables");
+
+            var tables = await _dataService.LoadTablesAsync(_cancellationTokenSource.Token);
+            foreach (var table in tables)
+            {
+                tablesCategoryNode.Children.Add(table);
+                table.Parent = tablesCategoryNode;
+            }
+            tablesCategoryNode.AreChildrenLoaded = true;
+
             RootNodes.Clear();
             RootNodes.Add(categoryNode);
+            RootNodes.Add(tablesCategoryNode);
             _searchSourceRoots = null;
         }
         catch (OperationCanceledException)
@@ -154,6 +173,10 @@ internal class DataverseExplorerViewModel : ViewModelBase
 
                 case CategoryNode category:
                     // Category children are already loaded during refresh
+                    break;
+
+                case TableNode table:
+                    await _dataService.LoadTableChildrenAsync(table, _cancellationTokenSource?.Token ?? CancellationToken.None);
                     break;
             }
 
@@ -429,6 +452,114 @@ internal class DataverseExplorerViewModel : ViewModelBase
                 IsExpanded = response.IsExpanded,
                 IsLoading = response.IsLoading,
                 ModifiedOn = response.ModifiedOn,
+            },
+
+            TableNode table => new TableNode
+            {
+                Id = table.Id,
+                DisplayName = table.DisplayName,
+                Description = table.Description,
+                LogicalName = table.LogicalName,
+                SchemaName = table.SchemaName,
+                EntitySetName = table.EntitySetName,
+                TableType = table.TableType,
+                PrimaryIdAttribute = table.PrimaryIdAttribute,
+                PrimaryNameAttribute = table.PrimaryNameAttribute,
+                OwnershipType = table.OwnershipType,
+                AreChildrenLoaded = table.AreChildrenLoaded,
+                ImageMoniker = table.ImageMoniker,
+                IsExpanded = table.IsExpanded,
+                IsLoading = table.IsLoading,
+                ModifiedOn = table.ModifiedOn,
+            },
+
+            TableGroupNode group => new TableGroupNode
+            {
+                Id = group.Id,
+                DisplayName = group.DisplayName,
+                Description = group.Description,
+                GroupName = group.GroupName,
+                ImageMoniker = group.ImageMoniker,
+                IsExpanded = group.IsExpanded,
+                IsLoading = group.IsLoading,
+                ModifiedOn = group.ModifiedOn,
+            },
+
+            TableColumnNode column => new TableColumnNode
+            {
+                Id = column.Id,
+                DisplayName = column.DisplayName,
+                Description = column.Description,
+                LogicalName = column.LogicalName,
+                SchemaName = column.SchemaName,
+                ColumnType = column.ColumnType,
+                IsPrimaryId = column.IsPrimaryId,
+                IsPrimaryName = column.IsPrimaryName,
+                IsCustom = column.IsCustom,
+                ImageMoniker = column.ImageMoniker,
+                IsExpanded = column.IsExpanded,
+                IsLoading = column.IsLoading,
+                ModifiedOn = column.ModifiedOn,
+            },
+
+            TableRelationshipNode relationship => new TableRelationshipNode
+            {
+                Id = relationship.Id,
+                DisplayName = relationship.DisplayName,
+                Description = relationship.Description,
+                SchemaName = relationship.SchemaName,
+                RelationType = relationship.RelationType,
+                ReferencedEntity = relationship.ReferencedEntity,
+                ReferencedAttribute = relationship.ReferencedAttribute,
+                ReferencingEntity = relationship.ReferencingEntity,
+                ReferencingAttribute = relationship.ReferencingAttribute,
+                IntersectEntityName = relationship.IntersectEntityName,
+                ImageMoniker = relationship.ImageMoniker,
+                IsExpanded = relationship.IsExpanded,
+                IsLoading = relationship.IsLoading,
+                ModifiedOn = relationship.ModifiedOn,
+            },
+
+            TableKeyNode key => new TableKeyNode
+            {
+                Id = key.Id,
+                DisplayName = key.DisplayName,
+                Description = key.Description,
+                LogicalName = key.LogicalName,
+                SchemaName = key.SchemaName,
+                KeyAttributes = key.KeyAttributes,
+                ImageMoniker = key.ImageMoniker,
+                IsExpanded = key.IsExpanded,
+                IsLoading = key.IsLoading,
+                ModifiedOn = key.ModifiedOn,
+            },
+
+            TableFormNode form => new TableFormNode
+            {
+                Id = form.Id,
+                DisplayName = form.DisplayName,
+                Description = form.Description,
+                FormId = form.FormId,
+                FormType = form.FormType,
+                ImageMoniker = form.ImageMoniker,
+                IsExpanded = form.IsExpanded,
+                IsLoading = form.IsLoading,
+                ModifiedOn = form.ModifiedOn,
+            },
+
+            TableViewNode view => new TableViewNode
+            {
+                Id = view.Id,
+                DisplayName = view.DisplayName,
+                Description = view.Description,
+                ViewId = view.ViewId,
+                ViewType = view.ViewType,
+                IsQuickFindQuery = view.IsQuickFindQuery,
+                IsDefault = view.IsDefault,
+                ImageMoniker = view.ImageMoniker,
+                IsExpanded = view.IsExpanded,
+                IsLoading = view.IsLoading,
+                ModifiedOn = view.ModifiedOn,
             },
 
             _ => throw new InvalidOperationException($"Unsupported node type: {node.GetType().Name}"),

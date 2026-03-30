@@ -26,7 +26,7 @@
   <Project Path="XrmTools.Meta/XrmTools.Meta.csproj" />
   <Project Path="XrmTools.UI.Controls/XrmTools.UI.Controls.csproj" Id="179df0ac-6f44-4656-8332-034d3c594ed1" />
   <Project Path="XrmTools.WebApi/XrmTools.WebApi.csproj" />
-  <Project Path="XrmTools/XrmGen.csproj" Id="592264a3-7b0d-40c5-a879-b2222676c532">
+  <Project Path="XrmTools/XrmTools.csproj" Id="592264a3-7b0d-40c5-a879-b2222676c532">
     <BuildDependency Project="XrmTools.FetchXmlViewer/xrmtools.fetchxmlviewer.esproj" />
     <Platform Solution="*|arm64" Project="arm64" />
     <Platform Solution="*|x86" Project="x86" />

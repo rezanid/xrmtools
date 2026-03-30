@@ -3,10 +3,9 @@
 using Newtonsoft.Json.Converters;
 using System;
 using System.Runtime.Serialization;
-using System.Text.Json.Serialization;
 
 [Flags]
-[JsonConverter(typeof(StringEnumConverter))]
+[Newtonsoft.Json.JsonConverter(typeof(StringEnumConverter))]
 public enum SecurityTypes
 {
     [EnumMember(Value = "None")]

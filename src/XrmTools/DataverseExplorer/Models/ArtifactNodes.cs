@@ -215,4 +215,130 @@ internal class CustomApiResponseNode : ExplorerNodeBase
     public override string ArtifactCategory => "Assemblies";
 }
 
+internal sealed class TableNode : ExplorerNodeBase
+{
+    [ReadOnly(true)]
+    public string LogicalName { get; set; } = string.Empty;
+    [ReadOnly(true)]
+    public string? SchemaName { get; set; }
+    [ReadOnly(true)]
+    public string? EntitySetName { get; set; }
+    [ReadOnly(true)]
+    public string? TableType { get; set; }
+    [ReadOnly(true)]
+    public string? PrimaryIdAttribute { get; set; }
+    [ReadOnly(true)]
+    public string? PrimaryNameAttribute { get; set; }
+    [ReadOnly(true)]
+    public string? OwnershipType { get; set; }
+
+    [Browsable(false)]
+    public bool AreChildrenLoaded { get; set; }
+
+    [Browsable(false)]
+    public override bool CanLoadChildren => !AreChildrenLoaded;
+    [Browsable(false)]
+    public override string ArtifactCategory => "Tables";
+}
+
+internal sealed class TableGroupNode : ExplorerNodeBase
+{
+    [ReadOnly(true)]
+    public string GroupName { get; set; } = string.Empty;
+
+    [Browsable(false)]
+    public override bool CanLoadChildren => false;
+    [Browsable(false)]
+    public override string ArtifactCategory => "Tables";
+}
+
+internal sealed class TableColumnNode : ExplorerNodeBase
+{
+    [ReadOnly(true)]
+    public string LogicalName { get; set; } = string.Empty;
+    [ReadOnly(true)]
+    public string? SchemaName { get; set; }
+    [ReadOnly(true)]
+    public string? ColumnType { get; set; }
+    [ReadOnly(true)]
+    public bool? IsPrimaryId { get; set; }
+    [ReadOnly(true)]
+    public bool? IsPrimaryName { get; set; }
+    [ReadOnly(true)]
+    public bool? IsCustom { get; set; }
+
+    [Browsable(false)]
+    public override bool CanLoadChildren => false;
+    [Browsable(false)]
+    public override string ArtifactCategory => "Tables";
+}
+
+internal sealed class TableRelationshipNode : ExplorerNodeBase
+{
+    [ReadOnly(true)]
+    public string SchemaName { get; set; } = string.Empty;
+    [ReadOnly(true)]
+    public string RelationType { get; set; } = string.Empty;
+    [ReadOnly(true)]
+    public string? ReferencedEntity { get; set; }
+    [ReadOnly(true)]
+    public string? ReferencedAttribute { get; set; }
+    [ReadOnly(true)]
+    public string? ReferencingEntity { get; set; }
+    [ReadOnly(true)]
+    public string? ReferencingAttribute { get; set; }
+    [ReadOnly(true)]
+    public string? IntersectEntityName { get; set; }
+
+    [Browsable(false)]
+    public override bool CanLoadChildren => false;
+    [Browsable(false)]
+    public override string ArtifactCategory => "Tables";
+}
+
+internal sealed class TableKeyNode : ExplorerNodeBase
+{
+    [ReadOnly(true)]
+    public string LogicalName { get; set; } = string.Empty;
+    [ReadOnly(true)]
+    public string? SchemaName { get; set; }
+    [ReadOnly(true)]
+    public string? KeyAttributes { get; set; }
+
+    [Browsable(false)]
+    public override bool CanLoadChildren => false;
+    [Browsable(false)]
+    public override string ArtifactCategory => "Tables";
+}
+
+internal sealed class TableFormNode : ExplorerNodeBase
+{
+    [ReadOnly(true)]
+    public Guid FormId { get; set; }
+    [ReadOnly(true)]
+    public string? FormType { get; set; }
+
+    [Browsable(false)]
+    public override bool CanLoadChildren => false;
+    [Browsable(false)]
+    public override string ArtifactCategory => "Tables";
+}
+
+internal sealed class TableViewNode : ExplorerNodeBase
+{
+    [ReadOnly(true)]
+    public Guid ViewId { get; set; }
+    [ReadOnly(true)]
+    public string? ViewType { get; set; }
+    [ReadOnly(true)]
+    public bool? IsQuickFindQuery { get; set; }
+    [ReadOnly(true)]
+    public bool? IsDefault { get; set; }
+
+    [Browsable(false)]
+    public override bool CanLoadChildren => false;
+    [Browsable(false)]
+    public override string ArtifactCategory => "Tables";
+}
+
 #nullable restore

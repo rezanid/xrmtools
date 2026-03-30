@@ -2,6 +2,7 @@
 namespace XrmTools.DataverseExplorer.Services;
 
 using Microsoft.VisualStudio.Imaging;
+using Microsoft.VisualStudio.Imaging.Interop;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel.Composition;
@@ -14,6 +15,7 @@ using XrmTools.Logging.Compatibility;
 using XrmTools.WebApi;
 using XrmTools.WebApi.Entities;
 using XrmTools.WebApi.Methods;
+using XrmTools.WebApi.Types;
 
 /// <summary>
 /// Implementation of the explorer data service.
@@ -36,10 +38,16 @@ internal sealed class ExplorerDataService(
         "CustomAPIId($select=name,displayname,uniquename,isfunction,bindingtype,workflowsdkstepenabled,isprivate,statecode,allowedcustomprocessingsteptype,executeprivilegename,boundentitylogicalname,description,statuscode,modifiedon;" +
             "$expand=CustomAPIRequestParameters($select=displayname,uniquename,name,statecode,statuscode,logicalentityname,description,type,isoptional)," +
             "CustomAPIResponseProperties($select=displayname,uniquename,name,statecode,statuscode,logicalentityname,description,type))";
+    private const string tablesQuery = "EntityDefinitions?$select=MetadataId,LogicalName,SchemaName,EntitySetName,DisplayName,Description,TableType,PrimaryIdAttribute,PrimaryNameAttribute,OwnershipType,ModifiedOn";
+    private const string tableDefinitionQuery = "EntityDefinitions(LogicalName='{0}')?$select=MetadataId,LogicalName,SchemaName,EntitySetName,DisplayName,Description,TableType,PrimaryIdAttribute,PrimaryNameAttribute,OwnershipType,ModifiedOn&$expand=Attributes($select=LogicalName,SchemaName,AttributeType,DisplayName,Description,IsPrimaryId,IsPrimaryName,IsCustomAttribute,ModifiedOn),ManyToOneRelationships($select=SchemaName,ReferencedEntity,ReferencedAttribute,ReferencingEntity,ReferencingAttribute),OneToManyRelationships($select=SchemaName,ReferencedEntity,ReferencedAttribute,ReferencingEntity,ReferencingAttribute),ManyToManyRelationships($select=SchemaName,Entity1LogicalName,Entity2LogicalName,IntersectEntityName),Keys($select=LogicalName,SchemaName,EntityLogicalName,KeyAttributes)";
+    private const string tableFormsQuery = "systemforms?$select=systemformid,name,type,description,modifiedon&$filter=objecttypecode eq '{0}'";
+    private const string tableViewsQuery = "savedqueries?$select=savedqueryid,name,description,querytype,isquickfindquery,isdefault,modifiedon&$filter=returnedtypecode eq '{0}'";
 
     private readonly ILogger _logger = logger;
     private readonly Dictionary<Guid, AssemblyNode> _assemblyCache = [];
+    private readonly Dictionary<string, TableNode> _tableCache = new(StringComparer.OrdinalIgnoreCase);
     private bool _assembliesLoaded;
+    private bool _tablesLoaded;
 
     public async Task<IEnumerable<AssemblyNode>> LoadAssembliesAsync(CancellationToken cancellationToken)
     {
@@ -114,6 +122,172 @@ internal sealed class ExplorerDataService(
         }
         assembly.AreChildrenLoaded = true;
         return assembly.Children;
+    }
+
+    public async Task<IEnumerable<TableNode>> LoadTablesAsync(CancellationToken cancellationToken)
+    {
+        if (_tablesLoaded)
+        {
+            return _tableCache.Values;
+        }
+
+        ODataQueryResponse<EntityMetadata>? queryResponse;
+        try
+        {
+            queryResponse = await webApi.RetrieveMultipleAsync<EntityMetadata>(
+                tablesQuery, cancellationToken: cancellationToken);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error loading tables from Dataverse.");
+            throw;
+        }
+
+        _tableCache.Clear();
+        foreach (var table in queryResponse.Value.OrderBy(e => GetEntityDisplayName(e), StringComparer.OrdinalIgnoreCase))
+        {
+            if (string.IsNullOrWhiteSpace(table.LogicalName))
+            {
+                continue;
+            }
+
+            var tableNode = new TableNode
+            {
+                ImageMoniker = KnownMonikers.Table,
+                Id = table.MetadataId?.ToString() ?? table.LogicalName,
+                LogicalName = table.LogicalName,
+                DisplayName = GetEntityDisplayName(table),
+                Description = GetLabelText(table.Description),
+                SchemaName = table.SchemaName,
+                EntitySetName = table.EntitySetName,
+                TableType = table.TableType,
+                PrimaryIdAttribute = table.PrimaryIdAttribute,
+                PrimaryNameAttribute = table.PrimaryNameAttribute,
+                OwnershipType = table.OwnershipType?.ToString(),
+                ModifiedOn = table.ModifiedOn,
+                AreChildrenLoaded = false,
+            };
+
+            _tableCache[table.LogicalName] = tableNode;
+        }
+
+        _tablesLoaded = true;
+        return _tableCache.Values;
+    }
+
+    public async Task<IEnumerable<ExplorerNodeBase>> LoadTableChildrenAsync(TableNode table, CancellationToken cancellationToken)
+    {
+        EntityMetadata metadata;
+        try
+        {
+            using var response = await webApi.GetAsync(
+                tableDefinitionQuery.FormatWith(EscapeODataString(table.LogicalName)),
+                cancellationToken);
+
+            var root = await response.Content.ReadRootAsync();
+            metadata = root.ToObject<EntityMetadata>() ?? throw new InvalidOperationException(
+                $"Unable to deserialize entity metadata for table '{table.LogicalName}'.");
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error loading metadata for table {0}", table.LogicalName);
+            throw;
+        }
+
+        table.Children.Clear();
+
+        var columnsGroup = CreateTableGroupNode(table, "Columns", KnownMonikers.Column);
+        foreach (var attribute in metadata.Attributes?.OrderBy(a => GetAttributeDisplayName(a), StringComparer.OrdinalIgnoreCase) ?? Enumerable.Empty<AttributeMetadata>())
+        {
+            columnsGroup.Children.Add(new TableColumnNode
+            {
+                ImageMoniker = KnownMonikers.Column,
+                Id = $"{table.LogicalName}:column:{attribute.LogicalName ?? attribute.SchemaName ?? Guid.NewGuid().ToString()}",
+                LogicalName = attribute.LogicalName ?? string.Empty,
+                DisplayName = GetAttributeDisplayName(attribute),
+                Description = GetLabelText(attribute.Description),
+                SchemaName = attribute.SchemaName,
+                ColumnType = attribute.AttributeTypeName?.ToString() ?? attribute.AttributeType.ToString(),
+                IsPrimaryId = attribute.IsPrimaryId,
+                IsPrimaryName = attribute.IsPrimaryName,
+                IsCustom = attribute.IsCustomAttribute,
+                ModifiedOn = attribute.ModifiedOn,
+                Parent = columnsGroup,
+            });
+        }
+        table.Children.Add(columnsGroup);
+
+        var relationshipsGroup = CreateTableGroupNode(table, "Relations", KnownMonikers.Relationship);
+        foreach (var relation in metadata.ManyToOneRelationships?.OrderBy(r => r.SchemaName ?? string.Empty, StringComparer.OrdinalIgnoreCase) ?? Enumerable.Empty<OneToManyRelationshipMetadata>())
+        {
+            relationshipsGroup.Children.Add(CreateRelationshipNode("Many-To-One", relation.SchemaName, relation.ReferencedEntity, relation.ReferencedAttribute, relation.ReferencingEntity, relation.ReferencingAttribute, null, relationshipsGroup));
+        }
+        foreach (var relation in metadata.OneToManyRelationships?.OrderBy(r => r.SchemaName ?? string.Empty, StringComparer.OrdinalIgnoreCase) ?? Enumerable.Empty<OneToManyRelationshipMetadata>())
+        {
+            relationshipsGroup.Children.Add(CreateRelationshipNode("One-To-Many", relation.SchemaName, relation.ReferencedEntity, relation.ReferencedAttribute, relation.ReferencingEntity, relation.ReferencingAttribute, null, relationshipsGroup));
+        }
+        foreach (var relation in metadata.ManyToManyRelationships?.OrderBy(r => r.SchemaName ?? string.Empty, StringComparer.OrdinalIgnoreCase) ?? Enumerable.Empty<ManyToManyRelationshipMetadata>())
+        {
+            relationshipsGroup.Children.Add(CreateRelationshipNode("Many-To-Many", relation.SchemaName, relation.Entity1LogicalName, null, relation.Entity2LogicalName, null, relation.IntersectEntityName, relationshipsGroup));
+        }
+        table.Children.Add(relationshipsGroup);
+
+        var keysGroup = CreateTableGroupNode(table, "Keys", KnownMonikers.Key);
+        foreach (var key in metadata.Keys?.OrderBy(k => k.LogicalName ?? string.Empty, StringComparer.OrdinalIgnoreCase) ?? Enumerable.Empty<EntityKeyMetadata>())
+        {
+            keysGroup.Children.Add(new TableKeyNode
+            {
+                ImageMoniker = KnownMonikers.Key,
+                Id = $"{table.LogicalName}:key:{key.LogicalName ?? key.SchemaName ?? Guid.NewGuid().ToString()}",
+                LogicalName = key.LogicalName ?? string.Empty,
+                DisplayName = key.DisplayName?.UserLocalizedLabel?.Label ?? key.LogicalName ?? "Key",
+                Description = string.Empty,
+                SchemaName = key.SchemaName,
+                KeyAttributes = key.KeyAttributes is { Length: > 0 } ? string.Join(", ", key.KeyAttributes) : string.Empty,
+                ModifiedOn = null,
+                Parent = keysGroup,
+            });
+        }
+        table.Children.Add(keysGroup);
+
+        var formsGroup = CreateTableGroupNode(table, "Forms", KnownMonikers.Dialog);
+        foreach (var form in await LoadTableFormsAsync(table.LogicalName, cancellationToken))
+        {
+            formsGroup.Children.Add(new TableFormNode
+            {
+                ImageMoniker = KnownMonikers.Dialog,
+                Id = form.FormId.ToString(),
+                FormId = form.FormId,
+                DisplayName = string.IsNullOrWhiteSpace(form.Name) ? "Form" : form.Name,
+                Description = form.Description ?? string.Empty,
+                FormType = form.FormType,
+                ModifiedOn = form.ModifiedOn,
+                Parent = formsGroup,
+            });
+        }
+        table.Children.Add(formsGroup);
+
+        var viewsGroup = CreateTableGroupNode(table, "Views", KnownMonikers.QueryView);
+        foreach (var view in await LoadTableViewsAsync(table.LogicalName, cancellationToken))
+        {
+            viewsGroup.Children.Add(new TableViewNode
+            {
+                ImageMoniker = KnownMonikers.QueryView,
+                Id = view.ViewId.ToString(),
+                ViewId = view.ViewId,
+                DisplayName = string.IsNullOrWhiteSpace(view.Name) ? "View" : view.Name,
+                Description = view.Description ?? string.Empty,
+                ViewType = view.ViewType,
+                IsQuickFindQuery = view.IsQuickFindQuery,
+                IsDefault = view.IsDefault,
+                ModifiedOn = view.ModifiedOn,
+                Parent = viewsGroup,
+            });
+        }
+        table.Children.Add(viewsGroup);
+
+        table.AreChildrenLoaded = true;
+        return table.Children;
     }
 
     private static PluginTypeNode ConvertToPluginNode(PluginType plugin, AssemblyNode assembly)
@@ -258,6 +432,8 @@ internal sealed class ExplorerDataService(
     {
         _assemblyCache.Clear();
         _assembliesLoaded = false;
+        _tableCache.Clear();
+        _tablesLoaded = false;
     }
 
     public IEnumerable<ExplorerNodeBase> Search(string searchTerm, IEnumerable<ExplorerNodeBase> nodes)
@@ -291,6 +467,156 @@ internal sealed class ExplorerDataService(
                (!string.IsNullOrWhiteSpace(node.Description) &&
                 node.Description.IndexOf(lowerTerm, StringComparison.OrdinalIgnoreCase) >= 0);
     }
+
+    private static string GetEntityDisplayName(EntityMetadata entity)
+    {
+        return GetLabelText(entity.DisplayName) is string displayName && !string.IsNullOrWhiteSpace(displayName)
+            ? displayName
+            : entity.LogicalName;
+    }
+
+    private static string GetAttributeDisplayName(AttributeMetadata attribute)
+    {
+        return GetLabelText(attribute.DisplayName) is string displayName && !string.IsNullOrWhiteSpace(displayName)
+            ? displayName
+            : attribute.LogicalName ?? "Column";
+    }
+
+    private static string GetLabelText(Label? label)
+    {
+        return label?.UserLocalizedLabel?.Label
+            ?? label?.LocalizedLabels?.FirstOrDefault(l => !string.IsNullOrWhiteSpace(l.Label))?.Label
+            ?? string.Empty;
+    }
+
+    private static string EscapeODataString(string value) => value.Replace("'", "''");
+
+    private static TableGroupNode CreateTableGroupNode(TableNode table, string groupName, ImageMoniker imageMoniker)
+    {
+        return new TableGroupNode
+        {
+            Id = $"{table.LogicalName}:{groupName}",
+            DisplayName = groupName,
+            Description = string.Empty,
+            GroupName = groupName,
+            ImageMoniker = imageMoniker,
+            Parent = table,
+        };
+    }
+
+    private static TableRelationshipNode CreateRelationshipNode(
+        string relationType,
+        string? schemaName,
+        string? referencedEntity,
+        string? referencedAttribute,
+        string? referencingEntity,
+        string? referencingAttribute,
+        string? intersectEntity,
+        ExplorerNodeBase parent)
+    {
+        var safeSchemaName = string.IsNullOrWhiteSpace(schemaName) ? "Relationship" : schemaName;
+        return new TableRelationshipNode
+        {
+            ImageMoniker = KnownMonikers.Relationship,
+            Id = $"{relationType}:{safeSchemaName}",
+            DisplayName = safeSchemaName,
+            Description = relationType,
+            SchemaName = safeSchemaName,
+            RelationType = relationType,
+            ReferencedEntity = referencedEntity,
+            ReferencedAttribute = referencedAttribute,
+            ReferencingEntity = referencingEntity,
+            ReferencingAttribute = referencingAttribute,
+            IntersectEntityName = intersectEntity,
+            Parent = parent,
+        };
+    }
+
+    private async Task<IEnumerable<TableFormDefinition>> LoadTableFormsAsync(string logicalName, CancellationToken cancellationToken)
+    {
+        ODataQueryResponse<TableFormRecord>? queryResponse;
+        try
+        {
+            queryResponse = await webApi.RetrieveMultipleAsync<TableFormRecord>(
+                tableFormsQuery.FormatWith(EscapeODataString(logicalName)), cancellationToken: cancellationToken);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error loading forms for table {0}", logicalName);
+            return Enumerable.Empty<TableFormDefinition>();
+        }
+
+        return queryResponse.Value
+            .OrderBy(f => f.Name ?? string.Empty, StringComparer.OrdinalIgnoreCase)
+            .Select(f => new TableFormDefinition(
+                f.SystemFormId ?? Guid.Empty,
+                f.Name,
+                f.Type?.ToString(),
+                f.Description,
+                f.ModifiedOn));
+    }
+
+    private async Task<IEnumerable<TableViewDefinition>> LoadTableViewsAsync(string logicalName, CancellationToken cancellationToken)
+    {
+        ODataQueryResponse<TableViewRecord>? queryResponse;
+        try
+        {
+            queryResponse = await webApi.RetrieveMultipleAsync<TableViewRecord>(
+                tableViewsQuery.FormatWith(EscapeODataString(logicalName)), cancellationToken: cancellationToken);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error loading views for table {0}", logicalName);
+            return Enumerable.Empty<TableViewDefinition>();
+        }
+
+        return queryResponse.Value
+            .OrderBy(v => v.Name ?? string.Empty, StringComparer.OrdinalIgnoreCase)
+            .Select(v => new TableViewDefinition(
+                v.SavedQueryId ?? Guid.Empty,
+                v.Name,
+                v.QueryType?.ToString(),
+                v.Description,
+                v.IsQuickFindQuery,
+                v.IsDefault,
+                v.ModifiedOn));
+    }
+
+    private sealed class TableFormRecord
+    {
+        public Guid? SystemFormId { get; set; }
+        public string? Name { get; set; }
+        public int? Type { get; set; }
+        public string? Description { get; set; }
+        public DateTime? ModifiedOn { get; set; }
+    }
+
+    private sealed class TableViewRecord
+    {
+        public Guid? SavedQueryId { get; set; }
+        public string? Name { get; set; }
+        public int? QueryType { get; set; }
+        public bool? IsQuickFindQuery { get; set; }
+        public bool? IsDefault { get; set; }
+        public string? Description { get; set; }
+        public DateTime? ModifiedOn { get; set; }
+    }
+
+    private sealed record TableFormDefinition(
+        Guid FormId,
+        string? Name,
+        string? FormType,
+        string? Description,
+        DateTime? ModifiedOn);
+
+    private sealed record TableViewDefinition(
+        Guid ViewId,
+        string? Name,
+        string? ViewType,
+        string? Description,
+        bool? IsQuickFindQuery,
+        bool? IsDefault,
+        DateTime? ModifiedOn);
 }
 
 #nullable restore
