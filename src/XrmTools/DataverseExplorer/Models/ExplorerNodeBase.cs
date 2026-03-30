@@ -28,18 +28,23 @@ public abstract class ExplorerNodeBase
     public ExplorerNodeBase? Parent { get; set; }
     [Browsable(false)]
     public ImageMoniker ImageMoniker { get; set; }
-    [Browsable(false)]
-    public DateTime? ModifiedOn { get; set; }
-
     /// <summary>
     /// Indicates whether this node has children that can be loaded lazily.
     /// </summary>
     public abstract bool CanLoadChildren { get; }
 
     /// <summary>
-    /// Returns the artifact type category (e.g., "Assemblies", "Cloud Flows", "Environment Variables").
+    /// Returns the artifact type category (e.g., "Assemblies", "Tables", "Cloud Flows", "Environment Variables").
     /// </summary>
     public abstract string ArtifactCategory { get; }
+}
+
+public abstract class ExplorerNodeBaseWithDates : ExplorerNodeBase
+{
+    [ReadOnly(true)]
+    public DateTimeOffset? CreatedOn { get; set; }
+    [ReadOnly(true)]
+    public DateTimeOffset? ModifiedOn { get; set; }
 }
 
 #nullable restore

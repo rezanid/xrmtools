@@ -40,8 +40,10 @@ internal sealed class ExplorerDataService(
             "CustomAPIResponseProperties($select=displayname,uniquename,name,statecode,statuscode,logicalentityname,description,type))";
     private const string tablesQuery = "EntityDefinitions?$select=MetadataId,LogicalName,SchemaName,EntitySetName,DisplayName,Description,TableType,PrimaryIdAttribute,PrimaryNameAttribute,OwnershipType,ModifiedOn";
     private const string tableDefinitionQuery = "EntityDefinitions(LogicalName='{0}')?$select=MetadataId,LogicalName,SchemaName,EntitySetName,DisplayName,Description,TableType,PrimaryIdAttribute,PrimaryNameAttribute,OwnershipType,ModifiedOn&$expand=Attributes($select=LogicalName,SchemaName,AttributeType,DisplayName,Description,IsPrimaryId,IsPrimaryName,IsCustomAttribute,ModifiedOn),ManyToOneRelationships($select=SchemaName,ReferencedEntity,ReferencedAttribute,ReferencingEntity,ReferencingAttribute),OneToManyRelationships($select=SchemaName,ReferencedEntity,ReferencedAttribute,ReferencingEntity,ReferencingAttribute),ManyToManyRelationships($select=SchemaName,Entity1LogicalName,Entity2LogicalName,IntersectEntityName),Keys($select=LogicalName,SchemaName,EntityLogicalName,KeyAttributes)";
-    private const string tableFormsQuery = "systemforms?$select=systemformid,name,type,description,modifiedon&$filter=objecttypecode eq '{0}'";
-    private const string tableViewsQuery = "savedqueries?$select=savedqueryid,name,description,querytype,isquickfindquery,isdefault,modifiedon&$filter=returnedtypecode eq '{0}'";
+    private const string tableFormQuery = "systemforms({0})?$select=formid,formxmlmanaged,formpresentation,uniquename,ismanaged,isdefault,formjson,formxml,name,publishedon,description,type,canbedeleted,iscustomizable,formactivationstate";
+    private const string tableFormsQuery = "systemforms?$select=formid,formxmlmanaged,formpresentation,uniquename,ismanaged,isdefault,name,publishedon,description,type,canbedeleted,iscustomizable,formactivationstate&$filter=objecttypecode eq '{0}'";
+    private const string tableViewQuery = "savedqueries({0})?$select=savedqueryid,name,description,querytype,isquickfindquery,isdefault,advancedgroupby,columnsetxml,conditionalformatting,enablecrosspartition,fetchxml,iscustom,isdefault,isuserdefined,layoutjson,offlinesqlquery,roledisplayconditionsxml,statecode,statuscode,modifiedon,createdon";
+    private const string tableViewsQuery = "savedqueries?$select=savedqueryid,name,description,querytype,isquickfindquery,isdefault,advancedgroupby,conditionalformatting,enablecrosspartition,iscustom,isdefault,isuserdefined,offlinesqlquery,statecode,statuscode,modifiedon,createdon&$filter=returnedtypecode eq '{0}'";
 
     private readonly ILogger _logger = logger;
     private readonly Dictionary<Guid, AssemblyNode> _assemblyCache = [];
@@ -256,12 +258,16 @@ internal sealed class ExplorerDataService(
             formsGroup.Children.Add(new TableFormNode
             {
                 ImageMoniker = KnownMonikers.Dialog,
-                Id = form.FormId.ToString(),
-                FormId = form.FormId,
+                Id = form.Id.ToString(),
+                FormId = form.Id ??Guid.Empty,
                 DisplayName = string.IsNullOrWhiteSpace(form.Name) ? "Form" : form.Name,
                 Description = form.Description ?? string.Empty,
-                FormType = form.FormType,
-                ModifiedOn = form.ModifiedOn,
+                FormType = form.Type.ToString(),
+                FormActivationState = form.FormActivationState.ToString(),
+                FormPresentation = form.FormPresentation.ToString(),
+                IsDefault = form.IsDefault.ToString(),
+                PublishedOn = form.PublishedOn.ToString(),
+                UniqueName = form.UniqueName,
                 Parent = formsGroup,
             });
         }
@@ -273,11 +279,11 @@ internal sealed class ExplorerDataService(
             viewsGroup.Children.Add(new TableViewNode
             {
                 ImageMoniker = KnownMonikers.QueryView,
-                Id = view.ViewId.ToString(),
-                ViewId = view.ViewId,
+                Id = view.Id.ToString(),
+                ViewId = view.Id ?? Guid.Empty,
                 DisplayName = string.IsNullOrWhiteSpace(view.Name) ? "View" : view.Name,
                 Description = view.Description ?? string.Empty,
-                ViewType = view.ViewType,
+                QueryType = view.QueryType.ToString(),
                 IsQuickFindQuery = view.IsQuickFindQuery,
                 IsDefault = view.IsDefault,
                 ModifiedOn = view.ModifiedOn,
@@ -532,91 +538,39 @@ internal sealed class ExplorerDataService(
         };
     }
 
-    private async Task<IEnumerable<TableFormDefinition>> LoadTableFormsAsync(string logicalName, CancellationToken cancellationToken)
+    private async Task<IEnumerable<SystemForm>> LoadTableFormsAsync(string logicalName, CancellationToken cancellationToken)
     {
-        ODataQueryResponse<TableFormRecord>? queryResponse;
+        ODataQueryResponse<SystemForm>? queryResponse;
         try
         {
-            queryResponse = await webApi.RetrieveMultipleAsync<TableFormRecord>(
+            queryResponse = await webApi.RetrieveMultipleAsync<SystemForm>(
                 tableFormsQuery.FormatWith(EscapeODataString(logicalName)), cancellationToken: cancellationToken);
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error loading forms for table {0}", logicalName);
-            return Enumerable.Empty<TableFormDefinition>();
+            return [];
         }
 
-        return queryResponse.Value
-            .OrderBy(f => f.Name ?? string.Empty, StringComparer.OrdinalIgnoreCase)
-            .Select(f => new TableFormDefinition(
-                f.SystemFormId ?? Guid.Empty,
-                f.Name,
-                f.Type?.ToString(),
-                f.Description,
-                f.ModifiedOn));
+        return queryResponse.Value;
     }
 
-    private async Task<IEnumerable<TableViewDefinition>> LoadTableViewsAsync(string logicalName, CancellationToken cancellationToken)
+    private async Task<IEnumerable<SavedQuery>> LoadTableViewsAsync(string logicalName, CancellationToken cancellationToken)
     {
-        ODataQueryResponse<TableViewRecord>? queryResponse;
+        ODataQueryResponse<SavedQuery>? queryResponse;
         try
         {
-            queryResponse = await webApi.RetrieveMultipleAsync<TableViewRecord>(
+            queryResponse = await webApi.RetrieveMultipleAsync<SavedQuery>(
                 tableViewsQuery.FormatWith(EscapeODataString(logicalName)), cancellationToken: cancellationToken);
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error loading views for table {0}", logicalName);
-            return Enumerable.Empty<TableViewDefinition>();
+            return [];
         }
 
-        return queryResponse.Value
-            .OrderBy(v => v.Name ?? string.Empty, StringComparer.OrdinalIgnoreCase)
-            .Select(v => new TableViewDefinition(
-                v.SavedQueryId ?? Guid.Empty,
-                v.Name,
-                v.QueryType?.ToString(),
-                v.Description,
-                v.IsQuickFindQuery,
-                v.IsDefault,
-                v.ModifiedOn));
+        return queryResponse.Value;
     }
-
-    private sealed class TableFormRecord
-    {
-        public Guid? SystemFormId { get; set; }
-        public string? Name { get; set; }
-        public int? Type { get; set; }
-        public string? Description { get; set; }
-        public DateTime? ModifiedOn { get; set; }
-    }
-
-    private sealed class TableViewRecord
-    {
-        public Guid? SavedQueryId { get; set; }
-        public string? Name { get; set; }
-        public int? QueryType { get; set; }
-        public bool? IsQuickFindQuery { get; set; }
-        public bool? IsDefault { get; set; }
-        public string? Description { get; set; }
-        public DateTime? ModifiedOn { get; set; }
-    }
-
-    private sealed record TableFormDefinition(
-        Guid FormId,
-        string? Name,
-        string? FormType,
-        string? Description,
-        DateTime? ModifiedOn);
-
-    private sealed record TableViewDefinition(
-        Guid ViewId,
-        string? Name,
-        string? ViewType,
-        string? Description,
-        bool? IsQuickFindQuery,
-        bool? IsDefault,
-        DateTime? ModifiedOn);
 }
 
 #nullable restore

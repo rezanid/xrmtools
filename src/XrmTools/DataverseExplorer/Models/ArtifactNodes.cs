@@ -9,7 +9,7 @@ using System.ComponentModel;
 /// Represents a Plugin Assembly node in the tree.
 /// Can be expanded to show Plugin Types and their Steps/Images.
 /// </summary>
-internal sealed class AssemblyNode : ExplorerNodeBase
+internal sealed class AssemblyNode : ExplorerNodeBaseWithDates
 {
     [ReadOnly(true)]
     public Guid AssemblyId { get; set; }
@@ -38,7 +38,7 @@ internal sealed class AssemblyNode : ExplorerNodeBase
 /// Represents a Plugin Type (class) node in the tree.
 /// Can be expanded to show its Plugin Steps and their Images.
 /// </summary>
-public class PluginTypeNode : ExplorerNodeBase
+public class PluginTypeNode : ExplorerNodeBaseWithDates
 {
     [ReadOnly(true)]
     public Guid PluginTypeId { get; set; }
@@ -48,6 +48,7 @@ public class PluginTypeNode : ExplorerNodeBase
     public string? FriendlyName { get; set; }
     [ReadOnly(true)]
     public string? WorkflowActivityGroupName { get; set; }
+
 
     /// <summary>
     /// Indicates whether child steps and images have been loaded from Dataverse.
@@ -65,7 +66,7 @@ public class PluginTypeNode : ExplorerNodeBase
 /// Represents a Plugin Step (SDK Message Processing Step) node in the tree.
 /// Can be expanded to show its attached Images.
 /// </summary>
-public class PluginStepNode : ExplorerNodeBase
+public class PluginStepNode : ExplorerNodeBaseWithDates
 {
     [ReadOnly(true)]
     public Guid StepId { get; set; }
@@ -104,7 +105,7 @@ public class PluginStepNode : ExplorerNodeBase
 /// Represents a Plugin Image (Step Image for data context snapshot) node in the tree.
 /// This is a leaf node with no children.
 /// </summary>
-public class PluginImageNode : ExplorerNodeBase
+public class PluginImageNode : ExplorerNodeBaseWithDates
 {
     [ReadOnly(true)]
     public Guid ImageId { get; set; }
@@ -155,12 +156,13 @@ public class CategoryNode : ExplorerNodeBase
 /// <summary>
 /// Represents a Custom API node in the tree.
 /// </summary>
-public class CustomApiNode : ExplorerNodeBase
+public class CustomApiNode : ExplorerNodeBaseWithDates
 {
     [ReadOnly(true)]
     public Guid CustomApiId { get; set; }
     [ReadOnly(true)]
     public string? Name { get; set; }
+
     /// <summary>
     /// Indicates whether child custom API request parameters have been loaded.
     /// </summary>
@@ -174,7 +176,7 @@ public class CustomApiNode : ExplorerNodeBase
     public string? TypeName { get; set; }
 }
 
-internal class CustomApiParameterNode : ExplorerNodeBase
+internal class CustomApiParameterNode : ExplorerNodeBaseWithDates
 {
     [ReadOnly(true)]
     public Guid ParameterId { get; set; }
@@ -184,6 +186,7 @@ internal class CustomApiParameterNode : ExplorerNodeBase
     public string? ParameterType { get; set; }
     [ReadOnly(true)]
     public bool IsOptional { get; set; }
+
     /// <summary>
     /// Indicates whether child custom API request parameters have been loaded.
     /// </summary>
@@ -196,7 +199,7 @@ internal class CustomApiParameterNode : ExplorerNodeBase
 }
 
 
-internal class CustomApiResponseNode : ExplorerNodeBase
+internal class CustomApiResponseNode : ExplorerNodeBaseWithDates
 {
     [ReadOnly(true)]
     public Guid ResponseId { get; set; }
@@ -204,6 +207,7 @@ internal class CustomApiResponseNode : ExplorerNodeBase
     public string? Name { get; set; }
     [ReadOnly(true)]
     public string? PropertyType { get; set; }
+
     /// <summary>
     /// Indicates whether child custom API request parameters have been loaded.
     /// </summary>
@@ -215,7 +219,7 @@ internal class CustomApiResponseNode : ExplorerNodeBase
     public override string ArtifactCategory => "Assemblies";
 }
 
-internal sealed class TableNode : ExplorerNodeBase
+internal sealed class TableNode : ExplorerNodeBaseWithDates
 {
     [ReadOnly(true)]
     public string LogicalName { get; set; } = string.Empty;
@@ -234,7 +238,6 @@ internal sealed class TableNode : ExplorerNodeBase
 
     [Browsable(false)]
     public bool AreChildrenLoaded { get; set; }
-
     [Browsable(false)]
     public override bool CanLoadChildren => !AreChildrenLoaded;
     [Browsable(false)]
@@ -252,7 +255,7 @@ internal sealed class TableGroupNode : ExplorerNodeBase
     public override string ArtifactCategory => "Tables";
 }
 
-internal sealed class TableColumnNode : ExplorerNodeBase
+internal sealed class TableColumnNode : ExplorerNodeBaseWithDates
 {
     [ReadOnly(true)]
     public string LogicalName { get; set; } = string.Empty;
@@ -266,14 +269,14 @@ internal sealed class TableColumnNode : ExplorerNodeBase
     public bool? IsPrimaryName { get; set; }
     [ReadOnly(true)]
     public bool? IsCustom { get; set; }
-
+    
     [Browsable(false)]
     public override bool CanLoadChildren => false;
     [Browsable(false)]
     public override string ArtifactCategory => "Tables";
 }
 
-internal sealed class TableRelationshipNode : ExplorerNodeBase
+internal sealed class TableRelationshipNode : ExplorerNodeBaseWithDates
 {
     [ReadOnly(true)]
     public string SchemaName { get; set; } = string.Empty;
@@ -296,7 +299,7 @@ internal sealed class TableRelationshipNode : ExplorerNodeBase
     public override string ArtifactCategory => "Tables";
 }
 
-internal sealed class TableKeyNode : ExplorerNodeBase
+internal sealed class TableKeyNode : ExplorerNodeBaseWithDates
 {
     [ReadOnly(true)]
     public string LogicalName { get; set; } = string.Empty;
@@ -317,6 +320,16 @@ internal sealed class TableFormNode : ExplorerNodeBase
     public Guid FormId { get; set; }
     [ReadOnly(true)]
     public string? FormType { get; set; }
+    [ReadOnly(true)]
+    public string? FormActivationState { get; set; }
+    [ReadOnly(true)]
+    public string? FormPresentation { get; set; }
+    [ReadOnly(true)]
+    public string? IsDefault { get; set; }
+    [ReadOnly(true)]
+    public string? PublishedOn { get; set; }
+    [ReadOnly(true)]
+    public string? UniqueName { get; set; }
 
     [Browsable(false)]
     public override bool CanLoadChildren => false;
@@ -324,16 +337,24 @@ internal sealed class TableFormNode : ExplorerNodeBase
     public override string ArtifactCategory => "Tables";
 }
 
-internal sealed class TableViewNode : ExplorerNodeBase
+internal sealed class TableViewNode : ExplorerNodeBaseWithDates
 {
     [ReadOnly(true)]
     public Guid ViewId { get; set; }
     [ReadOnly(true)]
-    public string? ViewType { get; set; }
+    public string? QueryType { get; set; }
     [ReadOnly(true)]
     public bool? IsQuickFindQuery { get; set; }
     [ReadOnly(true)]
     public bool? IsDefault { get; set; }
+    [ReadOnly(true)]
+    public bool? IsCustom { get; set; }
+    [ReadOnly(true)]
+    public bool? IsUserDefined { get; set; }
+    [ReadOnly(true)]
+    public string? StateCode { get; set; }
+    [ReadOnly(true)]
+    public string? StatusCode { get; set; }
 
     [Browsable(false)]
     public override bool CanLoadChildren => false;

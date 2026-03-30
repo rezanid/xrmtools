@@ -273,7 +273,7 @@ internal class DataverseExplorerViewModel : ViewModelBase
         DateTime thresholdUtc)
     {
         var matchesText = string.IsNullOrWhiteSpace(searchText) || MatchesSearch(node, searchText, matchCase);
-        var matchesTime = !updatedLast3Hours || (node.ModifiedOn.HasValue && node.ModifiedOn.Value.ToUniversalTime() >= thresholdUtc);
+        var matchesTime = !updatedLast3Hours || (node is ExplorerNodeBaseWithDates datedNode && datedNode.ModifiedOn.HasValue && datedNode.ModifiedOn.Value.ToUniversalTime() >= thresholdUtc);
 
         var filteredChildren = new List<ExplorerNodeBase>();
         foreach (var child in node.Children)
@@ -334,7 +334,6 @@ internal class DataverseExplorerViewModel : ViewModelBase
                 ImageMoniker = category.ImageMoniker,
                 IsExpanded = category.IsExpanded,
                 IsLoading = category.IsLoading,
-                ModifiedOn = category.ModifiedOn,
             }.WithCategory(category.ArtifactCategory),
 
             AssemblyNode assembly => new AssemblyNode
@@ -482,7 +481,6 @@ internal class DataverseExplorerViewModel : ViewModelBase
                 ImageMoniker = group.ImageMoniker,
                 IsExpanded = group.IsExpanded,
                 IsLoading = group.IsLoading,
-                ModifiedOn = group.ModifiedOn,
             },
 
             TableColumnNode column => new TableColumnNode
@@ -541,10 +539,14 @@ internal class DataverseExplorerViewModel : ViewModelBase
                 Description = form.Description,
                 FormId = form.FormId,
                 FormType = form.FormType,
+                FormActivationState = form.FormActivationState,
+                FormPresentation = form.FormPresentation,
+                IsDefault = form.IsDefault,
+                PublishedOn = form.PublishedOn,
+                UniqueName = form.UniqueName,
                 ImageMoniker = form.ImageMoniker,
                 IsExpanded = form.IsExpanded,
                 IsLoading = form.IsLoading,
-                ModifiedOn = form.ModifiedOn,
             },
 
             TableViewNode view => new TableViewNode
@@ -553,7 +555,7 @@ internal class DataverseExplorerViewModel : ViewModelBase
                 DisplayName = view.DisplayName,
                 Description = view.Description,
                 ViewId = view.ViewId,
-                ViewType = view.ViewType,
+                QueryType = view.QueryType,
                 IsQuickFindQuery = view.IsQuickFindQuery,
                 IsDefault = view.IsDefault,
                 ImageMoniker = view.ImageMoniker,
