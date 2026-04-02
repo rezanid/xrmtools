@@ -1,7 +1,7 @@
 ﻿#nullable enable
 namespace XrmTools.WebApi.Methods;
 
-using System;
+using System.Threading;
 using System.Threading.Tasks;
 using XrmTools.WebApi.Messages;
 
@@ -16,20 +16,16 @@ internal static partial class Extensions
     /// <param name="propertyName">The name of the property.</param>
     /// <param name="value">The value to set</param>
     /// <returns></returns>
-    public static async Task SetColumnValueAsync<T>(this WebApiService service, EntityReference entityReference, string propertyName, T value)
+    public static async Task SetColumnValueAsync<T>(
+        this IWebApiService service,
+        EntityReference entityReference,
+        string propertyName,
+        T value,
+        CancellationToken cancellationToken = default)
     {
-
         SetColumnValueRequest<T> request = new(entityReference, propertyName, value);
 
-        try
-        {
-            await service.SendAsync(request: request);
-
-        }
-        catch (Exception)
-        {
-            throw;
-        }
+        await service.SendAsync(request, cancellationToken).ConfigureAwait(false);
     }
 }
 #nullable restore

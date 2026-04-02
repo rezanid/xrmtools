@@ -1,14 +1,17 @@
 ﻿#nullable enable
 namespace XrmTools.WebApi.Messages;
 
+using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using System;
 using System.Net.Http;
+using System.Threading;
+using System.Threading.Tasks;
 
 /// <summary>
 /// Contains the data to create and retrieve a record.
 /// </summary>
-public sealed class CreateRetrieveRequest : HttpRequestMessage
+public sealed class CreateRetrieveRequest : WebApiRequest<CreateRetrieveResponse>
 {
 
     /// <summary>
@@ -21,9 +24,9 @@ public sealed class CreateRetrieveRequest : HttpRequestMessage
     public CreateRetrieveRequest(string entitySetName, JObject record, string? query, bool includeAnnotations = false)
     {
         Method = HttpMethod.Post;
-        RequestUri = new Uri(uriString: $"{entitySetName}{query}", uriKind: UriKind.Relative);
+        RequestUri = new Uri(uriString: $"{entitySetName}{query ?? string.Empty}", uriKind: UriKind.Relative);
         Content = new StringContent(
-            content: record.ToString(),
+            content: record.ToString(Formatting.None),
             encoding: System.Text.Encoding.UTF8,
             mediaType: "application/json");
         if (includeAnnotations)
@@ -32,5 +35,8 @@ public sealed class CreateRetrieveRequest : HttpRequestMessage
         }
         Headers.Add("Prefer", "return=representation");
     }
+
+    public override Task<CreateRetrieveResponse> CreateResponseAsync(HttpResponseMessage raw, CancellationToken ct)
+        => CreateRetrieveResponse.FromAsync(raw, ct);
 }
 #nullable restore

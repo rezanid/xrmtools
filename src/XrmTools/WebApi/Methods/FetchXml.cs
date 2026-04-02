@@ -4,7 +4,6 @@ using XrmTools.WebApi.Batch;
 using XrmTools.WebApi.Messages;
 using System.Xml.Linq;
 using System.Threading.Tasks;
-using System;
 using System.Linq;
 using System.Threading;
 
@@ -22,7 +21,8 @@ internal static partial class Extensions
         this IWebApiService service,
         string entitySetName,
         XDocument fetchXml,
-        bool includeAnnotations, CancellationToken cancellationToken)
+        bool includeAnnotations,
+        CancellationToken cancellationToken = default)
     {
         FetchXmlRequest fetchXmlRequest = new(
             entitySetName: entitySetName,
@@ -37,7 +37,7 @@ internal static partial class Extensions
         string entitySetName,
         string fetchXml,
         bool includeAnnotations,
-        CancellationToken cancellationToken)
+        CancellationToken cancellationToken = default)
     {
        FetchXmlRequest fetchXmlRequest = new(
             entitySetName: entitySetName,
@@ -58,20 +58,14 @@ internal static partial class Extensions
             Requests = [fetchXmlRequest]
         };
 
-        try
+        var batchResponse = await service.SendAsync(batchRequest, cancellationToken).ConfigureAwait(false);
+        var firstResponse = (await batchResponse.ParseResponseAsync(cancellationToken).ConfigureAwait(false)).FirstOrDefault();
+        if (firstResponse is null)
         {
-            var batchResponse = await service.SendAsync<BatchResponse>(batchRequest, cancellationToken).ConfigureAwait(false);
-
-            var firstResponse = (await batchResponse.ParseResponseAsync().ConfigureAwait(false)).FirstOrDefault();
-
-            var fetchXmlResponse = await fetchXmlRequest.CreateResponseAsync(firstResponse, cancellationToken).ConfigureAwait(false);
-
-            return fetchXmlResponse;
+            return null;
         }
-        catch (Exception)
-        {
-            throw;
-        }
+
+        return await fetchXmlRequest.CreateResponseAsync(firstResponse, cancellationToken).ConfigureAwait(false);
     }
 }
 #nullable restore

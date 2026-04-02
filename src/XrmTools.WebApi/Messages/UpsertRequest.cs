@@ -1,17 +1,20 @@
 ﻿#nullable enable
 namespace XrmTools.WebApi.Messages;
 
+using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using System;
 using System.Net.Http;
 using System.Text;
+using System.Threading;
+using System.Threading.Tasks;
 using XrmTools.Http;
 using XrmTools.WebApi;
     
 /// <summary>
 /// Contains the data to upsert a record.
 /// </summary>
-public sealed class UpsertRequest : HttpRequestMessage
+public sealed class UpsertRequest : WebApiRequest<UpsertResponse>
 {
     /// <summary>
     /// Initializes the UpsertRequest
@@ -28,7 +31,7 @@ public sealed class UpsertRequest : HttpRequestMessage
         Method = HttpMethods.Patch;
         RequestUri = new Uri(uriString: entityReference.Path, uriKind: UriKind.Relative);
         Content = new StringContent(
-                content: record.ToString(),
+                content: record.ToString(Formatting.None),
                 encoding: Encoding.UTF8,
                 mediaType: "application/json");
         switch (upsertBehavior)
@@ -45,6 +48,9 @@ public sealed class UpsertRequest : HttpRequestMessage
             Headers.Add("MSCRM.SolutionUniqueName", solutionUniqueName);
         }
     }
+
+    public override Task<UpsertResponse> CreateResponseAsync(HttpResponseMessage raw, CancellationToken ct)
+        => UpsertResponse.FromAsync(raw, ct);
 }
 
 /// <summary>

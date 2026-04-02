@@ -1,6 +1,6 @@
 ﻿#nullable enable
 using Newtonsoft.Json.Linq;
-using System;
+using System.Threading;
 using System.Threading.Tasks;
 using XrmTools.WebApi.Messages;
 
@@ -19,14 +19,14 @@ internal static partial class Extensions
     /// <param name="eTag">The current ETag value to compare.</param>
     /// <returns></returns>
     public static async Task UpdateAsync(
-        this WebApiService service, 
+        this IWebApiService service,
         EntityReference entityReference, 
         JObject record, 
         bool preventDuplicateRecord = false,
         string? partitionId = null,
-        string? eTag = null)
+        string? eTag = null,
+        CancellationToken cancellationToken = default)
     {
-
         UpdateRequest request = new(
             entityReference: entityReference, 
             record: record,
@@ -34,15 +34,7 @@ internal static partial class Extensions
             partitionId: partitionId,
             eTag: eTag);
 
-        try
-        {
-            await service.SendAsync(request: request);
-
-        }
-        catch (Exception)
-        {
-            throw;
-        }
+        await service.SendAsync(request, cancellationToken).ConfigureAwait(false);
     }
 }
 #nullable restore

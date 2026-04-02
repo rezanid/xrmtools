@@ -1,12 +1,8 @@
 ﻿#nullable enable
 namespace XrmTools.WebApi.Methods;
 
-using System;
-using System.Net.Http;
-using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
-using XrmTools.Meta.Model;
 using XrmTools.WebApi.Messages;
 
 internal static partial class Extensions
@@ -23,20 +19,15 @@ internal static partial class Extensions
         this IWebApiService service,
         string queryUri,
         int? maxPageSize = null,
-        bool includeAnnotations = false)
+        bool includeAnnotations = false,
+        CancellationToken cancellationToken = default)
     {
         var request = new RetrieveMultipleRequest(
             queryUri: queryUri,
             maxPageSize: maxPageSize,
             includeAnnotations: includeAnnotations);
-        try
-        {
-            return await service.SendAsync<RetrieveMultipleResponse>(request: request);
-        }
-        catch (Exception)
-        {
-            throw;
-        }
+
+        return await service.SendAsync(request, cancellationToken).ConfigureAwait(false);
     }
 
     public static async Task<ODataQueryResponse<T>> RetrieveMultipleAsync<T>(
@@ -46,21 +37,12 @@ internal static partial class Extensions
         bool includeAnnotations = false,
         CancellationToken cancellationToken = default)
     {
-        var request = new RetrieveMultipleRequest(
+        var request = new RetrieveMultipleRequest<T>(
             queryUri: queryUri,
             maxPageSize: maxPageSize,
             includeAnnotations: includeAnnotations);
-        try
-        {
-            using var response = await service.SendAsync<HttpResponseMessage>(request: request, cancellationToken).ConfigureAwait(false);
-            using var stream = await response.Content.ReadAsStreamAsync().ConfigureAwait(false);
-            var result =  await JsonSerializer.DeserializeAsync<ODataQueryResponse<T>>(stream, SerializerOptions, cancellationToken).ConfigureAwait(false);
-            return result!;
-        }
-        catch (Exception)
-        {
-            throw;
-        }
+
+        return await service.SendAsync(request, cancellationToken).ConfigureAwait(false);
     }
 }
 #nullable restore

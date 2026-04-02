@@ -145,21 +145,20 @@ internal sealed class PluginRegistrationService(
 
         try
         {
-            var batchResponse = await _webApi.SendAsync<BatchResponse>(batch!);
-            var responses = await batchResponse.ParseResponseAsync(cancellationToken);
+            var batchResponse = await _webApi.SendAsync(batch!, cancellationToken).ConfigureAwait(false);
+            var responses = await batchResponse.ParseResponseAsync(cancellationToken).ConfigureAwait(false);
 
             foreach (var response in responses)
             {
                 if (!response.IsSuccessStatusCode)
                 {
-                    var error = await response.AsServiceExceptionAsync();
+                    var error = await response.AsServiceExceptionAsync().ConfigureAwait(false);
                     _log.LogCritical(error.ToString());
                     return PluginRegistrationResult.Failure(error.Message);
                 }
-                else if (response.Headers.Contains("OData-EntityId"))
+                else if (response.GetEntityReference() is EntityReference entityReference)
                 {
-                    var path = response.As<UpsertResponse>().EntityReference?.Path;
-                    _log.LogTrace($"Registered ({path}).");
+                    _log.LogTrace($"Registered ({entityReference.Path}).");
                 }
             }
         }
@@ -338,21 +337,20 @@ internal sealed class PluginRegistrationService(
 
         try
         {
-            var batchResponse = await _webApi.SendAsync<BatchResponse>(batch!);
-            var responses = await batchResponse.ParseResponseAsync(cancellationToken);
+            var batchResponse = await _webApi.SendAsync(batch!, cancellationToken).ConfigureAwait(false);
+            var responses = await batchResponse.ParseResponseAsync(cancellationToken).ConfigureAwait(false);
 
             foreach (var response in responses)
             {
                 if (!response.IsSuccessStatusCode)
                 {
-                    var error = await response.AsServiceExceptionAsync();
+                    var error = await response.AsServiceExceptionAsync().ConfigureAwait(false);
                     _log.LogCritical(error.ToString());
                     return PluginRegistrationResult.Failure(error.Message);
                 }
-                else if (response.Headers.Contains("OData-EntityId"))
+                else if (response.GetEntityReference() is EntityReference entityReference)
                 {
-                    var path = response.As<UpsertResponse>().EntityReference?.Path;
-                    _log.LogTrace($"Registered ({path}).");
+                    _log.LogTrace($"Registered ({entityReference.Path}).");
                 }
             }
         }
@@ -383,21 +381,20 @@ internal sealed class PluginRegistrationService(
                     ChangeSets = [new(upserts)]
                 };
 
-                var followupResponse = await _webApi.SendAsync<BatchResponse>(followupBatch);
-                var followupParts = await followupResponse.ParseResponseAsync(cancellationToken);
+                var followupResponse = await _webApi.SendAsync(followupBatch, cancellationToken).ConfigureAwait(false);
+                var followupParts = await followupResponse.ParseResponseAsync(cancellationToken).ConfigureAwait(false);
 
                 foreach (var response in followupParts)
                 {
                     if (!response.IsSuccessStatusCode)
                     {
-                        var error = await response.AsServiceExceptionAsync();
+                        var error = await response.AsServiceExceptionAsync().ConfigureAwait(false);
                         _log.LogCritical(error.ToString());
                         return PluginRegistrationResult.Failure(error.Message);
                     }
-                    else if (response.Headers.Contains("OData-EntityId"))
+                    else if (response.GetEntityReference() is EntityReference entityReference)
                     {
-                        var path = response.As<UpsertResponse>().EntityReference?.Path;
-                        _log.LogTrace($"Registered ({path}).");
+                        _log.LogTrace($"Registered ({entityReference.Path}).");
                     }
                 }
             }

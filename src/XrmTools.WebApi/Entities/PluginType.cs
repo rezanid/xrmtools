@@ -27,8 +27,10 @@ public class PluginType : Component<PluginType>
     public string? AssemblynName { get; set; }
     public string? Description { get; set; }
     [JsonPropertyName("plugintype_sdkmessageprocessingstep")]
+    [JsonProperty("plugintype_sdkmessageprocessingstep")]
     public List<SdkMessageProcessingStep> Steps { get; set; } = [];
     [JsonPropertyName("CustomAPIId")]
+    [JsonProperty("CustomAPIId")]
     public List<CustomApi> CustomApi { get; set; } = [];
 }
 #nullable restore

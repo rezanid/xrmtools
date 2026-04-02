@@ -1,33 +1,44 @@
 ﻿namespace XrmTools.WebApi.Messages;
 
-using System;
+using System.Collections.Generic;
+using System.Net;
 using System.Net.Http;
 using System.Text.Json;
-
-// This class must be instantiated by either:
-// - The Service.SendAsync<T> method
-// - The HttpResponseMessage.As<T> extension in Extensions.cs
+using System.Threading;
+using System.Threading.Tasks;
 
 /// <summary>
 /// Contains the data from the GetColumnValueRequest.
 /// </summary>
 /// <typeparam name="T"></typeparam>
-public sealed class GetColumnValueResponse<T> : HttpResponseMessage
+public sealed class GetColumnValueResponse<T>
 {
-    string? _content;
-
-    private JsonDocument _jsonDocument
+    private GetColumnValueResponse(HttpStatusCode statusCode, IReadOnlyDictionary<string, IEnumerable<string>> headers, T? value)
     {
-        get
-        {
-            _content ??= Content.ReadAsStringAsync().GetAwaiter().GetResult();
-
-            return JsonDocument.Parse(_content);
-        }
+        StatusCode = statusCode;
+        Headers = headers;
+        Value = value;
     }
+
+    public HttpStatusCode StatusCode { get; }
+
+    public IReadOnlyDictionary<string, IEnumerable<string>> Headers { get; }
 
     /// <summary>
     /// The requested typed column  value.
     /// </summary>
-    public T Value => (T)Convert.ChangeType(_jsonDocument.RootElement.GetProperty("value").GetString(), typeof(T));
+    public T? Value { get; }
+
+    internal static async Task<GetColumnValueResponse<T>> FromAsync(HttpResponseMessage raw, CancellationToken ct = default)
+    {
+        using var document = raw.Content is null
+            ? null
+            : JsonDocument.Parse(await raw.Content.ReadAsStringAsync().ConfigureAwait(false));
+
+        var value = document is not null && document.RootElement.TryGetProperty("value", out var element)
+            ? JsonSerializer.Deserialize<T>(element.GetRawText(), Extensions.SerializerOptions)
+            : default;
+
+        return new GetColumnValueResponse<T>(raw.StatusCode, raw.Headers.ToHeaderDictionary(), value);
+    }
 }

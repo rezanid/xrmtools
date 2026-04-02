@@ -1,7 +1,6 @@
 ﻿#nullable enable
 namespace XrmTools.WebApi;
 
-using Microsoft.VisualStudio.Shell;
 using System;
 using System.ComponentModel.Composition;
 using System.Linq;
@@ -17,8 +16,8 @@ public interface IWebApiService
 {
     Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken);
     Task<HttpResponseMessage> GetAsync(string uri, CancellationToken cancellationToken);
-    Task<ODataQueryResponse<T>> QueryAsync<T>(string odataQuery, CancellationToken cancellationToken = default) where T : Entity<T>;
-    Task<T> SendAsync<T>(HttpRequestMessage request, CancellationToken cancellationToken = default) where T : HttpResponseMessage;
+    Task<ODataQueryResponse<T>> QueryAsync<T>(string odataQuery, CancellationToken cancellationToken = default);
+    Task<TResponse> SendAsync<TResponse>(WebApiRequest<TResponse> request, CancellationToken cancellationToken = default);
     Task<Uri?> GetBaseUrlAsync();
 }
 
@@ -39,6 +38,8 @@ public class WebApiService(
     /// <exception cref="Exception"></exception>
     public async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken = default)
     {
+        if (request == null) throw new ArgumentNullException(nameof(request));
+
         // Session token used by elastic tables to enable strong consistency
         // See https://learn.microsoft.com/power-apps/developer/data-platform/use-elastic-tables?tabs=webapi#sending-the-session-token
         if (!string.IsNullOrWhiteSpace(_sessionToken) && request.Method == HttpMethod.Get) {
@@ -71,25 +72,10 @@ public class WebApiService(
         if (!response.IsSuccessStatusCode && !response.Content.IsMimeMultipartContent())
         {
             var exception = await response.AsServiceExceptionAsync();
-            await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync();
-            logger.LogError(exception, $"Error in Web API call. " + exception?.Message);
+            logger.LogError(exception, $"Error in Web API call. {exception.Message}");
             if (exception is not null) throw exception;
         }
         return response;
-    }
-
-    /// <summary>
-    /// Processes requests with typed responses
-    /// </summary>
-    /// <typeparam name="T">The type derived from HttpResponseMessage</typeparam>
-    /// <param name="request">The request</param>
-    /// <returns></returns>
-    public async Task<T> SendAsync<T>(HttpRequestMessage request, CancellationToken ct = default) where T : HttpResponseMessage
-    {
-        var response = await SendAsync(request, ct).ConfigureAwait(false);
-
-        // 'As' method is Extension of HttpResponseMessage see Extensions.cs
-        return response.As<T>();
     }
 
     public async Task<TResponse> SendAsync<TResponse>(
@@ -98,12 +84,10 @@ public class WebApiService(
     {
         if (request == null) throw new ArgumentNullException(nameof(request));
 
-        using var raw = await SendAsync(request as HttpRequestMessage, ct)
+        using var raw = await SendAsync((HttpRequestMessage)request, ct)
             .ConfigureAwait(false);
-        // Optional policy: move/replace with your own error handling.
         raw.EnsureSuccessStatusCode();
 
-        // Let the request create the typed response (no reflection).
         return await request.CreateResponseAsync(raw, ct).ConfigureAwait(false);
     }
 
@@ -116,7 +100,7 @@ public class WebApiService(
     /// <typeparam name="T">Type of the entity to serialize the result of the query.</typeparam>
     /// <param name="odataQuery">OData query.</param>
     /// <returns>OData response that include deserialized list of records in <see cref="ODataQueryResponse{T}.Value"/> property.</returns>
-    public async Task<ODataQueryResponse<T>> QueryAsync<T>(string odataQuery, CancellationToken cancellationToken = default) where T : Entity<T>
+    public async Task<ODataQueryResponse<T>> QueryAsync<T>(string odataQuery, CancellationToken cancellationToken = default)
     {
         var response = await GetAsync(odataQuery, cancellationToken).ConfigureAwait(false);
         return await response.CastAsync<ODataQueryResponse<T>>().ConfigureAwait(false);

@@ -1,17 +1,20 @@
 ﻿#nullable enable
 namespace XrmTools.WebApi.Messages;
 
+using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using System;
 using System.Net.Http;
 using System.Text;
+using System.Threading;
+using System.Threading.Tasks;
 using XrmTools.WebApi;
 using XrmTools.Http;
 
 /// <summary>
 /// Contains the data to update a record
 /// </summary>
-public sealed class UpdateRequest : HttpRequestMessage
+public sealed class UpdateRequest : WebApiRequest<EmptyResponse>
 {
     /// <summary>
     /// Initializes the UpdateRequest
@@ -43,7 +46,7 @@ public sealed class UpdateRequest : HttpRequestMessage
             uriString: path,
             uriKind: UriKind.Relative);
         Content = new StringContent(
-                content: record.ToString(),
+                content: record.ToString(Formatting.None),
                 encoding: Encoding.UTF8,
                 mediaType: "application/json");
         if (preventDuplicateRecord)
@@ -61,5 +64,8 @@ public sealed class UpdateRequest : HttpRequestMessage
             Headers.Add("If-Match", "*");
         }
     }
+
+    public override Task<EmptyResponse> CreateResponseAsync(HttpResponseMessage raw, CancellationToken ct)
+        => Task.FromResult(EmptyResponse.Instance);
 }
 #nullable restore

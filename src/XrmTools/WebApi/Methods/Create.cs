@@ -1,7 +1,7 @@
 ﻿#nullable enable
 namespace XrmTools.WebApi.Methods;
 using Newtonsoft.Json.Linq;
-using System;
+using System.Threading;
 using System.Threading.Tasks;
 using XrmTools.WebApi.Messages;
 
@@ -15,21 +15,14 @@ internal static partial class Extensions
     /// <param name="record">Contains the data to create the record.</param>
     /// <returns>A reference to the created record.</returns>
     public static async Task<EntityReference?> CreateAsync(
-        this WebApiService service, 
+        this IWebApiService service,
         string entitySetName, 
-        JObject record) {
-
+        JObject record,
+        CancellationToken cancellationToken = default)
+    {
         var request = new CreateRequest(entitySetName: entitySetName, record:record);
-
-        try
-        {
-            var response = await service.SendAsync<CreateResponse>(request: request);
-            return response.EntityReference;
-        }
-        catch (Exception)
-        {
-            throw;
-        }
+        var response = await service.SendAsync(request, cancellationToken).ConfigureAwait(false);
+        return response.EntityReference;
     }
 }
 #nullable restore

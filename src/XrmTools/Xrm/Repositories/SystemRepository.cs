@@ -16,8 +16,5 @@ internal interface ISystemRepository : IXrmRepository
 internal class SystemRepository(IWebApiService service, ILogger logger) : XrmRepository(service), ISystemRepository
 {
     public async Task<WhoAmIResponse> WhoAmIAsync(CancellationToken cancellationToken = default)
-    {
-        var response = await service.SendAsync(new WhoAmIRequest(), cancellationToken).ConfigureAwait(false);
-        return await response.CastAsync<WhoAmIResponse>();
-    }
+        => await service.SendAsync(new WhoAmIRequest(), cancellationToken).ConfigureAwait(false);
 }

@@ -2,54 +2,58 @@
 namespace XrmTools.WebApi.Messages;
 
 using Newtonsoft.Json.Linq;
+using System.Collections.Generic;
+using System.Net;
 using System.Net.Http;
+using System.Threading;
+using System.Threading.Tasks;
 
 /// <summary>
 /// Contains the response from the RetrieveMultipleRequest
 /// </summary>
-/// <remarks>
-/// This class must be instantiated by either the <see cref="IWebApiService.SendAsync{T}(HttpRequestMessage)"/>
-/// or the <see cref="HttpResponseMessage.As{T}"/> extension in <see cref="Methods.Extensions"/>
-/// </remarks>
-public sealed class RetrieveMultipleResponse : HttpResponseMessage
+public sealed class RetrieveMultipleResponse
 {        
-    //cache the async content
-    private string? _content;
-
-    //Provides JObject for property getters
-    private JObject JObject
+    private RetrieveMultipleResponse(HttpStatusCode statusCode, IReadOnlyDictionary<string, IEnumerable<string>> headers, JObject root)
     {
-        get
-        {
-            _content ??= Content.ReadAsStringAsync().GetAwaiter().GetResult();
-
-            return JObject.Parse(_content);
-        }
+        StatusCode = statusCode;
+        Headers = headers;
+        Records = (JArray?)root.GetValue("value") ?? [];
+        Count = (int?)root.GetValue("@odata.count");
+        TotalRecordCount = (int?)root.GetValue("@Microsoft.Dynamics.CRM.totalrecordcount");
+        TotalRecordCountExceeded = root.GetValue("@Microsoft.Dynamics.CRM.totalrecordcountlimitexceeded")?.ToString() == "True";
+        NextLink = root.GetValue("@odata.nextLink")?.ToString();
     }
+
+    public HttpStatusCode StatusCode { get; }
+
+    public IReadOnlyDictionary<string, IEnumerable<string>> Headers { get; }
 
     /// <summary>
     /// The records returned.
     /// </summary>
-    public JArray? Records => (JArray)JObject.GetValue("value");
+    public JArray Records { get; }
 
     /// <summary>
     /// How many records returned. Only populated if '$count=true' is included in the request.queryUri
     /// </summary>
-    public int? Count => (int?)JObject.GetValue("@odata.count");
+    public int? Count { get; }
 
     /// <summary>
     /// The total number of records matching the filter criteria, up to 5000, irrespective of the page size. Only populated if request.IncludeAnnotations is true.
     /// </summary>
-    public int? TotalRecordCount => (int?)JObject.GetValue("@Microsoft.Dynamics.CRM.totalrecordcount");
+    public int? TotalRecordCount { get; }
 
     /// <summary>
     /// Whether the total number of records matching the filter criteria exceeds the TotalRecordCount. Only populated if '$count=true' is included in the request.queryUri
     /// </summary>
-    public bool TotalRecordCountExceeded => JObject.GetValue("@Microsoft.Dynamics.CRM.totalrecordcountlimitexceeded")?.ToString() == "True";
+    public bool TotalRecordCountExceeded { get; }
 
     /// <summary>
     /// A link to the next page of records, if any.
     /// </summary>
-    public string? NextLink => JObject.GetValue("@odata.nextLink")?.ToString();
+    public string? NextLink { get; }
+
+    internal static async Task<RetrieveMultipleResponse> FromAsync(HttpResponseMessage raw, CancellationToken ct = default)
+        => new(raw.StatusCode, raw.Headers.ToHeaderDictionary(), await raw.Content.ReadRootAsync().ConfigureAwait(false));
 }
 #nullable restore
