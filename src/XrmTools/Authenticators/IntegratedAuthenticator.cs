@@ -1,6 +1,5 @@
 ﻿namespace XrmTools.Authentication;
 using Microsoft.Identity.Client;
-using Microsoft.Identity.Client.Extensibility;
 using Microsoft.Internal.VisualStudio.PlatformUI;
 using Microsoft.VisualStudio.Shell;
 using System;
@@ -56,21 +55,37 @@ internal class IntegratedAuthenticator : DelegatingAuthenticator
 
         var builder = app.AcquireTokenInteractive(parameters.Scopes)
             .WithParentActivityOrWindow(WindowHelper.GetDialogOwnerHandle())
-            .WithPrompt(Prompt.SelectAccount);
+            .WithPrompt(Prompt.SelectAccount)
+            .WithUseEmbeddedWebView(false);
 
-        // ExecuteAsync guarded with a timeout
-        var execTask = builder.ExecuteAsync(cancellationToken);
-        var timeoutTask = Task.Delay(TimeSpan.FromMinutes(2), cancellationToken);
+        if (firstAccount is not null)
+        {
+            builder = builder.WithAccount(firstAccount);
+        }
+
+        using var timeoutCts = new CancellationTokenSource();
+        using var linkedCts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, timeoutCts.Token);
+
+        // Prefer the system browser to avoid the legacy IE-based embedded web view on .NET Framework.
+        var execTask = builder.ExecuteAsync(linkedCts.Token);
+        var timeoutTask = Task.Delay(TimeSpan.FromMinutes(2));
 
         var completed = await Task.WhenAny(execTask, timeoutTask).ConfigureAwait(true);
         if (completed != execTask)
         {
+            timeoutCts.Cancel();
             throw new OperationCanceledException("Interactive authentication timed out.", cancellationToken);
         }
 
         try
         {
             return await execTask.ConfigureAwait(true);
+        }
+        catch (MsalClientException ex) when (ex.ErrorCode == "loopback_redirect_uri")
+        {
+            throw new InvalidOperationException(
+                "Interactive authentication requires a loopback redirect URI when using the system browser. Configure the app registration with RedirectUri=http://localhost, or omit RedirectUri to use the built-in loopback default.",
+                ex);
         }
         catch (MsalException ex) when (
             ex.ErrorCode == "authentication_canceled" ||

@@ -3,7 +3,7 @@ namespace XrmTools.Authentication;
    fails to authenticate when used in Visual Studio 2022, because it is not able to load 
    the "msalruntime_arm64.dll from runtimes\win-arm64\native directory.
 */
-/* NOTE! Only versio 7.74.1 is compamtible with VS2022, and even that fails during authentication. */
+/* NOTE! Only version 7.74.1 is compamtible with VS2022, and even that fails during authentication. */
 
 using Microsoft.Identity.Client;
 using Microsoft.VisualStudio.Shell;

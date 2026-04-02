@@ -12,6 +12,8 @@ using System.Diagnostics;
 
 internal abstract class DelegatingAuthenticator : IAuthenticator
 {
+    private const string LoopbackRedirectUri = "http://localhost";
+
     private AuthenticationParameters lastParameters;
     private IClientApplicationBase lastClientApp;
 
@@ -161,7 +163,14 @@ internal abstract class DelegatingAuthenticator : IAuthenticator
         var builder = PublicClientApplicationBuilder.Create(clientId);
 
         if (!string.IsNullOrEmpty(authority)) builder.WithAuthority(authority);
-        if (!string.IsNullOrEmpty(redirectUri)) builder.WithRedirectUri(redirectUri);
+        if (string.IsNullOrWhiteSpace(redirectUri) || string.Equals(redirectUri, AuthenticationParameters.DefaultRedirectUrl, StringComparison.OrdinalIgnoreCase))
+        {
+            builder.WithRedirectUri(LoopbackRedirectUri);
+        }
+        else
+        {
+            builder.WithRedirectUri(redirectUri);
+        }
         if (!string.IsNullOrEmpty(tenantId)) builder.WithTenantId(tenantId);
         
         var publicClientApp = builder.WithLogging((level, message, pii) =>
