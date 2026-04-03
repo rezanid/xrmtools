@@ -1,0 +1,18 @@
+// NOTE! The following nuget packages are required, unless we move to .Net Core one day:
+// System.Memory
+// System.Runtime.CompilerServices.Unsafe
+// Also, the project must allow unsafe code to support the generated code that will likely use pointers.
+COLORREF
+IsZoomed
+DefWindowProc
+SetWindowPos
+GetWindowRect
+PostMessage
+DwmSetWindowAttribute
+SHAppBarMessage
+S_OK
+E_INVALIDARG
+HRESULT_FROM_WIN32
+MAKELONG
+LOWORD
+HIWORD
