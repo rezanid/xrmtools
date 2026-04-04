@@ -5,10 +5,10 @@
     <Platform Name="x86" />
   </Configurations>
   <Folder Name="/Tests/">
+    <Project Path="Analyzers/XrmTools.Analyzers.Test/XrmTools.Analyzers.Test.csproj" />
     <Project Path="Tests/XrmTools.Core.Tests/XrmTools.Core.Tests.csproj" />
     <Project Path="Tests/XrmTools.Tests/XrmTools.Tests.csproj" />
     <Project Path="Tests/XrmTools.WebApi.Tests/XrmTools.WebApi.Tests.csproj" />
-    <Project Path="Analyzers/XrmTools.Analyzers.Test/XrmTools.Analyzers.Test.csproj" />
   </Folder>
   <Folder Name="/Analyzers/">
     <Project Path="Analyzers/XrmTools.Analyzers.CodeFixes/XrmTools.Analyzers.CodeFixes.csproj" />
