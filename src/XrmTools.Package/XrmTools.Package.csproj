@@ -1,0 +1,55 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net48</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <LangVersion>12</LangVersion>
+    <UseWPF>true</UseWPF>
+
+    <VssdkCompatibleExtension>true</VssdkCompatibleExtension>
+	<GeneratePkgDefFile>true</GeneratePkgDefFile>
+	<UseCodeBase>true</UseCodeBase>
+    <AutoGenerateBindingRedirects>False</AutoGenerateBindingRedirects>
+
+    <RootNamespace>XrmTools</RootNamespace>
+  </PropertyGroup>
+  <ItemGroup>
+    <Content Remove=".vsextension\Monikers\Dataverse.xaml" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.VisualStudio.Extensibility.Sdk" Version="17.14.40608" PrivateAssets="all" />
+    <PackageReference Include="Microsoft.VisualStudio.Extensibility.Build" Version="17.14.40608" PrivateAssets="all" />
+    <PackageReference Include="Microsoft.VisualStudio.SDK" Version="17.14.40265" ExcludeAssets="runtime" />
+    <PackageReference Include="System.Memory" Version="4.6.3" />
+    <PackageReference Include="System.Runtime.CompilerServices.Unsafe" Version="6.1.2" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\XrmTools.Core\XrmTools.Core.csproj" />
+    <ProjectReference Include="..\XrmTools.Shell\XrmTools.Shell.csproj" />
+    <ProjectReference Include="..\XrmTools.WebApi\XrmTools.WebApi.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Update="source.extension.cs">
+      <DesignTime>True</DesignTime>
+      <AutoGen>True</AutoGen>
+      <DependentUpon>source.extension.vsixmanifest</DependentUpon>
+    </Compile>
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Update="source.extension.vsixmanifest">
+      <Generator>VsixManifestGenerator</Generator>
+      <LastGenOutput>source.extension.cs</LastGenOutput>
+    </None>
+  </ItemGroup>
+
+  <ItemGroup>
+    <Resource Include=".vsextension\Monikers\Dataverse.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Resource>
+  </ItemGroup>
+</Project>
