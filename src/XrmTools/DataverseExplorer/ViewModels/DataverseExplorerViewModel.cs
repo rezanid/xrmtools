@@ -73,6 +73,13 @@ internal class DataverseExplorerViewModel : ViewModelBase
         RefreshCommand = new AsyncRelayCommand(RefreshAsync);
         CollapseAllCommand = new RelayCommand(CollapseAll);
         NodeExpandedCommand = new AsyncRelayCommand<ExplorerNodeBase>(OnNodeExpandedAsync);
+
+        DataverseEnvironmentProvider.EnvironmentChanged += DataverseEnvironmentProvider_EnvironmentChanged;
+    }
+
+    private void DataverseEnvironmentProvider_EnvironmentChanged(DataverseEnvironment obj)
+    {
+        _ = RefreshAsync();
     }
 
     public async Task InitializeAsync()
