@@ -148,7 +148,6 @@ internal class XrmHttpClientFactory : IXrmHttpClientFactory, System.IAsyncDispos
         if (environment != DataverseEnvironment.Empty)
         {
             client.BaseAddress = environment.BaseServiceUrl!;
-            client.DefaultRequestHeaders.Add("Prefer", "odata.include-annotations=*");
             var assemblyName = Assembly.GetExecutingAssembly().GetName();
             client.DefaultRequestHeaders.UserAgent.Add(new ProductInfoHeaderValue(assemblyName.Name.Replace(" ", ""), assemblyName.Version.ToString()));
             client.DefaultRequestHeaders.Add("OData-MaxVersion", "4.0");

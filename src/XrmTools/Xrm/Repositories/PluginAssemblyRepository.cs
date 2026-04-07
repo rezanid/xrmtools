@@ -16,8 +16,7 @@ internal class PluginAssemblyRepository(IWebApiService service, ILogger logger) 
 {
     public async Task<IEnumerable<PluginAssemblyConfig>> GetAsync(CancellationToken cancellationToken)
     {
-        var response = await service.GetAsync("pluginassemblies?$select=pluginassemblyid,name,publickeytoken,solutionid,version,isolationmode,sourcetype", cancellationToken).ConfigureAwait(false);
-        var typed = await response.CastAsync<ODataQueryResponse<PluginAssemblyConfig>>().ConfigureAwait(false);
+        var typed = await service.QueryAsync<PluginAssemblyConfig>("pluginassemblies?$select=pluginassemblyid,name,publickeytoken,solutionid,version,isolationmode,sourcetype", cancellationToken).ConfigureAwait(false);
         if (typed is not null && typed.Value is not null)
         {
             return typed.Value;

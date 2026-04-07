@@ -30,8 +30,7 @@ internal class SolutionRepository : XrmRepository, ISolutionRepository
 
         return await GetOrCreateCacheItemAsync(cacheKey, async () =>
         {
-            var response = await service.GetAsync(SolutionQueryUnmanaged, cancellationToken).ConfigureAwait(false);
-            var typed = await response.CastAsync<ODataQueryResponse<Solution>>().ConfigureAwait(false);
+            var typed = await service.QueryAsync<Solution>(SolutionQueryUnmanaged, cancellationToken).ConfigureAwait(false);
             if (typed is not null && typed.Value is not null)
             {
                 return typed.Value;

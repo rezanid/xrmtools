@@ -23,6 +23,16 @@ internal interface IExplorerDataService
     Task<IEnumerable<ExplorerNodeBase>> LoadAssemblyChildrenAsync(AssemblyNode assembly, CancellationToken cancellationToken);
 
     /// <summary>
+    /// Loads all Dataverse table definitions.
+    /// </summary>
+    Task<IEnumerable<TableNode>> LoadTablesAsync(CancellationToken cancellationToken);
+
+    /// <summary>
+    /// Loads columns, relationships, keys, forms, and views for a table.
+    /// </summary>
+    Task<IEnumerable<ExplorerNodeBase>> LoadTableChildrenAsync(TableNode table, CancellationToken cancellationToken);
+
+    /// <summary>
     /// Loads steps and images for a given plugin type.
     /// </summary>
     Task<IEnumerable<ExplorerNodeBase>> LoadPluginTypeChildrenAsync(PluginTypeNode pluginType, CancellationToken cancellationToken);

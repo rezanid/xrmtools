@@ -3,12 +3,14 @@ namespace XrmTools.WebApi.Messages;
 
 using System;
 using System.Net.Http;
+using System.Threading;
+using System.Threading.Tasks;
 
 
 /// <summary>
 /// Contains the data to retrieve a record
 /// </summary>
-public sealed class RetrieveRequest : HttpRequestMessage
+public sealed class RetrieveRequest : WebApiRequest<RetrieveResponse>
 {
     /// <summary>
     /// Initializes the RetrieveRequest
@@ -24,24 +26,8 @@ public sealed class RetrieveRequest : HttpRequestMessage
     {
         Method = HttpMethod.Get;
 
-        string parameters;
-
-        if (!string.IsNullOrWhiteSpace(partitionid))
-        {
-            parameters = $"?partitionId={partitionid}";
-            if (query.StartsWith("?"))
-            {
-                query = string.Concat("&", query[1..]);
-            }
-            parameters += query;
-        }
-        else
-        {
-            parameters = query;
-        }
-
         RequestUri = new Uri(
-            uriString: $"{entityReference.Path}{parameters}",
+            uriString: BuildUri(entityReference, query, partitionid),
             //uriString: $"{entitySetName}{parameters}",
             uriKind: UriKind.Relative);
         if (includeAnnotations)
@@ -54,5 +40,53 @@ public sealed class RetrieveRequest : HttpRequestMessage
             Headers.Add("If-None-Match", eTag);
         }
     }
+
+    public override Task<RetrieveResponse> CreateResponseAsync(HttpResponseMessage raw, CancellationToken ct)
+        => RetrieveResponse.FromAsync(raw, ct);
+
+    private static string BuildUri(EntityReference entityReference, string? query, string? partitionId)
+    {
+        var parameters = string.IsNullOrWhiteSpace(query) ? string.Empty : query;
+
+        if (string.IsNullOrWhiteSpace(partitionId))
+        {
+            return $"{entityReference.Path}{parameters}";
+        }
+
+        if (!string.IsNullOrEmpty(parameters) && parameters.StartsWith("?", StringComparison.Ordinal))
+        {
+            parameters = string.Concat("&", parameters[1..]);
+        }
+        else if (!string.IsNullOrEmpty(parameters) && !parameters.StartsWith("&", StringComparison.Ordinal))
+        {
+            parameters = string.Concat("&", parameters);
+        }
+
+        return $"{entityReference.Path}?partitionId={partitionId}{parameters}";
+    }
+}
+
+public sealed class RetrieveRequest<T> : WebApiRequest<RetrieveResponse<T>>
+{
+    private readonly RetrieveRequest inner;
+
+    public RetrieveRequest(
+        EntityReference entityReference,
+        string? query,
+        bool includeAnnotations = false,
+        string? eTag = null,
+        string? partitionid = null)
+    {
+        inner = new RetrieveRequest(entityReference, query, includeAnnotations, eTag, partitionid);
+        Method = inner.Method;
+        RequestUri = inner.RequestUri;
+        foreach (var header in inner.Headers)
+        {
+            Headers.TryAddWithoutValidation(header.Key, header.Value);
+        }
+    }
+
+    public override Task<RetrieveResponse<T>> CreateResponseAsync(HttpResponseMessage raw, CancellationToken ct)
+        => RetrieveResponse<T>.FromAsync(raw, ct);
 }
 #nullable restore

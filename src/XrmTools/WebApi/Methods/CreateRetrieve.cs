@@ -1,7 +1,7 @@
 ﻿#nullable enable
 namespace XrmTools.WebApi.Methods;
 using Newtonsoft.Json.Linq;
-using System;
+using System.Threading;
 using System.Threading.Tasks;
 using XrmTools.WebApi.Messages;
 
@@ -17,30 +17,21 @@ internal static partial class Extensions
     /// <param name="includeAnnotations">Whether to include annotations with the data.</param>
     /// <returns>The created record.</returns>
     public static async Task<JObject> CreateRetrieveAsync(
-        this WebApiService service,
+        this IWebApiService service,
         string entitySetName,
         JObject record,
         string? query,
-        bool includeAnnotations = false)
+        bool includeAnnotations = false,
+        CancellationToken cancellationToken = default)
     {
-
         CreateRetrieveRequest request = new(
             entitySetName: entitySetName, 
             record: record,
             query: query,
             includeAnnotations: includeAnnotations);
 
-        try
-        {
-            CreateRetrieveResponse response = await service.SendAsync<CreateRetrieveResponse>(request: request);
-
-            return response.Record;
-
-        }
-        catch (Exception)
-        {
-            throw;
-        }
+        CreateRetrieveResponse response = await service.SendAsync(request, cancellationToken).ConfigureAwait(false);
+        return response.Record;
     }
 }
 #nullable restore

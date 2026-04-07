@@ -3,11 +3,13 @@ namespace XrmTools.WebApi.Messages;
 
 using System;
 using System.Net.Http;
+using System.Threading;
+using System.Threading.Tasks;
 
 /// <summary>
 /// Contains the data to retrieve data from Dataverse for a specified table.
 /// </summary>
-public sealed class RetrieveMultipleRequest : HttpRequestMessage
+public sealed class RetrieveMultipleRequest : WebApiRequest<RetrieveMultipleResponse>
 {
     /*
     This message does not provide for an explicit entityset name like RetrieveRequest does.
@@ -55,6 +57,28 @@ public sealed class RetrieveMultipleRequest : HttpRequestMessage
         {
             Headers.Add("Prefer", "odata.include-annotations=\"*\"");
         }
-    }   
+    }
+
+    public override Task<RetrieveMultipleResponse> CreateResponseAsync(HttpResponseMessage raw, CancellationToken ct)
+        => RetrieveMultipleResponse.FromAsync(raw, ct);
+}
+
+public sealed class RetrieveMultipleRequest<T> : WebApiRequest<ODataQueryResponse<T>>
+{
+    private readonly RetrieveMultipleRequest inner;
+
+    public RetrieveMultipleRequest(string queryUri, int? maxPageSize = null, bool includeAnnotations = false)
+    {
+        inner = new RetrieveMultipleRequest(queryUri, maxPageSize, includeAnnotations);
+        Method = inner.Method;
+        RequestUri = inner.RequestUri;
+        foreach (var header in inner.Headers)
+        {
+            Headers.TryAddWithoutValidation(header.Key, header.Value);
+        }
+    }
+
+    public override Task<ODataQueryResponse<T>> CreateResponseAsync(HttpResponseMessage raw, CancellationToken ct)
+        => raw.CastAsync<ODataQueryResponse<T>>();
 }
 #nullable restore

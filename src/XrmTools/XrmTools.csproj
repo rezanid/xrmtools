@@ -480,13 +480,13 @@
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="Community.VisualStudio.Toolkit.17">
-      <Version>17.0.545</Version>
+      <Version>17.0.549</Version>
     </PackageReference>
     <PackageReference Include="CommunityToolkit.Mvvm">
-      <Version>8.4.0</Version>
+      <Version>8.4.2</Version>
     </PackageReference>
     <PackageReference Include="GuiLabs.Language.Xml">
-      <Version>1.2.93</Version>
+      <Version>1.2.119</Version>
     </PackageReference>
     <PackageReference Include="Humanizer.Core">
       <Version>2.14.1</Version>
@@ -515,7 +515,7 @@
       <PrivateAssets>all</PrivateAssets>
     </PackageReference>
     <PackageReference Include="Microsoft.Web.WebView2">
-      <Version>1.0.3650.58</Version>
+      <Version>1.0.3856.49</Version>
     </PackageReference>
     <PackageReference Include="Microsoft.Xaml.Behaviors.Wpf">
       <Version>1.1.135</Version>

@@ -3,11 +3,13 @@ namespace XrmTools.WebApi.Messages;
 
 using System;
 using System.Net.Http;
+using System.Threading;
+using System.Threading.Tasks;
 
 /// <summary>
 /// Contains the data to delete a column value
 /// </summary>
-public sealed class DeleteColumnValueRequest : HttpRequestMessage
+public sealed class DeleteColumnValueRequest : WebApiRequest<EmptyResponse>
 {
     /// <summary>
     /// Initializes a DeleteColumnValueRequest
@@ -21,5 +23,8 @@ public sealed class DeleteColumnValueRequest : HttpRequestMessage
             uriString: $"{entityReference.Path}/{propertyName}",
             uriKind: UriKind.Relative);
     }
+
+    public override Task<EmptyResponse> CreateResponseAsync(HttpResponseMessage raw, CancellationToken ct)
+        => Task.FromResult(EmptyResponse.Instance);
 }
 #nullable restore

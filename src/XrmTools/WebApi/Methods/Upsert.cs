@@ -1,6 +1,6 @@
 ﻿#nullable enable
 using Newtonsoft.Json.Linq;
-using System;
+using System.Threading;
 using System.Threading.Tasks;
 using XrmTools.WebApi.Messages;
 
@@ -17,26 +17,19 @@ internal static partial class Extensions
     /// <param name="upsertBehavior">Controls whether to block Create or Update operations.</param>
     /// <returns></returns>
     public static async Task<EntityReference> UpsertAsync(
-        this WebApiService service, 
+        this IWebApiService service,
         EntityReference entityReference, 
         JObject record, 
-        UpsertBehavior upsertBehavior)
+        UpsertBehavior upsertBehavior,
+        CancellationToken cancellationToken = default)
     {
-
         UpsertRequest request = new(
             entityReference: entityReference, 
             record: record, 
             upsertBehavior:upsertBehavior);
 
-        try
-        {
-            UpsertResponse response = await service.SendAsync<UpsertResponse>(request: request);
-            return response.EntityReference;
-        }
-        catch (Exception)
-        {
-            throw;
-        }
+        UpsertResponse response = await service.SendAsync(request, cancellationToken).ConfigureAwait(false);
+        return response.EntityReference!;
     }
 }
 #nullable restore

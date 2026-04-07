@@ -1,5 +1,5 @@
 ﻿namespace XrmTools.WebApi.Methods;
-using System;
+using System.Threading;
 using System.Threading.Tasks;
 using XrmTools.WebApi.Messages;
 
@@ -14,22 +14,16 @@ internal static partial class Extensions
     /// <param name="property">The name of the column.</param>
     /// <returns></returns>
     public static async Task<T> GetColumnValueAsync<T>(
-        this WebApiService service,
+        this IWebApiService service,
         EntityReference entityReference, 
-        string property)
+        string property,
+        CancellationToken cancellationToken = default)
     {
-        GetColumnValueRequest request = new(
+        GetColumnValueRequest<T> request = new(
             entityReference: entityReference,
             property: property);
 
-        try
-        {
-            GetColumnValueResponse<T> response = await service.SendAsync<GetColumnValueResponse<T>>(request: request);
-            return response.Value;
-        }
-        catch (Exception)
-        {
-            throw;
-        }
+        GetColumnValueResponse<T> response = await service.SendAsync(request, cancellationToken).ConfigureAwait(false);
+        return response.Value!;
     }
 }

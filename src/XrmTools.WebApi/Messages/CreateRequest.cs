@@ -1,13 +1,16 @@
 ﻿namespace XrmTools.WebApi.Messages;
 
+using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using System;
 using System.Net.Http;
+using System.Threading;
+using System.Threading.Tasks;
 
 /// <summary>
 /// Contains the data to create a record.
 /// </summary>
-public sealed class CreateRequest : HttpRequestMessage
+public sealed class CreateRequest : WebApiRequest<CreateResponse>
 {
     /// <summary>
     /// Intializes the CreateRequest
@@ -34,7 +37,7 @@ public sealed class CreateRequest : HttpRequestMessage
             uriKind: UriKind.Relative);
 
         Content = new StringContent(
-                content: record.ToString(),
+                content: record.ToString(Formatting.None),
                 encoding: System.Text.Encoding.UTF8,
                 mediaType: "application/json");
         if (preventDuplicateRecord)
@@ -47,5 +50,8 @@ public sealed class CreateRequest : HttpRequestMessage
             Headers.Add("MSCRM.SolutionUniqueName", solutionUniqueName);
         }
     }
+
+    public override Task<CreateResponse> CreateResponseAsync(HttpResponseMessage raw, CancellationToken ct)
+        => CreateResponse.FromAsync(raw, ct);
 }
 #nullable restore
