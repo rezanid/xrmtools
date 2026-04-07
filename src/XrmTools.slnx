@@ -5,10 +5,10 @@
     <Platform Name="x86" />
   </Configurations>
   <Folder Name="/Tests/">
+    <Project Path="Analyzers/XrmTools.Analyzers.Test/XrmTools.Analyzers.Test.csproj" />
     <Project Path="Tests/XrmTools.Core.Tests/XrmTools.Core.Tests.csproj" />
     <Project Path="Tests/XrmTools.Tests/XrmTools.Tests.csproj" />
     <Project Path="Tests/XrmTools.WebApi.Tests/XrmTools.WebApi.Tests.csproj" />
-    <Project Path="Analyzers/XrmTools.Analyzers.Test/XrmTools.Analyzers.Test.csproj" />
   </Folder>
   <Folder Name="/Analyzers/">
     <Project Path="Analyzers/XrmTools.Analyzers.CodeFixes/XrmTools.Analyzers.CodeFixes.csproj" />
@@ -24,6 +24,7 @@
     <Platform Project="AnyCPU" />
   </Project>
   <Project Path="XrmTools.Meta/XrmTools.Meta.csproj" />
+  <Project Path="XrmTools.Shell/XrmTools.Shell.csproj" />
   <Project Path="XrmTools.UI.Controls/XrmTools.UI.Controls.csproj" Id="179df0ac-6f44-4656-8332-034d3c594ed1" />
   <Project Path="XrmTools.WebApi/XrmTools.WebApi.csproj" />
   <Project Path="XrmTools/XrmTools.csproj" Id="592264a3-7b0d-40c5-a879-b2222676c532">
