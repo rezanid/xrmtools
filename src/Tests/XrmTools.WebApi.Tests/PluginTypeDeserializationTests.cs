@@ -5,7 +5,6 @@ using System.Net;
 using System.Net.Http;
 using System.Text;
 using System.Threading.Tasks;
-using XrmTools.Meta.Model;
 using XrmTools.WebApi;
 using XrmTools.WebApi.Entities;
 using Xunit;

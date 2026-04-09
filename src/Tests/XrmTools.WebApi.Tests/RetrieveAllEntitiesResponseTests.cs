@@ -2,9 +2,9 @@ using FluentAssertions;
 using Newtonsoft.Json;
 using System;
 using System.IO;
-using System.Text.Json;
+//using System.Text.Json;
 using System.Threading.Tasks;
-using XrmTools.Meta.Model;
+//using XrmTools.Meta.Model;
 using Xunit;
 
 namespace XrmTools.WebApi.Tests;
