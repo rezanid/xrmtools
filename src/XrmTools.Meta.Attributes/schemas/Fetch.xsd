@@ -1,72 +1,157 @@
 <?xml version="1.0" encoding="utf-8" ?>
-<xs:schema id="fetch" elementFormDefault="unqualified" xmlns:xs="http://www.w3.org/2001/XMLSchema"
-           xmlns:vc="http://www.w3.org/2007/XMLSchema-versioning" vc:minVersion="1.1">
+<xs:schema id="fetch" elementFormDefault="unqualified"
+           xmlns:xs="http://www.w3.org/2001/XMLSchema"
+           xmlns:vc="http://www.w3.org/2007/XMLSchema-versioning"
+           vc:minVersion="1.1">
 	<xs:annotation>
 		<xs:documentation>Schema name: fetch-schema</xs:documentation>
 	</xs:annotation>
+
 	<!--
-	
-		condition element - used for capturing entity and link-entity
-							"where" clause criteria
-		
-	-->
+    param infrastructure
+    The param element is context-sensitive. In each location where it is allowed,
+    its children must themselves be a valid default fragment for that same location.
+  -->
+	<xs:complexType name="ConditionValueType">
+		<xs:simpleContent>
+			<xs:extension base="xs:string">
+				<xs:attribute name="uiname" type="xs:string" />
+				<xs:attribute name="uitype" type="xs:string" />
+			</xs:extension>
+		</xs:simpleContent>
+	</xs:complexType>
+
+	<xs:complexType name="EmptyParamType">
+		<xs:attribute name="name" use="required" type="xs:string"/>
+	</xs:complexType>
+
+	<xs:group name="ConditionContentGroup">
+		<xs:sequence>
+			<xs:element name="value" type="ConditionValueType" minOccurs="0" maxOccurs="unbounded"/>
+		</xs:sequence>
+	</xs:group>
+
+	<xs:complexType name="ConditionParamType">
+		<xs:choice minOccurs="0" maxOccurs="unbounded">
+			<xs:group ref="ConditionContentGroup"/>
+			<xs:element name="param" type="ConditionParamType"/>
+		</xs:choice>
+		<xs:attribute name="name" use="required" type="xs:string"/>
+	</xs:complexType>
+
+	<xs:group name="FilterContentGroup">
+		<xs:choice>
+			<xs:element ref="condition"/>
+			<xs:element ref="filter"/>
+		</xs:choice>
+	</xs:group>
+
+	<xs:complexType name="FilterParamType">
+		<xs:choice minOccurs="0" maxOccurs="unbounded">
+			<xs:group ref="FilterContentGroup"/>
+			<xs:element name="param" type="FilterParamType"/>
+		</xs:choice>
+		<xs:attribute name="name" use="required" type="xs:string"/>
+	</xs:complexType>
+
+	<xs:group name="EntityContentGroup">
+		<xs:choice>
+			<xs:element ref="all-attributes"/>
+			<xs:element name="attribute" type="FetchAttributeType"/>
+			<xs:element name="order" type="FetchOrderType"/>
+			<xs:element name="link-entity" type="FetchLinkEntityType"/>
+			<xs:element ref="filter"/>
+		</xs:choice>
+	</xs:group>
+
+	<xs:complexType name="EntityParamType">
+		<xs:choice minOccurs="0" maxOccurs="unbounded">
+			<xs:group ref="EntityContentGroup"/>
+			<xs:element name="param" type="EntityParamType"/>
+		</xs:choice>
+		<xs:attribute name="name" use="required" type="xs:string"/>
+	</xs:complexType>
+
+	<xs:group name="FetchContentGroup">
+		<xs:choice>
+			<xs:element name="entity" type="FetchEntityType"/>
+			<!-- This is for the Reports view only -->
+			<xs:element name="order" type="FetchOrderType"/>
+		</xs:choice>
+	</xs:group>
+
+	<xs:complexType name="FetchParamType">
+		<xs:choice minOccurs="0" maxOccurs="unbounded">
+			<xs:group ref="FetchContentGroup"/>
+			<xs:element name="param" type="FetchParamType"/>
+		</xs:choice>
+		<xs:attribute name="name" use="required" type="xs:string"/>
+	</xs:complexType>
+
+	<xs:complexType name="RootParamType">
+		<xs:choice minOccurs="0" maxOccurs="unbounded">
+			<xs:element ref="fetch"/>
+			<xs:element name="entity" type="FetchEntityType"/>
+			<xs:element name="link-entity" type="FetchLinkEntityType"/>
+			<xs:element ref="filter"/>
+			<xs:element ref="condition"/>
+			<xs:element ref="all-attributes"/>
+			<xs:element name="attribute" type="FetchAttributeType"/>
+			<xs:element name="order" type="FetchOrderType"/>
+			<xs:element name="value" type="ConditionValueType"/>
+			<xs:element name="param" type="RootParamType"/>
+		</xs:choice>
+		<xs:attribute name="name" use="required" type="xs:string"/>
+	</xs:complexType>
+
+	<xs:element name="param" type="RootParamType"/>
+
+	<!--
+    condition element - used for capturing entity and link-entity
+                        "where" clause criteria
+  -->
+
 	<!-- [XDR-XSD] "value" element  -->
-	<xs:element name="value" type="xs:string"></xs:element>
+	<xs:element name="value" type="xs:string"/>
+
 	<!-- [XDR-XSD] "condition" element  -->
 	<xs:element name="condition">
 		<xs:complexType>
 			<xs:choice minOccurs="0" maxOccurs="unbounded">
-				<!-- -->
 				<!--
-		The attribute "value" is used for all operators that compare to a single value (for example, eq).
-		The element "value" is used for operators that compare to multiple values (for example, in).
-		Some operators require neither the attribute "value" or the element "value" (for example, null).
-	-->
-				<xs:element name="value" minOccurs="0" maxOccurs="unbounded">
-					<xs:complexType>
-						<xs:simpleContent>
-							<xs:extension base="xs:string">
-								<xs:attribute name="uiname" type="xs:string" />
-								<xs:attribute name="uitype" type="xs:string" />
-							</xs:extension>
-						</xs:simpleContent>
-					</xs:complexType>
-				</xs:element>
+          The attribute "value" is used for all operators that compare to a single value (for example, eq).
+          The element "value" is used for operators that compare to multiple values (for example, in).
+          Some operators require neither the attribute "value" or the element "value" (for example, null).
+        -->
+				<xs:group ref="ConditionContentGroup"/>
+				<xs:element name="param" type="ConditionParamType"/>
 			</xs:choice>
-			<!-- -->
+
 			<xs:attribute name="column" type="xs:string" />
-			<xs:attribute name="attribute" type="xs:string"></xs:attribute>
-			<xs:attribute name="entityname" type="xs:string"></xs:attribute>
-			<xs:attribute name="operator" use="required" type="operator"></xs:attribute>
-			<!--
-		The attribute "value" is used for all operators that compare to a single value (for example, eq).
-		The element "value" is used for operators that compare to multiple values (for example, in).
-		Some operators require neither the attribute "value" or the element "value" (for example, null).
-	-->
-			<xs:attribute name="value" type="xs:string"></xs:attribute>
-			<xs:attribute name="aggregate" type="AggregateType"></xs:attribute>
-			<xs:attribute name="rowaggregate" type="RowAggregateType"></xs:attribute>
-			<xs:attribute name="alias" type="xs:string"></xs:attribute>
+			<xs:attribute name="attribute" type="xs:string"/>
+			<xs:attribute name="entityname" type="xs:string"/>
+			<xs:attribute name="operator" use="required" type="operator"/>
+			<xs:attribute name="value" type="xs:string"/>
+			<xs:attribute name="aggregate" type="AggregateType"/>
+			<xs:attribute name="rowaggregate" type="RowAggregateType"/>
+			<xs:attribute name="alias" type="xs:string"/>
 			<xs:attribute name="uiname" />
 			<xs:attribute name="uitype" />
 			<xs:attribute name="uihidden" type="TrueFalse01Type" />
 		</xs:complexType>
 	</xs:element>
+
 	<!--
-	
-		filter element - used for constructing complex conditionals
-						 legal on entity and link-entity
-		
-	-->
-	<!-- [XDR-XSD] "filter" element  -->
+    filter element - used for constructing complex conditionals
+                     legal on entity and link-entity
+  -->
 	<xs:element name="filter">
 		<xs:complexType>
 			<xs:choice minOccurs="0" maxOccurs="unbounded">
-				<!-- -->
-				<xs:element ref="condition" minOccurs="0" maxOccurs="500" />
-				<xs:element ref="filter" minOccurs="0" maxOccurs="unbounded" />
+				<xs:group ref="FilterContentGroup"/>
+				<xs:element name="param" type="FilterParamType"/>
 			</xs:choice>
-			<!-- -->
+
 			<xs:attribute name="type" default="and">
 				<xs:simpleType>
 					<xs:restriction base="xs:NMTOKEN">
@@ -78,108 +163,79 @@
 			<xs:attribute name="isquickfindfields" type="xs:boolean" />
 		</xs:complexType>
 	</xs:element>
-	<!--
-	
-		attribute elements - used for selecting attributes from the
-							 surrounding entity / link-entity, these
-							 values are returned as part of the fetch
-		
-	-->
-	<!-- [XDR-XSD] "all-attributes" element  -->
-	<xs:element name="all-attributes">
-		<xs:complexType></xs:complexType>
-	</xs:element>
-	<!-- [XDR-XSD] "attribute" element  -->
-	<xs:complexType name="FetchAttributeType">
-		<xs:attribute name="name" use="required" type="xs:string"></xs:attribute>
-		<xs:attribute name="build" type="build"></xs:attribute>
-		<xs:attribute name="addedby" type="xs:string" />
-		<xs:attribute name="alias" type="xs:string"></xs:attribute>
-		<xs:attribute name="aggregate" type="AggregateType"></xs:attribute>
-		<xs:attribute name="groupby" type="FetchBoolType"></xs:attribute>
-		<xs:attribute name="dategrouping" type="DateGroupingType"></xs:attribute>
-		<xs:attribute name="usertimezone" type="FetchBoolType"></xs:attribute>
-		<xs:attribute name="distinct" type="FetchBoolType"></xs:attribute>		
-	</xs:complexType>
-	<!--
-	
-	order element - used to specify a sort order
 
-	-->
-	<!-- [XDR-XSD] "order" element  -->
+	<!--
+    attribute elements - used for selecting attributes from the
+    surrounding entity / link-entity, these values are returned as part of the fetch
+  -->
+	<xs:element name="all-attributes">
+		<xs:complexType>
+			<xs:choice minOccurs="0" maxOccurs="unbounded">
+				<xs:element name="param" type="EmptyParamType"/>
+			</xs:choice>
+		</xs:complexType>
+	</xs:element>
+
+	<xs:complexType name="FetchAttributeType">
+		<xs:choice minOccurs="0" maxOccurs="unbounded">
+			<xs:element name="param" type="EmptyParamType"/>
+		</xs:choice>
+		<xs:attribute name="name" use="required" type="xs:string"/>
+		<xs:attribute name="build" type="build"/>
+		<xs:attribute name="addedby" type="xs:string" />
+		<xs:attribute name="alias" type="xs:string"/>
+		<xs:attribute name="aggregate" type="AggregateType"/>
+		<xs:attribute name="groupby" type="FetchBoolType"/>
+		<xs:attribute name="dategrouping" type="DateGroupingType"/>
+		<xs:attribute name="usertimezone" type="FetchBoolType"/>
+		<xs:attribute name="distinct" type="FetchBoolType"/>
+	</xs:complexType>
+
+	<!-- order element - used to specify a sort order -->
 	<xs:complexType name="FetchOrderType">
 		<xs:choice minOccurs="0" maxOccurs="unbounded">
-			<!-- -->
+			<xs:element name="param" type="EmptyParamType"/>
 		</xs:choice>
-		<!-- -->
-		<xs:attribute name="attribute" type="xs:string"></xs:attribute>
-		<xs:attribute name="alias" type="xs:string"></xs:attribute>
-		<xs:attribute name="descending" default="false" type="xs:boolean"></xs:attribute>
+		<xs:attribute name="attribute" type="xs:string"/>
+		<xs:attribute name="alias" type="xs:string"/>
+		<xs:attribute name="descending" default="false" type="xs:boolean"/>
 	</xs:complexType>
-	<!--
-	
-		link-entity element - used for joining one entity to its "parent"
-		
-	-->
-	<!-- [XDR-XSD] "link-entity" element  -->
+
+	<!-- link-entity element - used for joining one entity to its "parent" -->
 	<xs:complexType name="FetchLinkEntityType">
 		<xs:choice minOccurs="0" maxOccurs="unbounded">
-			<!-- -->
-			<xs:element ref="all-attributes" minOccurs="0" />
-			<xs:element name="attribute" type="FetchAttributeType" minOccurs="0" maxOccurs="unbounded" />
-			<xs:element name="order" type="FetchOrderType" minOccurs="0" maxOccurs="1" />
-			<xs:element ref="filter" minOccurs="0" />
-			<xs:element name="link-entity" type="FetchLinkEntityType" />
+			<xs:group ref="EntityContentGroup"/>
+			<xs:element name="param" type="EntityParamType"/>
 		</xs:choice>
-		<!-- -->
-		<xs:attribute name="name" use="required" type="xs:string"></xs:attribute>
-		<xs:attribute name="to" type="xs:string"></xs:attribute>
-		<xs:attribute name="from" type="xs:string"></xs:attribute>
-		<xs:attribute name="alias" type="xs:string"></xs:attribute>
-		<xs:attribute name="link-type" type="xs:string"></xs:attribute>
-		<xs:attribute name="visible" type="xs:boolean"></xs:attribute>
-		<xs:attribute name="intersect" type="xs:boolean"></xs:attribute>
-		<xs:attribute name="enableprefiltering" type="xs:boolean"></xs:attribute>
-		<xs:attribute name="prefilterparametername" type="xs:string"></xs:attribute>
+		<xs:attribute name="name" use="required" type="xs:string"/>
+		<xs:attribute name="to" type="xs:string"/>
+		<xs:attribute name="from" type="xs:string"/>
+		<xs:attribute name="alias" type="xs:string"/>
+		<xs:attribute name="link-type" type="xs:string"/>
+		<xs:attribute name="visible" type="xs:boolean"/>
+		<xs:attribute name="intersect" type="xs:boolean"/>
+		<xs:attribute name="enableprefiltering" type="xs:boolean"/>
+		<xs:attribute name="prefilterparametername" type="xs:string"/>
 	</xs:complexType>
-	<!--
-	
-		entity element - used for specifying the root element for a fetch, only
-						 one root entity is allowed in a given fetch, all others
-						 are dependent on this entity and are marked as
-						 link-entity
-		
-	-->
-	<!-- [XDR-XSD] "entity" element  -->
+
+	<!-- entity element -->
 	<xs:complexType name="FetchEntityType">
 		<xs:choice minOccurs="0" maxOccurs="unbounded">
-			<!-- -->
-			<xs:element ref="all-attributes" minOccurs="0" />
-			<xs:element name="attribute" type="FetchAttributeType" minOccurs="0" maxOccurs="unbounded" />
-			<xs:element name="order" type="FetchOrderType" minOccurs="0" maxOccurs="unbounded" />
-			<xs:element name="link-entity" type="FetchLinkEntityType" />
-			<xs:element ref="filter" minOccurs="0" />
+			<xs:group ref="EntityContentGroup"/>
+			<xs:element name="param" type="EntityParamType"/>
 		</xs:choice>
-		<!-- -->
-		<xs:attribute name="name" use="required" type="xs:string"></xs:attribute>
-		<xs:attribute name="enableprefiltering" type="xs:boolean"></xs:attribute>
-		<xs:attribute name="prefilterparametername" type="xs:string"></xs:attribute>
+		<xs:attribute name="name" use="required" type="xs:string"/>
+		<xs:attribute name="enableprefiltering" type="xs:boolean"/>
+		<xs:attribute name="prefilterparametername" type="xs:string"/>
 	</xs:complexType>
-	<!--
-	
-		fetch element - root element for the query
-		
-	-->
-	<!-- [XDR-XSD] "fetch" element  -->
+
+	<!-- fetch element - root element for the query -->
 	<xs:element name="fetch" type="FetchType"/>
 	<xs:complexType name="FetchType">
 		<xs:choice minOccurs="0" maxOccurs="unbounded">
-			<!-- -->
-			<xs:element name="entity" type="FetchEntityType" />
-			<!-- This is for the Reports view only -->
-			<xs:element name="order" type="FetchOrderType" minOccurs="1" maxOccurs="1" />
+			<xs:group ref="FetchContentGroup"/>
+			<xs:element name="param" type="FetchParamType"/>
 		</xs:choice>
-		<!-- -->
 		<xs:attribute name="version"/>
 		<xs:attribute name="count" type="xs:integer"/>
 		<xs:attribute name="page" type="xs:integer"/>
@@ -211,6 +267,7 @@
 		<xs:attribute name="returntotalrecordcount" type="xs:boolean" use="optional" default="false" />
 		<xs:attribute name="no-lock" type="xs:boolean" use="optional" default="false" />
 	</xs:complexType>
+
 	<!-- [XDR-XSD] XDR datatype derivations -->
 	<xs:element name="savedquery">
 		<xs:complexType>
@@ -277,7 +334,7 @@
 											</xs:complexType>
 										</xs:element>
 									</xs:choice>
-									<xs:attribute name="version"></xs:attribute>
+									<xs:attribute name="version"/>
 									<xs:attribute name="distinct" type="xs:boolean"/>
 								</xs:complexType>
 							</xs:element>
@@ -295,7 +352,7 @@
 												<xs:sequence>
 													<xs:element name="cell" minOccurs="1" maxOccurs="unbounded">
 														<xs:complexType>
-															<xs:sequence></xs:sequence>
+															<xs:sequence/>
 															<xs:attribute name="name" type="xs:string" use="required" />
 															<xs:attribute name="width" type="xs:integer" use="optional" />
 															<xs:attribute name="LabelId" type="xs:string" use="optional" />
@@ -336,6 +393,7 @@
 			<xs:attribute name="useinLCID" type="xs:string" use="optional" />
 		</xs:complexType>
 	</xs:element>
+
 	<xs:complexType name="SerializedInteger">
 		<xs:simpleContent>
 			<xs:extension base="xs:nonNegativeInteger">
@@ -343,12 +401,14 @@
 			</xs:extension>
 		</xs:simpleContent>
 	</xs:complexType>
+
 	<xs:simpleType name="build">
 		<xs:restriction base="xs:string">
 			<xs:enumeration value="1.504021" />
 			<xs:enumeration value="1.003017" />
 		</xs:restriction>
 	</xs:simpleType>
+
 	<xs:simpleType name="operator">
 		<xs:restriction base="xs:NMTOKEN">
 			<xs:enumeration value="eq" />
@@ -436,6 +496,7 @@
 			<xs:enumeration value="not-contain-values" />
 		</xs:restriction>
 	</xs:simpleType>
+
 	<xs:simpleType name="VersionType">
 		<xs:annotation>
 			<xs:documentation xml:lang="en">
@@ -446,11 +507,13 @@
 			<xs:pattern value="^[0-9]+(\.[0-9]+){1,3}$" />
 		</xs:restriction>
 	</xs:simpleType>
+
 	<xs:simpleType name="guid">
 		<xs:restriction base="xs:string">
 			<xs:pattern value="\{?[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}\}?" />
 		</xs:restriction>
 	</xs:simpleType>
+
 	<xs:simpleType name="BoolOrEmpty">
 		<xs:union memberTypes="xs:boolean">
 			<xs:simpleType>
@@ -460,6 +523,7 @@
 			</xs:simpleType>
 		</xs:union>
 	</xs:simpleType>
+
 	<xs:simpleType name="IntOrEmpty">
 		<xs:union memberTypes="xs:integer">
 			<xs:simpleType>
@@ -469,12 +533,14 @@
 			</xs:simpleType>
 		</xs:union>
 	</xs:simpleType>
+
 	<xs:simpleType name="TrueFalse01Type">
 		<xs:restriction base="xs:string">
 			<xs:enumeration value="0" />
 			<xs:enumeration value="1" />
 		</xs:restriction>
 	</xs:simpleType>
+
 	<xs:simpleType name="AggregateType">
 		<xs:restriction base="xs:NMTOKEN">
 			<xs:enumeration value="count" />
@@ -485,11 +551,13 @@
 			<xs:enumeration value="max" />
 		</xs:restriction>
 	</xs:simpleType>
+
 	<xs:simpleType name="RowAggregateType">
 		<xs:restriction base="xs:NMTOKEN">
 			<xs:enumeration value="countchildren" />
 		</xs:restriction>
 	</xs:simpleType>
+
 	<xs:simpleType name="DateGroupingType">
 		<xs:restriction base="xs:NMTOKEN">
 			<xs:enumeration value="day" />
@@ -501,6 +569,7 @@
 			<xs:enumeration value="fiscal-year" />
 		</xs:restriction>
 	</xs:simpleType>
+
 	<xs:simpleType name="FetchBoolType">
 		<xs:restriction base="xs:NMTOKEN">
 			<xs:enumeration value="true" />
@@ -509,6 +578,7 @@
 			<xs:enumeration value="0" />
 		</xs:restriction>
 	</xs:simpleType>
+
 	<xs:complexType name="SerializedTrueFalse01Type">
 		<xs:simpleContent>
 			<xs:extension base="TrueFalse01Type">
@@ -516,21 +586,25 @@
 			</xs:extension>
 		</xs:simpleContent>
 	</xs:complexType>
+
 	<xs:complexType name="LocalizedNamesType">
 		<xs:sequence>
 			<xs:element name="LocalizedName" type="FieldXmlFieldUIType" minOccurs="0" maxOccurs="unbounded" />
 		</xs:sequence>
 	</xs:complexType>
+
 	<xs:complexType name="DescriptionsType">
 		<xs:sequence>
 			<xs:element name="Description" type="FieldXmlFieldUIType" minOccurs="0" maxOccurs="unbounded" />
 		</xs:sequence>
 	</xs:complexType>
+
 	<xs:complexType name="ColorsType">
 		<xs:sequence>
 			<xs:element name="Color" type="FieldXmlFieldUIType" minOccurs="0" maxOccurs="unbounded" />
 		</xs:sequence>
 	</xs:complexType>
+
 	<xs:complexType name="FieldXmlFieldUIType">
 		<xs:attribute name="id" type="guid" />
 		<xs:attribute name="description" use="required" type="xs:string" />

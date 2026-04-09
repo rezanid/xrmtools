@@ -7,6 +7,9 @@
   <Folder Name="/Tests/">
     <Project Path="Analyzers/XrmTools.Analyzers.Test/XrmTools.Analyzers.Test.csproj" />
     <Project Path="Tests/XrmTools.Core.Tests/XrmTools.Core.Tests.csproj" />
+    <Project Path="Tests/XrmTools.Meta.Xsd.Tests/XrmTools.Meta.Xsd.Tests.csproj">
+      <Build Solution="Debug|*" Project="false" />
+    </Project>
     <Project Path="Tests/XrmTools.Tests/XrmTools.Tests.csproj" />
     <Project Path="Tests/XrmTools.WebApi.Tests/XrmTools.WebApi.Tests.csproj" />
   </Folder>
