@@ -10,14 +10,10 @@
     <AssemblyName>XrmTools.UI.Controls</AssemblyName>
     
     <!-- Build Settings -->
-    <LangVersion>13.0</LangVersion>
     <Deterministic>true</Deterministic>
     
     <!-- Preserve Existing AssemblyInfo.cs (for ThemeInfo) -->
     <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
-    
-    <!-- Strong Name (currently disabled) -->
-    <SignAssembly>false</SignAssembly>
   </PropertyGroup>
 
   <!-- NuGet Package References -->
