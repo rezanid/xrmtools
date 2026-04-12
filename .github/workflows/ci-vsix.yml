@@ -52,7 +52,7 @@ jobs:
           fetch-depth: 0
 
       - name: Setup Build Tooling
-        uses: timheuer/bootstrap-dotnet@v1
+        uses: timheuer/bootstrap-dotnet@v2
         with:
           msbuild: 'true'
           sdk: 'true'
