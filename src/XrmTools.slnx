@@ -4,6 +4,12 @@
     <Platform Name="arm64" />
     <Platform Name="x86" />
   </Configurations>
+  <Folder Name="/Templates/">
+    <Project Path="Templates/XrmTools.PluginProjectTemplate/XrmTools.PluginProjectTemplate.csproj" Id="28a13fc0-a244-4a77-bc76-f9277bad1bf6">
+      <Platform Solution="*|arm64" Project="arm64" />
+      <Platform Solution="*|x86" Project="x86" />
+    </Project>
+  </Folder>
   <Folder Name="/Tests/">
     <Project Path="Analyzers/XrmTools.Analyzers.Test/XrmTools.Analyzers.Test.csproj" />
     <Project Path="Tests/XrmTools.Core.Tests/XrmTools.Core.Tests.csproj" />
