@@ -15,6 +15,8 @@ using System.Threading.Tasks;
 
 internal sealed class NuGetAuditor
 {
+    private const string MinimumVersion = "1.1.2";
+
     public async Task AuditAsync(CancellationToken ct)
     {
         // Acquire NuGet MEF infra, or bail if NuGet is not ready
@@ -64,7 +66,7 @@ internal sealed class NuGetAuditor
 
                 if (match is null) continue;
 
-                if (comparer.Compare(match.Version, "1.1.1") < 0)
+                if (comparer.Compare(match.Version, MinimumVersion) < 0)
                 {
                     outdated.Add((project.Name, match.Version));
                 }
