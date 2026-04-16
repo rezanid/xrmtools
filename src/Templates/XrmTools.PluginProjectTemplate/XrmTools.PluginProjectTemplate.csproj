@@ -12,8 +12,8 @@
     <ProjectGuid>{28A13FC0-A244-4A77-BC76-F9277BAD1BF6}</ProjectGuid>
     <OutputType>Library</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
-    <RootNamespace>XrmTools.PluginProjectTemplate2</RootNamespace>
-    <AssemblyName>XrmTools.PluginProjectTemplate2</AssemblyName>
+    <RootNamespace>XrmTools.PluginProjectTemplate</RootNamespace>
+    <AssemblyName>XrmTools.PluginProjectTemplate</AssemblyName>
     <TargetFrameworkVersion>v4.8</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
     <GeneratePkgDefFile>false</GeneratePkgDefFile>
@@ -24,7 +24,7 @@
     <DeployExtension>false</DeployExtension>
     <DeployVSTemplates>false</DeployVSTemplates>
     <CopyVsixManifestToOutput>false</CopyVsixManifestToOutput>
-    <CopyBuildOutputToOutputDirectory>false</CopyBuildOutputToOutputDirectory>
+    <CopyBuildOutputToOutputDirectory>true</CopyBuildOutputToOutputDirectory>
     <CopyOutputSymbolsToOutputDirectory>false</CopyOutputSymbolsToOutputDirectory>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
@@ -74,3 +74,4 @@
   </Target>
   -->
 </Project>
+
