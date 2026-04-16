@@ -4,6 +4,24 @@
     <Platform Name="arm64" />
     <Platform Name="x86" />
   </Configurations>
+  <Folder Name="/Templates/">
+    <Project Path="Templates/XrmTools.CustomApiItemTemplate/XrmTools.CustomApiItemTemplate.csproj" Id="c966eab7-1ad6-4757-a9f8-2cdb5f00b5ed">
+      <Platform Solution="*|arm64" Project="arm64" />
+      <Platform Solution="*|x86" Project="x86" />
+    </Project>
+    <Project Path="Templates/XrmTools.FetchXmlItemItemTemplate/XrmTools.FetchXmlItemTemplate.csproj" Id="6ac5059a-920f-4ae7-bab4-851b96751ae0">
+      <Platform Solution="*|arm64" Project="arm64" />
+      <Platform Solution="*|x86" Project="x86" />
+    </Project>
+    <Project Path="Templates/XrmTools.PluginItemTemplate/XrmTools.PluginItemTemplate.csproj" Id="d9cb135c-4c00-4c8a-b5df-cc4c663a5fb4">
+      <Platform Solution="*|arm64" Project="arm64" />
+      <Platform Solution="*|x86" Project="x86" />
+    </Project>
+    <Project Path="Templates/XrmTools.PluginProjectTemplate/XrmTools.PluginProjectTemplate.csproj" Id="28a13fc0-a244-4a77-bc76-f9277bad1bf6">
+      <Platform Solution="*|arm64" Project="arm64" />
+      <Platform Solution="*|x86" Project="x86" />
+    </Project>
+  </Folder>
   <Folder Name="/Tests/">
     <Project Path="Analyzers/XrmTools.Analyzers.Test/XrmTools.Analyzers.Test.csproj" />
     <Project Path="Tests/XrmTools.Core.Tests/XrmTools.Core.Tests.csproj" />

@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<VSTemplate Version="3.0.0" Type="Item" xmlns="http://schemas.microsoft.com/developer/vstemplate/2005">
+  <TemplateData>
+    <Name>Power Platform Custom API</Name>
+    <Description>A standard Power Platform Custom API with registration attributes and code generation.</Description>
+    <Icon>XrmTools.CustomApiItemTemplate.ico</Icon>
+    <ProjectType>CSharp</ProjectType>
+    <LanguageTag>csharp</LanguageTag>
+    <RequiredFrameworkVersion>4.6.2</RequiredFrameworkVersion>
+    <NumberOfParentCategoriesToRollUp>1</NumberOfParentCategoriesToRollUp>
+    <SortOrder>1000</SortOrder>
+    <TemplateID>76C0E0EC-6F68-40F1-BA34-B3DD603051AF</TemplateID>
+    <DefaultName>CustomApi.cs</DefaultName>
+    <ProvideDefaultName>true</ProvideDefaultName>
+  </TemplateData>
+  <TemplateContent>
+    <ProjectItem ReplaceParameters="true" TargetFileName="$fileinputname$.cs" ItemType="Compile" CustomTool="XrmTools Plugin Code Generator">CustomApi.cs</ProjectItem>
+  </TemplateContent>
+</VSTemplate>

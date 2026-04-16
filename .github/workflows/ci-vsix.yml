@@ -78,11 +78,25 @@ jobs:
       - name: Run unit tests (SDK-style) + TRX
         shell: pwsh
         run: |
-          dotnet test "${{ env.SOLUTION_PATH }}" `
-            -c "${{ env.CONFIGURATION }}" `
-            --no-build `
-            --logger "trx;LogFileName=test-results-${{ github.run_id }}.trx" `
-            --results-directory "${{ env.TEST_RESULTS_DIR }}"
+          $testProjects = Get-ChildItem -Path "src/Tests" -Recurse -Filter *.csproj |
+            Sort-Object FullName |
+            Select-Object -ExpandProperty FullName
+
+          if ($testProjects.Count -eq 0) {
+            throw "No test projects found under src/Tests."
+          }
+
+          foreach ($testProject in $testProjects) {
+            dotnet test $testProject `
+              -c "${{ env.CONFIGURATION }}" `
+              --no-build `
+              --logger "trx;LogFileName=$([System.IO.Path]::GetFileNameWithoutExtension($testProject))-test-results-${{ github.run_id }}.trx" `
+              --results-directory "${{ env.TEST_RESULTS_DIR }}"
+
+            if ($LASTEXITCODE -ne 0) {
+              throw "dotnet test failed for $testProject"
+            }
+          }
 
       - name: Publish test report (PR Checks)
         if: ${{ always() }}
