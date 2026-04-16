@@ -8,7 +8,6 @@
     <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
     <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
     <ProjectTypeGuids>{4C25E9B5-9FA6-436c-8E19-B395D2A65FAF};{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}</ProjectTypeGuids>
-    <LangVersion>13.0</LangVersion>
     <Deterministic>true</Deterministic>
     <AssemblyTitle>$safeprojectname$</AssemblyTitle>
     <Product>$safeprojectname$</Product>
