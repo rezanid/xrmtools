@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<VSTemplate Version="3.0.0" Type="Item" xmlns="http://schemas.microsoft.com/developer/vstemplate/2005">
+  <TemplateData>
+    <Name>Power Platform Plugin</Name>
+    <Description>A standard Power Platform plugin with registration attributes and code generation.</Description>
+    <Icon>XrmTools.PluginItemTemplate.ico</Icon>
+    <ProjectType>CSharp</ProjectType>
+    <LanguageTag>csharp</LanguageTag>
+    <RequiredFrameworkVersion>4.6.2</RequiredFrameworkVersion>
+    <NumberOfParentCategoriesToRollUp>1</NumberOfParentCategoriesToRollUp>
+    <SortOrder>1000</SortOrder>
+    <TemplateID>9ce9fd8b-87ce-46b2-a786-c9a27f8a5b01</TemplateID>
+    <DefaultName>Plugin.cs</DefaultName>
+    <ProvideDefaultName>true</ProvideDefaultName>
+  </TemplateData>
+  <TemplateContent>
+    <ProjectItem ReplaceParameters="true" TargetFileName="$fileinputname$.cs" ItemType="Compile" CustomTool="XrmTools Plugin Code Generator">Plugin.cs</ProjectItem>
+  </TemplateContent>
+</VSTemplate>
