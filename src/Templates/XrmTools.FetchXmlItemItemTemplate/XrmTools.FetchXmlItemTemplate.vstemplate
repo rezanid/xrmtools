@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<VSTemplate Version="3.0.0" Type="Item" xmlns="http://schemas.microsoft.com/developer/vstemplate/2005">
+  <TemplateData>
+    <Name>Power Platform FetchXML Query</Name>
+    <Description>A simple Power Platform FetchXML Query with code generation.</Description>
+    <Icon>XrmTools.FetchXmlItemTemplate.ico</Icon>
+    <ProjectType>CSharp</ProjectType>
+    <LanguageTag>xml</LanguageTag>
+    <NumberOfParentCategoriesToRollUp>1</NumberOfParentCategoriesToRollUp>
+    <SortOrder>1000</SortOrder>
+    <TemplateID>F1880B80-B306-4F88-9D12-F14A8F6BB158</TemplateID>
+    <DefaultName>Query.fetch</DefaultName>
+    <ProvideDefaultName>true</ProvideDefaultName>
+  </TemplateData>
+  <TemplateContent>
+    <ProjectItem ReplaceParameters="true" TargetFileName="$fileinputname$.fetch" ItemType="None" CustomTool="XrmTools FetchXML Generator" OpenInEditor="true">Query.fetch</ProjectItem>
+	<CustomParameters>
+	  <CustomParameter Name="$fetch_xsd_relative_path$" Value=".xrmtools/schemas/Fetch.xsd"/>
+	</CustomParameters>
+  </TemplateContent>
+</VSTemplate>
