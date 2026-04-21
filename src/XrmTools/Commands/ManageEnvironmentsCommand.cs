@@ -34,6 +34,8 @@ internal class ManageEnvironmentsCommand : BaseCommand<ManageEnvironmentsCommand
     private const string ManageItem = "Manage environments...";
     private const string DefaultItem = "Select environment...";
 
+    private string _currentEnvironmentName = DefaultItem;
+
     [Import]
     public IEnvironmentEditor EnvironmentEditor { get; set; }
 
@@ -44,6 +46,7 @@ internal class ManageEnvironmentsCommand : BaseCommand<ManageEnvironmentsCommand
     {
         var componentModel = await Package.GetServiceAsync<SComponentModel, IComponentModel>();
         componentModel?.DefaultCompositionService.SatisfyImportsOnce(this);
+        await RefreshCurrentEnvironmentAsync();
     }
 
     protected override void BeforeQueryStatus(EventArgs e)
@@ -59,21 +62,28 @@ internal class ManageEnvironmentsCommand : BaseCommand<ManageEnvironmentsCommand
 
         if (args.OutValue != IntPtr.Zero)
         {
-            await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync();
-            var activeEnvironment = await EnvironmentProvider.GetActiveEnvironmentAsync(true);
-            var environmentName = activeEnvironment?.Name ?? DefaultItem;
-            if (args.OutValue != IntPtr.Zero) Marshal.GetNativeVariantForObject(environmentName, args.OutValue);
+            // Must be synchronous - no await allowed before marshaling
+            Marshal.GetNativeVariantForObject(_currentEnvironmentName, args.OutValue);
         }
         else if (args.InValue is string selected)
         {
             if (selected == ManageItem)
             {
                 await EnvironmentEditor.EditEnvironmentsAsync();
+                await RefreshCurrentEnvironmentAsync();
                 return;
             }
 
             await SetActiveEnvironmentAsync(selected);
         }
+    }
+
+    private async Task RefreshCurrentEnvironmentAsync()
+    {
+        await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync();
+        var activeEnvironment = await EnvironmentProvider.GetActiveEnvironmentAsync(false);
+        _currentEnvironmentName = activeEnvironment?.Name ?? DefaultItem;
+        //Command.Text = _currentEnvironmentName;
     }
 
     private async Task SetActiveEnvironmentAsync(string name)
@@ -90,6 +100,7 @@ internal class ManageEnvironmentsCommand : BaseCommand<ManageEnvironmentsCommand
             return;
         }
         await EnvironmentProvider.SetActiveEnvironmentAsync(environment, true);
+        await RefreshCurrentEnvironmentAsync();
     }
 }
 

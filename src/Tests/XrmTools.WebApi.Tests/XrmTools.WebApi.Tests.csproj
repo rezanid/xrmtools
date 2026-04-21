@@ -24,7 +24,8 @@
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="18.4.0" />
     <PackageReference Include="Moq" Version="4.20.72"/>
     <PackageReference Include="Scriban" Version="7.1.0" />
-    <PackageReference Include="System.Text.Json" Version="9.0.14" />
+    <!-- VS2022 supports System.Text.Json supports 9.0.0-->
+    <PackageReference Include="System.Text.Json" Version="9.0.0" NoWarn="NU1605" />
     <PackageReference Include="xunit.v3">
       <Version>3.2.2</Version>
     </PackageReference>
