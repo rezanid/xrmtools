@@ -510,12 +510,12 @@
     <!-- Scriban Source Embedding requires Microsoft.CSharp, System.Threading.Tasks.Extensions, and PolySharp -->
     <PackageReference Include="Microsoft.CSharp" Version="4.7.0" />
     <!-- VS2022 only supports System.Threading.Tasks.Extensions 4.6.0 -->
-    <PackageReference Include="System.Threading.Tasks.Extensions" Version="4.6.0" />
+    <PackageReference Include="System.Threading.Tasks.Extensions" Version="4.6.0" NoWarn="NU1605" />
     <PackageReference Include="Scriban" Version="7.1.0" />
     <PackageReference Include="System.Reflection.MetadataLoadContext" Version="8.0.0" />
     <PackageReference Include="System.Runtime.Caching" Version="8.0.1" />
     <!-- VS2022 only supports System.Text.Json 9.0.0 -->
-    <PackageReference Include="System.Text.Json" Version="9.0.0" />
+    <PackageReference Include="System.Text.Json" Version="9.0.0" NoWarn="NU1605"/>
     <PackageReference Include="YamlDotNet" Version="16.3.0" />
   </ItemGroup>
   <ItemGroup>
