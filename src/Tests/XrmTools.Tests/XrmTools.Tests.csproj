@@ -52,6 +52,8 @@
     <PackageReference Include="Microsoft.Identity.Client" Version="4.79.2" />
     <!-- VS2022 supports System.Threading.Tasks.Extensions supports 4.6.0-->
     <PackageReference Include="System.Threading.Tasks.Extensions" Version="4.6.0" NoWarn="NU1605" />
+	<!-- VS2022 only supports System.Text.Json 9.0.0 -->
+	<PackageReference Include="System.Text.Json" Version="9.0.0" NoWarn="NU1605"/>
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\XrmTools.Core\XrmTools.Core.csproj">
