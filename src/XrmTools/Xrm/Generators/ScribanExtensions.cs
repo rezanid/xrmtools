@@ -94,29 +94,29 @@ public static class ScribanExtensions
         }
         var originalAttribute = attributes.FirstOrDefault(a => a.LogicalName == attribute.AttributeOf);
         if (originalAttribute == null) { return attribute.SchemaName; }
-        if ((attribute.AttributeType is AttributeTypeCode.String or AttributeTypeCode.Virtual) && attribute.LogicalName.EndsWith("name"))
+        if ((attribute.AttributeType is AttributeTypeCode.String or AttributeTypeCode.Virtual) && attribute.LogicalName?.EndsWith("name") == true)
         {
             label = originalAttribute.DisplayName?.LocalizedLabels?.FirstOrDefault()?.Label;
             return string.Concat(Tokenize(label), "Name");
         }
-        if (attribute.AttributeType == AttributeTypeCode.EntityName && attribute.LogicalName.EndsWith("idtype"))
+        if (attribute.AttributeType == AttributeTypeCode.EntityName && attribute.LogicalName?.EndsWith("idtype") == true)
         {
             label = originalAttribute.DisplayName?.LocalizedLabels?.FirstOrDefault()?.Label;
             return string.Concat(Tokenize(label), "IdType");
         }
-        if (attribute.AttributeType == AttributeTypeCode.BigInt && attribute.LogicalName.EndsWith("timestamp"))
+        if (attribute.AttributeType == AttributeTypeCode.BigInt && attribute.LogicalName?.EndsWith("timestamp") == true)
         {
             // e.g. logicalname: "crb4d_image_timestamp" attributeof: "crb4d_imageid"
             label = originalAttribute.DisplayName?.LocalizedLabels?.FirstOrDefault()?.Label;
             if (label is null) { return attribute.SchemaName; }
             return string.Concat(Tokenize(label), "Timestamp");
         }
-        if (attribute.AttributeType == AttributeTypeCode.String && attribute.LogicalName.EndsWith("url"))
+        if (attribute.AttributeType == AttributeTypeCode.String && attribute.LogicalName?.EndsWith("url") == true)
         {
             // e.g. logicalname: "crb4d_image_url" attributeof: "crb4d_imageid"
             label = originalAttribute.DisplayName?.LocalizedLabels?.FirstOrDefault()?.Label;
             if (label is null) { return attribute.SchemaName; }
-            return string.Concat(Tokenize(label), "Timestamp");
+            return string.Concat(Tokenize(label), "Url");
         }
         return attribute.SchemaName;
     }
