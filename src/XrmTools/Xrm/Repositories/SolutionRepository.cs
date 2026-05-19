@@ -15,17 +15,13 @@ internal interface ISolutionRepository : IXrmRepository
     Task<IEnumerable<Solution>> GetUnmanagedAsync(CancellationToken cancellationToken);
 }
 
-internal class SolutionRepository : XrmRepository, ISolutionRepository
+internal class SolutionRepository(IWebApiService service, ILogger logger) : XrmRepository(service, new SlidingCacheConfiguration()), ISolutionRepository
 {
     private const string SolutionQueryUnmanaged = "solutions?$filter=ismanaged eq false&$select=solutionid,uniquename,friendlyname,description&$orderby=friendlyname asc";
 
-    public SolutionRepository(IWebApiService service, ILogger logger)
-        : base(service, new SlidingCacheConfiguration())
-    {
-    }
-
     public async Task<IEnumerable<Solution>> GetUnmanagedAsync(CancellationToken cancellationToken)
     {
+        logger.LogTrace("Retrieving unmanaged solutions from Dataverse.");
         var cacheKey = "Solutions_Unmanaged";
 
         return await GetOrCreateCacheItemAsync(cacheKey, async () =>
@@ -33,8 +29,10 @@ internal class SolutionRepository : XrmRepository, ISolutionRepository
             var typed = await service.QueryAsync<Solution>(SolutionQueryUnmanaged, cancellationToken).ConfigureAwait(false);
             if (typed is not null && typed.Value is not null)
             {
+                logger.LogTrace("Found {Count} unmanaged solutions.", typed.Value.Count());
                 return typed.Value;
             }
+            logger.LogTrace("No unmanaged solutions found.");
             return Enumerable.Empty<Solution>();
         }, cancellationToken).ConfigureAwait(false);
     }
