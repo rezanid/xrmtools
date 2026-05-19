@@ -10,14 +10,13 @@ using System.Threading.Tasks;
 using XrmTools.Environments;
 using XrmTools.Http;
 using XrmTools.Logging.Compatibility;
-using XrmTools.WebApi.Entities;
 
 public interface IWebApiService
 {
     Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken);
     Task<HttpResponseMessage> GetAsync(string uri, CancellationToken cancellationToken);
     Task<ODataQueryResponse<T>> QueryAsync<T>(string odataQuery, CancellationToken cancellationToken = default);
-    Task<TResponse> SendAsync<TResponse>(WebApiRequest<TResponse> request, CancellationToken cancellationToken = default);
+    Task<TResponse> SendAsync<TResponse>(WebApiRequest<TResponse> request, bool noThrow = false, CancellationToken cancellationToken = default);
     Task<Uri?> GetBaseUrlAsync();
 }
 
@@ -80,13 +79,17 @@ public class WebApiService(
 
     public async Task<TResponse> SendAsync<TResponse>(
         WebApiRequest<TResponse> request,
-        CancellationToken ct = default)
+        bool noThrow = false, CancellationToken ct = default)
     {
         if (request == null) throw new ArgumentNullException(nameof(request));
 
         using var raw = await SendAsync((HttpRequestMessage)request, ct)
             .ConfigureAwait(false);
-        raw.EnsureSuccessStatusCode();
+
+        if (!noThrow)
+        {
+            raw.EnsureSuccessStatusCode();
+        }
 
         return await request.CreateResponseAsync(raw, ct).ConfigureAwait(false);
     }

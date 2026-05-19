@@ -27,7 +27,7 @@ internal static partial class Extensions
             maxPageSize: maxPageSize,
             includeAnnotations: includeAnnotations);
 
-        return await service.SendAsync(request, cancellationToken).ConfigureAwait(false);
+        return await service.SendAsync(request, cancellationToken: cancellationToken).ConfigureAwait(false);
     }
 
     public static async Task<ODataQueryResponse<T>> RetrieveMultipleAsync<T>(
@@ -42,7 +42,7 @@ internal static partial class Extensions
             maxPageSize: maxPageSize,
             includeAnnotations: includeAnnotations);
 
-        return await service.SendAsync(request, cancellationToken).ConfigureAwait(false);
+        return await service.SendAsync(request, cancellationToken: cancellationToken).ConfigureAwait(false);
     }
 }
 #nullable restore

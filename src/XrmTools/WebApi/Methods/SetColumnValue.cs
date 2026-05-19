@@ -25,7 +25,7 @@ internal static partial class Extensions
     {
         SetColumnValueRequest<T> request = new(entityReference, propertyName, value);
 
-        await service.SendAsync(request, cancellationToken).ConfigureAwait(false);
+        await service.SendAsync(request, cancellationToken: cancellationToken).ConfigureAwait(false);
     }
 }
 #nullable restore

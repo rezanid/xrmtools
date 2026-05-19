@@ -27,12 +27,15 @@ internal class PluginTypeRepository(IWebApiService service, ILogger logger) : Xr
 
     public async Task<IEnumerable<PluginTypeConfig>> GetAsync(Guid pluginassemblyid, CancellationToken cancellationToken)
     {
+        logger.LogInformation("Retrieving plugin types for assembly {PluginAssemblyId}", pluginassemblyid);
         var response = await service.GetAsync(plugintypeQuery.FormatWith(pluginassemblyid), cancellationToken).ConfigureAwait(false);
         var typed = await response.CastAsync<ODataQueryResponse<PluginTypeConfig>>().ConfigureAwait(false);
         if (typed is not null && typed.Value is not null)
         {
+            logger.LogInformation("Plugin types for assembly {PluginAssemblyId} retrieved successfully", pluginassemblyid);
             return typed.Value;
         }
+        logger.LogInformation("No plugin types found for assembly {PluginAssemblyId}", pluginassemblyid);
         return [];
     }
 }

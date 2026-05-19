@@ -145,7 +145,7 @@ internal sealed class PluginRegistrationService(
 
         try
         {
-            var batchResponse = await _webApi.SendAsync(batch!, cancellationToken).ConfigureAwait(false);
+            var batchResponse = await _webApi.SendAsync(batch!, cancellationToken: cancellationToken).ConfigureAwait(false);
             var responses = await batchResponse.ParseResponseAsync(cancellationToken).ConfigureAwait(false);
 
             foreach (var response in responses)
@@ -337,7 +337,7 @@ internal sealed class PluginRegistrationService(
 
         try
         {
-            var batchResponse = await _webApi.SendAsync(batch!, cancellationToken).ConfigureAwait(false);
+            var batchResponse = await _webApi.SendAsync(batch!, noThrow: true, cancellationToken: cancellationToken).ConfigureAwait(false);
             var responses = await batchResponse.ParseResponseAsync(cancellationToken).ConfigureAwait(false);
 
             foreach (var response in responses)
@@ -381,7 +381,7 @@ internal sealed class PluginRegistrationService(
                     ChangeSets = [new(upserts)]
                 };
 
-                var followupResponse = await _webApi.SendAsync(followupBatch, cancellationToken).ConfigureAwait(false);
+                var followupResponse = await _webApi.SendAsync(followupBatch, cancellationToken: cancellationToken).ConfigureAwait(false);
                 var followupParts = await followupResponse.ParseResponseAsync(cancellationToken).ConfigureAwait(false);
 
                 foreach (var response in followupParts)

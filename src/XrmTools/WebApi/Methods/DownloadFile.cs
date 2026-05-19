@@ -15,7 +15,7 @@ internal static partial class Extensions
         CancellationToken cancellationToken = default)
     {
         var request = new DownloadFileRequest(entityReference, property, returnFullSizedImage);
-        var response = await service.SendAsync(request, cancellationToken).ConfigureAwait(false);
+        var response = await service.SendAsync(request, cancellationToken: cancellationToken).ConfigureAwait(false);
         return response.File;
     }
 }

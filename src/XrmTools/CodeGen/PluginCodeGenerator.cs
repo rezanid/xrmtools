@@ -113,8 +113,6 @@ public class PluginCodeGenerator : BaseCodeGeneratorWithSiteAsync
             return null;
         }
 
-        //await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync();
-
         var templateFilePath = await TemplateFinder.FindPluginTemplatePathAsync(inputFileName);
 
         if (string.IsNullOrEmpty(templateFilePath))

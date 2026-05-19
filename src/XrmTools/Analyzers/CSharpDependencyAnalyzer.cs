@@ -293,7 +293,7 @@ public class CSharpDependencyAnalyzer : ICSharpDependencyAnalyzer
 
     private sealed class ProviderInfo
     {
-        public string PropertyName { get; set; }
+        public required string PropertyName { get; set; }
         public string? Name { get; set; }
     }
 
@@ -349,7 +349,7 @@ public class CSharpDependencyAnalyzer : ICSharpDependencyAnalyzer
 
                     if (!result.TryGetValue(member.Type, out var list))
                     {
-                        list = new List<ProviderInfo>();
+                        list = [];
                         result[member.Type] = list;
                     }
                     list.Add(new ProviderInfo { PropertyName = member.Name, Name = name });

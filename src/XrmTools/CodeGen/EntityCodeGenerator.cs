@@ -171,17 +171,26 @@ public sealed class EntityCodeGenerator : BaseCodeGeneratorWithSiteAsync
             // Generate GlobalOptionSets.cs file if there are any global option sets.
             if (inputModel.GlobalOptionSetDefinitions.Any())
             {
-                Generator.Config = new XrmCodeGenConfig
-                {
-                    DefaultNamespace = defaultNamespace + ".OptionSets",
-                    TemplateFilePath = await TemplateFinder.FindGlobalOptionSetsTemplatePathAsync(),
-                    InputFileName = inputFileName
-                };
+                var optionSetTemplateFilePath = await TemplateFinder.FindGlobalOptionSetsTemplatePathAsync();
 
-                var globalOptionSetFileName = await SettingsProvider.GlobalOptionSetsFilePathAsync();
-                var globalOptionSetCode = Generator.GenerateCode(inputModel);
-                File.WriteAllText(globalOptionSetFileName, globalOptionSetCode);
-                await project.AddExistingFilesAsync(globalOptionSetFileName!);
+                if (optionSetTemplateFilePath != null)
+                {
+                    Generator.Config = new XrmCodeGenConfig
+                    {
+                        DefaultNamespace = defaultNamespace + ".OptionSets",
+                        TemplateFilePath = optionSetTemplateFilePath,
+                        InputFileName = inputFileName
+                    };
+
+                    var globalOptionSetFileName = await SettingsProvider.GlobalOptionSetsFilePathAsync();
+                    var globalOptionSetCode = Generator.GenerateCode(inputModel);
+                    File.WriteAllText(globalOptionSetFileName, globalOptionSetCode);
+                    await project.AddExistingFilesAsync(globalOptionSetFileName!);
+                }
+                else
+                {
+                    Logger.LogWarning("Global option set generation was skipped because template file was not found.");
+                }
             }
         }
 

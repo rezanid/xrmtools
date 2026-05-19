@@ -42,6 +42,7 @@ public class PluginAssembly : Component<PluginAssembly>
     [JsonProperty("pluginassembly_plugintype")]
     public ICollection<PluginType> PluginTypes { get; set; } = [];
     [JsonPropertyName("PackageId")]
+    [JsonProperty("PackageId")]
     public PluginPackage? Package { get; set; }
 }
 #nullable restore

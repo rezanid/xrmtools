@@ -141,7 +141,8 @@ internal class CSharpXrmMetaDataService(ICSharpXrmMetaParser parser) : IXrmMetaD
             var semanticModelCache = new Dictionary<DocumentId, SemanticModel>();
             var allPluginTypes = new List<PluginTypeConfig>();
 
-            foreach (var document in project.Documents.Where(d => d.SourceCodeKind == SourceCodeKind.Regular))
+            foreach (var document in project.Documents.Where(
+                d => d.SourceCodeKind == SourceCodeKind.Regular && d.FilePath != null && !d.FilePath.Contains("\\xrmtools.meta.attributes\\")))
             {
                 var pluginTypes = await ParsePluginConfigsFromDocumentAsync(document, compilation, processedSymbols, semanticModelCache, cancellationToken).ConfigureAwait(false);
                 allPluginTypes.AddRange(pluginTypes);

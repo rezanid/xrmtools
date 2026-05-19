@@ -16,11 +16,15 @@ internal class PluginAssemblyRepository(IWebApiService service, ILogger logger) 
 {
     public async Task<IEnumerable<PluginAssemblyConfig>> GetAsync(CancellationToken cancellationToken)
     {
+        logger.LogTrace("Retrieving plugin assembly configurations from Dataverse.");
         var typed = await service.QueryAsync<PluginAssemblyConfig>("pluginassemblies?$select=pluginassemblyid,name,publickeytoken,solutionid,version,isolationmode,sourcetype", cancellationToken).ConfigureAwait(false);
         if (typed is not null && typed.Value is not null)
         {
+            logger.LogTrace("Plugin assembly configurations retrieved successfully.");
             return typed.Value;
         }
+        
+        logger.LogTrace("No plugin assembly configurations found.");
         return [];
     }
 }
