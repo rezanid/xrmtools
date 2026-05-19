@@ -29,7 +29,7 @@ internal static partial class Extensions
             strongConsistency: strongConsistency,
             eTag:eTag);
 
-        await service.SendAsync(request, cancellationToken).ConfigureAwait(false);
+        await service.SendAsync(request, cancellationToken: cancellationToken).ConfigureAwait(false);
     }
 }
 #nullable restore

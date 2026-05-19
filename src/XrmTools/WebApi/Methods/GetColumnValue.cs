@@ -23,7 +23,7 @@ internal static partial class Extensions
             entityReference: entityReference,
             property: property);
 
-        GetColumnValueResponse<T> response = await service.SendAsync(request, cancellationToken).ConfigureAwait(false);
+        GetColumnValueResponse<T> response = await service.SendAsync(request, cancellationToken: cancellationToken).ConfigureAwait(false);
         return response.Value!;
     }
 }

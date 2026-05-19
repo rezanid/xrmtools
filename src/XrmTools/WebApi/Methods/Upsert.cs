@@ -28,7 +28,7 @@ internal static partial class Extensions
             record: record, 
             upsertBehavior:upsertBehavior);
 
-        UpsertResponse response = await service.SendAsync(request, cancellationToken).ConfigureAwait(false);
+        UpsertResponse response = await service.SendAsync(request, cancellationToken: cancellationToken).ConfigureAwait(false);
         return response.EntityReference!;
     }
 }

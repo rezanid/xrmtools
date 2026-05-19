@@ -34,7 +34,7 @@ internal static partial class Extensions
             partitionId: partitionId,
             eTag: eTag);
 
-        await service.SendAsync(request, cancellationToken).ConfigureAwait(false);
+        await service.SendAsync(request, cancellationToken: cancellationToken).ConfigureAwait(false);
     }
 }
 #nullable restore

@@ -34,7 +34,7 @@ internal static partial class Extensions
             eTag: eTag, 
             partitionid:partitionId);
 
-        RetrieveResponse response = await service.SendAsync(request, cancellationToken).ConfigureAwait(false);
+        RetrieveResponse response = await service.SendAsync(request, cancellationToken: cancellationToken).ConfigureAwait(false);
         return response.Record;
     }
 
@@ -54,7 +54,7 @@ internal static partial class Extensions
             eTag: eTag,
             partitionid: partitionId);
 
-        var response = await service.SendAsync(request, cancellationToken).ConfigureAwait(false);
+        var response = await service.SendAsync(request, cancellationToken: cancellationToken).ConfigureAwait(false);
         return response.Record;
     }
 }

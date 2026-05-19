@@ -8,6 +8,7 @@ namespace XrmGenTest.Queries
         public const string Accounts = @"
 <fetch >
   <entity name=""account"">
+	  <attribute name=""name"" />
   </entity>
 </fetch>";
         public static EntityCollection QueryAccounts(this IOrganizationService service) => service.RetrieveMultiple(new FetchExpression(Accounts));

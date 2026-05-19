@@ -12,15 +12,15 @@ public partial class EchoApi : IPlugin
 {
     public void Execute(IServiceProvider serviceProvider)
     {
-        var context = serviceProvider.GetService(typeof(IPluginExecutionContext)) as IPluginExecutionContext;
-        var tracing = serviceProvider.GetService(typeof(ITracingService)) as ITracingService;
+        var context = (serviceProvider.GetService(typeof(IPluginExecutionContext)) as IPluginExecutionContext)!;
+        var tracing = (serviceProvider.GetService(typeof(ITracingService)) as ITracingService)!;
 
         var request = GetRequest(context);
         tracing.Trace("Request has been extracted.");
 
         SetResponse(context, new Response
         {
-            BooleanParameter = request.BooleanParameter.Value,
+            BooleanParameter = request.BooleanParameter ?? false,
             DateTimeParameter = request.DateTimeParameter,
             DecimalParameter = request.DecimalParameter,
             EntityParameter = request.EntityParameter,

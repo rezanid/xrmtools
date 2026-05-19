@@ -13,13 +13,13 @@ namespace XrmGenTest;
 public partial class ContactGreetingPlugin : PluginBase<ContactGreetingPlugin>, IPlugin
 {
     [Dependency]
-    public IContactPersister ContactPersister { get => Require<IContactPersister>(); }
+    public IContactPersister ContactPersister => Require<IContactPersister>();
 
     [Dependency]
-    public IContactOrchestrator ContactOrchestrator { get => Require<IContactOrchestrator>(); }
+    public IContactOrchestrator ContactOrchestrator => Require<IContactOrchestrator>();
 
     [Dependency]
-    public IValidationService ValidationService { get => Require<IValidationService>(); }
+    public IValidationService ValidationService => Require<IValidationService>();
 
     public ITracingService MyProperty { get; set; }
     override protected void ExecuteInternal(IServiceProvider serviceProvider)

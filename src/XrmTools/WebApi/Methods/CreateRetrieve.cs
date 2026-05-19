@@ -30,7 +30,7 @@ internal static partial class Extensions
             query: query,
             includeAnnotations: includeAnnotations);
 
-        CreateRetrieveResponse response = await service.SendAsync(request, cancellationToken).ConfigureAwait(false);
+        CreateRetrieveResponse response = await service.SendAsync(request, cancellationToken: cancellationToken).ConfigureAwait(false);
         return response.Record;
     }
 }

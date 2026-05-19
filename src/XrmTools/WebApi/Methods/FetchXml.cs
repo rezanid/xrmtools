@@ -58,7 +58,7 @@ internal static partial class Extensions
             Requests = [fetchXmlRequest]
         };
 
-        var batchResponse = await service.SendAsync(batchRequest, cancellationToken).ConfigureAwait(false);
+        var batchResponse = await service.SendAsync(batchRequest, cancellationToken: cancellationToken).ConfigureAwait(false);
         var firstResponse = (await batchResponse.ParseResponseAsync(cancellationToken).ConfigureAwait(false)).FirstOrDefault();
         if (firstResponse is null)
         {
