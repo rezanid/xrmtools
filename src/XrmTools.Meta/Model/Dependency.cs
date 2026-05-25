@@ -11,6 +11,7 @@ public class Dependency
     public List<Dependency> Dependencies { get; set; } = [];
     public bool IsProperty { get; set; }
     public bool IsLocalVariableNeeded { get; set; }
+    public bool IsLocalVariableDeclaration { get; set; }
     public bool IsDisposable { get; set; }
     public string? ProvidedByProperty { get; set; }
     public string? ProvidedByName { get; set; }
