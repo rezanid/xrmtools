@@ -198,6 +198,7 @@ internal sealed class PluginRegistrationService(
             if (!string.IsNullOrWhiteSpace(input.NugetPackagePath))
             {
                 model.Package = NugetParser.LoadFromNugetFile(input.NugetPackagePath!);
+                await TryApplySolutionPrefixToPackageAsync(model, cancellationToken).ConfigureAwait(false);
             }
             else
             {
@@ -427,6 +428,57 @@ internal sealed class PluginRegistrationService(
 
         return messages.ToDictionary(m => m.Name, m => m, StringComparer.OrdinalIgnoreCase);
     }
+
+    private async Task TryApplySolutionPrefixToPackageAsync(PluginAssemblyConfig config, CancellationToken cancellationToken)
+    {
+        var package = config.Package;
+        var solutionUniqueName = config.Solution?.UniqueName;
+
+        if (package is null || string.IsNullOrWhiteSpace(package.Name) || string.IsNullOrWhiteSpace(solutionUniqueName))
+        {
+            return;
+        }
+
+        try
+        {
+            var packagePrefix = await GetSolutionPackagePrefixAsync(solutionUniqueName, cancellationToken).ConfigureAwait(false);
+            if (string.IsNullOrWhiteSpace(packagePrefix))
+            {
+                _log.LogTrace("No publisher customization prefix found for solution '{SolutionUniqueName}'.", solutionUniqueName);
+                return;
+            }
+
+            var originalPackageName = package.Name;
+            package.Name = NugetParser.EnsurePackagePrefix(package.Name, packagePrefix);
+
+            if (!string.Equals(originalPackageName, package.Name, StringComparison.Ordinal))
+            {
+                _log.LogInformation(
+                    "Auto-detected publisher prefix '{PackagePrefix}' for solution '{SolutionUniqueName}' and updated plugin package name from '{OriginalPackageName}' to '{UpdatedPackageName}'.",
+                    packagePrefix,
+                    solutionUniqueName,
+                    originalPackageName,
+                    package.Name);
+            }
+        }
+        catch (Exception ex)
+        {
+            _log.LogWarning(ex, "Could not auto-detect the plugin package prefix for solution '{SolutionUniqueName}'.", solutionUniqueName);
+        }
+    }
+
+    private async Task<string?> GetSolutionPackagePrefixAsync(string solutionUniqueName, CancellationToken cancellationToken)
+    {
+        var solutionQuery = await _webApi.RetrieveMultipleAsync<Solution>(
+            $"{Solution.Metadata.EntitySetName}?$select=solutionid,uniquename" +
+            $"&$filter=uniquename eq '{EscapeODataString(solutionUniqueName)}'" +
+            "&$expand=publisherid($select=customizationprefix)",
+            cancellationToken: cancellationToken).ConfigureAwait(false);
+
+        return solutionQuery?.Value?.SingleOrDefault()?.Publisher?.CustomizationPrefix;
+    }
+
+    private static string EscapeODataString(string value) => value.Replace("'", "''");
 
     private void AssignIds(PluginAssemblyConfig pluginAssembly, PluginAssembly? existingPluginAssembly)
     {
