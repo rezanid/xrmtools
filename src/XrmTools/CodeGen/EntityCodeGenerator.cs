@@ -119,15 +119,18 @@ public sealed class EntityCodeGenerator : BaseCodeGeneratorWithSiteAsync
 
         var inputFile = await PhysicalFile.FromFileAsync(inputFileName);
 
-        //await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync();
-
         if (inputFile is null || inputFile.FindParent(SolutionItemType.Project) is not Project project)
         {
             return Encoding.UTF8.GetBytes(
                 "/*" + string.Format(Strings.CodeGen_InputFileOrProjectMissing, inputFileName) + "*/");
         }
 
-        var templateFilePath = await TemplateFinder.FindEntityTemplatePathAsync(inputFileName);
+        var projectDirectory = Path.GetDirectoryName(project.FullPath);
+        var solutionDirectory = project.FindParent(SolutionItemType.Solution) is Community.VisualStudio.Toolkit.Solution solution
+            ? Path.GetDirectoryName(solution.FullPath)
+            : null;
+
+        var templateFilePath = await TemplateFinder.FindEntityTemplatePathAsync(inputFileName, projectDirectory, solutionDirectory);
 
         if (string.IsNullOrEmpty(templateFilePath))
         {
@@ -171,7 +174,7 @@ public sealed class EntityCodeGenerator : BaseCodeGeneratorWithSiteAsync
             // Generate GlobalOptionSets.cs file if there are any global option sets.
             if (inputModel.GlobalOptionSetDefinitions.Any())
             {
-                var optionSetTemplateFilePath = await TemplateFinder.FindGlobalOptionSetsTemplatePathAsync();
+                var optionSetTemplateFilePath = await TemplateFinder.FindGlobalOptionSetsTemplatePathAsync(projectDirectory, solutionDirectory);
 
                 if (optionSetTemplateFilePath != null)
                 {
@@ -182,9 +185,10 @@ public sealed class EntityCodeGenerator : BaseCodeGeneratorWithSiteAsync
                         InputFileName = inputFileName
                     };
 
-                    var globalOptionSetFileName = await SettingsProvider.GlobalOptionSetsFilePathAsync();
+                    var globalOptionSetFileName = await SettingsProvider.GlobalOptionSetsFilePathAsync(projectDirectory, solutionDirectory);
                     var globalOptionSetCode = Generator.GenerateCode(inputModel);
                     File.WriteAllText(globalOptionSetFileName, globalOptionSetCode);
+                    await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync(cancellationToken);
                     await project.AddExistingFilesAsync(globalOptionSetFileName!);
                 }
                 else
