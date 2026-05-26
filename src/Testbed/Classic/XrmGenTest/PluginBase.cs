@@ -30,33 +30,31 @@ public abstract class PluginBase<TPlugin> : IPlugin where TPlugin : IPlugin
 
     public void Execute(IServiceProvider serviceProvider)
     {
-        using (var scope = CreateScope(serviceProvider))
+        using var scope = CreateScope(serviceProvider);
+        try
         {
-            try
-            {
-                ExecuteInternal(serviceProvider);
-            }
-            catch (InvalidPluginExecutionException)
-            {
-                throw;
-            }
-            catch (FaultException<OrganizationServiceFault> ex)
-            {
-                Tracing.Trace($"[e] {ex}");
-                throw new InvalidPluginExecutionException($"OrganizationServiceFault: {ex.Message}", ex);
-            }
-            catch (InvalidCastException ex)
-            {
-                Tracing.Trace($"[e] {ex}");
-                throw new InvalidPluginExecutionException(
-                    "Request cannot be processed, potentially due to invalid data type assigned to a parameter.",
-                    PluginHttpStatusCode.BadRequest);
-            }
-            catch (Exception ex)
-            {
-                Tracing.Trace($"[e] {ex}");
-                throw new InvalidPluginExecutionException(ex.Message, ex);
-            }
+            ExecuteInternal(serviceProvider);
+        }
+        catch (InvalidPluginExecutionException)
+        {
+            throw;
+        }
+        catch (FaultException<OrganizationServiceFault> ex)
+        {
+            Tracing.Trace($"[e] {ex}");
+            throw new InvalidPluginExecutionException($"OrganizationServiceFault: {ex.Message}", ex);
+        }
+        catch (InvalidCastException ex)
+        {
+            Tracing.Trace($"[e] {ex}");
+            throw new InvalidPluginExecutionException(
+                "Request cannot be processed, potentially due to invalid data type assigned to a parameter.",
+                PluginHttpStatusCode.BadRequest);
+        }
+        catch (Exception ex)
+        {
+            Tracing.Trace($"[e] {ex}");
+            throw new InvalidPluginExecutionException(ex.Message, ex);
         }
     }
 

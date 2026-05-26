@@ -60,7 +60,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="AccountGreetingPlugin.cs">
-      <Generator>Xrm Tools Plugin Code Generator</Generator>
+      <Generator>XrmTools Plugin Code Generator</Generator>
       <IsXrmPlugin>True</IsXrmPlugin>
       <LastGenOutput>AccountGreetingPlugin.g.cs</LastGenOutput>
     </Compile>
@@ -69,57 +69,58 @@
       <DesignTime>True</DesignTime>
       <DependentUpon>AccountGreetingPlugin.cs</DependentUpon>
     </Compile>
-    <Compile Include="ContactGreetingPlugin1.g.cs">
+    <Compile Include="ContactGreetingPlugin.g.cs">
       <AutoGen>True</AutoGen>
       <DesignTime>True</DesignTime>
       <DependentUpon>ContactGreetingPlugin.cs</DependentUpon>
     </Compile>
     <Compile Include="ContactOrchestrator.cs" />
     <Compile Include="ContactPersister.cs" />
+    <Compile Include="EchoApi.g.cs">
+      <AutoGen>True</AutoGen>
+      <DesignTime>True</DesignTime>
+      <DependentUpon>EchoApi.cs</DependentUpon>
+    </Compile>
     <Compile Include="Entities.cs">
       <Generator>XrmTools Entity Generator</Generator>
-      <LastGenOutput>Entities.Generated.cs</LastGenOutput>
+      <LastGenOutput>Entities.g.cs</LastGenOutput>
     </Compile>
-    <Compile Include="Entities.Generated.cs">
+    <Compile Include="Entities.g.cs">
       <AutoGen>True</AutoGen>
       <DesignTime>True</DesignTime>
       <DependentUpon>Entities.cs</DependentUpon>
     </Compile>
     <Compile Include="GlobalOptionSets.cs" />
-    <Compile Include="LoggingService.cs" />
-    <Compile Include="PluginBase.cs" />
-    <Compile Include="Queries\Accounts.g.cs">
+    <Compile Include="LeadCreatePlugin.g.cs">
       <AutoGen>True</AutoGen>
       <DesignTime>True</DesignTime>
-      <DependentUpon>Accounts.fetch</DependentUpon>
+      <DependentUpon>LeadCreatePlugin.cs</DependentUpon>
+    </Compile>
+    <Compile Include="LoggingService.cs" />
+    <Compile Include="PluginBase.cs" />
+    <Compile Include="Queries\AllAccounts.g.cs">
+      <AutoGen>True</AutoGen>
+      <DesignTime>True</DesignTime>
+      <DependentUpon>AllAccounts.fetch</DependentUpon>
     </Compile>
     <Compile Include="QueryExpressionExtensions.cs" />
     <Compile Include="TypedSdkMessages\EchoRequest.cs" />
     <Compile Include="TypedSdkMessages\EchoResponse.cs" />
     <Compile Include="ContactGreetingPlugin.cs">
-      <Generator>Xrm Tools Plugin Code Generator</Generator>
+      <Generator>XrmTools Plugin Code Generator</Generator>
       <IsXrmPlugin>True</IsXrmPlugin>
-      <LastGenOutput>ContactGreetingPlugin1.g.cs</LastGenOutput>
+      <LastGenOutput>ContactGreetingPlugin.g.cs</LastGenOutput>
     </Compile>
     <Compile Include="EchoApiRetrofit.cs" />
     <Compile Include="LeadCreatePlugin.cs">
-      <Generator>Xrm Tools Plugin Code Generator</Generator>
-      <LastGenOutput>LeadCreatePlugin.Generated.cs</LastGenOutput>
-    </Compile>
-    <Compile Include="EchoApi.cs">
-      <Generator>Xrm Tools Plugin Code Generator</Generator>
-      <LastGenOutput>EchoApi.Generated.cs</LastGenOutput>
+      <Generator>XrmTools Plugin Code Generator</Generator>
+      <LastGenOutput>LeadCreatePlugin.g.cs</LastGenOutput>
       <IsXrmPlugin>True</IsXrmPlugin>
     </Compile>
-    <Compile Include="EchoApi.Generated.cs">
-      <AutoGen>True</AutoGen>
-      <DesignTime>True</DesignTime>
-      <DependentUpon>EchoApi.cs</DependentUpon>
-    </Compile>
-    <Compile Include="LeadCreatePlugin.Generated.cs">
-      <AutoGen>True</AutoGen>
-      <DesignTime>True</DesignTime>
-      <DependentUpon>LeadCreatePlugin.cs</DependentUpon>
+    <Compile Include="EchoApi.cs">
+      <IsXrmPlugin>True</IsXrmPlugin>
+      <Generator>XrmTools Plugin Code Generator</Generator>
+      <LastGenOutput>EchoApi.g.cs</LastGenOutput>
     </Compile>
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="ValidationService.cs" />
@@ -139,10 +140,11 @@
       <PrivateAssets>all</PrivateAssets>
     </PackageReference>
   </ItemGroup>
+  <ItemGroup />
   <ItemGroup>
-    <None Include="Queries\Accounts.fetch">
+    <None Include="Queries\AllAccounts.fetch">
       <Generator>XrmTools FetchXML Generator</Generator>
-      <LastGenOutput>Accounts.g.cs</LastGenOutput>
+      <LastGenOutput>AllAccounts.g.cs</LastGenOutput>
     </None>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
