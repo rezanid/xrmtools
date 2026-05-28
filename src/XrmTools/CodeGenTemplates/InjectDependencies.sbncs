@@ -1,6 +1,3 @@
-{{- # Initialize collections for local variables
-localTypeNames = [] -}}
-{{- localDeps = [] -}}
 {{- knownDeps = [
   "Microsoft.Xrm.Sdk.*"] -}}
 
@@ -24,20 +21,6 @@ end -}}
     end
   end
   ret false
-end -}}
-
-{{func gather_locals(dep) 
-    for sub in dep.dependencies 
-        gather_locals(sub) 
-    end 
-    # Exclude IServiceProvider from locals; it's provided by CreateScope parameter
-    # Also exclude string type due to special treatment by DI.
-    if dep.is_local_variable_needed && !dep.provided_by_property && !is_named(dep) && dep.full_type_name != "System.IServiceProvider" && dep.full_type_name != "string"
-        if !(localTypeNames | array.contains dep.full_type_name) 
-            localTypeNames = localTypeNames | array.add dep.full_type_name 
-            localDeps = localDeps | array.add dep 
-        end 
-    end 
 end -}}
 
 {{func instantiate(dep) 
@@ -108,9 +91,20 @@ end -}}
     ret $expr 
 end -}}
 
-{{for dep in dependencies 
-    gather_locals(dep) 
-end ~}}
+{{func render_local(dep)
+    $result = ""
+    for sub in dep.dependencies
+        $result += render_local(sub)
+    end
+    if dep.is_local_variable_declaration
+        $result += "    var " + varName(dep.resolved_short_type_name) + " = " + instantiate_new(dep) + ";\r\n"
+    end
+    ret $result
+end -}}
+
+{{~ capture localDeclarations ~}}
+{{~ for dep in dependencies ~}}{{~ render_local dep ~}}{{~ end ~}}
+{{~ end ~}}
 
 {{-existing_method = plugintype.base_type_methods | find_method "CreateScope"-}}
 /// <summary>
@@ -125,10 +119,8 @@ protected {{existing_method ? 'override ' : '' }}IDisposable CreateScope(IServic
     {{~end~}}
     scope.Set<IServiceProvider>(serviceProvider);
 
-{{~ for local in localDeps ~}}
-    var {{ varName(local.resolved_short_type_name) }} = {{ instantiate_new(local) }};
-{{~ end ~}}
-{{~ if localDeps.size > 0 && dependencies.size > 0 ~}}{{ "\r\n" }}{{~ end ~}}
+{{~ if localDeclarations != "" ~}}
+{{ localDeclarations }}{{ "\r\n" }}{{~ end ~}}
 {{~ for dep in dependencies ~}}
     {{~ if !is_named(dep) && dep.full_type_name != "System.String" ~}}
     scope.Set<{{ dep.full_type_name | remove_known_ns }}>({{ instantiate(dep) }});

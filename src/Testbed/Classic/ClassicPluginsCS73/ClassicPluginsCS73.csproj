@@ -122,7 +122,7 @@
       <DependentUpon>AccountGreetingPlugin.cs</DependentUpon>
     </Compile>
     <Compile Include="ContactGreetingPlugin.cs">
-      <Generator>Xrm Tools Plugin Code Generator</Generator>
+      <Generator>XrmTools Plugin Code Generator</Generator>
       <IsXrmPlugin>True</IsXrmPlugin>
       <LastGenOutput>ContactGreetingPlugin.g.cs</LastGenOutput>
     </Compile>

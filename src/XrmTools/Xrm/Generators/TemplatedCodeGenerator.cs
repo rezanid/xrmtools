@@ -54,6 +54,7 @@ internal class TemplatedCodeGenerator(IValidationService validationService) : IX
 
         var context = new TemplateContext()
         {
+            LoopLimit = 5000,
             TemplateLoader = new FileTemplateLoader(Directory.GetParent(Config!.TemplateFilePath).FullName),
         };
         context.PushGlobal(scriptObject);

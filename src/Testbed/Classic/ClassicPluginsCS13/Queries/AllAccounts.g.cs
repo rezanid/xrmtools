@@ -5,13 +5,13 @@ namespace XrmGenTest.Queries
 {
     internal static partial class FetchQueries
     {
-        public const string AllAcounts = @"
+        public const string AllAccounts = @"
 <fetch >
   <entity name=""account"">
 	  <attribute name=""name"" />
 	  <attribute name=""description"" />
   </entity>
 </fetch>";
-        public static EntityCollection QueryAllAcounts(this IOrganizationService service) => service.RetrieveMultiple(new FetchExpression(AllAcounts));
+        public static EntityCollection QueryAllAccounts(this IOrganizationService service) => service.RetrieveMultiple(new FetchExpression(AllAccounts));
     }
 }

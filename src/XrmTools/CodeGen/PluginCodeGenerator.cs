@@ -113,7 +113,20 @@ public class PluginCodeGenerator : BaseCodeGeneratorWithSiteAsync
             return null;
         }
 
-        var templateFilePath = await TemplateFinder.FindPluginTemplatePathAsync(inputFileName);
+        var inputFile = await PhysicalFile.FromFileAsync(inputFileName);
+
+        if (inputFile is null || inputFile.FindParent(SolutionItemType.Project) is not Project project)
+        {
+            return Encoding.UTF8.GetBytes(
+                "/*" + string.Format(Strings.CodeGen_InputFileOrProjectMissing, inputFileName) + "*/");
+        }
+
+        var projectDirectory = Path.GetDirectoryName(project.FullPath);
+        var solutionDirectory = project.FindParent(SolutionItemType.Solution) is Community.VisualStudio.Toolkit.Solution solution
+            ? Path.GetDirectoryName(solution.FullPath)
+            : null;
+
+        var templateFilePath = await TemplateFinder.FindPluginTemplatePathAsync(inputFileName, projectDirectory, solutionDirectory);
 
         if (string.IsNullOrEmpty(templateFilePath))
         {

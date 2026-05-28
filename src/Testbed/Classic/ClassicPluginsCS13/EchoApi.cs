@@ -17,7 +17,7 @@ public partial class EchoApi : IPlugin
 
         var request = GetRequest(context);
         tracing.Trace("Request has been extracted.");
-
+        
         SetResponse(context, new Response
         {
             BooleanParameter = request.OptionalBooleanParameter ?? false,

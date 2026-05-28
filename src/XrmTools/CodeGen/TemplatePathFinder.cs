@@ -13,10 +13,10 @@ using XrmTools.Settings;
 
 public interface ITemplateFinder
 {
-    Task<string?> FindEntityTemplatePathAsync(string inputFile);
-    Task<string?> FindPluginTemplatePathAsync(string inputFile);
-    Task<string?> FindGlobalOptionSetsTemplatePathAsync();
-    Task<string?> FindFetchXmlTemplatePathAsync(string inputFile);
+    Task<string?> FindEntityTemplatePathAsync(string inputFile, string? projectDirectory = null, string? solutionDirectory = null);
+    Task<string?> FindPluginTemplatePathAsync(string inputFile, string? projectDirectory = null, string? solutionDirectory = null);
+    Task<string?> FindGlobalOptionSetsTemplatePathAsync(string? projectDirectory = null, string? solutionDirectory = null);
+    Task<string?> FindFetchXmlTemplatePathAsync(string inputFile, string? projectDirectory = null, string? solutionDirectory = null);
 }
 
 [Export(typeof(ITemplateFinder))]
@@ -29,7 +29,9 @@ public class TemplatePathFinder(ISettingsProvider settings, ILogger<TemplatePath
         string? explicitCandidatePath,
         Func<Task<string?>> settingsPathGetter,
         string templateFileName,
-        string notFoundWarning)
+        string notFoundWarning,
+        string? projectDirectory = null,
+        string? solutionDirectory = null)
     {
         if (FileExists(explicitCandidatePath))
         {
@@ -42,22 +44,36 @@ public class TemplatePathFinder(ISettingsProvider settings, ILogger<TemplatePath
             return configuredPath!;
         }
 
-        var project = await VS.Solutions.GetActiveProjectAsync();
-        if (project is not null)
+        if (string.IsNullOrWhiteSpace(projectDirectory))
         {
-            var projectDir = Path.GetDirectoryName(project.FullPath);
-            var path = Path.Combine(projectDir, Constants.ScribanTemplatesFolderName, templateFileName);
+            var project = await VS.Solutions.GetActiveProjectAsync();
+            if (project is not null)
+            {
+                projectDirectory = Path.GetDirectoryName(project.FullPath);
+            }
+        }
+
+        if (!string.IsNullOrWhiteSpace(projectDirectory))
+        {
+            var path = Path.Combine(projectDirectory, Constants.ScribanTemplatesFolderName, templateFileName);
             if (File.Exists(path))
             {
                 return path;
             }
         }
 
-        var solution = await VS.Solutions.GetCurrentSolutionAsync();
-        if (solution is not null)
+        if (string.IsNullOrWhiteSpace(solutionDirectory))
         {
-            var solutionDir = Path.GetDirectoryName(solution.FullPath);
-            var path = Path.Combine(solutionDir, Constants.ScribanTemplatesFolderName, templateFileName);
+            var solution = await VS.Solutions.GetCurrentSolutionAsync();
+            if (solution is not null)
+            {
+                solutionDirectory = Path.GetDirectoryName(solution.FullPath);
+            }
+        }
+
+        if (!string.IsNullOrWhiteSpace(solutionDirectory))
+        {
+            var path = Path.Combine(solutionDirectory, Constants.ScribanTemplatesFolderName, templateFileName);
             if (File.Exists(path))
             {
                 return path;
@@ -89,7 +105,7 @@ public class TemplatePathFinder(ISettingsProvider settings, ILogger<TemplatePath
         return null;
     }
 
-    public async Task<string?> FindEntityTemplatePathAsync(string inputFile)
+    public async Task<string?> FindEntityTemplatePathAsync(string inputFile, string? projectDirectory = null, string? solutionDirectory = null)
     {
         var candidate = Path.Combine(Path.GetDirectoryName(inputFile), Path.GetFileNameWithoutExtension(inputFile)) + Constants.ScribanTemplateExtensionWithDot;
 
@@ -97,10 +113,12 @@ public class TemplatePathFinder(ISettingsProvider settings, ILogger<TemplatePath
             explicitCandidatePath: candidate,
             settingsPathGetter: settings.EntityTemplateFilePathAsync,
             templateFileName: Constants.ScribanEntityTemplateFileName,
-            notFoundWarning: "Failed to find any template for entity code generation.");
+            notFoundWarning: "Failed to find any template for entity code generation.",
+            projectDirectory: projectDirectory,
+            solutionDirectory: solutionDirectory);
     }
 
-    public async Task<string?> FindPluginTemplatePathAsync(string inputFile)
+    public async Task<string?> FindPluginTemplatePathAsync(string inputFile, string? projectDirectory = null, string? solutionDirectory = null)
     {
         var candidate = Path.Combine(Path.GetDirectoryName(inputFile), Path.GetFileNameWithoutExtension(inputFile)) + Constants.ScribanTemplateExtensionWithDot;
 
@@ -108,19 +126,23 @@ public class TemplatePathFinder(ISettingsProvider settings, ILogger<TemplatePath
             explicitCandidatePath: candidate,
             settingsPathGetter: settings.PluginTemplateFilePathAsync,
             templateFileName: Constants.ScribanPluginTemplateFileName,
-            notFoundWarning: "Failed to find any template for plugin code generation.");
+            notFoundWarning: "Failed to find any template for plugin code generation.",
+            projectDirectory: projectDirectory,
+            solutionDirectory: solutionDirectory);
     }
 
-    public async Task<string?> FindGlobalOptionSetsTemplatePathAsync()
+    public async Task<string?> FindGlobalOptionSetsTemplatePathAsync(string? projectDirectory = null, string? solutionDirectory = null)
     {
         return await ResolveTemplatePathAsync(
             explicitCandidatePath: null,
             settingsPathGetter: settings.GlobalOptionSetsTemplateFilePathAsync,
             templateFileName: Constants.ScribanGlobalOptionSetsFileName,
-            notFoundWarning: "Failed to find any template for global option sets code generation.");
+            notFoundWarning: "Failed to find any template for global option sets code generation.",
+            projectDirectory: projectDirectory,
+            solutionDirectory: solutionDirectory);
     }
 
-    public async Task<string?> FindFetchXmlTemplatePathAsync(string inputFile)
+    public async Task<string?> FindFetchXmlTemplatePathAsync(string inputFile, string? projectDirectory = null, string? solutionDirectory = null)
     {
         var candidate = Path.Combine(Path.GetDirectoryName(inputFile), Path.GetFileNameWithoutExtension(inputFile)) + Constants.ScribanTemplateExtensionWithDot;
 
@@ -128,7 +150,9 @@ public class TemplatePathFinder(ISettingsProvider settings, ILogger<TemplatePath
             explicitCandidatePath: candidate,
             settingsPathGetter: settings.GlobalOptionSetsTemplateFilePathAsync,
             templateFileName: Constants.ScribanFetchXmlFileName,
-            notFoundWarning: "Failed to find any template for FetchXML code generation.");
+            notFoundWarning: "Failed to find any template for FetchXML code generation.",
+            projectDirectory: projectDirectory,
+            solutionDirectory: solutionDirectory);
     }
 }
 #nullable restore

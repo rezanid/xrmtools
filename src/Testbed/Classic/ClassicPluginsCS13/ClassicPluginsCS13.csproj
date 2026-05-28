@@ -103,16 +103,16 @@
     <Compile Include="GlobalOptionSets.cs" />
     <Compile Include="LoggingService.cs" />
     <Compile Include="PluginBase.cs" />
-    <Compile Include="Queries\AllAcounts.g.cs">
+    <Compile Include="Queries\AllAccounts.g.cs">
       <AutoGen>True</AutoGen>
       <DesignTime>True</DesignTime>
-      <DependentUpon>AllAcounts.fetch</DependentUpon>
+      <DependentUpon>AllAccounts.fetch</DependentUpon>
     </Compile>
     <Compile Include="QueryExpressionExtensions.cs" />
     <Compile Include="TypedSdkMessages\EchoRequest.cs" />
     <Compile Include="TypedSdkMessages\EchoResponse.cs" />
     <Compile Include="ContactGreetingPlugin.cs">
-      <Generator>Xrm Tools Plugin Code Generator</Generator>
+      <Generator>XrmTools Plugin Code Generator</Generator>
       <IsXrmPlugin>True</IsXrmPlugin>
       <LastGenOutput>ContactGreetingPlugin1.g.cs</LastGenOutput>
     </Compile>
@@ -140,11 +140,10 @@
       <PrivateAssets>all</PrivateAssets>
     </PackageReference>
   </ItemGroup>
-  <ItemGroup />
   <ItemGroup>
-    <None Include="Queries\AllAcounts.fetch">
+    <None Include="Queries\AllAccounts.fetch">
       <Generator>XrmTools FetchXML Generator</Generator>
-      <LastGenOutput>AllAcounts.g.cs</LastGenOutput>
+      <LastGenOutput>AllAccounts.g.cs</LastGenOutput>
     </None>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
