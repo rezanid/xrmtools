@@ -15,6 +15,11 @@ internal class DeviceCodeAuthenticator : DelegatingAuthenticator
     {
         var app = await CreateClientAppAsync(parameters, cancellationToken);
 
+        if (clearTokenCache)
+        {
+            await ClearTokenCacheAsync(app).ConfigureAwait(false);
+        }
+
         // Attempt to get a token silently from the cache
         var accounts = await app.GetAccountsAsync().ConfigureAwait(false);
         var account = accounts.FirstOrDefault();

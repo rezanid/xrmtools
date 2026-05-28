@@ -7,9 +7,9 @@ using XrmTools.Meta.Attributes;
 namespace XrmGenTest;
 
 [Plugin]
-[Step("Create", "contact", "firstname,lastname,description,accountrolecode", Stages.PreOperation, ExecutionMode.Synchronous)]
 [Step("Update", "contact", "firstname,lastname,description,accountrolecode", Stages.PreOperation, ExecutionMode.Synchronous)]
-[Image(ImageTypes.PreImage, "firstname,lastname,description,accountrolecode")]
+[Image(ImageTypes.PreImage, "firstname,lastname,description,accountrolecode", Name = "ContactPreImage", EntityAlias = "ContactPreImage")]
+[Step("Create", "contact", "firstname,lastname,description,accountrolecode", Stages.PreOperation, ExecutionMode.Synchronous)]
 public partial class ContactGreetingPlugin : PluginBase<ContactGreetingPlugin>, IPlugin
 {
     [Dependency]

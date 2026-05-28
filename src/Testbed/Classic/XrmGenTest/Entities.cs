@@ -11,7 +11,7 @@ using XrmTools.Meta.Attributes;
 
 [assembly: Entity("attachment", BaseType = typeof(BaseEntity<Attachment>))]
 [assembly: Entity("account", BaseType = typeof(BaseEntity<Account>))]
-[assembly: Entity("contact")]
+[assembly: Entity("contact", AttributeNames = "address1_line1, firstname, lastname")]
    
 namespace XrmGenTest
 {

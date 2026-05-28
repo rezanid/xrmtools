@@ -9,6 +9,9 @@ namespace XrmGenTest;
 [Step("Create", "account", "name, description, accountnumber", Stages.PostOperation, ExecutionMode.Synchronous)]
 public partial class AccountGreetingPlugin : IPlugin
 {
+    [Dependency]
+    IOrganizationService OrganizationService => Require<IOrganizationService>();
+    
     public void Execute(IServiceProvider serviceProvider)
     {
         // Without Dependency Injection:
@@ -17,6 +20,7 @@ public partial class AccountGreetingPlugin : IPlugin
         target["description"] = $"Welcome to Power Platform, {target["name"]}!";
 
         // With Dependency Injection:
+        
         using var scope = CreateScope(serviceProvider);
         Target.Description = $"Welcome to Power Platform, {Target.Name}!";
     }
