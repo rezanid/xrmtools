@@ -1,0 +1,10 @@
+<Solution>
+  <Folder Name="/Classic/">
+    <Project Path="Classic/ClassicPluginsCS13/ClassicPluginsCS13.csproj" Id="2f08d24a-eae5-4ee1-9d2b-761b26c7e94a" />
+    <Project Path="Classic/ClassicPluginsCS73/ClassicPluginsCS73.csproj" Id="8ae60f54-0531-43c1-b723-ae88c50285f9" />
+    <Project Path="Classic/MicrosoftSamplePlugin/MicrosoftSamplePlugin.csproj" Id="0b2c5980-65b4-4bb7-acb1-1bbc8b8d956f" />
+  </Folder>
+  <Folder Name="/SDK-Style/">
+    <Project Path="SdkStyle/SdkPluginsCS10/SdkPluginsCS10.csproj" />
+  </Folder>
+</Solution>

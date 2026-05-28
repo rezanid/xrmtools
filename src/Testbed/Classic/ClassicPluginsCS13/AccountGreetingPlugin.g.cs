@@ -27,7 +27,6 @@ namespace XrmGenTest
             scope.Set<IServiceProvider>(serviceProvider);
         
             scope.Set<IPluginExecutionContext>((IPluginExecutionContext)serviceProvider.GetService(typeof(IPluginExecutionContext)));
-            scope.Set<IOrganizationService>((IOrganizationService)serviceProvider.GetService(typeof(IOrganizationService)));
             return scope;
         }
     
