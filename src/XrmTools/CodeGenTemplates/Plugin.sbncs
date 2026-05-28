@@ -8,6 +8,7 @@ length = index2 - index1;
 ret $0 | string.slice index1 length
 end~}}
 {{~quote(text) = '"' + text + '"'~}}
+{{~required_input_missing(text) = "throw new InvalidPluginExecutionException(\"Required input parameter '" + text + "' was not provided.\")"~}}
 {{-func find_method(methods, name)
   for m in methods
     if m.name == name 
@@ -58,12 +59,16 @@ namespace {{ first_plugin_type?.namespace ?? config.default_namespace }}
             {{~when 'Boolean', 'DateTime', 'Decimal', 'Float', 'Integer'~}}
             request.{{param.name}} = context.InputParameters.TryGetValue("{{param.unique_name}}", out {{param.full_type_name}} {{param.name | string.downcase}}) ? {{param.name | string.downcase}} : default;
             {{~when 'String'~}}
-            request.{{param.name}} = context.InputParameters.TryGetValue("{{param.unique_name}}", out {{plugintype.is_nullable_enabled ? param.full_type_name : param.full_type_name | string.replace_first '?' '' true}} {{param.name | string.downcase}}) ? {{param.name | string.downcase}} : string.Empty;
+            {{~fallback = plugintype.is_nullable_enabled && param.type_name == 'string' ? (param.unique_name | required_input_missing) : 'string.Empty' ~}}
+            request.{{param.name}} = context.InputParameters.TryGetValue("{{param.unique_name}}", out {{plugintype.is_nullable_enabled ? param.full_type_name : param.full_type_name | string.replace_first '?' '' true}} {{param.name | string.downcase}}) ? {{param.name | string.downcase}} : {{fallback}};
             {{~when 'StringArray'~}}
-            request.{{param.name}} = context.InputParameters.TryGetValue("{{param.unique_name}}", out string[] {{param.name | string.downcase}}) ? {{param.name | string.downcase}} : default;
+            {{~fallback = plugintype.is_nullable_enabled && param.type_name == 'string[]' ? (param.unique_name | required_input_missing) : 'default' ~}}
+            request.{{param.name}} = context.InputParameters.TryGetValue("{{param.unique_name}}", out string[] {{param.name | string.downcase}}) ? {{param.name | string.downcase}} : {{fallback}};
             {{~when 'Picklist'~}}
-            {{~converter = param.type_name == 'OptionSetValue' ? (param.name | string.downcase) : '(' + param.full_type_name + ')' + (param.name | string.downcase) + '.Value' ~}}
-            request.{{param.name}} = context.InputParameters.TryGetValue("{{param.unique_name}}", out OptionSetValue {{param.name | string.downcase}}) ? {{converter}} : default;
+            {{~picklist_type = param.type_name | string.replace_first '?' '' true~}}
+            {{~converter = picklist_type == 'OptionSetValue' ? (param.name | string.downcase) : '(' + (param.full_type_name | string.replace_first '?' '' true) + ')' + (param.name | string.downcase) + '.Value' ~}}
+            {{~fallback = plugintype.is_nullable_enabled && picklist_type == 'OptionSetValue' && param.type_name == picklist_type ? (param.unique_name | required_input_missing) : 'default' ~}}
+            request.{{param.name}} = context.InputParameters.TryGetValue("{{param.unique_name}}", out OptionSetValue {{param.name | string.downcase}}) ? {{converter}} : {{fallback}};
             {{~when 'EntityCollection'~}}
             if (context.InputParameters.TryGetValue("{{param.unique_name}}", out EntityCollection {{param.name | string.downcase}})
                 && {{param.name | string.downcase}} != null)
@@ -79,6 +84,12 @@ namespace {{ first_plugin_type?.namespace ?? config.default_namespace }}
                 request.{{param.name}} = {{param.name | string.downcase}};
                 {{~end~}}
             }
+            {{~if plugintype.is_nullable_enabled && param.type_name == (param.type_name | string.replace_first '?' '' true)~}}
+            else
+            {
+                throw new InvalidPluginExecutionException("Required input parameter '{{param.unique_name}}' was not provided.");
+            }
+            {{~end~}}
             {{~when 'Entity'~}}
             if (context.InputParameters.TryGetValue("{{param.unique_name}}", out Entity {{param.name | string.downcase}})
                 && {{param.name | string.downcase}} != null)
@@ -93,8 +104,15 @@ namespace {{ first_plugin_type?.namespace ?? config.default_namespace }}
                 request.{{param.name}} = {{param.name | string.downcase}};
                 {{~end~}}
             }
+            {{~if plugintype.is_nullable_enabled && param.type_name == (param.type_name | string.replace_first '?' '' true)~}}
+            else
+            {
+                throw new InvalidPluginExecutionException("Required input parameter '{{param.unique_name}}' was not provided.");
+            }
+            {{~end~}}
             {{~else~}}
-            request.{{param.name}} = context.InputParameters.TryGetValue("{{param.unique_name}}", out {{plugintype.is_nullable_enabled ? param.full_type_name : param.full_type_name | string.replace_first '?' '' true}} {{param.name | string.downcase}}) ? {{param.name | string.downcase}} : default;
+            {{~fallback = plugintype.is_nullable_enabled && (param.type == 'Money' || param.type == 'EntityReference') && param.type_name == (param.type_name | string.replace_first '?' '' true) ? (param.unique_name | required_input_missing) : 'default' ~}}
+            request.{{param.name}} = context.InputParameters.TryGetValue("{{param.unique_name}}", out {{plugintype.is_nullable_enabled ? param.full_type_name : param.full_type_name | string.replace_first '?' '' true}} {{param.name | string.downcase}}) ? {{param.name | string.downcase}} : {{fallback}};
             {{~end~}}
             {{~end~}}
             return request;
@@ -107,8 +125,9 @@ namespace {{ first_plugin_type?.namespace ?? config.default_namespace }}
             {{~for param in plugintype.custom_api.response_properties~}}
             {{~case param.type~}}
             {{~when 'Picklist'~}}
-            {{~converter = param.type_name == 'OptionSetValue' ? (param.name | string.downcase) + 'Value' : 'new OptionSetValue((int)' + (param.name | string.downcase) + 'Value)' ~}}
-            if (response.{{param.name}} is {{param.full_type_name}} {{param.name | string.downcase}}Value) context.OutputParameters["{{param.unique_name}}"] = {{converter}};
+            {{~picklist_type = param.type_name | string.replace_first '?' '' true~}}
+            {{~converter = picklist_type == 'OptionSetValue' ? (param.name | string.downcase) + 'Value' : 'new OptionSetValue((int)' + (param.name | string.downcase) + 'Value)' ~}}
+            if (response.{{param.name}} is {{param.full_type_name | string.replace_first '?' '' true}} {{param.name | string.downcase}}Value) context.OutputParameters["{{param.unique_name}}"] = {{converter}};
             {{~when 'StringArray'~}}
             if (response.{{param.name}} is {{param.type_name | string.replace_first '?' '' true}} {{param.name | string.downcase}}Value) context.OutputParameters["{{param.unique_name}}"] = {{param.name | string.downcase}}Value;
             {{~when 'EntityCollection'~}}
