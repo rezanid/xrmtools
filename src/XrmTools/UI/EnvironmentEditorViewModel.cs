@@ -9,6 +9,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Input;
+using XrmTools.Authentication;
 using XrmTools.Environments;
 using XrmTools.Options;
 using XrmTools.Resources;
@@ -21,6 +22,9 @@ internal class EnvironmentEditorViewModel : ViewModelBase
     readonly IEnvironmentProvider _environmentProvider;
     //readonly IRepositoryFactory _repositoryFactory;
     readonly IXrmHttpClientFactory _httpClientFactory;
+    readonly IAuthenticationCacheService _authenticationCacheService;
+    readonly Dictionary<EnvironmentModel, DataverseEnvironment> _originalEnvironments = [];
+    readonly List<DataverseEnvironment> _removedEnvironments = [];
 
     public Action? RequestFocusOnName { get; set; }
     public Action? RequestFocusOnUrl { get; set; }
@@ -55,7 +59,7 @@ internal class EnvironmentEditorViewModel : ViewModelBase
     public ICommand CancelCommand { get; }
     public ICommand SetActiveEnvironmentCommand { get; }
 
-    public EnvironmentEditorViewModel() : this(null!, null!) 
+    public EnvironmentEditorViewModel() : this(null!, null!, null!) 
     {
         Environments = [
             new EnvironmentModel { Name = "Default Environment", ConnectionString = "https://default.crm.dynamics.com" }
@@ -63,10 +67,14 @@ internal class EnvironmentEditorViewModel : ViewModelBase
         SelectedEnvironment = Environments[0];
     }
 
-    public EnvironmentEditorViewModel(IEnvironmentProvider environmentProvider, IXrmHttpClientFactory httpClientFactory)
+    public EnvironmentEditorViewModel(
+        IEnvironmentProvider environmentProvider,
+        IXrmHttpClientFactory httpClientFactory,
+        IAuthenticationCacheService authenticationCacheService)
     {
         _environmentProvider = environmentProvider;
         _httpClientFactory = httpClientFactory;
+        _authenticationCacheService = authenticationCacheService;
         Environments = [];
         AddEnvironmentCommand = new RelayCommand(AddEnvironment);
         RemoveEnvironmentCommand = new RelayCommand(RemoveEnvironment, () => SelectedEnvironment != null);
@@ -91,14 +99,22 @@ internal class EnvironmentEditorViewModel : ViewModelBase
         var environments = await _environmentProvider.GetAvailableEnvironmentsAsync();
         var activeEnvironment = await _environmentProvider.GetActiveEnvironmentAsync(true);
         Environments.Clear();
+        _originalEnvironments.Clear();
+        _removedEnvironments.Clear();
         foreach (var environment in environments)
         {
-            Environments.Add(new EnvironmentModel
+            var model = new EnvironmentModel
             {
                 Name = environment.Name,
                 ConnectionString = environment.ConnectionString,
                 IsChecked = environment.Url == activeEnvironment?.Url
-            });
+            };
+            Environments.Add(model);
+            _originalEnvironments[model] = new DataverseEnvironment
+            {
+                Name = environment.Name,
+                ConnectionString = environment.ConnectionString
+            };
         }
 
         if (newEnvironment is not null)
@@ -134,6 +150,11 @@ internal class EnvironmentEditorViewModel : ViewModelBase
         if (SelectedEnvironment != null)
         {
             var toRemove = SelectedEnvironment;
+            if (_originalEnvironments.TryGetValue(toRemove, out var originalEnvironment))
+            {
+                _originalEnvironments.Remove(toRemove);
+                _removedEnvironments.Add(originalEnvironment);
+            }
             Environments.Remove(toRemove);
             SelectedEnvironment = Environments.Count > 0 ? Environments[0] : null;
         }
@@ -227,6 +248,11 @@ internal class EnvironmentEditorViewModel : ViewModelBase
             }
         }
 
+        if (!await ClearAuthenticationCacheAsync())
+        {
+            return;
+        }
+
         options.Environments.Clear();
         foreach (var env in Environments)
         {
@@ -237,7 +263,7 @@ internal class EnvironmentEditorViewModel : ViewModelBase
             });
             if (env.IsChecked)
             {
-                await _environmentProvider.SetActiveEnvironmentAsync(options.Environments[^1], true).ConfigureAwait(false);
+                await _environmentProvider.SetActiveEnvironmentAsync(options.Environments[^1], true);
             }
         }
         if (SelectedEnvironment != null)
@@ -253,6 +279,73 @@ internal class EnvironmentEditorViewModel : ViewModelBase
             window.DialogResult = true;
             window.Close();
         }
+    }
+
+    private async Task<bool> ClearAuthenticationCacheAsync()
+    {
+        if (_authenticationCacheService == null && _httpClientFactory == null)
+        {
+            return true;
+        }
+
+        foreach (var environment in GetAuthenticationCacheResetTargets())
+        {
+            try
+            {
+                _httpClientFactory?.InvalidateAuthenticationCache(environment);
+
+                if (_authenticationCacheService != null)
+                {
+                    await _authenticationCacheService.ClearEnvironmentTokenCacheAsync(environment);
+                }
+            }
+            catch (Exception ex)
+            {
+                await VS.MessageBox.ShowErrorAsync(
+                    "Saving environments",
+                    $"Failed to reset the cached sign-in for environment \"{environment.Name}\". {ex.Message}");
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    private IEnumerable<DataverseEnvironment> GetAuthenticationCacheResetTargets()
+    {
+        var seenConnectionStrings = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+        foreach (var removedEnvironment in _removedEnvironments)
+        {
+            if (TryMarkConnectionString(removedEnvironment.ConnectionString, seenConnectionStrings))
+            {
+                yield return removedEnvironment;
+            }
+        }
+
+        foreach (var entry in _originalEnvironments)
+        {
+            var originalEnvironment = entry.Value;
+            if (string.Equals(entry.Key.ConnectionString?.Trim(), originalEnvironment.ConnectionString?.Trim(), StringComparison.OrdinalIgnoreCase))
+            {
+                continue;
+            }
+
+            if (TryMarkConnectionString(originalEnvironment.ConnectionString, seenConnectionStrings))
+            {
+                yield return originalEnvironment;
+            }
+        }
+    }
+
+    private static bool TryMarkConnectionString(string? connectionString, ISet<string> seenConnectionStrings)
+    {
+        if (string.IsNullOrWhiteSpace(connectionString))
+        {
+            return false;
+        }
+
+        return seenConnectionStrings.Add(connectionString.Trim());
     }
 
     private void Cancel(Window? window)

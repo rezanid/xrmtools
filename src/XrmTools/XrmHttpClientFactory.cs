@@ -142,6 +142,18 @@ internal class XrmHttpClientFactory : IXrmHttpClientFactory, System.IAsyncDispos
         return client;
     }
 
+    public void InvalidateAuthenticationCache(DataverseEnvironment environment)
+    {
+        if (environment == null || string.IsNullOrWhiteSpace(environment.ConnectionString))
+        {
+            return;
+        }
+
+        var key = environment.ConnectionString;
+        _tokenCache.TryRemove(key, out _);
+        _inflightAuth.TryRemove(key, out _);
+    }
+
     private void ConfigureClient(XrmHttpClient client, DataverseEnvironment environment, string? accessToken)
     {
         client.Timeout = TimeSpan.FromMinutes(60);

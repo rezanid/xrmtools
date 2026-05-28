@@ -6,7 +6,8 @@ namespace XrmGenTest;
 
 [Plugin]
 [Step("Update", "annotation", "owningteam", Stages.PostOperation, ExecutionMode.Synchronous)]
-public partial class LeadCreatePlugin : IPlugin
+[Step("Create", "account", "name, description", Stages.PostOperation, ExecutionMode.Synchronous)]
+public partial class AnnotationCreatePlugin : IPlugin
 {
     public void Execute(IServiceProvider serviceProvider)
     {
@@ -14,6 +15,5 @@ public partial class LeadCreatePlugin : IPlugin
         {
             throw new InvalidPluginExecutionException(nameof(serviceProvider));
         }
-        using var scope = CreateScope(serviceProvider);
     }
 }

@@ -50,7 +50,10 @@ internal class AuthenticationService : IAuthenticationService
         }
         var current = Authenticator;
         var connectionString = tokenExpander.ExpandTokens(environment.ConnectionString);
-        var authParams = await EnsureTenantAsync(AuthenticationParameters.Parse(connectionString));
+        var authParams = await AuthenticationParameterResolver.EnsureTenantAsync(
+            AuthenticationParameters.Parse(connectionString),
+            httpClientFactory.Value,
+            cancellationToken).ConfigureAwait(false);
         while (current != null && !current.CanAuthenticate(authParams))
         {
             current = current.NextAuthenticator;
@@ -65,19 +68,5 @@ internal class AuthenticationService : IAuthenticationService
         cleanTokenCache = false;
 
         return result;
-    }
-
-    private async Task<AuthenticationParameters> EnsureTenantAsync(AuthenticationParameters authParams)
-    {
-        if (string.IsNullOrEmpty(authParams.Tenant))
-        {
-            var url = authParams.Resource;
-            using var httpClient = await httpClientFactory.Value.CreateClientAsync(DataverseEnvironment.Empty);
-            var response = await httpClient.SendAsync(new HttpRequestMessage(HttpMethod.Get, url)).ConfigureAwait(false);
-            var authUrl = response.Headers.Location;
-            var tenantId = authUrl.AbsolutePath[1..authUrl.AbsolutePath.IndexOf('/', 1)];
-            authParams.Tenant = tenantId;
-        }
-        return authParams;
     }
 }

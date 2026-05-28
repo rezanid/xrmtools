@@ -10,5 +10,6 @@ public interface IXrmHttpClientFactory
     Task<XrmHttpClient> CreateClientAsync();
     Task<XrmHttpClient> CreateClientAsync(DataverseEnvironment environment);
     Task<AuthenticationResult?> PreAuthenticateAsync(DataverseEnvironment environment, bool allowInteraction, CancellationToken cancellationToken = default);
+    void InvalidateAuthenticationCache(DataverseEnvironment environment);
 }
 #nullable restore

@@ -75,9 +75,7 @@ internal abstract class DelegatingAuthenticator : IAuthenticator
         if (lastParameters == parameters && lastClientApp != null) return lastClientApp;
         lastParameters = parameters;
 
-        if (!parameters.UseDeviceFlow & (
-            !string.IsNullOrEmpty(parameters.CertificateThumbprint) ||
-            !string.IsNullOrEmpty(parameters.ClientSecret)))
+        if (!UsesPersistentUserTokenCache(parameters))
         {
             return lastClientApp = CreateConfidentialClient(
                 parameters.Authority,
@@ -145,16 +143,29 @@ internal abstract class DelegatingAuthenticator : IAuthenticator
     }
 
     protected static async Task ClearTokenCacheAsync(IClientApplicationBase app)
+        => await RemoveAccountsAsync(app, static _ => true, CancellationToken.None).ConfigureAwait(false);
+
+    internal static async Task RemoveAccountsAsync(
+        IClientApplicationBase app,
+        Func<IAccount, bool> shouldRemove,
+        CancellationToken cancellationToken)
     {
         var accounts = await app.GetAccountsAsync().ConfigureAwait(false);
         while (accounts.Any())
         {
-            await app.RemoveAsync(accounts.FirstOrDefault()).ConfigureAwait(false);
+            cancellationToken.ThrowIfCancellationRequested();
+            var account = accounts.FirstOrDefault(shouldRemove);
+            if (account == null)
+            {
+                break;
+            }
+
+            await app.RemoveAsync(account).ConfigureAwait(false);
             accounts = await app.GetAccountsAsync().ConfigureAwait(false);
         }
     }
 
-    private static async Task<IPublicClientApplication> CreatePublicClientAsync(
+    internal static async Task<IPublicClientApplication> CreatePublicClientAsync(
         string authority,
         string clientId = null,
         string redirectUri = null,
@@ -197,6 +208,11 @@ internal abstract class DelegatingAuthenticator : IAuthenticator
 
         return publicClientApp;
     }
+
+    internal static bool UsesPersistentUserTokenCache(AuthenticationParameters parameters)
+        => parameters.UseDeviceFlow ||
+           (string.IsNullOrEmpty(parameters.CertificateThumbprint) &&
+            string.IsNullOrEmpty(parameters.ClientSecret));
 
     public static X509Certificate2 FindCertificate(
         string thumbprint,
