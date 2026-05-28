@@ -57,9 +57,10 @@ namespace {{ first_plugin_type?.namespace ?? config.default_namespace }}
             {{~for param in plugintype.custom_api.request_parameters~}}
             {{~case param.type~}}
             {{~when 'Boolean', 'DateTime', 'Decimal', 'Float', 'Integer'~}}
-            request.{{param.name}} = context.InputParameters.TryGetValue("{{param.unique_name}}", out {{param.full_type_name}} {{param.name | string.downcase}}) ? {{param.name | string.downcase}} : default;
+            {{~fallback = param.type_name == (param.type_name | string.replace_first '?' '' true) ? (param.unique_name | required_input_missing) : 'default' ~}}
+            request.{{param.name}} = context.InputParameters.TryGetValue("{{param.unique_name}}", out {{param.full_type_name}} {{param.name | string.downcase}}) ? {{param.name | string.downcase}} : {{fallback}};
             {{~when 'String'~}}
-            {{~fallback = plugintype.is_nullable_enabled && param.type_name == 'string' ? (param.unique_name | required_input_missing) : 'string.Empty' ~}}
+            {{~fallback = plugintype.is_nullable_enabled ? (param.type_name == 'string' ? (param.unique_name | required_input_missing) : 'default') : 'string.Empty' ~}}
             request.{{param.name}} = context.InputParameters.TryGetValue("{{param.unique_name}}", out {{plugintype.is_nullable_enabled ? param.full_type_name : param.full_type_name | string.replace_first '?' '' true}} {{param.name | string.downcase}}) ? {{param.name | string.downcase}} : {{fallback}};
             {{~when 'StringArray'~}}
             {{~fallback = plugintype.is_nullable_enabled && param.type_name == 'string[]' ? (param.unique_name | required_input_missing) : 'default' ~}}
@@ -67,7 +68,7 @@ namespace {{ first_plugin_type?.namespace ?? config.default_namespace }}
             {{~when 'Picklist'~}}
             {{~picklist_type = param.type_name | string.replace_first '?' '' true~}}
             {{~converter = picklist_type == 'OptionSetValue' ? (param.name | string.downcase) : '(' + (param.full_type_name | string.replace_first '?' '' true) + ')' + (param.name | string.downcase) + '.Value' ~}}
-            {{~fallback = plugintype.is_nullable_enabled && picklist_type == 'OptionSetValue' && param.type_name == picklist_type ? (param.unique_name | required_input_missing) : 'default' ~}}
+            {{~fallback = picklist_type == 'OptionSetValue' ? (plugintype.is_nullable_enabled && param.type_name == picklist_type ? (param.unique_name | required_input_missing) : 'default') : (param.type_name == picklist_type ? (param.unique_name | required_input_missing) : 'default') ~}}
             request.{{param.name}} = context.InputParameters.TryGetValue("{{param.unique_name}}", out OptionSetValue {{param.name | string.downcase}}) ? {{converter}} : {{fallback}};
             {{~when 'EntityCollection'~}}
             if (context.InputParameters.TryGetValue("{{param.unique_name}}", out EntityCollection {{param.name | string.downcase}})
@@ -111,7 +112,7 @@ namespace {{ first_plugin_type?.namespace ?? config.default_namespace }}
             }
             {{~end~}}
             {{~else~}}
-            {{~fallback = plugintype.is_nullable_enabled && (param.type == 'Money' || param.type == 'EntityReference') && param.type_name == (param.type_name | string.replace_first '?' '' true) ? (param.unique_name | required_input_missing) : 'default' ~}}
+            {{~fallback = param.type == 'Guid' && param.type_name == (param.type_name | string.replace_first '?' '' true) ? (param.unique_name | required_input_missing) : (plugintype.is_nullable_enabled && (param.type == 'Money' || param.type == 'EntityReference') && param.type_name == (param.type_name | string.replace_first '?' '' true) ? (param.unique_name | required_input_missing) : 'default') ~}}
             request.{{param.name}} = context.InputParameters.TryGetValue("{{param.unique_name}}", out {{plugintype.is_nullable_enabled ? param.full_type_name : param.full_type_name | string.replace_first '?' '' true}} {{param.name | string.downcase}}) ? {{param.name | string.downcase}} : {{fallback}};
             {{~end~}}
             {{~end~}}
