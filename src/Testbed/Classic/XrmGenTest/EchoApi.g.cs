@@ -1,7 +1,10 @@
 #nullable enable
 using Microsoft.Xrm.Sdk;
+using Microsoft.Crm.Sdk.Messages;
+using Microsoft.Xrm.Sdk.Query;
 using Microsoft.Xrm.Sdk.Client;
 using Microsoft.Xrm.Sdk.Extensions;
+using Microsoft.Xrm.Sdk.PluginTelemetry;
 using System;
 using System.CodeDom.Compiler;
 using System.Collections.Generic;
@@ -13,7 +16,7 @@ using XrmTools;
 
 namespace XrmGenTest
 {
-    [GeneratedCode("TemplatedCodeGenerator", "1.4.3.0")]
+    [GeneratedCode("TemplatedCodeGenerator", "1.6.0.0")]
     public partial class EchoApi
     {
         /// <summary>
@@ -23,23 +26,12 @@ namespace XrmGenTest
         {
             var scope = new DependencyScope<EchoApi>();
             scope.Set<IServiceProvider>(serviceProvider);
-            scope.Set<IPluginExecutionContext>((IPluginExecutionContext)serviceProvider.GetService(typeof(IPluginExecutionContext)));
         
+            scope.Set<IPluginExecutionContext>((IPluginExecutionContext)serviceProvider.GetService(typeof(IPluginExecutionContext)));
             return scope;
         }
-	    protected static T? EntityOrDefault<T>(DataCollection<string, object> keyValues, string key) where T : Entity
-        {
-            if (keyValues is null) return default;
-            return keyValues.TryGetValue(key, out var obj) ? obj is Entity entity ? entity.ToEntity<T>() : default : default;
-        }
 
-        protected static T? EntityOrDefault<T>(DataCollection<string, Entity> keyValues, string key) where T : Entity
-        {
-            if (keyValues is null) return default;
-            return keyValues.TryGetValue(key, out var entity) ? entity?.ToEntity<T>() : default;
-        }
-
-        protected static EchoApi.Request GetRequest(IExecutionContext context)
+        private static EchoApi.Request GetRequest(IExecutionContext context)
         {
             var request = new EchoApi.Request();
             request.BooleanParameter = context.InputParameters.TryGetValue("BooleanParameter", out bool? booleanparameter) ? booleanparameter : default;
@@ -53,8 +45,9 @@ namespace XrmGenTest
             if (context.InputParameters.TryGetValue("CustomEntityParameter", out Entity customentityparameter)
                 && customentityparameter != null)
             {
-                request.CustomEntityParameter = new XrmGenTest.CustomEntity(customentityparameter.Id)
-                { 
+                request.CustomEntityParameter = new XrmGenTest.CustomEntity
+                {
+                    Id = customentityparameter.Id,
                     Attributes = customentityparameter.Attributes
                 };
             }
@@ -67,8 +60,9 @@ namespace XrmGenTest
                 && customentitiesparameter != null)
             {
                 request.CustomEntitiesParameter = customentitiesparameter.Entities
-                    .Select(e => new XrmGenTest.CustomEntity(e.Id)
+                    .Select(e => new XrmGenTest.CustomEntity
                     {
+                        Id = e.Id,
                         Attributes = e.Attributes
                     }).ToList();
             }
@@ -84,7 +78,7 @@ namespace XrmGenTest
             return request;
         }
 
-        protected static void SetResponse(IExecutionContext context, EchoApi.Response response)
+        private static void SetResponse(IExecutionContext context, EchoApi.Response response)
         {
             if (response.BooleanParameter is bool booleanparameterValue) context.OutputParameters["BooleanParameter"] = booleanparameterValue;
             if (response.DateTimeParameter is DateTime datetimeparameterValue) context.OutputParameters["DateTimeParameter"] = datetimeparameterValue;
@@ -119,6 +113,35 @@ namespace XrmGenTest
             if (response.StringArrayParameter is string[] stringarrayparameterValue) context.OutputParameters["StringArrayParameter"] = stringarrayparameterValue;
             if (response.GuidParameter is Guid guidparameterValue) context.OutputParameters["GuidParameter"] = guidparameterValue;
         }
+
+	    private static T? EntityOrDefault<T>(DataCollection<string, object> keyValues, string key) where T : Entity
+        {
+            if (keyValues is null) return default;
+            return keyValues.TryGetValue(key, out var obj) ? obj is Entity entity ? entity.ToEntity<T>() : default : default;
+        }
+        private static T? EntityOrDefault<T>(DataCollection<string, Entity> keyValues, string key) where T : Entity
+        {
+            if (keyValues is null) return default;
+            return keyValues.TryGetValue(key, out var entity) ? entity?.ToEntity<T>() : default;
+        }
+
+        private static T[] EntityCollectionOrDefault<T>(DataCollection<string, object> keyValues, string key) where T : Entity
+        {
+            if (keyValues is null) return Array.Empty<T>();
+            return keyValues.TryGetValue(key, out var obj) ? obj is EntityCollection entityCollection
+                ? entityCollection.Entities.Select(e => e.ToEntity<T>()).ToArray() : Array.Empty<T>() : Array.Empty<T>();
+        }
+
+        private static T Require<T>() => DependencyScope<EchoApi>.Current.Require<T>();
+        private static T Require<T>(string name) => DependencyScope<EchoApi>.Current.Require<T>(name);
+
+        private static bool TryGet<T>(out T instance) => DependencyScope<EchoApi>.Current.TryGet(out instance);
+        private static bool TryGet<T>(string name, out T instance) => DependencyScope<EchoApi>.Current.TryGet(name, out instance);
+
+        private static T Set<T>(T instance) => DependencyScope<EchoApi>.Current.Set(instance);
+        private static T Set<T>(string name, T instance) => DependencyScope<EchoApi>.Current.Set(name, instance);
+        private static T SetAndTrack<T>(T instance) where T : IDisposable => DependencyScope<EchoApi>.Current.SetAndTrack(instance);
+        private static T SetAndTrack<T>(string name, T instance) where T : IDisposable => DependencyScope<EchoApi>.Current.SetAndTrack(name, instance);
     }
 }
 #nullable restore
