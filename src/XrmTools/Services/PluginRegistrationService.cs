@@ -91,14 +91,7 @@ internal sealed class PluginRegistrationService(
 
             foreach (var existingPlugin in existingAssembly.PluginTypes)
             {
-                if (existingPlugin.CustomApi is not null && existingPlugin.CustomApi.Count > 0 && existingPlugin.CustomApi[0] is CustomApi api && api.Id.HasValue)
-                {
-                    requests.Add(new DeleteRequest(CustomApi.CreateReference(api.Id!.Value)));
-                }
-                if (existingPlugin.Id.HasValue)
-                {
-                    requests.Add(new DeleteRequest(existingPlugin.ToReference()));
-                }
+                AddDeleteRequestsForPlugin(requests, existingPlugin);
             }
             if (existingAssembly.Package?.Id is not null)
             {
@@ -145,7 +138,7 @@ internal sealed class PluginRegistrationService(
 
         try
         {
-            var batchResponse = await _webApi.SendAsync(batch!, cancellationToken: cancellationToken).ConfigureAwait(false);
+            var batchResponse = await _webApi.SendAsync(batch!, noThrow: true, cancellationToken: cancellationToken).ConfigureAwait(false);
             var responses = await batchResponse.ParseResponseAsync(cancellationToken).ConfigureAwait(false);
 
             foreach (var response in responses)
@@ -165,7 +158,7 @@ internal sealed class PluginRegistrationService(
         catch (Exception ex)
         {
             _log.LogError(ex, "An error occurred while sending the batch request.");
-            return PluginRegistrationResult.Failure("Plugin registration failed. " + ex.Message);
+            return PluginRegistrationResult.Failure("Plugin unregistration failed. " + ex.Message);
         }
 
         return PluginRegistrationResult.Success(existingAssembly.Package?.Id is not null
@@ -546,18 +539,38 @@ internal sealed class PluginRegistrationService(
             }
             else if (deleteRemovedPlugins)
             {
-                if (existingPlugin.CustomApi is not null && existingPlugin.CustomApi.Count > 0 && existingPlugin.CustomApi[0] is CustomApi api && api.Id.HasValue)
-                {
-                    deleteRequests.Add(new DeleteRequest(CustomApi.CreateReference(api.Id!.Value)));
-                }
-                if (existingPlugin.Id.HasValue)
-                {
-                    deleteRequests.Add(new DeleteRequest(PluginType.CreateReference(existingPlugin.Id!.Value)));
-                }
+                AddDeleteRequestsForPlugin(deleteRequests, existingPlugin);
             }
         }
 
         return deleteRequests;
+    }
+
+    private static void AddDeleteRequestsForPlugin(List<HttpRequestMessage> requests, PluginType existingPlugin)
+    {
+        foreach (var step in existingPlugin.Steps)
+        {
+            if (step.Stage != Stages.MainOperation && step.Id.HasValue)
+            {
+                requests.Add(new DeleteRequest(SdkMessageProcessingStep.CreateReference(step.Id!.Value)));
+            }
+        }
+
+        if (existingPlugin.CustomApi is not null)
+        {
+            foreach (var customApi in existingPlugin.CustomApi)
+            {
+                if (customApi.Id.HasValue)
+                {
+                    requests.Add(new DeleteRequest(CustomApi.CreateReference(customApi.Id!.Value)));
+                }
+            }
+        }
+
+        if (existingPlugin.Id.HasValue)
+        {
+            requests.Add(new DeleteRequest(PluginType.CreateReference(existingPlugin.Id!.Value)));
+        }
     }
 }
 #nullable restore
