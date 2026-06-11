@@ -10,7 +10,7 @@
     /// Use this to add pre-image, post-image, or both to a plugin step for capturing entity data before or after the operation.
     /// </summary>
     [AttributeUsage(AttributeTargets.Class, AllowMultiple = true, Inherited = true)]
-    public class ImageAttribute : Attribute
+    internal class ImageAttribute : Attribute
     {
         public string Id { get; set; } = string.Empty;
         /// <summary>

@@ -6,7 +6,7 @@
     /// Generates a Custom API for a plugin. If no name has been given, name of the type will be used.
     /// </summary>
     [AttributeUsage(AttributeTargets.Class, AllowMultiple = false, Inherited = false)]
-    public class CustomApiAttribute : Attribute
+    internal class CustomApiAttribute : Attribute
     {
         public string DisplayName { get; set; } = string.Empty;
         public string Name { get; set; } = string.Empty;

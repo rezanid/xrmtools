@@ -8,5 +8,5 @@ namespace XrmTools.Meta.Attributes
     /// Call <c>InjectDependencies</c> early in your plugin's <c>Execute</c> method to ensure dependencies are set before use.
     /// </summary>
     [AttributeUsage(AttributeTargets.Constructor)]
-    public sealed class DependencyConstructorAttribute : Attribute { }
+    internal sealed class DependencyConstructorAttribute : Attribute { }
 }

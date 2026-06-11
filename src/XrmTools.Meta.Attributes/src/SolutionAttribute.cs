@@ -7,7 +7,7 @@
     /// Provide the unique name of the solution, and optionally a friendly name (if different) and a description.
     /// </summary>
     [AttributeUsage(AttributeTargets.Assembly | AttributeTargets.Class, AllowMultiple = false, Inherited = false)]
-    public class SolutionAttribute : Attribute
+    internal class SolutionAttribute : Attribute
     {
         public string UniqueName { get; set; }
         public string FriendlyName { get; set; } = string.Empty;

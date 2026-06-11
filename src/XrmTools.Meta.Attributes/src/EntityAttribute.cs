@@ -9,7 +9,7 @@
     /// Example usage: [assembly: Entity("contact", AttributeNames = "firstname,lastname")]
     /// </summary>
     [AttributeUsage(AttributeTargets.Assembly, AllowMultiple = true, Inherited = false)]
-    public class EntityAttribute : Attribute
+    internal class EntityAttribute : Attribute
     {
         /// <summary>
         /// Logical name of the entity.

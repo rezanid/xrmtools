@@ -10,7 +10,7 @@
     /// </summary>
     /// </summary>
     [AttributeUsage(AttributeTargets.Class, AllowMultiple = true, Inherited = true)]
-    public class StepAttribute : Attribute
+    internal class StepAttribute : Attribute
     {
         // Constructor (aka positional) parameters
         public ExecutionMode Mode { get; set; }
