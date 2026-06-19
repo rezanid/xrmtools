@@ -1,27 +1,17 @@
 <Project>
-  <ItemGroup Condition="Exists('$(MSBuildThisFileDirectory)../src')">
-    <Compile Include="$(MSBuildThisFileDirectory)../src/**/*.cs"
-             Visible="false" />
-  </ItemGroup>
-
-  <!-- Conditionally remove files if the consumer project doesn't reference Microsoft.Xrm.Sdk.dll -->
-  <Target Name="ExcludeXrmFilesIfNoReference" BeforeTargets="CoreCompile">
-    <ItemGroup>
-      <!-- Check for Microsoft.Xrm.Sdk.dll in resolved references -->
-      <_XrmReference Include="@(ReferencePath)" Condition=" '%(Filename)%(Extension)' == 'Microsoft.Xrm.Sdk.dll' " />
-    </ItemGroup>
-
-    <!-- If not found, exclude specific file(s) -->
-    <ItemGroup Condition="'@(_XrmReference)' == ''">
-      <Compile Remove="**/DependencyScope.cs" />
-    </ItemGroup>
-  </Target>
-
   <PropertyGroup>
+    <XrmToolsMetaAttributesUsePublicAccessibility Condition="'$(XrmToolsMetaAttributesUsePublicAccessibility)'==''">false</XrmToolsMetaAttributesUsePublicAccessibility>
     <!-- Allow override by the consumer if they want a different location or to disable the copy -->
     <XrmToolsSchemasDir Condition="'$(XrmToolsSchemasDir)'==''">$(MSBuildProjectDirectory)/.xrmtools/schemas/</XrmToolsSchemasDir>
     <XrmToolsCopySchemas Condition="'$(XrmToolsCopySchemas)'==''">true</XrmToolsCopySchemas>
   </PropertyGroup>
+
+  <Target Name="ConfigureXrmToolsMetaAttributes"
+          BeforeTargets="PrepareForBuild">
+    <ItemGroup>
+      <CompilerVisibleProperty Include="XrmToolsMetaAttributesUsePublicAccessibility" />
+    </ItemGroup>
+  </Target>
 
   <ItemGroup Condition="'$(XrmToolsCopySchemas)'=='true'">
     <!-- Resolve the XSD(s) from the package’s build/schemas folder -->

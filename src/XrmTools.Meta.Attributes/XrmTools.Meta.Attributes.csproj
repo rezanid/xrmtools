@@ -3,8 +3,9 @@
     <TargetFramework>netstandard2.0</TargetFramework>
     <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
     <ImplicitUsings>disable</ImplicitUsings>
+    <IsPackable>false</IsPackable>
     <DevelopmentDependency>true</DevelopmentDependency>
-    <VersionPrefix>1.1.3</VersionPrefix>
+    <VersionPrefix>1.1.4</VersionPrefix>
     <Description>Attributes to be used by Xrm Tools for source generation, registration and other features in Visual Studio. This is a source only package with no assemblies included.</Description>
     <Authors>Reza Niroomand</Authors>
     <PackageIcon>XrmTools_256.png</PackageIcon>
@@ -12,33 +13,12 @@
     <SuppressDependenciesWhenPacking>true</SuppressDependenciesWhenPacking>
   </PropertyGroup>
   <PropertyGroup>
-    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+    <GeneratePackageOnBuild>false</GeneratePackageOnBuild>
     <PackageTags>Power Platform Apps XRM Tools</PackageTags>
     <PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
     <PackageReadmeFile>README.md</PackageReadmeFile>
     <RepositoryUrl>https://github.com/rezanid/xrmtools</RepositoryUrl>
-
-    <TargetsForTfmSpecificContentInPackage>$(TargetsForTfmSpecificContentInPackage);_AddAnalyzersToOutput</TargetsForTfmSpecificContentInPackage>
   </PropertyGroup>
-  <!-- Pack the targets into /build (and optionally /buildTransitive) -->
-  <ItemGroup>
-    <None Include="build/XrmTools.Meta.Attributes.targets" Pack="true" PackagePath="build/" />
-    <!-- Optional: transitive import for PackageReference consumers -->
-    <!--<None Include="buildTransitive/XrmTools.Meta.Attributes.targets"
-          Pack="true" PackagePath="buildTransitive/" />-->
-  </ItemGroup>
-  <!-- Pack the source files  -->
-  <ItemGroup>
-    <None Include="src/**/*.cs" Pack="true" PackagePath="src/" />
-  </ItemGroup>
-  <!-- Readme & Icon -->
-  <ItemGroup>
-    <None Include="README.md" Pack="true" PackagePath="/" />
-    <None Include="images/XrmTools_256.png" Pack="true" PackagePath="/" />
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="schemas\*.xsd" Pack="true" PackagePath="build/schemas/" />
-  </ItemGroup>
   <ItemGroup>
     <None Update="schemas\Fetch.xsd">
       <SubType>Designer</SubType>
@@ -51,13 +31,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <None Update="tools\*.ps1" CopyToOutputDirectory="PreserveNewest" Pack="true" PackagePath="" />
+    <None Update="tools\*.ps1" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
-  
-  <Target Name="_AddAnalyzersToOutput">
-    <ItemGroup>
-      <TfmSpecificPackageFile Include="$(OutputPath)\XrmTools.Analyzers.dll" PackagePath="analyzers/dotnet/cs" />
-      <TfmSpecificPackageFile Include="$(OutputPath)\XrmTools.Analyzers.CodeFixes.dll" PackagePath="analyzers/dotnet/cs" />
-    </ItemGroup>
-  </Target>
 </Project>

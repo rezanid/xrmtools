@@ -25,28 +25,28 @@
 		</Compile>
 	</ItemGroup>
 	<ItemGroup>
-		<PackageReference Include="CredentialManagement" Version="1.0.2"/>
-		<PackageReference Include="Microsoft.Bcl.TimeProvider" Version="8.0.0"/>
-		<PackageReference Include="Microsoft.Extensions.Http" Version="8.0.1"/>
-		<PackageReference Include="Microsoft.Identity.Client" Version="4.79.2"/>
-		<PackageReference Include="Microsoft.Identity.Client.Extensions.Msal" Version="4.79.2"/>
-		<PackageReference Include="Microsoft.VisualStudio.CoreUtility" Version="17.14.275"/>
-		<PackageReference Include="Microsoft.VisualStudio.SDK" Version="17.14.40265"/>
-		<PackageReference Include="Microsoft.VisualStudio.Shell.Framework" Version="17.14.40264"/>
-		<PackageReference Include="Microsoft.VisualStudio.Threading" Version="17.14.15"/>
+		<PackageReference Include="CredentialManagement" Version="1.0.2" />
+		<PackageReference Include="Microsoft.Bcl.TimeProvider" Version="8.0.0" />
+		<PackageReference Include="Microsoft.Extensions.Http" Version="8.0.1" />
+		<PackageReference Include="Microsoft.Identity.Client" Version="4.79.2" />
+		<PackageReference Include="Microsoft.Identity.Client.Extensions.Msal" Version="4.79.2" />
+		<PackageReference Include="Microsoft.VisualStudio.CoreUtility" Version="17.14.275" />
+		<PackageReference Include="Microsoft.VisualStudio.SDK" Version="17.14.40265" />
+		<PackageReference Include="Microsoft.VisualStudio.Shell.Framework" Version="17.14.40264" />
+		<PackageReference Include="Microsoft.VisualStudio.Threading" Version="17.14.15" />
 		<PackageReference Include="Microsoft.VisualStudio.Threading.Analyzers">
 			<Version>17.14.15</Version>
 			<IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
 			<PrivateAssets>all</PrivateAssets>
 		</PackageReference>
-		<PackageReference Include="Newtonsoft.Json" Version="13.0.3"/>
-		<PackageReference Include="Polly" Version="8.6.5"/>
+		<PackageReference Include="Newtonsoft.Json" Version="13.0.4" />
+		<PackageReference Include="Polly" Version="8.6.5" />
 		<PackageReference Include="PolySharp">
-			<Version>1.15.0</Version>
+			<Version>1.16.0</Version>
 			<IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
 			<PrivateAssets>all</PrivateAssets>
 		</PackageReference>
-		<PackageReference Include="System.Runtime.Caching" Version="8.0.1"/>
+		<PackageReference Include="System.Runtime.Caching" Version="8.0.1" />
 		<PackageReference Include="System.Text.Json" Version="9.0.0" />
 	</ItemGroup>
 	<ItemGroup>

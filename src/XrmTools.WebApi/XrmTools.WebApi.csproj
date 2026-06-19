@@ -20,6 +20,9 @@
   <PropertyGroup>
     <XrmToolsCopySchemas>false</XrmToolsCopySchemas>
   </PropertyGroup>
+  <PropertyGroup>
+    <XrmToolsMetaAttributesUsePublicAccessibility>true</XrmToolsMetaAttributesUsePublicAccessibility>
+  </PropertyGroup>
   <ItemGroup>
     <Compile Remove="Methods\**" />
     <EmbeddedResource Remove="Methods\**" />
@@ -28,19 +31,18 @@
   <ItemGroup>
     <PackageReference Include="Microsoft.AspNet.WebApi.Client" Version="6.0.0" />
     <PackageReference Include="Microsoft.Bcl.AsyncInterfaces" Version="9.0.0" />
-    <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
-    <PackageReference Include="PolySharp" Version="1.15.0">
+    <PackageReference Include="Newtonsoft.Json" Version="13.0.4" />
+    <PackageReference Include="PolySharp" Version="1.16.0">
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageReference>
     <PackageReference Include="System.Text.Json" Version="9.0.0" />
-    <PackageReference Include="XrmTools.Meta.Attributes" Version="1.1.1">
-      <PrivateAssets>all</PrivateAssets>
-      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
-    </PackageReference>
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\XrmTools.Core\XrmTools.Core.csproj" />
+	<!-- Instead of referencing the NuGet package we reference the project directly and import the targets file-->
+    <ProjectReference Include="..\XrmTools.Meta.Attributes.SourceGenerator\XrmTools.Meta.Attributes.SourceGenerator.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
+    <ProjectReference Include="..\Analyzers\XrmTools.Analyzers\XrmTools.Analyzers.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
   </ItemGroup>
   <ItemGroup>
     <Reference Include="System.Data.DataSetExtensions" />
@@ -53,4 +55,5 @@
       <PackagePath>\</PackagePath>
     </None>
   </ItemGroup>
+  <Import Project="..\XrmTools.Meta.Attributes\build\XrmTools.Meta.Attributes.targets" />
 </Project>
