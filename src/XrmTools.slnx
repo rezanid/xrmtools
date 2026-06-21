@@ -44,6 +44,8 @@
   <Project Path="XrmTools.Meta.Attributes/XrmTools.Meta.Attributes.csproj" Type="13b669be-bb05-4ddf-9536-439f39a36129">
     <Platform Project="AnyCPU" />
   </Project>
+  <Project Path="XrmTools.Meta.Attributes.SourceGenerator/XrmTools.Meta.Attributes.SourceGenerator.csproj" />
+  <Project Path="XrmTools.Meta.Attributes.Package/XrmTools.Meta.Attributes.Package.msbuildproj" Type="13b669be-bb05-4ddf-9536-439f39a36129"/>
   <Project Path="XrmTools.Meta/XrmTools.Meta.csproj" />
   <Project Path="XrmTools.UI.Controls/XrmTools.UI.Controls.csproj" Id="179df0ac-6f44-4656-8332-034d3c594ed1" />
   <Project Path="XrmTools.WebApi/XrmTools.WebApi.csproj" />

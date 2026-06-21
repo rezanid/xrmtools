@@ -6,7 +6,7 @@ using XrmTools.Meta.Attributes;
 namespace XrmGenTest;
 
 [Plugin]
-[Step("Create", "account", "name, description, accountnumber", Stages.PostOperation, ExecutionMode.Synchronous)]
+[Step("Create", "account", "name,description,accountnumber", Stages.PostOperation, ExecutionMode.Synchronous)]
 public partial class AccountGreetingPlugin : IPlugin
 {
     [Dependency]

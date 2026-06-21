@@ -1,0 +1,20 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+	<TargetFramework>netstandard2.0</TargetFramework>
+	<ImplicitUsings>disable</ImplicitUsings>
+	<Nullable>enable</Nullable>
+	<IsPackable>false</IsPackable>
+	<EnforceExtendedAnalyzerRules>true</EnforceExtendedAnalyzerRules>
+	<RootNamespace>XrmTools.Meta.Attributes.SourceGenerator</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+	<PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="5.0.0" PrivateAssets="all" />
+  </ItemGroup>
+
+  <ItemGroup>
+	<EmbeddedResource Include="..\XrmTools.Meta.Attributes\src\**\*.cs">
+	  <LogicalName>XrmTools.Meta.Attributes.Sources/%(RecursiveDir)%(Filename)%(Extension)</LogicalName>
+	</EmbeddedResource>
+  </ItemGroup>
+</Project>

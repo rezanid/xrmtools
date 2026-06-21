@@ -31,6 +31,7 @@
   <ItemGroup>
     <ProjectReference Include="..\XrmTools.Analyzers.CodeFixes\XrmTools.Analyzers.CodeFixes.csproj" />
     <ProjectReference Include="..\XrmTools.Analyzers\XrmTools.Analyzers.csproj" />
+    <ProjectReference Include="..\..\XrmTools.Meta.Attributes.SourceGenerator\XrmTools.Meta.Attributes.SourceGenerator.csproj" />
   </ItemGroup>
 
 </Project>

@@ -1,0 +1,12 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+	<TargetFrameworks>net462;net48</TargetFrameworks>
+  </PropertyGroup>
+
+  <ItemGroup>
+	<Reference Include="Consumer">
+	  <HintPath>..\Consumer\bin\Debug\$(TargetFramework)\Consumer.dll</HintPath>
+	  <Private>false</Private>
+	</Reference>
+  </ItemGroup>
+</Project>

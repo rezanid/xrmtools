@@ -4,6 +4,20 @@ This package is part of the [Xrm Tools](https://marketplace.visualstudio.com/ite
 
 If you aren't already using [Xrm Tools](https://marketplace.visualstudio.com/items?itemName=rezanid.XrmTools) for Power Platform development, I suggest checking out [Xrm Tools Wiki](https://github.com/rezanid/xrmtools/wiki) to learn how modern way of Power Platform development can enhance your experience. You can do pretty much everything with regards to plugins and API development without ever leaving Visual Studio.
 
+## Accessibility
+
+By default, the types generated into your project from `XrmTools.Meta.Attributes` are `internal`.
+
+If you want the generated types to be `public`, add the following property to your consuming project:
+
+```xml
+<PropertyGroup>
+  <XrmToolsMetaAttributesUsePublicAccessibility>true</XrmToolsMetaAttributesUsePublicAccessibility>
+</PropertyGroup>
+```
+
+This switch is optional. The NuGet package name remains `XrmTools.Meta.Attributes`.
+
 ## Attributes
 
 By installing this nuget packge, you will be able to use attributes to decorate your Dataverse plugins with metadata to enable code generation and automatic registration. Supported attributes are:

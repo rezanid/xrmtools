@@ -1,0 +1,41 @@
+<Project Sdk="Microsoft.Build.NoTargets/2.0.1" DefaultTargets="Pack">
+  <PropertyGroup>
+	<TargetFramework>netstandard2.0</TargetFramework>
+	<NoWarn>$(NoWarn);NU5128</NoWarn>
+  </PropertyGroup>
+
+  <PropertyGroup>
+	<Title>XrmTools.Meta.Attributes</Title>
+	<Description>Attributes to be used by Xrm Tools for source generation, registration and other features in Visual Studio. This is a source only package with no assemblies included.</Description>
+	<PackageId>XrmTools.Meta.Attributes</PackageId>
+	<VersionPrefix>1.1.4</VersionPrefix>
+	<Authors>Reza Niroomand</Authors>
+	<PackageIcon>XrmTools_256.png</PackageIcon>
+	<PackageTags>Power Platform Apps XRM Tools</PackageTags>
+	<PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
+	<PackageReadmeFile>README.md</PackageReadmeFile>
+	<RepositoryUrl>https://github.com/rezanid/xrmtools</RepositoryUrl>
+	<DevelopmentDependency>true</DevelopmentDependency>
+  </PropertyGroup>
+
+  <ItemGroup>
+	<ProjectReference Include="..\XrmTools.Meta.Attributes.SourceGenerator\XrmTools.Meta.Attributes.SourceGenerator.csproj" ReferenceOutputAssembly="false" />
+	<ProjectReference Include="..\Analyzers\XrmTools.Analyzers\XrmTools.Analyzers.csproj" ReferenceOutputAssembly="false" />
+	<ProjectReference Include="..\Analyzers\XrmTools.Analyzers.CodeFixes\XrmTools.Analyzers.CodeFixes.csproj" ReferenceOutputAssembly="false" />
+  </ItemGroup>
+
+  <ItemGroup>
+	<None Include="..\XrmTools.Meta.Attributes\README.md" PackagePath="\" Pack="true" />
+	<None Include="..\XrmTools.Meta.Attributes\images\XrmTools_256.png" PackagePath="\" Pack="true" />
+	<None Include="..\XrmTools.Meta.Attributes\build\XrmTools.Meta.Attributes.targets" PackagePath="build\" Pack="true" />
+	<None Include="..\XrmTools.Meta.Attributes\build\XrmTools.Meta.Attributes.targets" PackagePath="buildTransitive\" Pack="true" />
+	<None Include="..\XrmTools.Meta.Attributes\schemas\*.xsd" PackagePath="build\schemas\" Pack="true" />
+	<None Include="..\XrmTools.Meta.Attributes\tools\*.ps1" PackagePath="tools\" Pack="true" />
+  </ItemGroup>
+
+  <ItemGroup>
+	<None Include="..\XrmTools.Meta.Attributes.SourceGenerator\bin\$(Configuration)\netstandard2.0\XrmTools.Meta.Attributes.SourceGenerator.dll" PackagePath="analyzers\dotnet\cs" Pack="true" />
+	<None Include="..\Analyzers\XrmTools.Analyzers\bin\$(Configuration)\netstandard2.0\XrmTools.Analyzers.dll" PackagePath="analyzers\dotnet\cs" Pack="true" />
+	<None Include="..\Analyzers\XrmTools.Analyzers.CodeFixes\bin\$(Configuration)\netstandard2.0\XrmTools.Analyzers.CodeFixes.dll" PackagePath="analyzers\dotnet\cs" Pack="true" />
+  </ItemGroup>
+</Project>
