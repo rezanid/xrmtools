@@ -375,7 +375,7 @@ internal sealed class PluginRegistrationService(
                     ChangeSets = [new(upserts)]
                 };
 
-                var followupResponse = await _webApi.SendAsync(followupBatch, cancellationToken: cancellationToken).ConfigureAwait(false);
+                var followupResponse = await _webApi.SendAsync(followupBatch, noThrow: true, cancellationToken: cancellationToken).ConfigureAwait(false);
                 var followupParts = await followupResponse.ParseResponseAsync(cancellationToken).ConfigureAwait(false);
 
                 foreach (var response in followupParts)
