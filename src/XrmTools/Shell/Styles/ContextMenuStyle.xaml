@@ -1,0 +1,49 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:cvrts="clr-namespace:XrmTools.Shell.Converters"
+                    xmlns:ctrls="clr-namespace:XrmTools.Shell.Controls"
+                    xmlns:styles="clr-namespace:XrmTools.Shell.Styles">
+    <Style TargetType="{x:Type ctrls:ContextMenu}">
+        <Setter Property="FrameworkElement.FocusVisualStyle" Value="{x:Null}"/>
+        <Setter Property="ContextMenu.HorizontalOffset"
+            Value="{x:Static ctrls:FlyoutSurface.HorizontalOffsetInvert}"/>
+        <Setter Property="ScrollViewer.CanContentScroll" Value="True"/>
+        <Setter Property="UIElement.SnapsToDevicePixels" Value="True"/>
+        <Setter Property="TextOptions.TextFormattingMode" Value="Display"/>
+        <Setter Property="FrameworkElement.UseLayoutRounding" Value="True"/>
+        <Setter Property="ContextMenu.VerticalOffset" Value="{x:Static ctrls:FlyoutSurface.VerticalOffsetInvert}"/>
+        <Setter Property="VirtualizingPanel.IsVirtualizing" Value="True"/>
+        <Setter Property="VirtualizingPanel.ScrollUnit" Value="Pixel"/>
+        <Setter Property="VirtualizingPanel.VirtualizationMode" Value="Standard"/>
+        <Setter Property="ItemsControl.ItemsPanel">
+            <Setter.Value>
+                <ItemsPanelTemplate>
+                    <VirtualizingStackPanel IsVirtualizing="{TemplateBinding VirtualizingPanel.IsVirtualizing}"
+                                  VirtualizationMode="{TemplateBinding VirtualizingPanel.VirtualizationMode}"/>
+                </ItemsPanelTemplate>
+            </Setter.Value>
+        </Setter>
+        <Setter Property="RenderOptions.BitmapScalingMode">
+            <Setter.Value>
+                <MultiBinding Converter="{x:Static cvrts:Converters.BitmapScalingModeConverter}">
+                    <Binding RelativeSource="{RelativeSource Self}"/>
+                    <Binding Path="IsOpen" RelativeSource="{RelativeSource Self}"/>
+                </MultiBinding>
+            </Setter.Value>
+        </Setter>
+        <Setter Property="Control.Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="{x:Type ctrls:ContextMenu}">
+                    <ctrls:FlyoutSurface>
+                        <ctrls:MenuScrollViewer x:Name="PART_ScrollViewer" CanContentScroll="{TemplateBinding ScrollViewer.CanContentScroll}">
+                            <ItemsPresenter Grid.IsSharedSizeScope="True" KeyboardNavigation.DirectionalNavigation="Cycle"
+                              Margin="{x:Static styles:Spacings.XSNudge}"
+                              SnapsToDevicePixels="{TemplateBinding UIElement.SnapsToDevicePixels}"
+                              MaxHeight="{Binding ActualHeight, RelativeSource={RelativeSource TemplatedParent}}"/>
+                        </ctrls:MenuScrollViewer>
+                    </ctrls:FlyoutSurface>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+</ResourceDictionary>
