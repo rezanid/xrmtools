@@ -43,10 +43,10 @@ internal static class DefaultStyles
         //  (object) typeof (ComboBoxItem),
         //  "/XrmTools;component/Shell/Styles/ComboBoxItemStyle.xaml"
         //},
-        //{
-        //  (object) typeof (ContextMenu),
-        //  "/XrmTools;component/Shell/Styles/ContextMenuStyle.xaml"
-        //},
+        {
+          (object) typeof (ContextMenu),
+          "/XrmTools;component/Shell/Styles/ContextMenuStyle.xaml"
+        },
         //{
         //  (object) typeof (DataGrid),
         //  "/XrmTools;component/Shell/Styles/DataGrid/DataGridStyle.xaml"
@@ -103,10 +103,10 @@ internal static class DefaultStyles
         //  (object) typeof (FeedbackPanel),
         //  "/XrmTools;component/Shell/Styles/FeedbackPanelStyle.xaml"
         //},
-        //{
-        //  (object) typeof (FlyoutSurface),
-        //  "/XrmTools;component/Shell/Styles/FlyoutSurfaceStyle.xaml"
-        //},
+        {
+          (object) typeof (FlyoutSurface),
+          "/XrmTools;component/Shell/Styles/FlyoutSurfaceStyle.xaml"
+        },
         //{
         //  (object) typeof (Heading),
         //  "/XrmTools;component/Shell/Styles/MarkdownViewer/HeadingStyle.xaml"
@@ -155,14 +155,14 @@ internal static class DefaultStyles
         //  (object) typeof (MediaHost),
         //  "/XrmTools;component/Shell/Styles/MarkdownViewer/MediaHostStyle.xaml"
         //},
-        //{
-        //  (object) typeof (MenuItem),
-        //  "/XrmTools;component/Shell/Styles/MenuItemStyle.xaml"
-        //},
-        //{
-        //  (object) typeof (MenuScrollViewer),
-        //  "/XrmTools;component/Shell/Styles/MenuScrollViewerStyle.xaml"
-        //},
+        {
+          (object) typeof (MenuItem),
+          "/XrmTools;component/Shell/Styles/MenuItemStyle.xaml"
+        },
+        {
+          (object) typeof (MenuScrollViewer),
+          "/XrmTools;component/Shell/Styles/MenuScrollViewerStyle.xaml"
+        },
         //{
         //  (object) typeof (MessageContent),
         //  "/XrmTools;component/Shell/Styles/Window/MessageContentStyle.xaml"
@@ -215,10 +215,10 @@ internal static class DefaultStyles
         //  (object) typeof (Section),
         //  "/XrmTools;component/Shell/Styles/MarkdownViewer/SectionStyle.xaml"
         //},
-        //{
-        //  (object) typeof (Separator),
-        //  "/XrmTools;component/Shell/Styles/SeparatorStyle.xaml"
-        //},
+        {
+          (object) typeof (Separator),
+          "/XrmTools;component/Shell/Styles/SeparatorStyle.xaml"
+        },
         //{
         //  (object) typeof (SplitButton),
         //  "/XrmTools;component/Shell/Styles/SplitButtonStyle.xaml"
