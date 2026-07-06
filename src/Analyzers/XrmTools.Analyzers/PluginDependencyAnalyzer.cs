@@ -16,6 +16,7 @@ public sealed class PluginDependencyAnalyzer : DiagnosticAnalyzer
     public const string HasSetterOrInitId = "XrmTools002";
     public const string PluginAttributeCombinationId = "XrmTools003";
     public const string PluginAttributeOrderId = "XrmTools004";
+    public const string InvalidStepStageModeId = "XrmTools006";
 
     private static readonly DiagnosticDescriptor MissingDependencyAttributeRule =
         new(
@@ -61,8 +62,19 @@ public sealed class PluginDependencyAnalyzer : DiagnosticAnalyzer
             description: "[Plugin] must appear before [Step]/[CustomApi]. For step plugins, [Image] attributes must appear after [Step].",
             helpLinkUri: "https://github.com/rezanid/xrmtools/wiki/Analyzers#xrmtools004---invalid-plugin-attribute-order");
 
+    private static readonly DiagnosticDescriptor InvalidStepStageModeRule =
+        new(
+            InvalidStepStageModeId,
+            "Step attribute has invalid stage and mode combination",
+            "Step attribute cannot use ExecutionMode.Asynchronous with {0}",
+            "Usage",
+            DiagnosticSeverity.Warning,
+            isEnabledByDefault: true,
+            description: "Dataverse plug-in steps registered in PreValidation or PreOperation must run synchronously.",
+            helpLinkUri: "https://github.com/rezanid/xrmtools/wiki/Analyzers#xrmtools006---invalid-step-stage-and-mode");
+
     public override ImmutableArray<DiagnosticDescriptor> SupportedDiagnostics =>
-        [MissingDependencyAttributeRule, HasSetterOrInitRule, PluginAttributeCombinationRule, PluginAttributeOrderRule];
+        [MissingDependencyAttributeRule, HasSetterOrInitRule, PluginAttributeCombinationRule, PluginAttributeOrderRule, InvalidStepStageModeRule];
 
     public override void Initialize(AnalysisContext context)
     {
@@ -87,13 +99,15 @@ public sealed class PluginDependencyAnalyzer : DiagnosticAnalyzer
             var customApiAttrSymbol = compilationStart.Compilation.GetTypeByMetadataName("XrmTools.Meta.Attributes.CustomApiAttribute");
             var stepAttrSymbol = compilationStart.Compilation.GetTypeByMetadataName("XrmTools.Meta.Attributes.StepAttribute");
             var imageAttrSymbol = compilationStart.Compilation.GetTypeByMetadataName("XrmTools.Meta.Attributes.ImageAttribute");
+            var stageEnumSymbol = compilationStart.Compilation.GetTypeByMetadataName("XrmTools.Meta.Attributes.Stages");
+            var executionModeEnumSymbol = compilationStart.Compilation.GetTypeByMetadataName("XrmTools.Meta.Attributes.ExecutionMode");
 
             compilationStart.RegisterSyntaxNodeAction(
                 c => AnalyzeProperty(c, pluginSymbol, dependencyAttrSymbol),
                 SyntaxKind.PropertyDeclaration);
 
             compilationStart.RegisterSymbolAction(
-                c => AnalyzePluginTypeAttributes(c, pluginSymbol, pluginAttrSymbol, customApiAttrSymbol, stepAttrSymbol, imageAttrSymbol),
+                c => AnalyzePluginTypeAttributes(c, pluginSymbol, pluginAttrSymbol, customApiAttrSymbol, stepAttrSymbol, imageAttrSymbol, stageEnumSymbol, executionModeEnumSymbol),
                 SymbolKind.NamedType);
         });
     }
@@ -104,7 +118,9 @@ public sealed class PluginDependencyAnalyzer : DiagnosticAnalyzer
         INamedTypeSymbol? pluginAttrSymbol,
         INamedTypeSymbol? customApiAttrSymbol,
         INamedTypeSymbol? stepAttrSymbol,
-        INamedTypeSymbol? imageAttrSymbol)
+        INamedTypeSymbol? imageAttrSymbol,
+        INamedTypeSymbol? stageEnumSymbol,
+        INamedTypeSymbol? executionModeEnumSymbol)
     {
         if (pluginAttrSymbol is null || customApiAttrSymbol is null || stepAttrSymbol is null)
             return;
@@ -141,6 +157,8 @@ public sealed class PluginDependencyAnalyzer : DiagnosticAnalyzer
 
             // Keep going; XOR rule may also be violated and should be reported too.
         }
+
+        ReportInvalidStepStageMode(context, typeSymbol, attrs, stepAttrSymbol, stageEnumSymbol, executionModeEnumSymbol);
 
         if (hasCustomApi == hasStep)
         {
@@ -207,6 +225,124 @@ public sealed class PluginDependencyAnalyzer : DiagnosticAnalyzer
         }
 
         return false;
+    }
+
+    private static void ReportInvalidStepStageMode(
+        SymbolAnalysisContext context,
+        INamedTypeSymbol typeSymbol,
+        ImmutableArray<AttributeData> attributes,
+        INamedTypeSymbol? stepAttrSymbol,
+        INamedTypeSymbol? stageEnumSymbol,
+        INamedTypeSymbol? executionModeEnumSymbol)
+    {
+        if (stepAttrSymbol is null || stageEnumSymbol is null || executionModeEnumSymbol is null)
+            return;
+
+        for (int i = 0; i < attributes.Length; i++)
+        {
+            var attribute = attributes[i];
+            if (!SymbolEqualityComparer.Default.Equals(attribute.AttributeClass, stepAttrSymbol))
+                continue;
+
+            if (!TryGetStepStageAndMode(attribute, stageEnumSymbol, executionModeEnumSymbol, out var stage, out var mode))
+                continue;
+
+            if (mode != 1 || (stage != 10 && stage != 20))
+                continue;
+
+            var location = attribute.ApplicationSyntaxReference?.GetSyntax(context.CancellationToken).GetLocation()
+                ?? typeSymbol.Locations.FirstOrDefault();
+            if (location is null)
+                continue;
+
+            context.ReportDiagnostic(Diagnostic.Create(
+                InvalidStepStageModeRule,
+                location,
+                GetStageDisplayName(stage)));
+        }
+    }
+
+    private static bool TryGetStepStageAndMode(
+        AttributeData attribute,
+        INamedTypeSymbol stageEnumSymbol,
+        INamedTypeSymbol executionModeEnumSymbol,
+        out int stage,
+        out int mode)
+    {
+        stage = default;
+        mode = default;
+
+        var hasStage = false;
+        var hasMode = false;
+        var constructor = attribute.AttributeConstructor;
+
+        if (constructor is not null)
+        {
+            var parameterCount = constructor.Parameters.Length;
+            var argumentCount = attribute.ConstructorArguments.Length;
+            var count = parameterCount < argumentCount ? parameterCount : argumentCount;
+
+            for (int i = 0; i < count; i++)
+            {
+                var parameter = constructor.Parameters[i];
+                var argument = attribute.ConstructorArguments[i];
+
+                if (!TryGetEnumValue(argument, out var value))
+                    continue;
+
+                if (!hasStage && SymbolEqualityComparer.Default.Equals(parameter.Type, stageEnumSymbol))
+                {
+                    stage = value;
+                    hasStage = true;
+                    continue;
+                }
+
+                if (!hasMode && SymbolEqualityComparer.Default.Equals(parameter.Type, executionModeEnumSymbol))
+                {
+                    mode = value;
+                    hasMode = true;
+                }
+            }
+        }
+
+        for (int i = 0; i < attribute.NamedArguments.Length; i++)
+        {
+            var namedArgument = attribute.NamedArguments[i];
+            if (namedArgument.Key != "Mode")
+                continue;
+
+            if (!SymbolEqualityComparer.Default.Equals(namedArgument.Value.Type, executionModeEnumSymbol))
+                continue;
+
+            if (!TryGetEnumValue(namedArgument.Value, out mode))
+                continue;
+
+            hasMode = true;
+        }
+
+        return hasStage && hasMode;
+    }
+
+    private static bool TryGetEnumValue(TypedConstant value, out int intValue)
+    {
+        if (value.Value is int typedValue)
+        {
+            intValue = typedValue;
+            return true;
+        }
+
+        intValue = default;
+        return false;
+    }
+
+    private static string GetStageDisplayName(int stage)
+    {
+        return stage switch
+        {
+            10 => "Stages.PreValidation",
+            20 => "Stages.PreOperation",
+            _ => $"stage value {stage}",
+        };
     }
 
     private static void AnalyzeProperty(
@@ -314,7 +450,7 @@ public sealed class PluginDependencyAnalyzer : DiagnosticAnalyzer
         return false;
     }
 
-    private static bool HasSetterOrInit(PropertyDeclarationSyntax propDecl, out Location location)
+    private static bool HasSetterOrInit(PropertyDeclarationSyntax propDecl, out Location? location)
     {
         location = null;
 

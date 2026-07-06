@@ -30,8 +30,28 @@ namespace XrmTools.Meta.Attributes
     [System.AttributeUsage(System.AttributeTargets.Class, AllowMultiple = false, Inherited = false)]
     public sealed class CustomApiAttribute : System.Attribute { }
 
+    public enum Stages
+    {
+        PreValidation = 10,
+        PreOperation = 20,
+        MainOperation = 30,
+        PostOperation = 40,
+    }
+
+    public enum ExecutionMode
+    {
+        Synchronous = 0,
+        Asynchronous = 1,
+    }
+
     [System.AttributeUsage(System.AttributeTargets.Class, AllowMultiple = true, Inherited = false)]
-    public sealed class StepAttribute : System.Attribute { }
+    public sealed class StepAttribute : System.Attribute
+    {
+        public StepAttribute(string messageName, Stages stage, ExecutionMode mode) { }
+        public StepAttribute(string messageName, string primaryEntityName, Stages stage, ExecutionMode mode) { }
+        public StepAttribute(string messageName, string primaryEntityName, string filteringAttributes, Stages stage, ExecutionMode mode) { }
+        public ExecutionMode Mode { get; set; }
+    }
 
     [System.AttributeUsage(System.AttributeTargets.Class, AllowMultiple = true, Inherited = false)]
     public sealed class ImageAttribute : System.Attribute { }
@@ -273,7 +293,7 @@ public sealed class MyPlugin : PluginBase
     public async Task Plugin_PluginAttributeMustComeBeforeStep_ReportsXrmTools004()
     {
         var test = Preamble + @"
-[XrmTools.Meta.Attributes.Step]
+[XrmTools.Meta.Attributes.Step(""Create"", XrmTools.Meta.Attributes.Stages.PostOperation, XrmTools.Meta.Attributes.ExecutionMode.Synchronous)]
 [XrmTools.Meta.Attributes.Plugin]
 public sealed class {|#0:MyPlugin|} : PluginBase
 {
@@ -311,7 +331,7 @@ public sealed class {|#0:MyPlugin|} : PluginBase
         var test = Preamble + @"
 [XrmTools.Meta.Attributes.Plugin]
 [XrmTools.Meta.Attributes.Image]
-[XrmTools.Meta.Attributes.Step]
+[XrmTools.Meta.Attributes.Step(""Create"", XrmTools.Meta.Attributes.Stages.PostOperation, XrmTools.Meta.Attributes.ExecutionMode.Synchronous)]
 public sealed class {|#0:MyPlugin|} : PluginBase
 {
 }
@@ -329,7 +349,7 @@ public sealed class {|#0:MyPlugin|} : PluginBase
     {
         var test = Preamble + @"
 [XrmTools.Meta.Attributes.Plugin]
-[XrmTools.Meta.Attributes.Step]
+[XrmTools.Meta.Attributes.Step(""Create"", XrmTools.Meta.Attributes.Stages.PostOperation, XrmTools.Meta.Attributes.ExecutionMode.Synchronous)]
 [XrmTools.Meta.Attributes.Image]
 public sealed class MyPlugin : PluginBase
 {
@@ -344,10 +364,96 @@ public sealed class MyPlugin : PluginBase
     {
         var test = Preamble + @"
 [XrmTools.Meta.Attributes.Plugin]
-[XrmTools.Meta.Attributes.Step]
+[XrmTools.Meta.Attributes.Step(""Create"", XrmTools.Meta.Attributes.Stages.PostOperation, XrmTools.Meta.Attributes.ExecutionMode.Synchronous)]
 [XrmTools.Meta.Attributes.Image]
-[XrmTools.Meta.Attributes.Step]
+[XrmTools.Meta.Attributes.Step(""Update"", ""account"", XrmTools.Meta.Attributes.Stages.PostOperation, XrmTools.Meta.Attributes.ExecutionMode.Synchronous)]
 [XrmTools.Meta.Attributes.Image]
+public sealed class MyPlugin : PluginBase
+{
+}
+";
+
+        await VerifyCS.VerifyAnalyzerAsync(test);
+    }
+
+    [Fact]
+    public async Task Plugin_PreValidationAsyncStep_ReportsXrmTools006()
+    {
+        var test = Preamble + @"
+[XrmTools.Meta.Attributes.Plugin]
+[{|#0:XrmTools.Meta.Attributes.Step(""Create"", XrmTools.Meta.Attributes.Stages.PreValidation, XrmTools.Meta.Attributes.ExecutionMode.Asynchronous)|}]
+public sealed class MyPlugin : PluginBase
+{
+}
+";
+
+        var expected = new DiagnosticResult(PluginDependencyAnalyzer.InvalidStepStageModeId, DiagnosticSeverity.Warning)
+            .WithLocation(0)
+            .WithArguments("Stages.PreValidation");
+
+        await VerifyCS.VerifyAnalyzerAsync(test, expected);
+    }
+
+    [Fact]
+    public async Task Plugin_PreOperationAsyncStep_WithPrimaryEntityConstructor_ReportsXrmTools006()
+    {
+        var test = Preamble + @"
+[XrmTools.Meta.Attributes.Plugin]
+[{|#0:XrmTools.Meta.Attributes.Step(""Update"", ""account"", XrmTools.Meta.Attributes.Stages.PreOperation, XrmTools.Meta.Attributes.ExecutionMode.Asynchronous)|}]
+public sealed class MyPlugin : PluginBase
+{
+}
+";
+
+        var expected = new DiagnosticResult(PluginDependencyAnalyzer.InvalidStepStageModeId, DiagnosticSeverity.Warning)
+            .WithLocation(0)
+            .WithArguments("Stages.PreOperation");
+
+        await VerifyCS.VerifyAnalyzerAsync(test, expected);
+    }
+
+    [Fact]
+    public async Task Plugin_PreValidationAsyncStep_WithFilteringAttributesConstructor_ReportsXrmTools006()
+    {
+        var test = Preamble + @"
+[XrmTools.Meta.Attributes.Plugin]
+[{|#0:XrmTools.Meta.Attributes.Step(""Update"", ""account"", ""name"", XrmTools.Meta.Attributes.Stages.PreValidation, XrmTools.Meta.Attributes.ExecutionMode.Asynchronous)|}]
+public sealed class MyPlugin : PluginBase
+{
+}
+";
+
+        var expected = new DiagnosticResult(PluginDependencyAnalyzer.InvalidStepStageModeId, DiagnosticSeverity.Warning)
+            .WithLocation(0)
+            .WithArguments("Stages.PreValidation");
+
+        await VerifyCS.VerifyAnalyzerAsync(test, expected);
+    }
+
+    [Fact]
+    public async Task Plugin_PreOperationAsyncStep_WithNamedModeOverride_ReportsXrmTools006()
+    {
+        var test = Preamble + @"
+[XrmTools.Meta.Attributes.Plugin]
+[{|#0:XrmTools.Meta.Attributes.Step(""Update"", XrmTools.Meta.Attributes.Stages.PreOperation, XrmTools.Meta.Attributes.ExecutionMode.Synchronous, Mode = XrmTools.Meta.Attributes.ExecutionMode.Asynchronous)|}]
+public sealed class MyPlugin : PluginBase
+{
+}
+";
+
+        var expected = new DiagnosticResult(PluginDependencyAnalyzer.InvalidStepStageModeId, DiagnosticSeverity.Warning)
+            .WithLocation(0)
+            .WithArguments("Stages.PreOperation");
+
+        await VerifyCS.VerifyAnalyzerAsync(test, expected);
+    }
+
+    [Fact]
+    public async Task Plugin_PostOperationAsyncStep_IsAllowed()
+    {
+        var test = Preamble + @"
+[XrmTools.Meta.Attributes.Plugin]
+[XrmTools.Meta.Attributes.Step(""Create"", XrmTools.Meta.Attributes.Stages.PostOperation, XrmTools.Meta.Attributes.ExecutionMode.Asynchronous)]
 public sealed class MyPlugin : PluginBase
 {
 }
