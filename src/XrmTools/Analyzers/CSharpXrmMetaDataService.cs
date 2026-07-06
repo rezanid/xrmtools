@@ -58,24 +58,31 @@ internal class CSharpXrmMetaDataService(ICSharpXrmMetaParser parser) : IXrmMetaD
             var config = await ParseConfigFromProjectAsync(document.Project, cancellationToken).ConfigureAwait(false);
             if (config == null) return null;
 
-            var processedSymbols = new HashSet<string>();
-            var semanticModelCache = new Dictionary<DocumentId, SemanticModel>();
-
             var compilation = await document.Project.GetCompilationAsync(cancellationToken).ConfigureAwait(false);
             if (compilation == null) return null;
-            var pluginTypes = await ParsePluginConfigsFromDocumentAsync(document, compilation, processedSymbols, semanticModelCache, cancellationToken).ConfigureAwait(false);
-            pluginTypes.ForEach(config.PluginTypes.Add);
 
-            var allPluginsTypes = compilation.GetProjectTypesWithAttribute(typeof(PluginAttribute).FullName);
-            config.OtherPluginTypes = allPluginsTypes.Where(p => !pluginTypes.Any(currentPlugin => currentPlugin.TypeName == p.ToDisplayString()))
-                .Select(p => new PluginTypeConfig { TypeName = p.ToDisplayString() })
+            var pluginTypesByDocument = await ParseProjectPluginConfigsByDocumentAsync(document.Project, compilation, cancellationToken).ConfigureAwait(false);
+            var allPluginTypes = pluginTypesByDocument.SelectMany(x => x.Value).ToList();
+            ValidateCustomApiUniqueNames(allPluginTypes);
+
+            if (pluginTypesByDocument.TryGetValue(document.Id, out var pluginTypes))
+            {
+                pluginTypes.ForEach(config.PluginTypes.Add);
+            }
+
+            config.OtherPluginTypes = allPluginTypes
+                .Where(p => !config.PluginTypes.Any(currentPlugin => currentPlugin.TypeName == p.TypeName))
+                .Select(p => new PluginTypeConfig { TypeName = p.TypeName })
                 .ToList();
 
             return config;
         }
+        catch (InvalidOperationException)
+        {
+            throw;
+        }
         catch (Exception ex)
         {
-            // Log or handle the exception as necessary
             throw new InvalidOperationException("An error occurred while retrieving assembly metadata.", ex);
         }
     }
@@ -136,26 +143,58 @@ internal class CSharpXrmMetaDataService(ICSharpXrmMetaParser parser) : IXrmMetaD
 
             var compilation = await project.GetCompilationAsync(cancellationToken).ConfigureAwait(false);
             if (compilation == null) return null;
-            
-            var processedSymbols = new HashSet<string>();
-            var semanticModelCache = new Dictionary<DocumentId, SemanticModel>();
-            var allPluginTypes = new List<PluginTypeConfig>();
 
-            foreach (var document in project.Documents.Where(
-                d => d.SourceCodeKind == SourceCodeKind.Regular && d.FilePath != null && !d.FilePath.Contains("\\xrmtools.meta.attributes\\")))
-            {
-                var pluginTypes = await ParsePluginConfigsFromDocumentAsync(document, compilation, processedSymbols, semanticModelCache, cancellationToken).ConfigureAwait(false);
-                allPluginTypes.AddRange(pluginTypes);
-            }
+            var pluginTypesByDocument = await ParseProjectPluginConfigsByDocumentAsync(project, compilation, cancellationToken).ConfigureAwait(false);
+            var allPluginTypes = pluginTypesByDocument.SelectMany(x => x.Value).ToList();
+            ValidateCustomApiUniqueNames(allPluginTypes);
 
             allPluginTypes.ForEach(config.PluginTypes.Add);
 
             return config;
         }
+        catch (InvalidOperationException)
+        {
+            throw;
+        }
         catch (Exception ex)
         {
             throw new InvalidOperationException("An error occurred while parsing the project metadata.", ex);
         }
+    }
+
+    private static void ValidateCustomApiUniqueNames(IEnumerable<PluginTypeConfig> pluginTypes)
+    {
+        var duplicateCustomApis = pluginTypes
+            .Where(pluginType => !string.IsNullOrWhiteSpace(pluginType.CustomApi?.UniqueName))
+            .GroupBy(pluginType => pluginType.CustomApi!.UniqueName!, StringComparer.OrdinalIgnoreCase)
+            .Where(group => group.Skip(1).Any())
+            .Select(group => $"'{group.Key}' ({string.Join(", ", group.Select(pluginType => pluginType.TypeName).OrderBy(typeName => typeName, StringComparer.Ordinal))})")
+            .OrderBy(x => x, StringComparer.Ordinal)
+            .ToList();
+
+        if (duplicateCustomApis.Count > 0)
+        {
+            throw new InvalidOperationException($"Duplicate Custom API unique names were found: {string.Join("; ", duplicateCustomApis)}.");
+        }
+    }
+
+    private async Task<Dictionary<DocumentId, List<PluginTypeConfig>>> ParseProjectPluginConfigsByDocumentAsync(
+        Project project,
+        Compilation compilation,
+        CancellationToken cancellationToken)
+    {
+        var processedSymbols = new HashSet<string>();
+        var semanticModelCache = new Dictionary<DocumentId, SemanticModel>();
+        var pluginTypesByDocument = new Dictionary<DocumentId, List<PluginTypeConfig>>();
+
+        foreach (var projectDocument in project.Documents.Where(
+            d => d.SourceCodeKind == SourceCodeKind.Regular && d.FilePath != null && !d.FilePath.Contains("\\xrmtools.meta.attributes\\")))
+        {
+            var pluginTypes = await ParsePluginConfigsFromDocumentAsync(projectDocument, compilation, processedSymbols, semanticModelCache, cancellationToken).ConfigureAwait(false);
+            pluginTypesByDocument[projectDocument.Id] = pluginTypes;
+        }
+
+        return pluginTypesByDocument;
     }
 
     private async Task<PluginAssemblyConfig?> ParseConfigFromProjectAsync(Project project, CancellationToken cancellationToken)

@@ -177,8 +177,8 @@ internal sealed class PluginRegistrationService(
         }
         catch (Exception ex)
         {
-            _log.LogError(ex, "An error occurred while parsing registration code.");
-            return PluginRegistrationResult.Failure("Plugin registration failed due to an error while parsing registration code. " + ex.Message);
+            _log.LogError(ex, "An error occurred while parsing registrations.");
+            return PluginRegistrationResult.Failure("Plugin registration failed due to an error while parsing registrations. " + ex.Message);
         }
 
         if (model is null)
