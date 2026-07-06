@@ -6,6 +6,7 @@
 	<IsPackable>false</IsPackable>
 	<EnforceExtendedAnalyzerRules>true</EnforceExtendedAnalyzerRules>
 	<RootNamespace>XrmTools.Meta.Attributes.SourceGenerator</RootNamespace>
+	<VersionPrefix>1.1.5</VersionPrefix>
   </PropertyGroup>
 
   <ItemGroup>
