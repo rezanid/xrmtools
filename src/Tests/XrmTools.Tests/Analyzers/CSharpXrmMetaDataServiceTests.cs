@@ -2,6 +2,9 @@ namespace XrmTools.Tests.Analyzers;
 
 using FluentAssertions;
 using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.CSharp;
+using Microsoft.CodeAnalysis.CSharp.Formatting;
+using Microsoft.CodeAnalysis.Host.Mef;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -43,7 +46,7 @@ public class CSharpXrmMetaDataServiceTests
 
     private static Project CreateProjectWithDuplicateCustomApiUniqueNames()
     {
-        var workspace = new AdhocWorkspace();
+        var workspace = CreateWorkspace();
         var project = workspace.AddProject("DuplicateCustomApiProject", LanguageNames.CSharp)
             .AddMetadataReferences(GetMetadataReferences());
 
@@ -52,6 +55,18 @@ public class CSharpXrmMetaDataServiceTests
         project = project.AddDocument("SecondPlugin.cs", SecondPluginSource, filePath: Path.Combine("C:\\", "Tests", "SecondPlugin.cs")).Project;
 
         return project;
+    }
+
+    private static AdhocWorkspace CreateWorkspace()
+    {
+        var host = MefHostServices.Create(
+            MefHostServices.DefaultAssemblies.Concat(
+            [
+                typeof(CSharpCompilation).Assembly,
+                typeof(CSharpFormattingOptions).Assembly,
+            ]));
+
+        return new AdhocWorkspace(host);
     }
 
     private static IEnumerable<MetadataReference> GetMetadataReferences()
