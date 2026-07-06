@@ -395,7 +395,7 @@ internal sealed class PluginRegistrationService(
             catch (Exception ex)    
             {
                 _log.LogError(ex, "An error occurred while registering steps/custom APIs after package upload.");
-                return PluginRegistrationResult.Failure("Plugin registration failed during follow-up registration of steps/custom APIs.");
+                return PluginRegistrationResult.Failure("Plugin registration failed during follow-up registration of steps/custom APIs. Please check the Output window for more details.");
             }
         }
 
