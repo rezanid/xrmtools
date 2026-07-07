@@ -8,7 +8,7 @@
 	<Title>XrmTools.Meta.Attributes</Title>
 	<Description>Attributes to be used by Xrm Tools for source generation, registration and other features in Visual Studio. This is a source only package with no assemblies included.</Description>
 	<PackageId>XrmTools.Meta.Attributes</PackageId>
-	<VersionPrefix>1.1.5</VersionPrefix>
+	<VersionPrefix>1.1.6</VersionPrefix>
 	<Authors>Reza Niroomand</Authors>
 	<PackageIcon>XrmTools_256.png</PackageIcon>
 	<PackageTags>Power Platform Apps XRM Tools</PackageTags>
