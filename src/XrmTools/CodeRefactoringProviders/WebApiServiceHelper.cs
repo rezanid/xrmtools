@@ -29,7 +29,7 @@ internal static class WebApiServiceHelper
                 "$select=sdkmessageprocessingstepimageid,name,imagetype,messagepropertyname,attributes,entityalias)," +
             "sdkmessagefilterid($select=primaryobjecttypecode)," +
             "sdkmessageid($select=name))";
-        var response = await webApi.RetrieveMultipleAsync<PluginType>(odataQuery, 2);
+        var response = await webApi.RetrieveMultipleAsync<PluginType>(odataQuery);
         return response?.Value?.FirstOrDefault();
     }
 }

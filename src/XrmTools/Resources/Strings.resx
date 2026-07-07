@@ -199,7 +199,7 @@ File path: {0}
 Error: {1}</value>
   </data>
   <data name="CodeGen.InputModel_Empty" xml:space="preserve">
-    <value>Input is empty. Code generation needs some input to generate code. Please make sure your have properly used attributes from XrmTools.Meta.Attributes.
+    <value>Input is empty. Code generation needs some input to generate code. Please make sure you have used attributes from XrmTools.Meta.Attributes.
 Input file path: {0}</value>
   </data>
   <data name="CodeGen.InputFileOrProjectMissing" xml:space="preserve">
