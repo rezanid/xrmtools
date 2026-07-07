@@ -82,7 +82,7 @@ namespace XrmTools.Resources {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to Input is empty. Code generation needs some input to generate code. Please make sure your have properly used attributes from XrmTools.Meta.Attributes.
+        ///   Looks up a localized string similar to Input is empty. Code generation needs some input to generate code. Please make sure you have used attributes from XrmTools.Meta.Attributes.
         ///Input file path: {0}.
         /// </summary>
         internal static string CodeGen_InputModel_Empty {
