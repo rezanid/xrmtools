@@ -5,6 +5,7 @@ using Microsoft.VisualStudio.Shell.Interop;
 using Microsoft.VisualStudio.Shell;
 using System.Collections.Concurrent;
 using System.Diagnostics.CodeAnalysis;
+using System.Threading;
 using XrmTools.Logging.Compatibility;
 using System;
 using System.ComponentModel.Composition;
@@ -15,6 +16,7 @@ public class OutputLoggerService : IOutputLoggerService
     private readonly ConcurrentQueue<string> logQueue = new();
     private static IVsOutputWindowPane? _outputPane;
     private readonly object _lock = new();
+    private int _flushScheduled;
     private IVsOutputWindowPane? OutputPane 
     {
         get
@@ -43,20 +45,55 @@ public class OutputLoggerService : IOutputLoggerService
     {
         if (ThreadHelper.JoinableTaskFactory.Context.IsOnMainThread)
         {
-            if (logQueue.Count > 0)
+            FlushQueuedLogs();
+            if (!string.IsNullOrEmpty(value))
             {
-                while (logQueue.TryDequeue(out var log))
-                {
-                    OutputPane?.OutputString(log);
-                }
+                OutputPane?.OutputString(value);
             }
-            OutputPane?.OutputString(value);
         }
         else
         {
             logQueue.Enqueue(value);
+            ScheduleFlush();
         }
     }
+
+    private void FlushQueuedLogs()
+    {
+        while (logQueue.TryDequeue(out var log))
+        {
+            if (!string.IsNullOrEmpty(log))
+            {
+                OutputPane?.OutputString(log);
+            }
+        }
+    }
+
+    private void ScheduleFlush()
+    {
+        if (Interlocked.Exchange(ref _flushScheduled, 1) == 1)
+        {
+            return;
+        }
+
+        _ = ThreadHelper.JoinableTaskFactory.RunAsync(async delegate
+        {
+            await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync();
+            try
+            {
+                FlushQueuedLogs();
+            }
+            finally
+            {
+                Interlocked.Exchange(ref _flushScheduled, 0);
+                if (!logQueue.IsEmpty)
+                {
+                    ScheduleFlush();
+                }
+            }
+        });
+    }
+
     public void Log(LogLevel level, string message) => OutputString($"[{level}] : {message}{Environment.NewLine}");
     public void LogWarning(string message) => Log(LogLevel.Warning, message);
     public void LogInformation(string message) => Log(LogLevel.Information, message);
