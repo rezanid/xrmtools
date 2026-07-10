@@ -180,6 +180,56 @@
           <CanonicalName>.XrmTools.Unregister</CanonicalName>
         </Strings>
       </Button>
+      <Button guid="XrmToolsCmdSetId" id="SynchronizeDataverseSolutionCmdId" priority="0x0100" type="Button">
+        <Parent guid="XrmToolsCmdSetId" id="XrmToolsProjectContextMenuGroup" />
+        <Icon guid="ImageCatalogGuid" id="Refresh" />
+        <CommandFlag>IconIsMoniker</CommandFlag>
+        <CommandFlag>DynamicVisibility</CommandFlag>
+        <Strings>
+          <ButtonText>Synchronize with Dataverse</ButtonText>
+          <CanonicalName>.XrmTools.DataverseSolution.Synchronize</CanonicalName>
+        </Strings>
+      </Button>
+      <Button guid="XrmToolsCmdSetId" id="ImportDataverseSolutionCmdId" priority="0x0110" type="Button">
+        <Parent guid="XrmToolsCmdSetId" id="XrmToolsProjectContextMenuGroup" />
+        <Icon guid="AssetsGuid" id="ApplyToDataverse" />
+        <CommandFlag>IconIsMoniker</CommandFlag>
+        <CommandFlag>DynamicVisibility</CommandFlag>
+        <Strings>
+          <ButtonText>Import to Dataverse</ButtonText>
+          <CanonicalName>.XrmTools.DataverseSolution.Import</CanonicalName>
+        </Strings>
+      </Button>
+      <Button guid="XrmToolsCmdSetId" id="PackDataverseSolutionCmdId" priority="0x0120" type="Button">
+        <Parent guid="XrmToolsCmdSetId" id="XrmToolsProjectContextMenuGroup" />
+        <Icon guid="ImageCatalogGuid" id="Package" />
+        <CommandFlag>IconIsMoniker</CommandFlag>
+        <CommandFlag>DynamicVisibility</CommandFlag>
+        <Strings>
+          <ButtonText>Pack</ButtonText>
+          <CanonicalName>.XrmTools.DataverseSolution.Pack</CanonicalName>
+        </Strings>
+      </Button>
+      <Button guid="XrmToolsCmdSetId" id="UnpackDataverseSolutionCmdId" priority="0x0130" type="Button">
+        <Parent guid="XrmToolsCmdSetId" id="XrmToolsProjectContextMenuGroup" />
+        <Icon guid="ImageCatalogGuid" id="FolderOpened" />
+        <CommandFlag>IconIsMoniker</CommandFlag>
+        <CommandFlag>DynamicVisibility</CommandFlag>
+        <Strings>
+          <ButtonText>Unpack</ButtonText>
+          <CanonicalName>.XrmTools.DataverseSolution.Unpack</CanonicalName>
+        </Strings>
+      </Button>
+      <Button guid="XrmToolsCmdSetId" id="DeployAndOpenDataverseSolutionCmdId" priority="0x0140" type="Button">
+        <Parent guid="XrmToolsCmdSetId" id="XrmToolsProjectContextMenuGroup" />
+        <Icon guid="AssetsGuid" id="ApplyToDataverse" />
+        <CommandFlag>IconIsMoniker</CommandFlag>
+        <CommandFlag>DynamicVisibility</CommandFlag>
+        <Strings>
+          <ButtonText>Deploy and Open</ButtonText>
+          <CanonicalName>.XrmTools.DataverseSolution.DeployAndOpen</CanonicalName>
+        </Strings>
+      </Button>
       <Button guid="XrmToolsCmdSetId" id="SetPluginGeneratorTemplateInSolutionCmdId" priority="0x100" type="Button">
         <Parent guid="XrmToolsCmdSetId" id="XrmToolsContextSubMenuGroup" />
         <Icon guid="ImageCatalogGuid" id="Template" />
@@ -351,6 +401,11 @@
       <IDSymbol name="ManageEnvironmenGetListCmdId" value="0x0511"/>
       <IDSymbol name="RegisterPluginCmdId" value="0x0910"/>
       <IDSymbol name="UnregisterPluginCmdId" value="0x0920"/>
+      <IDSymbol name="SynchronizeDataverseSolutionCmdId" value="0x0930"/>
+      <IDSymbol name="ImportDataverseSolutionCmdId" value="0x0940"/>
+      <IDSymbol name="PackDataverseSolutionCmdId" value="0x0950"/>
+      <IDSymbol name="UnpackDataverseSolutionCmdId" value="0x0960"/>
+      <IDSymbol name="DeployAndOpenDataverseSolutionCmdId" value="0x0970"/>
       <IDSymbol name="XrmToolsToolbar" value="0x2000"/>
       <IDSymbol name="XrmToolsToolbarGroup" value="0x2010"/>
       <IDSymbol name="XrmToolsContextSubMenu" value="0x1000"/>
