@@ -25,6 +25,9 @@ namespace XrmTools
         public const string NewProjectItemUIRuleString = "87765b0d-0ab7-4812-9668-a2d621957cf9";
         public static Guid NewProjectItemUIRule = new Guid(NewProjectItemUIRuleString);
 
+        public const string XrmToolsPluginProjectUIRuleString = "2cf22ed1-984d-4e9c-a165-e8cc44c966bc";
+        public static Guid XrmToolsPluginProjectUIRule = new Guid(XrmToolsPluginProjectUIRuleString);
+
         public const string CodeGenerationTemplateCmdUIRuleString = "be4c5f8f-c72b-4442-9b9c-d2b5f7f2b9a0";
         public static Guid CodeGenerationTemplateCmdUIRule = new Guid(CodeGenerationTemplateCmdUIRuleString);
 
