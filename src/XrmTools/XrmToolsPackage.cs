@@ -109,6 +109,11 @@ using Task = System.Threading.Tasks.Task;
         "ActiveProjectCapability:CSharp",
         VSConstants.UICONTEXT.SolutionHasSingleProject_string,
         VSConstants.UICONTEXT.SolutionHasMultipleProjects_string])]
+[ProvideUIContextRule(PackageGuids.XrmToolsPluginProjectUIRuleString,
+    name: "UI Context XrmTools Plugin Project",
+    expression: "XrmToolsPlugin",
+    termNames: ["XrmToolsPlugin"],
+    termValues: ["ActiveProjectBuildProperty:IsXrmToolsPlugin=^true$"])]
 [ProvideService(typeof(IXrmCodeGenerator), IsAsyncQueryable = true, IsCacheable = true, IsFreeThreaded = true)]
 [ProvideService(typeof(IEnvironmentProvider), IsAsyncQueryable = true, IsCacheable = true, IsFreeThreaded = true)]
 [ProvideService(typeof(ISettingsProvider), IsAsyncQueryable = true, IsCacheable = true, IsFreeThreaded = true)]

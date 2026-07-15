@@ -4,9 +4,12 @@ using Community.VisualStudio.Toolkit;
 using Microsoft.VisualStudio.Shell.Interop;
 using Microsoft.VisualStudio;
 using Microsoft.VisualStudio.Shell;
+using Microsoft.VisualStudio.Shell.ServiceBroker;
+using NuGet.VisualStudio.Contracts;
 using System.IO;
 using System;
 using System.Linq;
+using System.Threading.Tasks;
 
 public static class ProjectExtensions
 {
@@ -20,7 +23,10 @@ public static class ProjectExtensions
         public const string PackageVersion = "PackageVersion";
         public const string PackageOutputPath = "PackageOutputPath";
         public const string VersionPrefix = "VersionPrefix";
+        public const string IsXrmToolsPlugin = "IsXrmToolsPlugin";
     }
+
+    private const string XrmToolsMetaAttributesPackageId = "XrmTools.Meta.Attributes";
 
     public static bool IsSdkStyle(this Project project)
         => project.IsCapabilityMatch("OpenProjectFile");
@@ -54,6 +60,41 @@ public static class ProjectExtensions
 
     public static T? GetBuildProperty<T>(this Project project, string name) where T : IConvertible
         => GetBuildProperty(project, name) is string value ? (T)Convert.ChangeType(value, typeof(T)) : default;
+
+#pragma warning disable VSTHRD109 // Visual Studio hierarchy access requires an explicit main-thread switch.
+    public static async Task<bool> IsXrmToolsPluginProjectAsync(this Project project)
+    {
+        await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync();
+
+        if (bool.TryParse(project.GetBuildProperty(BuildProperties.IsXrmToolsPlugin), out var isXrmToolsPlugin)
+            && isXrmToolsPlugin)
+        {
+            return true;
+        }
+
+        project.GetItemInfo(out var hierarchy, out _, out _);
+        var solution = Package.GetGlobalService(typeof(SVsSolution)) as IVsSolution;
+        var brokered = Package.GetGlobalService(typeof(SVsBrokeredServiceContainer)) as IBrokeredServiceContainer;
+        var serviceBroker = brokered?.GetFullAccessServiceBroker();
+        if (solution is null || serviceBroker is null)
+            return false;
+
+        if (ErrorHandler.Failed(solution.GetGuidOfProject(hierarchy, out var projectGuid)))
+            return false;
+
+        var proxy = await serviceBroker.GetProxyAsync<INuGetProjectService>(NuGetServices.NuGetProjectServiceV1).ConfigureAwait(false);
+        using (proxy as IDisposable)
+        {
+            var installed = proxy is null
+                ? null
+                : await proxy.GetInstalledPackagesAsync(projectGuid, default).ConfigureAwait(false);
+            var package = installed?.Packages?.FirstOrDefault(p =>
+                string.Equals(p.Id, XrmToolsMetaAttributesPackageId, StringComparison.OrdinalIgnoreCase));
+
+            return package is not null;
+        }
+    }
+#pragma warning restore VSTHRD109
 
     public static string? GetOutputAssemblyPath(this Project project)
     {

@@ -1,40 +1,40 @@
 <?xml version="1.0" encoding="utf-8"?>
 <PackageManifest Version="2.0.0" xmlns="http://schemas.microsoft.com/developer/vsx-schema/2011" xmlns:d="http://schemas.microsoft.com/developer/vsx-schema-design/2011">
-    <Metadata>
-        <Identity Id="XrmTools.eba3cd26-ffad-444f-b4ef-771d430bacef" Version="1.6.0" Language="en-US" Publisher="Reza Niroomand" />
-        <DisplayName>Xrm Tools</DisplayName>
-        <Description xml:space="preserve">Xrm Tools is a Visual Studio extension that makes Power Platform development feel native, with IntelliSense for plugins, boilerplate and typed entity generation, and first-class FetchXML support.</Description>
-        <MoreInfo>https://github.com/rezanid/xrmtools</MoreInfo>
-        <License>Resources\LICENSE.txt</License>
-        <GettingStartedGuide>Resources\GettingStarted.html</GettingStartedGuide>
-        <Icon>Resources\PackageIcon.png</Icon>
-        <PreviewImage>Resources\Write-Plugin.gif</PreviewImage>
-        <Tags>Power Platform, Dataverse, Power Apps, XRM</Tags>
-    </Metadata>
-    <Installation>
-        <InstallationTarget Id="Microsoft.VisualStudio.Community" Version="[17.14,)">
-            <ProductArchitecture>amd64</ProductArchitecture>
-        </InstallationTarget>
-        <InstallationTarget Id="Microsoft.VisualStudio.Community" Version="[17.14,)">
-            <ProductArchitecture>arm64</ProductArchitecture>
-        </InstallationTarget>
-    </Installation>
-    <Dependencies>
-        <Dependency Id="Microsoft.Framework.NDP" DisplayName="Microsoft .NET Framework" d:Source="Manual" Version="[4.8,)" />
-    </Dependencies>
-    <Prerequisites>
-        <Prerequisite Id="Microsoft.VisualStudio.Component.CoreEditor" Version="[17.14,)" DisplayName="Visual Studio core editor" />
-    </Prerequisites>
-    <Assets>
-        <Asset Type="Microsoft.VisualStudio.VsPackage" d:Source="Project" d:ProjectName="%CurrentProject%" Path="|%CurrentProject%;PkgdefProjectOutputGroup|" />
-        <Asset Type="Microsoft.VisualStudio.Content" d:Source="File" Path="CdsProject.pkgdef" />
-        <Asset Type="Microsoft.VisualStudio.VsPackage" d:Source="File" Path="CdsProject.pkgdef" />
-        <Asset Type="Microsoft.VisualStudio.MefComponent" d:Source="Project" d:ProjectName="%CurrentProject%" Path="|%CurrentProject%|" />
-        <Asset Type="Microsoft.VisualStudio.MefComponent" d:Source="Project" d:ProjectName="XrmTools.Core" Path="|XrmTools.Core|" />
-        <Asset Type="Microsoft.VisualStudio.MefComponent" d:Source="Project" d:ProjectName="XrmTools.WebApi" Path="|XrmTools.WebApi|" />
-        <Asset Type="Microsoft.VisualStudio.ProjectTemplate" d:Source="Project" d:ProjectName="%CurrentProject%.PluginProjectTemplate" d:TargetPath="|XrmTools.PluginProjectTemplate;TemplateProjectOutputGroup|" Path="ProjectTemplates" d:VsixSubPath="ProjectTemplates" />
-        <Asset Type="Microsoft.VisualStudio.ItemTemplate" d:Source="Project" d:ProjectName="%CurrentProject%.PluginItemTemplate" d:TargetPath="|XrmTools.PluginItemTemplate;TemplateProjectOutputGroup|" Path="ItemTemplates" d:VsixSubPath="ItemTemplates" />
-        <Asset Type="Microsoft.VisualStudio.ItemTemplate" d:Source="Project" d:ProjectName="%CurrentProject%.FetchXmlItemTemplate" d:TargetPath="|XrmTools.FetchXmlItemTemplate;TemplateProjectOutputGroup|" Path="ItemTemplates" d:VsixSubPath="ItemTemplates" />
-        <Asset Type="Microsoft.VisualStudio.ItemTemplate" d:Source="Project" d:ProjectName="%CurrentProject%.CustomApiItemTemplate" d:TargetPath="|XrmTools.CustomApiItemTemplate;TemplateProjectOutputGroup|" Path="ItemTemplates" d:VsixSubPath="ItemTemplates" />
-    </Assets>
+  <Metadata>
+    <Identity Id="XrmTools.eba3cd26-ffad-444f-b4ef-771d430bacef" Version="1.7.0" Language="en-US" Publisher="Reza Niroomand" />
+    <DisplayName>Xrm Tools</DisplayName>
+    <Description xml:space="preserve">Xrm Tools is a Visual Studio extension that makes Power Platform development feel native, with IntelliSense for plugins, boilerplate and typed entity generation, and first-class FetchXML support.</Description>
+    <MoreInfo>https://github.com/rezanid/xrmtools</MoreInfo>
+    <License>Resources\LICENSE.txt</License>
+    <GettingStartedGuide>Resources\GettingStarted.html</GettingStartedGuide>
+    <Icon>Resources\PackageIcon.png</Icon>
+    <PreviewImage>Resources\Write-Plugin.gif</PreviewImage>
+    <Tags>Power Platform, Dataverse, Power Apps, XRM</Tags>
+  </Metadata>
+  <Installation>
+    <InstallationTarget Id="Microsoft.VisualStudio.Community" Version="[17.14,)">
+      <ProductArchitecture>amd64</ProductArchitecture>
+    </InstallationTarget>
+    <InstallationTarget Id="Microsoft.VisualStudio.Community" Version="[17.14,)">
+      <ProductArchitecture>arm64</ProductArchitecture>
+    </InstallationTarget>
+  </Installation>
+  <Dependencies>
+    <Dependency Id="Microsoft.Framework.NDP" DisplayName="Microsoft .NET Framework" Version="[4.8,)" d:Source="Manual" />
+  </Dependencies>
+  <Prerequisites>
+    <Prerequisite Id="Microsoft.VisualStudio.Component.CoreEditor" DisplayName="Visual Studio core editor" Version="[17.14,)" />
+  </Prerequisites>
+  <Assets>
+    <Asset Type="Microsoft.VisualStudio.VsPackage" Path="|%CurrentProject%;PkgdefProjectOutputGroup|" d:Source="Project" d:ProjectName="%CurrentProject%" />
+    <Asset Type="Microsoft.VisualStudio.Content" Path="CdsProject.pkgdef" d:Source="File" />
+    <Asset Type="Microsoft.VisualStudio.VsPackage" Path="CdsProject.pkgdef" d:Source="File" />
+    <Asset Type="Microsoft.VisualStudio.MefComponent" Path="|%CurrentProject%|" d:Source="Project" d:ProjectName="%CurrentProject%" />
+    <Asset Type="Microsoft.VisualStudio.MefComponent" Path="|XrmTools.Core|" d:Source="Project" d:ProjectName="XrmTools.Core" />
+    <Asset Type="Microsoft.VisualStudio.MefComponent" Path="|XrmTools.WebApi|" d:Source="Project" d:ProjectName="XrmTools.WebApi" />
+    <Asset Type="Microsoft.VisualStudio.ProjectTemplate" Path="ProjectTemplates" d:Source="Project" d:ProjectName="%CurrentProject%.PluginProjectTemplate" d:VsixSubPath="ProjectTemplates" d:TargetPath="|XrmTools.PluginProjectTemplate;TemplateProjectOutputGroup|" />
+    <Asset Type="Microsoft.VisualStudio.ItemTemplate" Path="ItemTemplates" d:Source="Project" d:ProjectName="%CurrentProject%.PluginItemTemplate" d:VsixSubPath="ItemTemplates" d:TargetPath="|XrmTools.PluginItemTemplate;TemplateProjectOutputGroup|" />
+    <Asset Type="Microsoft.VisualStudio.ItemTemplate" Path="ItemTemplates" d:Source="Project" d:ProjectName="%CurrentProject%.FetchXmlItemTemplate" d:VsixSubPath="ItemTemplates" d:TargetPath="|XrmTools.FetchXmlItemTemplate;TemplateProjectOutputGroup|" />
+    <Asset Type="Microsoft.VisualStudio.ItemTemplate" Path="ItemTemplates" d:Source="Project" d:ProjectName="%CurrentProject%.CustomApiItemTemplate" d:VsixSubPath="ItemTemplates" d:TargetPath="|XrmTools.CustomApiItemTemplate;TemplateProjectOutputGroup|" />
+  </Assets>
 </PackageManifest>

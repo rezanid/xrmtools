@@ -6,6 +6,7 @@ using Microsoft.VisualStudio.ComponentModelHost;
 using Microsoft.VisualStudio.Shell;
 using System;
 using System.ComponentModel.Composition;
+using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Threading.Tasks;
@@ -119,17 +120,18 @@ internal sealed class RegisterPluginCommand : BaseCommand<RegisterPluginCommand>
     {
         ThreadHelper.JoinableTaskFactory.Run(async () =>
         {
+            var uiContext = UIContext.FromUIContextGuid(PackageGuids.XrmToolsPluginProjectUIRule);
             var item = await VS.Solutions.GetActiveItemAsync();
-            Command.Visible = await IsVisibleAsync(item).ConfigureAwait(false);
-        });
+            Command.Visible = await IsVisibleAsync(item, uiContext?.IsActive is true).ConfigureAwait(false);
+        });     
 
-        static async Task<bool> IsVisibleAsync(SolutionItem? item)
+        static async Task<bool> IsVisibleAsync(SolutionItem? item, bool isUiContextActive)
         {
             if (item is null)
                 return false;
 
-            if (item.Type == SolutionItemType.Project)
-                return true;
+            if (item.Type == SolutionItemType.Project && item is Project project)
+                return isUiContextActive || await project.IsXrmToolsPluginProjectAsync().ConfigureAwait(false);
 
             if (item.Type == SolutionItemType.PhysicalFile && item is PhysicalFile file)
                 return await file.IsXrmPluginFileAsync().ConfigureAwait(false);

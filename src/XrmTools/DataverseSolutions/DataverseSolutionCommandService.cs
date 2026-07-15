@@ -240,7 +240,7 @@ internal sealed class DataverseSolutionCommandService(
             && File.Exists(project.SolutionPackageMapFilePath))
         {
             arguments.Add("--map");
-            arguments.Add(project.SolutionPackageMapFilePath);
+            arguments.Add(project.SolutionPackageMapFilePath!);
         }
     }
 

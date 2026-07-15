@@ -1,5 +1,6 @@
 <Project>
   <PropertyGroup>
+    <IsXrmToolsPlugin Condition="'$(IsXrmToolsPlugin)'==''">true</IsXrmToolsPlugin>
     <XrmToolsMetaAttributesUsePublicAccessibility Condition="'$(XrmToolsMetaAttributesUsePublicAccessibility)'==''">false</XrmToolsMetaAttributesUsePublicAccessibility>
     <!-- Allow override by the consumer if they want a different location or to disable the copy -->
     <XrmToolsSchemasDir Condition="'$(XrmToolsSchemasDir)'==''">$(MSBuildProjectDirectory)/.xrmtools/schemas/</XrmToolsSchemasDir>

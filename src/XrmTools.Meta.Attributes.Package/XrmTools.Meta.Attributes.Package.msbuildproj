@@ -8,7 +8,7 @@
 	<Title>XrmTools.Meta.Attributes</Title>
 	<Description>Attributes to be used by Xrm Tools for source generation, registration and other features in Visual Studio. This is a source only package with no assemblies included.</Description>
 	<PackageId>XrmTools.Meta.Attributes</PackageId>
-	<VersionPrefix>1.1.6</VersionPrefix>
+	<VersionPrefix>1.1.7</VersionPrefix>
 	<Authors>Reza Niroomand</Authors>
 	<PackageIcon>XrmTools_256.png</PackageIcon>
 	<PackageTags>Power Platform Apps XRM Tools</PackageTags>
@@ -27,8 +27,8 @@
   <ItemGroup>
 	<None Include="..\XrmTools.Meta.Attributes\README.md" PackagePath="\" Pack="true" />
 	<None Include="..\XrmTools.Meta.Attributes\images\XrmTools_256.png" PackagePath="\" Pack="true" />
+	<None Include="..\XrmTools.Meta.Attributes\build\XrmTools.Meta.Attributes.props" PackagePath="build\" Pack="true" />
 	<None Include="..\XrmTools.Meta.Attributes\build\XrmTools.Meta.Attributes.targets" PackagePath="build\" Pack="true" />
-	<None Include="..\XrmTools.Meta.Attributes\build\XrmTools.Meta.Attributes.targets" PackagePath="buildTransitive\" Pack="true" />
 	<None Include="..\XrmTools.Meta.Attributes\schemas\*.xsd" PackagePath="build\schemas\" Pack="true" />
 	<None Include="..\XrmTools.Meta.Attributes\tools\*.ps1" PackagePath="tools\" Pack="true" />
   </ItemGroup>

@@ -107,6 +107,17 @@ internal sealed class UnregisterCommand : BaseCommand<UnregisterCommand>
         }
     }
 
+    protected override void BeforeQueryStatus(EventArgs e)
+    {
+        ThreadHelper.JoinableTaskFactory.Run(async () =>
+        {
+            var uiContext = UIContext.FromUIContextGuid(PackageGuids.XrmToolsPluginProjectUIRule);
+            var project = await VS.Solutions.GetActiveProjectAsync();
+            Command.Visible = project is not null
+                && (uiContext?.IsActive is true || await project.IsXrmToolsPluginProjectAsync().ConfigureAwait(false));
+        });
+    }
+
     [MemberNotNull(nameof(Logger), nameof(MetaDataService), nameof(WebApiService),
         nameof(EnvironmentProvider), nameof(RepositoryFactory))]
     private void EnsureDependencies()
