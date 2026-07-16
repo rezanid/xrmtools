@@ -182,6 +182,19 @@ internal sealed class DataverseSolutionCommandService(
 
     private async Task BuildProjectAsync(CdsProjectInfo project, string configurationName, CancellationToken cancellationToken)
     {
+        var proj = await VS.Solutions.GetActiveProjectAsync().ConfigureAwait(false);
+        var isUpToDate = await VS.Build.ProjectIsUpToDateAsync(proj).ConfigureAwait(false);
+        if (!isUpToDate)
+        {
+            var isSuccess = await VS.Build.BuildProjectAsync(proj, BuildAction.Rebuild).ConfigureAwait(false);
+            if (!isSuccess)
+            {
+                throw new InvalidOperationException("Project build failed. Please check the build output for details.");
+            }
+        }
+    }
+    private async Task BuildProjectCliAsync(CdsProjectInfo project, string configurationName, CancellationToken cancellationToken)
+    { 
         var request = new ProcessCommandRequest
         {
             FileName = "dotnet",
