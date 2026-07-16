@@ -46,7 +46,7 @@ public sealed class UpdateRequest : WebApiRequest<EmptyResponse>
             uriString: path,
             uriKind: UriKind.Relative);
         Content = new StringContent(
-                content: record.ToString(Formatting.None),
+                content: record.ToString(Formatting.None, []),
                 encoding: Encoding.UTF8,
                 mediaType: "application/json");
         if (preventDuplicateRecord)
