@@ -26,7 +26,7 @@ public sealed class CreateRetrieveRequest : WebApiRequest<CreateRetrieveResponse
         Method = HttpMethod.Post;
         RequestUri = new Uri(uriString: $"{entitySetName}{query ?? string.Empty}", uriKind: UriKind.Relative);
         Content = new StringContent(
-            content: record.ToString(Formatting.None),
+            content: record.ToString(Formatting.None, []),
             encoding: System.Text.Encoding.UTF8,
             mediaType: "application/json");
         if (includeAnnotations)
