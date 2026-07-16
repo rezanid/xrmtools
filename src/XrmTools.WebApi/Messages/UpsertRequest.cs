@@ -31,7 +31,7 @@ public sealed class UpsertRequest : WebApiRequest<UpsertResponse>
         Method = HttpMethods.Patch;
         RequestUri = new Uri(uriString: entityReference.Path, uriKind: UriKind.Relative);
         Content = new StringContent(
-                content: record.ToString(Formatting.None),
+                content: record.ToString(Formatting.None, []),
                 encoding: Encoding.UTF8,
                 mediaType: "application/json");
         switch (upsertBehavior)
