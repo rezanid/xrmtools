@@ -137,12 +137,13 @@
           <CanonicalName>.XrmTools.ResetTemplates</CanonicalName>
         </Strings>
       </Button>
-      <Button guid="XrmToolsCmdSetId" id="AddDataverseSolutionProjectCmdId" priority="0x0100" type="Button">
-        <Parent guid="XrmToolsCmdSetId" id="XrmToolsSolutionContextMenuGroup" />
+      <!--[Solution Context Menu] > [Add] > "Dataverse Solution Project..."-->
+      <Button guid="XrmToolsCmdSetId" id="AddDataverseSolutionProjectCmdId" priority="0x0900" type="Button">
+        <Parent guid="guidSHLMainMenu" id="IDG_VS_CTXT_SOLUTION_ADD_PROJ" />
         <Icon guid="ImageCatalogGuid" id="Package" />
         <CommandFlag>IconIsMoniker</CommandFlag>
         <Strings>
-          <ButtonText>Add Dataverse Solution Project...</ButtonText>
+          <ButtonText>Dataverse Solution Project...</ButtonText>
           <CanonicalName>.XrmTools.DataverseSolution.AddProject</CanonicalName>
         </Strings>
       </Button>
@@ -353,6 +354,10 @@
     <!--<CommandPlacement guid="XrmToolsCmdSetId" id="NewPluginDefinitionCmdId" priority="0x0200">
       <Parent guid="guidSHLMainMenu" id="IDG_VS_CTXT_SLNFLDR_ADD_ITEM"/>
     </CommandPlacement>-->
+    <!--[Solution Folder Context Menu] > [Add] > "Dataverse Solution Project..."-->
+    <CommandPlacement guid="XrmToolsCmdSetId" id="AddDataverseSolutionProjectCmdId" priority="0x0900">
+      <Parent guid="guidSHLMainMenu" id="IDG_VS_CTXT_SLNFLDR_ADD_PROJ"/>
+    </CommandPlacement>
     <!--Project Context Menu > "Set environment..."-->
     <CommandPlacement guid="XrmToolsCmdSetId" id="SetEnvironmentCmdId" priority="0x0200">
       <Parent guid="XrmToolsCmdSetId" id="XrmToolsProjectContextMenuGroup"/>

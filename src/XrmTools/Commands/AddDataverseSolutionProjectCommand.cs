@@ -42,8 +42,24 @@ internal sealed class AddDataverseSolutionProjectCommand : BaseCommand<AddDatave
         {
             var solution = await VS.Solutions.GetCurrentSolutionAsync().ConfigureAwait(false)
                 ?? throw new InvalidOperationException("Open a solution before adding a Dataverse solution project.");
-            var initialParentDirectory = Path.GetDirectoryName(solution.FullPath)
+            var solutionDir = Path.GetDirectoryName(solution.FullPath)
                 ?? throw new InvalidOperationException("The current solution must be saved before adding a project.");
+
+            // When invoked from a solution folder, use that folder's path; otherwise fall back to solution directory.
+            var selectedItems = await VS.Solutions.GetActiveItemsAsync().ConfigureAwait(false);
+            var initialParentDirectory = solutionDir;
+            foreach (var item in selectedItems)
+            {
+                if (item.Type == SolutionItemType.SolutionFolder && !string.IsNullOrEmpty(item.FullPath))
+                {
+                    var folderDir = Path.GetDirectoryName(item.FullPath);
+                    if (!string.IsNullOrEmpty(folderDir))
+                    {
+                        initialParentDirectory = folderDir;
+                    }
+                    break;
+                }
+            }
 
             var request = await DataverseSolutionProjectDialog.ShowDialogAsync(
                 initialParentDirectory,
