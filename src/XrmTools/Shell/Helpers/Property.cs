@@ -12,6 +12,16 @@ public static class Property
       CoerceValueCallback? coerceValue = null)
     {
         FrameworkPropertyMetadata metadata = new FrameworkPropertyMetadata(Boxes.Box<TProperty>(defaultValue), propertyChanged, coerceValue);
+        return RegisterAttachedCore<TOwner, TProperty>(name, metadata);
+    }
+
+    public static DependencyProperty RegisterAttachedInherited<TOwner, TProperty>(
+        string name,
+        TProperty? defaultValue = default,
+        PropertyChangedCallback? propertyChanged = null,
+        CoerceValueCallback? coerceValue = null)
+    {
+        FrameworkPropertyMetadata metadata = new FrameworkPropertyMetadata(Boxes.Box<TProperty>(defaultValue), FrameworkPropertyMetadataOptions.Inherits, propertyChanged, coerceValue);
         return Property.RegisterAttachedCore<TOwner, TProperty>(name, metadata);
     }
 
@@ -29,7 +39,7 @@ public static class Property
       CoerceValueCallback? coerceValue = null)
     {
         FrameworkPropertyMetadata metadata = new FrameworkPropertyMetadata(Boxes.Box<TProperty>(defaultValue), propertyChanged, coerceValue);
-        return Property.RegisterCore<TOwner, TProperty>(name, metadata);
+        return RegisterCore<TOwner, TProperty>(name, metadata);
     }
 
     public static DependencyProperty RegisterMeasure<TOwner, TProperty>(
@@ -39,7 +49,7 @@ public static class Property
       CoerceValueCallback? coerceValue = null)
     {
         FrameworkPropertyMetadata metadata = new FrameworkPropertyMetadata(Boxes.Box<TProperty>(defaultValue), FrameworkPropertyMetadataOptions.AffectsMeasure, propertyChanged, coerceValue);
-        return Property.RegisterCore<TOwner, TProperty>(name, metadata);
+        return RegisterCore<TOwner, TProperty>(name, metadata);
     }
 
     public static DependencyProperty RegisterArrange<TOwner, TProperty>(
@@ -49,7 +59,7 @@ public static class Property
       CoerceValueCallback? coerceValue = null)
     {
         FrameworkPropertyMetadata metadata = new FrameworkPropertyMetadata(Boxes.Box<TProperty>(defaultValue), FrameworkPropertyMetadataOptions.AffectsArrange, propertyChanged, coerceValue);
-        return Property.RegisterCore<TOwner, TProperty>(name, metadata);
+        return RegisterCore<TOwner, TProperty>(name, metadata);
     }
 
     public static DependencyProperty RegisterFull<TOwner, TProperty>(
@@ -59,14 +69,14 @@ public static class Property
       CoerceValueCallback? coerceValue = null)
     {
         FrameworkPropertyMetadata metadata = new FrameworkPropertyMetadata(Boxes.Box<TProperty>(defaultValue), FrameworkPropertyMetadataOptions.AffectsMeasure | FrameworkPropertyMetadataOptions.AffectsArrange | FrameworkPropertyMetadataOptions.AffectsRender, propertyChanged, coerceValue);
-        return Property.RegisterCore<TOwner, TProperty>(name, metadata);
+        return RegisterCore<TOwner, TProperty>(name, metadata);
     }
 
     private static DependencyProperty RegisterCore<TOwner, TProperty>(
       string name,
       FrameworkPropertyMetadata metadata)
     {
-        return DependencyProperty.Register(name, typeof(TProperty), typeof(TOwner), (PropertyMetadata)metadata);
+        return DependencyProperty.Register(name, typeof(TProperty), typeof(TOwner), metadata);
     }
 
     public static DependencyPropertyKey RegisterReadOnly<TOwner, TProperty>(
@@ -76,7 +86,7 @@ public static class Property
       CoerceValueCallback? coerceValue = null)
     {
         FrameworkPropertyMetadata metadata = new FrameworkPropertyMetadata(Boxes.Box<TProperty>(defaultValue), propertyChanged, coerceValue);
-        return Property.RegisterReadOnlyCore<TOwner, TProperty>(name, metadata);
+        return RegisterReadOnlyCore<TOwner, TProperty>(name, metadata);
     }
 
     public static DependencyPropertyKey RegisterReadOnlyFull<TOwner, TProperty>(
@@ -86,14 +96,14 @@ public static class Property
       CoerceValueCallback? coerceValue = null)
     {
         FrameworkPropertyMetadata metadata = new FrameworkPropertyMetadata(Boxes.Box<TProperty>(defaultValue), FrameworkPropertyMetadataOptions.AffectsMeasure | FrameworkPropertyMetadataOptions.AffectsArrange | FrameworkPropertyMetadataOptions.AffectsRender, propertyChanged, coerceValue);
-        return Property.RegisterReadOnlyCore<TOwner, TProperty>(name, metadata);
+        return RegisterReadOnlyCore<TOwner, TProperty>(name, metadata);
     }
 
     private static DependencyPropertyKey RegisterReadOnlyCore<TOwner, TProperty>(
       string name,
       FrameworkPropertyMetadata metadata)
     {
-        return DependencyProperty.RegisterReadOnly(name, typeof(TProperty), typeof(TOwner), (PropertyMetadata)metadata);
+        return DependencyProperty.RegisterReadOnly(name, typeof(TProperty), typeof(TOwner), metadata);
     }
 }
 

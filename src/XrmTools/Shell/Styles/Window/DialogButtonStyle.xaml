@@ -1,0 +1,91 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:ctrls="clr-namespace:XrmTools.Shell.Controls"
+                    xmlns:styles="clr-namespace:XrmTools.Shell.Styles">
+    <Style BasedOn="{x:Static styles:ShellInternalStyles.Button}" TargetType="{x:Type ctrls:DialogButton}">
+        <Setter Property="FrameworkElement.MinWidth" Value="{x:Static ctrls:DialogButton.ControlMinWidth}"/>
+        <Setter Property="UIElement.Visibility" Value="Collapsed"/>
+        <Style.Triggers>
+            <Trigger Property="ctrls:DialogButton.ResultKind" Value="None">
+                <Setter Property="UIElement.Visibility" Value="Visible"/>
+            </Trigger>
+            <Trigger Property="ctrls:DialogButton.ResultKind" Value="OK">
+                <Setter Property="ContentControl.Content" Value="OK"/>
+            </Trigger>
+            <Trigger Property="ctrls:DialogButton.ResultKind" Value="Cancel">
+                <Setter Property="ContentControl.Content" Value="Cancel"/>
+            </Trigger>
+            <Trigger Property="ctrls:DialogButton.ResultKind" Value="Yes">
+                <Setter Property="ContentControl.Content" Value="Yes"/>
+            </Trigger>
+            <Trigger Property="ctrls:DialogButton.ResultKind" Value="No">
+                <Setter Property="ContentControl.Content" Value="No"/>
+            </Trigger>
+            <Trigger Property="Button.IsDefault" Value="True">
+                <Setter Property="ctrls:Button.Kind" Value="Accent"/>
+            </Trigger>
+            <MultiTrigger>
+                <MultiTrigger.Conditions>
+                    <Condition Property="ctrls:DialogButton.MessageButtons" Value="OK"/>
+                    <Condition Property="ctrls:DialogButton.ResultKind" Value="OK"/>
+                </MultiTrigger.Conditions>
+                <Setter Property="Button.IsDefault" Value="True"/>
+                <Setter Property="UIElement.Visibility" Value="Visible"/>
+            </MultiTrigger>
+            <MultiTrigger>
+                <MultiTrigger.Conditions>
+                    <Condition Property="ctrls:DialogButton.MessageButtons" Value="OKCancel"/>
+                    <Condition Property="ctrls:DialogButton.ResultKind" Value="OK"/>
+                </MultiTrigger.Conditions>
+                <Setter Property="Button.IsDefault" Value="True"/>
+                <Setter Property="UIElement.Visibility" Value="Visible"/>
+            </MultiTrigger>
+            <MultiTrigger>
+                <MultiTrigger.Conditions>
+                    <Condition Property="ctrls:DialogButton.MessageButtons" Value="OKCancel"/>
+                    <Condition Property="ctrls:DialogButton.ResultKind" Value="Cancel"/>
+                </MultiTrigger.Conditions>
+                <Setter Property="Button.IsCancel" Value="True"/>
+                <Setter Property="UIElement.Visibility" Value="Visible"/>
+            </MultiTrigger>
+            <MultiTrigger>
+                <MultiTrigger.Conditions>
+                    <Condition Property="ctrls:DialogButton.MessageButtons" Value="YesNo"/>
+                    <Condition Property="ctrls:DialogButton.ResultKind" Value="Yes"/>
+                </MultiTrigger.Conditions>
+                <Setter Property="Button.IsDefault" Value="True"/>
+                <Setter Property="UIElement.Visibility" Value="Visible"/>
+            </MultiTrigger>
+            <MultiTrigger>
+                <MultiTrigger.Conditions>
+                    <Condition Property="ctrls:DialogButton.MessageButtons" Value="YesNo"/>
+                    <Condition Property="ctrls:DialogButton.ResultKind" Value="No"/>
+                </MultiTrigger.Conditions>
+                <Setter Property="UIElement.Visibility" Value="Visible"/>
+            </MultiTrigger>
+            <MultiTrigger>
+                <MultiTrigger.Conditions>
+                    <Condition Property="ctrls:DialogButton.MessageButtons" Value="YesNoCancel"/>
+                    <Condition Property="ctrls:DialogButton.ResultKind" Value="Yes"/>
+                </MultiTrigger.Conditions>
+                <Setter Property="Button.IsDefault" Value="True"/>
+                <Setter Property="UIElement.Visibility" Value="Visible"/>
+            </MultiTrigger>
+            <MultiTrigger>
+                <MultiTrigger.Conditions>
+                    <Condition Property="ctrls:DialogButton.MessageButtons" Value="YesNoCancel"/>
+                    <Condition Property="ctrls:DialogButton.ResultKind" Value="No"/>
+                </MultiTrigger.Conditions>
+                <Setter Property="UIElement.Visibility" Value="Visible"/>
+            </MultiTrigger>
+            <MultiTrigger>
+                <MultiTrigger.Conditions>
+                    <Condition Property="ctrls:DialogButton.MessageButtons" Value="YesNoCancel"/>
+                    <Condition Property="ctrls:DialogButton.ResultKind" Value="Cancel"/>
+                </MultiTrigger.Conditions>
+                <Setter Property="Button.IsCancel" Value="True"/>
+                <Setter Property="UIElement.Visibility" Value="Visible"/>
+            </MultiTrigger>
+        </Style.Triggers>
+    </Style>
+</ResourceDictionary>

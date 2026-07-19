@@ -1,0 +1,8 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:ctrls="clr-namespace:XrmTools.Shell.Controls"
+                    xmlns:styles="clr-namespace:XrmTools.Shell.Styles">
+    <Style BasedOn="{x:Static styles:ShellStyles.ListBoxItem}" TargetType="{x:Type ctrls:ListBoxItem}">
+        <Setter Property="FrameworkElement.FocusVisualStyle" Value="{x:Static styles:ShellStyles.FocusVisual}"/>
+    </Style>
+</ResourceDictionary>

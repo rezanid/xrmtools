@@ -5,4 +5,5 @@ public enum ButtonKind
     Standard,
     Subtle,
     Accent,
+    Pill,
 }

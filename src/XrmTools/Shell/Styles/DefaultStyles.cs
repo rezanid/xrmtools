@@ -7,248 +7,248 @@ internal static class DefaultStyles
 {
     public static DeferredStyleDictionary Instance { get; } = DeferredStyleDictionary.Create(new Dictionary<object, string>()
     {
+        {
+          typeof (Button),
+          "/XrmTools;component/Shell/Styles/ButtonStyle.xaml"
+        },
         //{
-        //  (object) typeof (Button),
-        //  "/XrmTools;component/Shell/Styles/ButtonStyle.xaml"
-        //},
-        //{
-        //  (object) typeof (Callout),
+        //  typeof (Callout),
         //  "/XrmTools;component/Shell/Styles/CalloutStyle.xaml"
         //},
         //{
-        //  (object) typeof (CalloutSurface),
+        //  typeof (CalloutSurface),
         //  "/XrmTools;component/Shell/Styles/CalloutSurfaceStyle.xaml"
         //},
         //{
-        //  (object) typeof (CheckableTreeViewItem),
+        //  typeof (CheckableTreeViewItem),
         //  "/XrmTools;component/Shell/Styles/CheckableTreeViewItemStyle.xaml"
         //},
         //{
-        //  (object) typeof (CheckBox),
+        //  typeof (CheckBox),
         //  "/XrmTools;component/Shell/Styles/CheckBoxStyle.xaml"
         //},
         //{
-        //  (object) typeof (CodeBlock),
+        //  typeof (CodeBlock),
         //  "/XrmTools;component/Shell/Styles/MarkdownViewer/CodeBlockStyle.xaml"
         //},
         //{
-        //  (object) typeof (CodeInline),
+        //  typeof (CodeInline),
         //  "/XrmTools;component/Shell/Styles/MarkdownViewer/CodeInlineStyle.xaml"
         //},
         //{
-        //  (object) typeof (ComboBox),
+        //  typeof (ComboBox),
         //  "/XrmTools;component/Shell/Styles/ComboBoxStyle.xaml"
         //},
         //{
-        //  (object) typeof (ComboBoxItem),
+        //  typeof (ComboBoxItem),
         //  "/XrmTools;component/Shell/Styles/ComboBoxItemStyle.xaml"
         //},
         {
-          (object) typeof (ContextMenu),
+          typeof (ContextMenu),
           "/XrmTools;component/Shell/Styles/ContextMenuStyle.xaml"
         },
         //{
-        //  (object) typeof (DataGrid),
+        //  typeof (DataGrid),
         //  "/XrmTools;component/Shell/Styles/DataGrid/DataGridStyle.xaml"
         //},
         //{
-        //  (object) typeof (DataGridCell),
+        //  typeof (DataGridCell),
         //  "/XrmTools;component/Shell/Styles/DataGrid/DataGridCellStyle.xaml"
         //},
         //{
-        //  (object) typeof (DataGridCellsPresenter),
+        //  typeof (DataGridCellsPresenter),
         //  "/XrmTools;component/Shell/Styles/DataGrid/DataGridCellsPresenterStyle.xaml"
         //},
         //{
-        //  (object) typeof (DataGridColumnHeader),
+        //  typeof (DataGridColumnHeader),
         //  "/XrmTools;component/Shell/Styles/DataGrid/DataGridColumnHeaderStyle.xaml"
         //},
         //{
-        //  (object) typeof (DataGridColumnHeadersPresenter),
+        //  typeof (DataGridColumnHeadersPresenter),
         //  "/XrmTools;component/Shell/Styles/DataGrid/DataGridColumnHeadersPresenterStyle.xaml"
         //},
         //{
-        //  (object) typeof (DataGridRow),
+        //  typeof (DataGridRow),
         //  "/XrmTools;component/Shell/Styles/DataGrid/DataGridRowStyle.xaml"
         //},
         //{
-        //  (object) typeof (DataGridThumb),
+        //  typeof (DataGridThumb),
         //  "/XrmTools;component/Shell/Styles/DataGrid/DataGridThumbStyle.xaml"
         //},
         //{
-        //  (object) typeof (DialogButton),
+        //  typeof (DialogButton),
         //  "/XrmTools;component/Shell/Styles/Window/DialogButtonStyle.xaml"
         //},
         //{
-        //  (object) typeof (DialogContent),
+        //  typeof (DialogContent),
         //  "/XrmTools;component/Shell/Styles/Window/DialogContentStyle.xaml"
         //},
         //{
-        //  (object) typeof (DialogWindow),
+        //  typeof (DialogWindow),
         //  "/XrmTools;component/Shell/Styles/Window/DialogWindowStyle.xaml"
         //},
         //{
-        //  (object) typeof (DropDownButton),
+        //  typeof (DropDownButton),
         //  "/XrmTools;component/Shell/Styles/DropDownButtonStyle.xaml"
         //},
         //{
-        //  (object) typeof (EmphasisInline),
+        //  typeof (EmphasisInline),
         //  "/XrmTools;component/Shell/Styles/MarkdownViewer/EmphasisInlineStyle.xaml"
         //},
         {
-          (object) typeof (Expander),
+          typeof (Expander),
           "/XrmTools;component/Shell/Styles/ExpanderStyle.xaml"
         },
         //{
-        //  (object) typeof (FeedbackPanel),
+        //  typeof (FeedbackPanel),
         //  "/XrmTools;component/Shell/Styles/FeedbackPanelStyle.xaml"
         //},
         {
-          (object) typeof (FlyoutSurface),
+          typeof (FlyoutSurface),
           "/XrmTools;component/Shell/Styles/FlyoutSurfaceStyle.xaml"
         },
         //{
-        //  (object) typeof (Heading),
+        //  typeof (Heading),
         //  "/XrmTools;component/Shell/Styles/MarkdownViewer/HeadingStyle.xaml"
         //},
         //{
-        //  (object) typeof (Hyperlink),
+        //  typeof (Hyperlink),
         //  "/XrmTools;component/Shell/Styles/HyperlinkStyle.xaml"
         //},
         //{
-        //  (object) typeof (HyperlinkButton),
+        //  typeof (HyperlinkButton),
         //  "/XrmTools;component/Shell/Styles/HyperlinkButtonStyle.xaml"
         //},
         //{
-        //  (object) typeof (ImageButton),
+        //  typeof (ImageButton),
         //  "/XrmTools;component/Shell/Styles/ImageButtonStyle.xaml"
         //},
         {
-          (object) typeof (Indicator),
+          typeof (Indicator),
           "/XrmTools;component/Shell/Styles/IndicatorStyle.xaml"
         },
         //{
-        //  (object) typeof (Label),
+        //  typeof (Label),
         //  "/XrmTools;component/Shell/Styles/LabelStyle.xaml"
         //},
         //{
-        //  (object) typeof (List),
+        //  typeof (List),
         //  "/XrmTools;component/Shell/Styles/MarkdownViewer/ListStyle.xaml"
         //},
-        //{
-        //  (object) typeof (ListBox),
-        //  "/XrmTools;component/Shell/Styles/ListBoxStyle.xaml"
-        //},
         {
-          (object) typeof (ListBoxItem),
+          typeof (ListBox),
+          "/XrmTools;component/Shell/Styles/ListBoxStyle.xaml"
+        },
+        {
+          typeof (ListBoxItem),
           "/XrmTools;component/Shell/Styles/ListBoxItemStyle.xaml"
         },
         //{
-        //  (object) typeof (ListItem),
+        //  typeof (ListItem),
         //  "/XrmTools;component/Shell/Styles/MarkdownViewer/ListItemStyle.xaml"
         //},
         //{
-        //  (object) typeof (MarkdownViewer),
+        //  typeof (MarkdownViewer),
         //  "/XrmTools;component/Shell/Styles/MarkdownViewer/MarkdownViewerStyle.xaml"
         //},
         //{
-        //  (object) typeof (MediaHost),
+        //  typeof (MediaHost),
         //  "/XrmTools;component/Shell/Styles/MarkdownViewer/MediaHostStyle.xaml"
         //},
         {
-          (object) typeof (MenuItem),
+          typeof (MenuItem),
           "/XrmTools;component/Shell/Styles/MenuItemStyle.xaml"
         },
         {
-          (object) typeof (MenuScrollViewer),
+          typeof (MenuScrollViewer),
           "/XrmTools;component/Shell/Styles/MenuScrollViewerStyle.xaml"
         },
         //{
-        //  (object) typeof (MessageContent),
+        //  typeof (MessageContent),
         //  "/XrmTools;component/Shell/Styles/Window/MessageContentStyle.xaml"
         //},
         //{
-        //  (object) typeof (MessageFooter),
+        //  typeof (MessageFooter),
         //  "/XrmTools;component/Shell/Styles/Window/MessageFooterStyle.xaml"
         //},
         //{
-        //  (object) typeof (MessageWindow),
+        //  typeof (MessageWindow),
         //  "/XrmTools;component/Shell/Styles/Window/MessageWindowStyle.xaml"
         //},
         //{
-        //  (object) typeof (NonClientButton),
+        //  typeof (NonClientButton),
         //  "/XrmTools;component/Shell/Styles/Window/NonClientButtonStyle.xaml"
         //},
         //{
-        //  (object) typeof (Paragraph),
+        //  typeof (Paragraph),
         //  "/XrmTools;component/Shell/Styles/MarkdownViewer/ParagraphStyle.xaml"
         //},
         //{
-        //  (object) typeof (PasswordBox),
+        //  typeof (PasswordBox),
         //  "/XrmTools;component/Shell/Styles/PasswordBoxStyle.xaml"
         //},
         //{
-        //  (object) typeof (PathButton),
+        //  typeof (PathButton),
         //  "/XrmTools;component/Shell/Styles/PathButtonStyle.xaml"
         //},
+        {
+          typeof (Popup),
+          "/XrmTools;component/Shell/Styles/PopupStyle.xaml"
+        },
         //{
-        //  (object) typeof (Popup),
-        //  "/XrmTools;component/Shell/Styles/PopupStyle.xaml"
-        //},
-        //{
-        //  (object) typeof (ProgressControl),
+        //  typeof (ProgressControl),
         //  "/XrmTools;component/Shell/Styles/ProgressControlStyle.xaml"
         //},
-        //{
-        //  (object) typeof (RadioButton),
-        //  "/XrmTools;component/Shell/Styles/RadioButtonStyle.xaml"
-        //},
         {
-          (object) typeof (ScrollBar),
+          typeof (RadioButton),
+          "/XrmTools;component/Shell/Styles/RadioButtonStyle.xaml"
+        },
+        {
+          typeof (ScrollBar),
           "/XrmTools;component/Shell/Styles/ScrollBarStyle.xaml"
         },
         {
-          (object) typeof (ScrollViewer),
+          typeof (ScrollViewer),
           "/XrmTools;component/Shell/Styles/ScrollViewerStyle.xaml"
         },
         //{
-        //  (object) typeof (Section),
+        //  typeof (Section),
         //  "/XrmTools;component/Shell/Styles/MarkdownViewer/SectionStyle.xaml"
         //},
         {
-          (object) typeof (Separator),
+          typeof (Separator),
           "/XrmTools;component/Shell/Styles/SeparatorStyle.xaml"
         },
         //{
-        //  (object) typeof (SplitButton),
+        //  typeof (SplitButton),
         //  "/XrmTools;component/Shell/Styles/SplitButtonStyle.xaml"
         //},
-        //{
-        //  (object) typeof (TextBlock),
-        //  "/XrmTools;component/Shell/Styles/TextBlockStyle.xaml"
-        //},
-        //{
-        //  (object) typeof (TextBox),
-        //  "/XrmTools;component/Shell/Styles/TextBoxStyle.xaml"
-        //},
         {
-          (object) typeof (ToggleButton),
+          typeof (TextBlock),
+          "/XrmTools;component/Shell/Styles/TextBlockStyle.xaml"
+        },
+        {
+          typeof (TextBox),
+          "/XrmTools;component/Shell/Styles/TextBoxStyle.xaml"
+        },
+        {
+          typeof (ToggleButton),
           "/XrmTools;component/Shell/Styles/ToggleButtonStyle.xaml"
         },
         //{
-        //  (object) typeof (ToolTip),
+        //  typeof (ToolTip),
         //  "/XrmTools;component/Shell/Styles/ToolTipStyle.xaml"
         //},
         {
-          (object) typeof (TreeView),
+          typeof (TreeView),
           "/XrmTools;component/Shell/Styles/TreeViewStyle.xaml"
         },
         {
-          (object) typeof (TreeViewItem),
+          typeof (TreeViewItem),
           "/XrmTools;component/Shell/Styles/TreeViewItemStyle.xaml"
         },
         //{
-        //  (object) typeof (Window),
+        //  typeof (Window),
         //  "/XrmTools;component/Shell/Styles/Window/WindowStyle.xaml"
         //}
     });
