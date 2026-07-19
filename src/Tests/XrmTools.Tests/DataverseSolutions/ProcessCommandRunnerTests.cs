@@ -31,6 +31,8 @@ public class ProcessCommandRunnerTests
             CancellationToken.None);
 
         result.ExitCode.Should().Be(3);
+        result.Output.Should().Contain(line => line.Source == ProcessOutputSource.StandardOutput && line.Text.Contains("stdout-line"));
+        result.Output.Should().Contain(line => line.Source == ProcessOutputSource.StandardError && line.Text.Contains("stderr-line"));
         output.Should().Contain(line => line.Source == ProcessOutputSource.StandardOutput && line.Text.Contains("stdout-line"));
         output.Should().Contain(line => line.Source == ProcessOutputSource.StandardError && line.Text.Contains("stderr-line"));
     }

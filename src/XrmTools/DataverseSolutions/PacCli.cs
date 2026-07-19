@@ -85,6 +85,66 @@ internal sealed class PacCli(IProcessCommandRunner processCommandRunner) : IPacC
         await RunPacAsync(arguments, null, sensitiveValues, (IProgress<ProcessOutputLine>?)null, cancellationToken).ConfigureAwait(false);
     }
 
+    public Task<ProcessCommandResult> InitializeSolutionAsync(
+        PacSolutionInitRequest request,
+        IProgress<ProcessOutputLine> output,
+        CancellationToken cancellationToken)
+    {
+        if (request is null) throw new ArgumentNullException(nameof(request));
+        if (output is null) throw new ArgumentNullException(nameof(output));
+
+        ValidateRequiredValue(request.OutputDirectory, nameof(request.OutputDirectory));
+        ValidateRequiredValue(request.PublisherName, nameof(request.PublisherName));
+        ValidateRequiredValue(request.PublisherPrefix, nameof(request.PublisherPrefix));
+
+        return RunPacAsync(
+            [
+                "solution",
+                "init",
+                "--publisher-name",
+                request.PublisherName,
+                "--publisher-prefix",
+                request.PublisherPrefix,
+                "--outputDirectory",
+                request.OutputDirectory
+            ],
+            GetWorkingDirectory(request.OutputDirectory),
+            null,
+            output,
+            cancellationToken);
+    }
+
+    public Task<ProcessCommandResult> CloneSolutionAsync(
+        PacSolutionCloneRequest request,
+        IProgress<ProcessOutputLine> output,
+        CancellationToken cancellationToken)
+    {
+        if (request is null) throw new ArgumentNullException(nameof(request));
+        if (output is null) throw new ArgumentNullException(nameof(output));
+
+        ValidateRequiredValue(request.OutputDirectory, nameof(request.OutputDirectory));
+        ValidateRequiredValue(request.SolutionUniqueName, nameof(request.SolutionUniqueName));
+
+        var arguments = new List<string>
+        {
+            "solution",
+            "clone",
+            "--name",
+            request.SolutionUniqueName,
+            "--outputDirectory",
+            request.OutputDirectory
+        };
+        AddOptionalArgument(arguments, "--environment", request.EnvironmentUrl);
+        AddOptionalArgument(arguments, "--map", request.MapFilePath);
+
+        return RunPacAsync(
+            arguments,
+            GetWorkingDirectory(request.OutputDirectory),
+            null,
+            output,
+            cancellationToken);
+    }
+
     public Task<ProcessCommandResult> RunSolutionCommandAsync(
         CdsProjectInfo project,
         IReadOnlyList<string> arguments,
@@ -149,7 +209,14 @@ internal sealed class PacCli(IProcessCommandRunner processCommandRunner) : IPacC
 
             if (!result.Succeeded)
             {
-                throw new InvalidOperationException($"PAC command failed with exit code {result.ExitCode}: {ProcessCommandFormatting.FormatCommand(request)}");
+                var diagnostic = GetFailureDiagnostic(result.Output);
+                var message = $"PAC command failed with exit code {result.ExitCode}: {ProcessCommandFormatting.FormatCommand(request)}";
+                if (!string.IsNullOrWhiteSpace(diagnostic))
+                {
+                    message += $"{Environment.NewLine}{diagnostic}";
+                }
+
+                throw new InvalidOperationException(message);
             }
 
             return result;
@@ -158,6 +225,24 @@ internal sealed class PacCli(IProcessCommandRunner processCommandRunner) : IPacC
         {
             throw new PacCliNotFoundException();
         }
+    }
+
+    private static string? GetFailureDiagnostic(IReadOnlyList<ProcessOutputLine> output)
+    {
+        var errorLines = output
+            .Where(line => line.Source == ProcessOutputSource.StandardError && !string.IsNullOrWhiteSpace(line.Text))
+            .Select(line => line.Text)
+            .ToArray();
+        if (errorLines.Length > 0)
+        {
+            return string.Join(Environment.NewLine, errorLines.Skip(Math.Max(0, errorLines.Length - 5)));
+        }
+
+        return output
+            .Where(line => !string.IsNullOrWhiteSpace(line.Text)
+                && line.Text.IndexOf("error", StringComparison.OrdinalIgnoreCase) >= 0)
+            .Select(line => line.Text)
+            .LastOrDefault();
     }
 
     private static void AddOptionalArgument(List<string> arguments, string name, string? value)
@@ -181,6 +266,17 @@ internal sealed class PacCli(IProcessCommandRunner processCommandRunner) : IPacC
         arguments.Add(name);
         arguments.Add(value);
         sensitiveValues.Add(value);
+    }
+
+    private static string GetWorkingDirectory(string outputDirectory)
+        => Path.GetDirectoryName(Path.GetFullPath(outputDirectory)) ?? Environment.CurrentDirectory;
+
+    private static void ValidateRequiredValue(string value, string parameterName)
+    {
+        if (string.IsNullOrWhiteSpace(value))
+        {
+            throw new ArgumentException("A value is required.", parameterName);
+        }
     }
 
     private static string FindPacExecutablePath()

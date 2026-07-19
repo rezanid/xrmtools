@@ -9,6 +9,7 @@ using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Collections.Generic;
+using System.Collections.Concurrent;
 
 [Export(typeof(IProcessCommandRunner))]
 internal sealed class ProcessCommandRunner : IProcessCommandRunner
@@ -73,8 +74,9 @@ internal sealed class ProcessCommandRunner : IProcessCommandRunner
 
         using var cancellationRegistration = cancellationToken.Register(() => TryKillProcessTree(process));
 
-        var outputTask = ReadLinesAsync(process.StandardOutput, ProcessOutputSource.StandardOutput, request.SensitiveValues, output, cancellationToken);
-        var errorTask = ReadLinesAsync(process.StandardError, ProcessOutputSource.StandardError, request.SensitiveValues, output, cancellationToken);
+        var capturedOutput = new ConcurrentQueue<ProcessOutputLine>();
+        var outputTask = ReadLinesAsync(process.StandardOutput, ProcessOutputSource.StandardOutput, request.SensitiveValues, output, capturedOutput, cancellationToken);
+        var errorTask = ReadLinesAsync(process.StandardError, ProcessOutputSource.StandardError, request.SensitiveValues, output, capturedOutput, cancellationToken);
 
         var exitCode = await exitCodeSource.Task.ConfigureAwait(false);
         await Task.WhenAll(outputTask, errorTask).ConfigureAwait(false);
@@ -82,7 +84,8 @@ internal sealed class ProcessCommandRunner : IProcessCommandRunner
 
         return new ProcessCommandResult
         {
-            ExitCode = exitCode
+            ExitCode = exitCode,
+            Output = capturedOutput.ToArray()
         };
     }
 
@@ -91,6 +94,7 @@ internal sealed class ProcessCommandRunner : IProcessCommandRunner
         ProcessOutputSource source,
         IReadOnlyList<string>? sensitiveValues,
         IProgress<ProcessOutputLine> output,
+        ConcurrentQueue<ProcessOutputLine> capturedOutput,
         CancellationToken cancellationToken)
     {
         while (!reader.EndOfStream)
@@ -101,7 +105,9 @@ internal sealed class ProcessCommandRunner : IProcessCommandRunner
                 break;
             }
 
-            output.Report(new ProcessOutputLine(source, ProcessCommandFormatting.SanitizeOutput(line, sensitiveValues)));
+            var outputLine = new ProcessOutputLine(source, ProcessCommandFormatting.SanitizeOutput(line, sensitiveValues));
+            capturedOutput.Enqueue(outputLine);
+            output.Report(outputLine);
 
             if (cancellationToken.IsCancellationRequested)
             {

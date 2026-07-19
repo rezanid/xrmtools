@@ -75,10 +75,12 @@ namespace XrmTools
         public const int RegisterPluginCmdId = 0x0910;
         public const int UnregisterPluginCmdId = 0x0920;
         public const int SynchronizeDataverseSolutionCmdId = 0x0930;
+        public const int RecloneDataverseSolutionCmdId = 0x0931;
         public const int ImportDataverseSolutionCmdId = 0x0940;
         public const int PackDataverseSolutionCmdId = 0x0950;
         public const int UnpackDataverseSolutionCmdId = 0x0960;
-        public const int DeployAndOpenDataverseSolutionCmdId = 0x0970;
+        public const int ImportAndOpenDataverseSolutionCmdId = 0x0970;
+        public const int AddDataverseSolutionProjectCmdId = 0x0980;
         public const int XrmToolsToolbar = 0x2000;
         public const int XrmToolsToolbarGroup = 0x2010;
         public const int XrmToolsContextSubMenu = 0x1000;

@@ -26,6 +26,7 @@ internal sealed class DataverseSolutionCommandService(
     IProcessCommandRunner processCommandRunner,
     IPacCli pacCli,
     IPacAuthBridge pacAuthBridge,
+    IDataverseSolutionProjectFileService projectFileService,
     IEnvironmentProvider environmentProvider,
     DataverseSolutionOutput output,
     ILogger<DataverseSolutionCommandService> logger) : IDataverseSolutionCommandService
@@ -35,6 +36,7 @@ internal sealed class DataverseSolutionCommandService(
     private readonly IProcessCommandRunner _processCommandRunner = processCommandRunner;
     private readonly IPacCli _pacCli = pacCli;
     private readonly IPacAuthBridge _pacAuthBridge = pacAuthBridge;
+    private readonly IDataverseSolutionProjectFileService _projectFileService = projectFileService;
     private readonly IEnvironmentProvider _environmentProvider = environmentProvider;
     private readonly DataverseSolutionOutput _output = output;
     private readonly ILogger<DataverseSolutionCommandService> _logger = logger;
@@ -51,15 +53,20 @@ internal sealed class DataverseSolutionCommandService(
 
         await _output.ShowPaneAsync().ConfigureAwait(false);
         await VS.StatusBar.StartAnimationAsync(StatusAnimation.General).ConfigureAwait(false);
+        string? projectName = null;
         try
         {
             var project = await _cdsProjectResolver.TryResolveSelectedProjectAsync(cancellationToken).ConfigureAwait(false)
                 ?? throw new InvalidOperationException("The selected item is not a .cdsproj project.");
+            projectName = project.ProjectName;
 
             await VS.StatusBar.ShowMessageAsync(GetInProgressMessage(commandKind, project.ProjectName)).ConfigureAwait(false);
 
             switch (commandKind)
             {
+                case DataverseSolutionCommandKind.Reclone:
+                    await RecloneAsync(project, cancellationToken).ConfigureAwait(false);
+                    break;
                 case DataverseSolutionCommandKind.Synchronize:
                     await SynchronizeAsync(project, cancellationToken).ConfigureAwait(false);
                     break;
@@ -72,8 +79,8 @@ internal sealed class DataverseSolutionCommandService(
                 case DataverseSolutionCommandKind.Unpack:
                     await UnpackAsync(project, project.ConfigurationName, cancellationToken).ConfigureAwait(false);
                     break;
-                case DataverseSolutionCommandKind.DeployAndOpen:
-                    await DeployAndOpenAsync(project, cancellationToken).ConfigureAwait(false);
+                case DataverseSolutionCommandKind.ImportAndOpen:
+                    await ImportAndOpenAsync(project, cancellationToken).ConfigureAwait(false);
                     break;
                 default:
                     throw new ArgumentOutOfRangeException(nameof(commandKind), commandKind, null);
@@ -81,11 +88,108 @@ internal sealed class DataverseSolutionCommandService(
 
             await VS.StatusBar.ShowMessageAsync(GetCompletedMessage(commandKind, project.ProjectName)).ConfigureAwait(false);
         }
+        catch (OperationCanceledException)
+        {
+            await VS.StatusBar.ShowMessageAsync(GetCanceledMessage(commandKind, projectName)).ConfigureAwait(false);
+            throw;
+        }
+        catch
+        {
+            await VS.StatusBar.ShowMessageAsync(GetFailedMessage(commandKind, projectName)).ConfigureAwait(false);
+            throw;
+        }
         finally
         {
             Interlocked.Exchange(ref _isBusy, 0);
             await VS.StatusBar.EndAnimationAsync(StatusAnimation.General).ConfigureAwait(false);
         }
+    }
+
+    private async Task RecloneAsync(CdsProjectInfo project, CancellationToken cancellationToken)
+    {
+        var solutionUniqueName = SolutionManifestReader.ReadUniqueName(project.SolutionRootPath);
+        var confirmed = await VS.MessageBox.ShowConfirmAsync(
+            "Re-clone Dataverse Solution",
+            $"This will replace all content in '{project.SolutionRootPath}' with a fresh clone of '{solutionUniqueName}'. The project file and files outside the solution root will not be changed. Do you want to continue?");
+        if (!confirmed)
+        {
+            throw new OperationCanceledException(cancellationToken);
+        }
+
+        var environment = await EnsureEnvironmentAsync(cancellationToken).ConfigureAwait(false);
+        await _pacAuthBridge.EnsurePacProfileForCurrentEnvironmentAsync(cancellationToken).ConfigureAwait(false);
+
+        var temporaryDirectory = Path.Combine(Path.GetTempPath(), "xrc-" + Guid.NewGuid().ToString("N").Substring(0, 12));
+        try
+        {
+            _output.WriteHeader(project, environment.Url, $"pac solution clone --name {solutionUniqueName}");
+            var result = await _pacCli.CloneSolutionAsync(
+                new PacSolutionCloneRequest
+                {
+                    SolutionUniqueName = solutionUniqueName,
+                    OutputDirectory = temporaryDirectory,
+                    EnvironmentUrl = environment.Url,
+                    MapFilePath = project.SolutionPackageMapFilePath
+                },
+                _output.CreateProgress(),
+                cancellationToken).ConfigureAwait(false);
+
+            if (!result.Succeeded)
+            {
+                throw new InvalidOperationException($"PAC solution clone failed with exit code {result.ExitCode}.");
+            }
+
+            var generatedSolutionRoot = _projectFileService.FindGeneratedSolutionRoot(temporaryDirectory);
+            var replacementResult = _projectFileService.ReplaceSolutionContent(generatedSolutionRoot, project.SolutionRootPath);
+            if (replacementResult.BackupCleanupException is not null)
+            {
+                _logger.LogWarning(
+                    replacementResult.BackupCleanupException,
+                    "Re-clone completed, but the backup directory '{BackupDirectory}' could not be removed.",
+                    replacementResult.RetainedBackupPath);
+            }
+            _output.WriteCompleted();
+            _output.WriteBlankLine();
+        }
+        finally
+        {
+            var cleanupException = await TryDeleteTemporaryDirectoryAsync(temporaryDirectory).ConfigureAwait(false);
+            if (cleanupException is not null)
+            {
+                _logger.LogWarning(
+                    cleanupException,
+                    "Could not completely remove the temporary re-clone directory '{TemporaryDirectory}'.",
+                    temporaryDirectory);
+            }
+        }
+    }
+
+    internal static async Task<Exception?> TryDeleteTemporaryDirectoryAsync(string temporaryDirectory)
+    {
+        const int maximumAttempts = 3;
+        Exception? lastException = null;
+        for (var attempt = 1; attempt <= maximumAttempts; attempt++)
+        {
+            try
+            {
+                Directory.Delete(temporaryDirectory, recursive: true);
+                return null;
+            }
+            catch (DirectoryNotFoundException)
+            {
+                return null;
+            }
+            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+            {
+                lastException = ex;
+                if (attempt < maximumAttempts)
+                {
+                    await Task.Delay(TimeSpan.FromMilliseconds(100 * attempt)).ConfigureAwait(false);
+                }
+            }
+        }
+
+        return lastException;
     }
 
     private async Task SynchronizeAsync(CdsProjectInfo project, CancellationToken cancellationToken)
@@ -151,7 +255,7 @@ internal sealed class DataverseSolutionCommandService(
         await RunPacCommandAsync(project, environmentUrl: null, arguments, cancellationToken).ConfigureAwait(false);
     }
 
-    private async Task DeployAndOpenAsync(CdsProjectInfo project, CancellationToken cancellationToken)
+    private async Task ImportAndOpenAsync(CdsProjectInfo project, CancellationToken cancellationToken)
     {
         await BuildProjectAsync(project, "Debug", cancellationToken).ConfigureAwait(false);
         var environment = await EnsureEnvironmentAsync(cancellationToken).ConfigureAwait(false);
@@ -260,24 +364,57 @@ internal sealed class DataverseSolutionCommandService(
     private static string GetInProgressMessage(DataverseSolutionCommandKind commandKind, string projectName)
         => commandKind switch
         {
+            DataverseSolutionCommandKind.Reclone => $"Re-cloning {projectName} from Dataverse...",
             DataverseSolutionCommandKind.Synchronize => $"Synchronizing {projectName} with Dataverse...",
             DataverseSolutionCommandKind.Import => $"Importing {projectName} to Dataverse...",
             DataverseSolutionCommandKind.Pack => $"Packing {projectName}...",
             DataverseSolutionCommandKind.Unpack => $"Unpacking {projectName}...",
-            DataverseSolutionCommandKind.DeployAndOpen => $"Deploying {projectName} and opening Dataverse...",
+            DataverseSolutionCommandKind.ImportAndOpen => $"Deploying {projectName} and opening Dataverse...",
             _ => $"Running Dataverse solution command for {projectName}..."
         };
 
     private static string GetCompletedMessage(DataverseSolutionCommandKind commandKind, string projectName)
         => commandKind switch
         {
+            DataverseSolutionCommandKind.Reclone => $"Re-cloned {projectName} from Dataverse.",
             DataverseSolutionCommandKind.Synchronize => $"Synchronized {projectName} with Dataverse.",
             DataverseSolutionCommandKind.Import => $"Imported {projectName} to Dataverse.",
             DataverseSolutionCommandKind.Pack => $"Packed {projectName}.",
             DataverseSolutionCommandKind.Unpack => $"Unpacked {projectName}.",
-            DataverseSolutionCommandKind.DeployAndOpen => $"Deployed {projectName} and opened Dataverse.",
+            DataverseSolutionCommandKind.ImportAndOpen => $"Deployed {projectName} and opened Dataverse.",
             _ => $"Completed Dataverse solution command for {projectName}."
         };
+
+    private static string GetFailedMessage(DataverseSolutionCommandKind commandKind, string? projectName)
+    {
+        if (string.IsNullOrWhiteSpace(projectName))
+        {
+            return "Dataverse solution command failed.";
+        }
+
+        return commandKind switch
+        {
+            DataverseSolutionCommandKind.Reclone => $"Failed to re-clone {projectName} from Dataverse.",
+            DataverseSolutionCommandKind.Synchronize => $"Failed to synchronize {projectName} with Dataverse.",
+            DataverseSolutionCommandKind.Import => $"Failed to import {projectName} to Dataverse.",
+            DataverseSolutionCommandKind.Pack => $"Failed to pack {projectName}.",
+            DataverseSolutionCommandKind.Unpack => $"Failed to unpack {projectName}.",
+            DataverseSolutionCommandKind.ImportAndOpen => $"Failed to deploy {projectName}.",
+            _ => $"Dataverse solution command failed for {projectName}."
+        };
+    }
+
+    private static string GetCanceledMessage(DataverseSolutionCommandKind commandKind, string? projectName)
+    {
+        if (string.IsNullOrWhiteSpace(projectName))
+        {
+            return "Dataverse solution command canceled.";
+        }
+
+        return commandKind == DataverseSolutionCommandKind.Reclone
+            ? $"Re-clone canceled for {projectName}."
+            : $"Dataverse solution command canceled for {projectName}.";
+    }
 
     private static string commandName(IReadOnlyList<string> arguments)
     {

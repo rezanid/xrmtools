@@ -45,6 +45,8 @@ public sealed class ProcessCommandResult
 {
     public int ExitCode { get; init; }
 
+    public IReadOnlyList<ProcessOutputLine> Output { get; init; } = Array.Empty<ProcessOutputLine>();
+
     public bool Succeeded => ExitCode == 0;
 }
 

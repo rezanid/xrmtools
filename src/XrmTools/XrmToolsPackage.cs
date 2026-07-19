@@ -205,11 +205,13 @@ public sealed partial class XrmToolsPackage : ToolkitPackage
         await SetCustomToolPluginGeneratorCommand.InitializeAsync(this);
         await RegisterPluginCommand.InitializeAsync(this);
         await UnregisterCommand.InitializeAsync(this);
+        await AddDataverseSolutionProjectCommand.InitializeAsync(this);
+        await RecloneDataverseSolutionCommand.InitializeAsync(this);
         await SynchronizeDataverseSolutionCommand.InitializeAsync(this);
         await ImportDataverseSolutionCommand.InitializeAsync(this);
         await PackDataverseSolutionCommand.InitializeAsync(this);
         await UnpackDataverseSolutionCommand.InitializeAsync(this);
-        await DeployAndOpenDataverseSolutionCommand.InitializeAsync(this);
+        await ImportAndOpenDataverseSolutionCommand.InitializeAsync(this);
         await SelectEnvironmentCommand.InitializeAsync(this);
         await ResetCodeGenTemplatesCommand.InitializeAsync(this);
         // The following two commands contirbute to the dropdown combo box for selecting environments.
