@@ -5,13 +5,16 @@ using System.Windows;
 
 public static class ShellInternalStyles
 {
-    //public static Style ButtonStyle { get; } = (Style)DefaultStyles.Instance[(object)typeof(Button)];
+    public static Style Button { get; } = (Style)DefaultStyles.Instance[typeof(Button)];
 
     public static Style HeaderFocusVisual { get; } = ShellStyles.LoadStyle("HeaderFocusVisualStyle.xaml");
 
-    //public static Style PathButtonStyle { get; } = (Style)DefaultStyles.Instance[(object)typeof(PathButton)];
+    //public static Style ImageButton { get; } = (Style)DefaultStyles.Instance[typeof(ImageButton)];
 
-    //public static Style TextBoxStyle { get; } = (Style)DefaultStyles.Instance[(object)typeof(TextBox)];
+    //public static Style PathButton { get; } = (Style)DefaultStyles.Instance[typeof(PathButton)];
 
-    //public static Style WindowStyle { get; } = (Style)DefaultStyles.Instance[(object)typeof(Microsoft.VisualStudio.Shell.Controls.Window)];
+    public static Style PillFocusVisual { get; } = ShellStyles.LoadStyle("PillFocusVisualStyle.xaml");
+    public static Style TextBox { get; } = (Style)DefaultStyles.Instance[typeof(TextBox)];
+
+    //public static Style WindowStyle { get; } = (Style)DefaultStyles.Instance[typeof(Microsoft.VisualStudio.Shell.Controls.Window)];
 }

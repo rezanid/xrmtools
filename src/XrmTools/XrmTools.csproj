@@ -127,18 +127,24 @@
     <Compile Include="DataverseSolutions\SolutionManifestReader.cs" />
     <Compile Include="DataverseSolutions\VsPacAuthUserInteraction.cs" />
     <Compile Include="Helpers\SolutionNavigator.cs" />
+    <Compile Include="Shell\Controls\Button.cs" />
+    <Compile Include="Shell\Controls\DialogButton.cs" />
     <Compile Include="Shell\Controls\Expander.cs" />
     <Compile Include="Shell\Controls\FlyoutSurface.cs" />
     <Compile Include="Shell\Controls\Indicator.cs" />
+    <Compile Include="Shell\Controls\ListBox.cs" />
     <Compile Include="Shell\Controls\ListBoxItem.cs" />
     <Compile Include="Shell\Controls\MenuItem.cs" />
     <Compile Include="Shell\Controls\MenuScrollViewer.cs" />
     <Compile Include="Shell\Controls\PassThroughBorder.cs" />
     <Compile Include="Shell\Controls\Popup.cs" />
+    <Compile Include="Shell\Controls\RadioButton.cs" />
     <Compile Include="Shell\Controls\ScrollBar.cs" />
     <Compile Include="Shell\Controls\ScrollViewer.cs" />
     <Compile Include="Shell\Controls\ContextMenu.cs" />
     <Compile Include="Shell\Controls\Separator.cs" />
+    <Compile Include="Shell\Controls\TextBlock.cs" />
+    <Compile Include="Shell\Controls\TextBox.cs" />
     <Compile Include="Shell\Controls\ToggleButton.cs" />
     <Compile Include="Shell\Controls\TreeView.cs" />
     <Compile Include="Shell\Controls\TreeViewItem.cs" />
@@ -146,6 +152,7 @@
     <Compile Include="Shell\Conveters\ClipConverter.cs" />
     <Compile Include="Shell\Conveters\ColorOpacityConverter.cs" />
     <Compile Include="Shell\Conveters\Converters.cs" />
+    <Compile Include="Shell\Conveters\NumericComparisonConverter.cs" />
     <Compile Include="Shell\Helpers\Boxes.cs" />
     <Compile Include="Shell\Helpers\Property.cs" />
     <Compile Include="Shell\Helpers\VisualTree.cs" />
@@ -159,12 +166,40 @@
     <Compile Include="Shell\Styles\Geometries.cs" />
     <Compile Include="Shell\Styles\IndentingConverter.cs" />
     <Compile Include="Shell\Styles\MediaPlaybackMode.cs" />
+    <Compile Include="Shell\Styles\Operation.cs" />
     <Compile Include="Shell\Styles\ProgressKind.cs" />
+    <Page Include="Shell\Styles\ButtonStyle.xaml">
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="Shell\Styles\ListBoxItemStyle.xaml">
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="Shell\Styles\ListBoxStyle.xaml">
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="Shell\Styles\PillFocusVisualStyle.xaml">
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="Shell\Styles\RadioButtonStyle.xaml">
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="Shell\Styles\TextBlockStyle.xaml">
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="Shell\Styles\TextBoxStyle.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="Shell\Styles\Window\DialogButtonStyle.xaml">
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
     <Page Include="UI\DataverseSolutionProjectDialog.xaml">
       <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
     </Page>
     <Page Include="Shell\Styles\ButtonBaseStyle.xaml">
       <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
     </Page>
     <Page Include="Shell\Styles\ContextMenuStyle.xaml">
       <Generator>MSBuild:Compile</Generator>
@@ -195,8 +230,9 @@
     <Page Include="Shell\Styles\MenuScrollViewerStyle.xaml">
       <Generator>MSBuild:Compile</Generator>
     </Page>
-    <Page Include="Shell\Styles\Popup.xaml">
+    <Page Include="Shell\Styles\PopupStyle.xaml">
       <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
     </Page>
     <Page Include="Shell\Styles\ScrollViewerStyle.xaml">
       <Generator>MSBuild:Compile</Generator>
@@ -207,6 +243,7 @@
     <Compile Include="Shell\Styles\Sizes.cs" />
     <Compile Include="Shell\Styles\Spacings.cs" />
     <Compile Include="Shell\Styles\StrokeWidths.cs" />
+    <Compile Include="Shell\Styles\TextKinds.cs" />
     <Compile Include="Shell\Styles\Typography.cs" />
     <Compile Include="Shell\Styles\VisualOptions.cs" />
     <Compile Include="UI\DataverseSolutionProjectDialog.xaml.cs">
@@ -536,12 +573,12 @@
   </ItemGroup>
   <ItemGroup>
     <Reference Include="Microsoft.CSharp" />
-    <Reference Include="Microsoft.VisualStudio.ProjectSystem">
+    <!--<Reference Include="Microsoft.VisualStudio.ProjectSystem">
       <HintPath>$(PkgMicrosoft_VisualStudio_ProjectSystem)\lib\net472\Microsoft.VisualStudio.ProjectSystem.dll</HintPath>
     </Reference>
     <Reference Include="Microsoft.VisualStudio.ProjectSystem.VS">
       <HintPath>$(PkgMicrosoft_VisualStudio_ProjectSystem_VS)\lib\net472\Microsoft.VisualStudio.ProjectSystem.VS.dll</HintPath>
-    </Reference>
+    </Reference>-->
     <Reference Include="PresentationCore" />
     <Reference Include="PresentationFramework" />
     <Reference Include="System" />
@@ -617,6 +654,7 @@
     </EmbeddedResource>
   </ItemGroup>
   <ItemGroup>
+    <Folder Include="Shell\Controls\Window\" />
     <Folder Include="_Core\" />
   </ItemGroup>
   <ItemGroup>
