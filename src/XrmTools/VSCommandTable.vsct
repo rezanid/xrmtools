@@ -137,6 +137,25 @@
           <CanonicalName>.XrmTools.ResetTemplates</CanonicalName>
         </Strings>
       </Button>
+      <Button guid="XrmToolsCmdSetId" id="AddDataverseSolutionProjectCmdId" priority="0x0100" type="Button">
+        <Parent guid="XrmToolsCmdSetId" id="XrmToolsSolutionContextMenuGroup" />
+        <Icon guid="ImageCatalogGuid" id="Package" />
+        <CommandFlag>IconIsMoniker</CommandFlag>
+        <Strings>
+          <ButtonText>Add Dataverse Solution Project...</ButtonText>
+          <CanonicalName>.XrmTools.DataverseSolution.AddProject</CanonicalName>
+        </Strings>
+      </Button>
+      <Button guid="XrmToolsCmdSetId" id="RecloneDataverseSolutionCmdId" priority="0x0105" type="Button">
+        <Parent guid="XrmToolsCmdSetId" id="XrmToolsProjectContextMenuGroup" />
+        <Icon guid="ImageCatalogGuid" id="Refresh" />
+        <CommandFlag>IconIsMoniker</CommandFlag>
+        <CommandFlag>DynamicVisibility</CommandFlag>
+        <Strings>
+          <ButtonText>Re-clone from Dataverse...</ButtonText>
+          <CanonicalName>.XrmTools.DataverseSolution.Reclone</CanonicalName>
+        </Strings>
+      </Button>
       <!--[Item Context Menu] > "Enable plugin code generation"-->
       <Button guid="XrmToolsCmdSetId" id="SetCustomToolPluginGeneratorCmdId" priority="0x0101" type="Button">
         <Parent guid="XrmToolsCmdSetId" id="XrmToolsContextMenuGroup" />
@@ -220,14 +239,14 @@
           <CanonicalName>.XrmTools.DataverseSolution.Unpack</CanonicalName>
         </Strings>
       </Button>
-      <Button guid="XrmToolsCmdSetId" id="DeployAndOpenDataverseSolutionCmdId" priority="0x0140" type="Button">
+      <Button guid="XrmToolsCmdSetId" id="ImportAndOpenDataverseSolutionCmdId" priority="0x0140" type="Button">
         <Parent guid="XrmToolsCmdSetId" id="XrmToolsProjectContextMenuGroup" />
         <Icon guid="AssetsGuid" id="ApplyToDataverse" />
         <CommandFlag>IconIsMoniker</CommandFlag>
         <CommandFlag>DynamicVisibility</CommandFlag>
         <Strings>
-          <ButtonText>Deploy and Open</ButtonText>
-          <CanonicalName>.XrmTools.DataverseSolution.DeployAndOpen</CanonicalName>
+          <ButtonText>Import and Open</ButtonText>
+          <CanonicalName>.XrmTools.DataverseSolution.ImportAndOpen</CanonicalName>
         </Strings>
       </Button>
       <Button guid="XrmToolsCmdSetId" id="SetPluginGeneratorTemplateInSolutionCmdId" priority="0x100" type="Button">
@@ -401,10 +420,12 @@
       <IDSymbol name="RegisterPluginCmdId" value="0x0910"/>
       <IDSymbol name="UnregisterPluginCmdId" value="0x0920"/>
       <IDSymbol name="SynchronizeDataverseSolutionCmdId" value="0x0930"/>
+      <IDSymbol name="RecloneDataverseSolutionCmdId" value="0x0931"/>
       <IDSymbol name="ImportDataverseSolutionCmdId" value="0x0940"/>
       <IDSymbol name="PackDataverseSolutionCmdId" value="0x0950"/>
       <IDSymbol name="UnpackDataverseSolutionCmdId" value="0x0960"/>
-      <IDSymbol name="DeployAndOpenDataverseSolutionCmdId" value="0x0970"/>
+      <IDSymbol name="ImportAndOpenDataverseSolutionCmdId" value="0x0970"/>
+      <IDSymbol name="AddDataverseSolutionProjectCmdId" value="0x0980"/>
       <IDSymbol name="XrmToolsToolbar" value="0x2000"/>
       <IDSymbol name="XrmToolsToolbarGroup" value="0x2010"/>
       <IDSymbol name="XrmToolsContextSubMenu" value="0x1000"/>

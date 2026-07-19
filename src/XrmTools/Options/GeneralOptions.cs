@@ -46,6 +46,13 @@ internal class GeneralOptions : BaseOptionModel<GeneralOptions>
     [Editor(typeof(CurrentEnvironmentEditor), typeof(UITypeEditor))]
     public DataverseEnvironment CurrentEnvironment { get; set; } = DataverseEnvironment.Empty;
 
+    [Category("Dataverse Solution Projects")]
+    [DisplayName("Project SDK")]
+    [Description("Selects the project format used when creating Dataverse solution projects.")]
+    [DefaultValue(DataverseSolutionProjectSdk.AlbanianXrm)]
+    [TypeConverter(typeof(EnumDescriptionConverter))]
+    public DataverseSolutionProjectSdk DataverseSolutionProjectSdk { get; set; } = DataverseSolutionProjectSdk.AlbanianXrm;
+
     [Category("Dataverse Explorer")]
     [DisplayName("Synchronize with Solution Explorer")]
     [Description("Select the relevant file in the Solution Explorer when possible.")]
@@ -95,5 +102,14 @@ internal class GeneralOptions : BaseOptionModel<GeneralOptions>
         // Ensure that the list is not null
         Environments ??= [];
     }
+}
+
+public enum DataverseSolutionProjectSdk
+{
+    [Description("AlbanianXrm.CDSProj.Sdk (recommended)")]
+    AlbanianXrm,
+
+    [Description("Microsoft.PowerApps.MSBuild.Solution (PAC CLI default)")]
+    MicrosoftPowerApps
 }
 #nullable restore

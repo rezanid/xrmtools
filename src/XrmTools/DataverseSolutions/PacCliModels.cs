@@ -67,6 +67,16 @@ public interface IPacCli
 
     Task CreateAuthProfileAsync(PacAuthCreateRequest request, CancellationToken cancellationToken);
 
+    Task<ProcessCommandResult> InitializeSolutionAsync(
+        PacSolutionInitRequest request,
+        IProgress<ProcessOutputLine> output,
+        CancellationToken cancellationToken);
+
+    Task<ProcessCommandResult> CloneSolutionAsync(
+        PacSolutionCloneRequest request,
+        IProgress<ProcessOutputLine> output,
+        CancellationToken cancellationToken);
+
     Task<ProcessCommandResult> RunSolutionCommandAsync(
         CdsProjectInfo project,
         IReadOnlyList<string> arguments,

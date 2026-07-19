@@ -33,6 +33,8 @@ internal sealed class DataverseSolutionOutput(IOutputLoggerService outputLoggerS
 
     public void WriteCompleted() => _outputLoggerService.OutputString($"Completed successfully.{Environment.NewLine}");
 
+    public void WriteWarning(string message) => _outputLoggerService.OutputString($"Warning: {message}{Environment.NewLine}");
+
     public Task ShowPaneAsync() => VS.Windows.CreateOutputWindowPaneAsync(Vsix.Name);
 }
 #nullable restore

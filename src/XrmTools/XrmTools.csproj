@@ -74,10 +74,12 @@
     <Compile Include="CodeRefactoringProviders\CustomApiRefactoringProvider.cs" />
     <Compile Include="CodeRefactoringProviders\TypeNameParser.cs" />
     <Compile Include="CodeRefactoringProviders\WebApiServiceHelper.cs" />
+    <Compile Include="Commands\AddDataverseSolutionProjectCommand.cs" />
     <Compile Include="Commands\RefreshDataverseExplorerCommand.cs" />
+    <Compile Include="Commands\RecloneDataverseSolutionCommand.cs" />
     <Compile Include="Commands\ShowDataverseExplorerCommand.cs" />
     <Compile Include="Commands\CdsProjectCommandBase.cs" />
-    <Compile Include="Commands\DeployAndOpenDataverseSolutionCommand.cs" />
+    <Compile Include="Commands\ImportAndOpenDataverseSolutionCommand.cs" />
     <Compile Include="Commands\ImportDataverseSolutionCommand.cs" />
     <Compile Include="Commands\ManageEnvironmentsCommand.cs" />
     <Compile Include="Commands\NewFetchXmlFileCommand.cs" />
@@ -110,6 +112,9 @@
     <Compile Include="DataverseSolutions\CdsProjectTreePropertiesProvider.cs" />
     <Compile Include="DataverseSolutions\CdsProjectUnconfigured.cs" />
     <Compile Include="DataverseSolutions\DataverseEnvironmentUrl.cs" />
+    <Compile Include="DataverseSolutions\DataverseSolutionProjectModels.cs" />
+    <Compile Include="DataverseSolutions\DataverseSolutionProjectCreationService.cs" />
+    <Compile Include="DataverseSolutions\DataverseSolutionProjectFileService.cs" />
     <Compile Include="DataverseSolutions\DataverseSolutionCommandKind.cs" />
     <Compile Include="DataverseSolutions\DataverseSolutionCommandService.cs" />
     <Compile Include="DataverseSolutions\DataverseSolutionOutput.cs" />
@@ -119,6 +124,7 @@
     <Compile Include="DataverseSolutions\PacCliModels.cs" />
     <Compile Include="DataverseSolutions\ProcessCommandModels.cs" />
     <Compile Include="DataverseSolutions\ProcessCommandRunner.cs" />
+    <Compile Include="DataverseSolutions\SolutionManifestReader.cs" />
     <Compile Include="DataverseSolutions\VsPacAuthUserInteraction.cs" />
     <Compile Include="Helpers\SolutionNavigator.cs" />
     <Compile Include="Shell\Controls\Expander.cs" />
@@ -154,6 +160,9 @@
     <Compile Include="Shell\Styles\IndentingConverter.cs" />
     <Compile Include="Shell\Styles\MediaPlaybackMode.cs" />
     <Compile Include="Shell\Styles\ProgressKind.cs" />
+    <Page Include="UI\DataverseSolutionProjectDialog.xaml">
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
     <Page Include="Shell\Styles\ButtonBaseStyle.xaml">
       <Generator>MSBuild:Compile</Generator>
     </Page>
@@ -200,6 +209,10 @@
     <Compile Include="Shell\Styles\StrokeWidths.cs" />
     <Compile Include="Shell\Styles\Typography.cs" />
     <Compile Include="Shell\Styles\VisualOptions.cs" />
+    <Compile Include="UI\DataverseSolutionProjectDialog.xaml.cs">
+      <DependentUpon>DataverseSolutionProjectDialog.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="UI\DataverseSolutionProjectDialogViewModel.cs" />
     <Compile Include="UI\VsPluginRegistrationUI.cs" />
     <Compile Include="Core\Repositories\ICacheConfiguration.cs" />
     <Compile Include="CustomMonikers.cs">
