@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
 using System.Text;
+using XrmTools.Meta.Model.Configuration;
 using XrmTools.WebApi.Entities;
 using XrmTools.WebApi.Types;
 
@@ -168,6 +169,36 @@ public static class ScribanExtensions
 
     public static string EscapeVerbatim(string input)
         => string.IsNullOrEmpty(input) ? string.Empty : input.Replace("\"", "\"\"");
+
+    /// <summary>
+    /// Computes a discriminator used to make generated type names unique when several steps of the
+    /// same plugin type share the same message (e.g. an Update PreOperation step and an Update
+    /// PostOperation step). Returns an empty string when the step's message is unique among the
+    /// supplied steps, so existing (non-colliding) type names are preserved. When the message is
+    /// shared, the step's stage name is used; if the stage is also shared, a 1-based ordinal within
+    /// that message+stage group is appended to guarantee uniqueness.
+    /// </summary>
+    public static string StepTypeDiscriminator(IEnumerable<PluginStepConfig>? steps, PluginStepConfig? step)
+    {
+        if (steps is null || step is null) return string.Empty;
+
+        var stepList = steps as IList<PluginStepConfig> ?? [.. steps];
+
+        var sameMessage = stepList
+            .Where(s => string.Equals(s?.MessageName, step.MessageName, StringComparison.Ordinal))
+            .ToList();
+        if (sameMessage.Count <= 1) return string.Empty;
+
+        var stage = step.StageName ?? string.Empty;
+
+        var sameMessageStage = sameMessage
+            .Where(s => string.Equals(s?.StageName, step.StageName, StringComparison.Ordinal))
+            .ToList();
+        if (sameMessageStage.Count <= 1) return stage;
+
+        var ordinal = sameMessageStage.IndexOf(step) + 1;
+        return stage + ordinal.ToString(CultureInfo.InvariantCulture);
+    }
 
 }
 #nullable restore
