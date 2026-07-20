@@ -147,8 +147,24 @@ public static class ScribanExtensions
 
     public static bool IsEnumAttribute(AttributeMetadata a) => (a.AttributeType is AttributeTypeCode.Picklist or AttributeTypeCode.Virtual or AttributeTypeCode.State or AttributeTypeCode.Status or AttributeTypeCode.EntityName) && a.IsLogical == false;
 
+    /// <summary>
+    /// Resolves a localized label for the requested language, falling back to the user-localized
+    /// label (typically the environment base language) and then to any available non-empty label.
+    /// This prevents empty identifiers/labels in generated code when an option set has no label for
+    /// the requested language (e.g. no English/1033 label in a non-English environment).
+    /// </summary>
     public static string? GetLabel(Label? label, int language)
-       => label?.LocalizedLabels?.FirstOrDefault(l => l.LanguageCode == language)?.Label;
+    {
+        if (label is null) return null;
+
+        var requested = label.LocalizedLabels?.FirstOrDefault(l => l.LanguageCode == language)?.Label;
+        if (!string.IsNullOrEmpty(requested)) return requested;
+
+        var userLocalized = label.UserLocalizedLabel?.Label;
+        if (!string.IsNullOrEmpty(userLocalized)) return userLocalized;
+
+        return label.LocalizedLabels?.FirstOrDefault(l => !string.IsNullOrEmpty(l.Label))?.Label;
+    }
 
     public static string EscapeVerbatim(string input)
         => string.IsNullOrEmpty(input) ? string.Empty : input.Replace("\"", "\"\"");
