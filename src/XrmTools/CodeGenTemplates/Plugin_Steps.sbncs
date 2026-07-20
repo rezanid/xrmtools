@@ -1,8 +1,10 @@
 {{~for step in plugintype.steps~}}
 {{~if step.primary_entity_definition~}}
-{{~entity_type_name = step.message_name + step.primary_entity_definition.schema_name + "Entity"~}}
+{{~step_disc = plugintype.steps | step_type_discriminator step~}}
+{{~step_prefix = (plugintype.steps | array.size > 1) ? step.message_name : ""~}}
+{{~entity_type_name = step.message_name + step_disc + step.primary_entity_definition.schema_name + "Entity"~}}
 {{~if (plugintype.steps | array.size > 1) || (plugintype.steps[0].message.pairs[0].request[0].fields | array.size > 1)~}}
-public static class {{(plugintype.steps | array.size > 1) ? step.message_name : ""}}InputParameters
+public static class {{step_prefix + step_disc}}InputParameters
 {
     {{include 'Plugin_Step_Inputs.sbncs'~}}
 }
@@ -13,7 +15,7 @@ public static class {{(plugintype.steps | array.size > 1) ? step.message_name : 
 {{include 'Images.sbncs'~}}
 {{~end~}}
 {{~for image in step.images~}}
-{{~image_type_name = (plugintype.steps | array.size > 1 ? step.message_name : '') + image.image_type + (step.primary_entity_definition.schema_name)~}}
+{{~image_type_name = step_prefix + step_disc + image.image_type + (step.primary_entity_definition.schema_name)~}}
 {{~image_collection_name = image.image_type == 'PreImage' ? 'PreEntityImages' : 'PostEntityImages'~}}
 {{~if step.message_name | string.ends_with('Multiple')~}}
 public {{image_type_name}}[] {{image.name}}s
