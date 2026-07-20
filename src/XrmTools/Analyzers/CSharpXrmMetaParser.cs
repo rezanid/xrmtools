@@ -53,6 +53,7 @@ internal class CSharpXrmMetaParser(
         List<AttributeData> codeGenPrefixAttribute = [];
         AttributeData? codeGenGlobalOptionSetsAttribute = null;
         AttributeData? codeGenOrgContextAttribute = null;
+        AttributeData? codeGenNameCollisionAttribute = null;
         //List<EntityConfig> entityConfigs = [];
         foreach (var attr in assemblySymbol.GetAttributes())
         {
@@ -75,6 +76,10 @@ internal class CSharpXrmMetaParser(
             else if (attr.AttributeClass?.ToDisplayString() == typeof(CodeGenOrganizationContextAttribute).FullName)
             {
                 codeGenOrgContextAttribute = attr;
+            }
+            else if (attr.AttributeClass?.ToDisplayString() == typeof(CodeGenNameCollisionSuffixAttribute).FullName)
+            {
+                codeGenNameCollisionAttribute = attr;
             }
             //else if (attr.AttributeClass?.ToDisplayString() == typeof(EntityAttribute).FullName)
             //{
@@ -125,6 +130,11 @@ internal class CSharpXrmMetaParser(
         else
         {
             pluginAssemblyConfig.OrganizationContextConfig = null;
+        }
+
+        if (codeGenNameCollisionAttribute != null)
+        {
+            pluginAssemblyConfig.NameCollision.SetPropertiesFromAttribute(codeGenNameCollisionAttribute);
         }
 
         if (assemblyAttribute == null) return pluginAssemblyConfig;

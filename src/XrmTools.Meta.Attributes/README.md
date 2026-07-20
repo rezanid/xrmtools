@@ -58,6 +58,7 @@ It's a lot easier to add early-bound (typed) entities to your project. Just add 
 You can fine-tune code generation in Xrm Tools by adding the following global attributes to your `Assemblyinfo.cs` or any global `.cs` file.
 - `CodeGenReplacePrefixesAttribute`: Assembly scoped attribute that instructs the code generator to replace or remove the prefixes of the entity names with the given values. This is useful when you want to use a different prefix for your entities or remove prefixes in the generated code.
 - `CodeGenGlobalOptionSetAttribute`: Assembly scoped attribute that lets the developer decide if global option sets should be generated in the GlobalOptionSets.cs file or as enums in the typed entity files. By default, global option sets are generated locally.
+- `CodeGenNameCollisionSuffixAttribute`: Assembly scoped attribute that sets the suffix appended to a generated property when its name would otherwise clash with the name of its enclosing type. This happens when a Dataverse column shares the logical name of its table (e.g. a table `xxx_postalcode` with a column `xxx_postalcode`), which C# does not allow. The default suffix is `Value` (so the column above becomes a `PostalCodeValue` property); use this attribute to choose another, e.g. `[assembly: CodeGenNameCollisionSuffix("Attribute")]`.
 
 ### Other Global Attributes
 - `PluginAssemblyAttribute`: You can optionally customize the assembly level registration by adding this attribute to your `AssemblyInfor.cs` or any other global `.cs` file.

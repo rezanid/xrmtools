@@ -196,7 +196,7 @@ public class PluginCodeGenerator : BaseCodeGeneratorWithSiteAsync
         return null;
     }
 
-    private async Task<EntityMetadata?> GetEntityMetadataAsync(string logicalName, IEnumerable<string> attributeNames, CodeGenReplacePrefixConfig[] prefixReplacements, CancellationToken ct)
+    private async Task<EntityMetadata?> GetEntityMetadataAsync(string logicalName, IEnumerable<string> attributeNames, CodeGenReplacePrefixConfig[] prefixReplacements, string collisionSuffix, CancellationToken ct)
     {
         using var entityMetadataRepo = RepositoryFactory.CreateRepository<IEntityMetadataRepository>();
         if (entityMetadataRepo is null) return null;
@@ -213,6 +213,7 @@ public class PluginCodeGenerator : BaseCodeGeneratorWithSiteAsync
 
         FormatAttributeSchemaNames(filteredAttributes ?? entityDefinition.Attributes ?? [], prefixReplacements);
         FormatEntitySchemaName(entityDefinition, prefixReplacements);
+        CodeGenNaming.ResolveEnclosingTypeNameCollisions(entityDefinition, filteredAttributes ?? entityDefinition.Attributes ?? [], collisionSuffix);
 
         // The cloning is done because we don't want to modify the object in the cache.
         // In future when we load from local storage this might not be required.
@@ -313,7 +314,7 @@ public class PluginCodeGenerator : BaseCodeGeneratorWithSiteAsync
                 // We have some attributes already, so we add the new ones too.
                 entitiesAndAttributes[step.PrimaryEntityName!].UnionWith(filteringAttributes);
             }
-            var entityDefinition = await GetEntityMetadataAsync(step.PrimaryEntityName!, filteringAttributes, config.ReplacePrefixes, ct).ConfigureAwait(false);
+            var entityDefinition = await GetEntityMetadataAsync(step.PrimaryEntityName!, filteringAttributes, config.ReplacePrefixes, config.NameCollision.Suffix, ct).ConfigureAwait(false);
             step.PrimaryEntityDefinition = entityDefinition;
 
             foreach (var image in step.Images)
@@ -335,7 +336,7 @@ public class PluginCodeGenerator : BaseCodeGeneratorWithSiteAsync
                 {
                     entitiesAndAttributes[step.PrimaryEntityName!].UnionWith(imageAttributes);
                 }
-                entityDefinition = await GetEntityMetadataAsync(step.PrimaryEntityName!, imageAttributes, config.ReplacePrefixes, ct).ConfigureAwait(false);
+                entityDefinition = await GetEntityMetadataAsync(step.PrimaryEntityName!, imageAttributes, config.ReplacePrefixes, config.NameCollision.Suffix, ct).ConfigureAwait(false);
                 image.MessagePropertyDefinition = entityDefinition;
             }
         }
@@ -343,14 +344,14 @@ public class PluginCodeGenerator : BaseCodeGeneratorWithSiteAsync
         foreach (var entityEntry in entitiesAndAttributes)//.Where(e => e.Value.Count > 0))
         {
             ct.ThrowIfCancellationRequested();
-            entityDefinitions[entityEntry.Key] = await GetEntityMetadataAsync(entityEntry.Key, entityEntry.Value, config.ReplacePrefixes, ct).ConfigureAwait(false);
+            entityDefinitions[entityEntry.Key] = await GetEntityMetadataAsync(entityEntry.Key, entityEntry.Value, config.ReplacePrefixes, config.NameCollision.Suffix, ct).ConfigureAwait(false);
         }
         foreach (var entityConfig in config.Entities)
         {
             ct.ThrowIfCancellationRequested();
             if (!string.IsNullOrEmpty(entityConfig.LogicalName))
             {
-                entityDefinitions[entityConfig.LogicalName!] = await GetEntityMetadataAsync(entityConfig.LogicalName!, entityConfig.AttributeNames?.SplitAndTrim(',') ?? [], config.ReplacePrefixes, ct).ConfigureAwait(false)!;
+                entityDefinitions[entityConfig.LogicalName!] = await GetEntityMetadataAsync(entityConfig.LogicalName!, entityConfig.AttributeNames?.SplitAndTrim(',') ?? [], config.ReplacePrefixes, config.NameCollision.Suffix, ct).ConfigureAwait(false)!;
             }
         }
         config.EntityDefinitions = entityDefinitions.Values;

@@ -279,6 +279,7 @@ public sealed class EntityCodeGenerator : BaseCodeGeneratorWithSiteAsync
                 entityConfig.LogicalName!,
                 entityConfig.AttributeNames?.Split(',') ?? [],
                 config.ReplacePrefixes,
+                config.NameCollision.Suffix,
                 ct).ConfigureAwait(false);
             if (entityMetadata != null)
             {
@@ -287,7 +288,7 @@ public sealed class EntityCodeGenerator : BaseCodeGeneratorWithSiteAsync
         }
     }
 
-    private async Task<EntityMetadata?> GetEntityMetadataAsync(string logicalName, IEnumerable<string> attributeNames, Meta.Model.CodeGenReplacePrefixConfig[] prefixReplacements, CancellationToken ct)
+    private async Task<EntityMetadata?> GetEntityMetadataAsync(string logicalName, IEnumerable<string> attributeNames, Meta.Model.CodeGenReplacePrefixConfig[] prefixReplacements, string collisionSuffix, CancellationToken ct)
     {
         using var entityMetadataRepo = RepositoryFactory.CreateRepository<IEntityMetadataRepository>();
         if (entityMetadataRepo is null) return null;
@@ -306,6 +307,7 @@ public sealed class EntityCodeGenerator : BaseCodeGeneratorWithSiteAsync
 
         FormatAttributeSchemaNames(filteredAttributes ?? entityDefinition.Attributes!, prefixReplacements);
         FormatEntitySchemaName(entityDefinition, prefixReplacements);
+        CodeGenNaming.ResolveEnclosingTypeNameCollisions(entityDefinition, filteredAttributes ?? entityDefinition.Attributes!, collisionSuffix);
 
         // The cloning is done because we don't want to modify the object in the cache.
         // In future when we load from local storage this might not be required.

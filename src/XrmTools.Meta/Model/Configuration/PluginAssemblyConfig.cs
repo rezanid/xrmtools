@@ -56,6 +56,9 @@ public sealed class PluginAssemblyConfig : PluginAssembly//, IPluginAssemblyConf
     [JsonPropertyOrder(3)]
     public CodeGenOrganizationContextConfig? OrganizationContextConfig { get; set; } = new();
 
+    [JsonPropertyOrder(4)]
+    public CodeGenNameCollisionConfig NameCollision { get; set; } = new();
+
     public Solution? Solution { get; set; }
 
     public new ICollection<PluginTypeConfig> PluginTypes { get; set; } = [];
