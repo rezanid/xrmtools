@@ -1,0 +1,35 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>netstandard2.0</TargetFramework>
+
+    <PackageId>XrmTools.WebResources.Sdk</PackageId>
+    <Authors>Reza Niroomand</Authors>
+    <Description>MSBuild SDK for building Power Platform TypeScript web resources.</Description>
+    <PackageType>MSBuildSdk</PackageType>
+
+    <PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+    <PackageIcon>XrmTools_256.png</PackageIcon>
+    <PackageTags>Power Platform; Power Apps; XRM; Dataverse; Web Resources; MSBuild SDK</PackageTags>
+    <PackageProjectUrl>https://github.com/rezanid/xrmtools</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/rezanid/xrmtools</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
+
+    <IncludeBuildOutput>false</IncludeBuildOutput>
+    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+    <Version>1.0.0</Version>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <None Include="Sdk\Sdk.props" Pack="true" PackagePath="Sdk\Sdk.props" />
+    <None Include="Sdk\Sdk.targets" Pack="true" PackagePath="Sdk\Sdk.targets" />
+    <None Include="README.md" Pack="true" PackagePath="\" />
+    <None Include="images\XrmTools_256.png" Pack="true" PackagePath="\" />
+  </ItemGroup>
+
+  <!--<ItemGroup>
+    <PackageReference Include="Nerdbank.GitVersioning" Version="3.9.*" PrivateAssets="all" />
+  </ItemGroup>-->
+
+</Project>

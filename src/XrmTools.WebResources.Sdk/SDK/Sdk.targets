@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build"
+         xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+
+    <Target Name="ValidateWebResourceProject">
+        <Error Condition="!Exists('$(MSBuildProjectDirectory)\package.json')"
+			   Text="package.json was not found in '$(MSBuildProjectDirectory)'." />
+    </Target>
+
+    <Target Name="Restore"
+            DependsOnTargets="ValidateWebResourceProject">
+        <Message Importance="High"
+                 Text="Restoring web resource npm packages..." />
+
+        <Exec WorkingDirectory="$(MSBuildProjectDirectory)"
+              Command="$(NpmRestoreCommand)" />
+    </Target>
+
+    <Target Name="Build"
+            DependsOnTargets="ValidateWebResourceProject">
+        <Message Importance="High"
+                 Text="Building web resources using $(NpmBuildCommand)..." />
+
+        <Exec WorkingDirectory="$(MSBuildProjectDirectory)"
+              Command="$(NpmBuildCommand)" />
+    </Target>
+
+    <Target Name="Clean"
+            DependsOnTargets="ValidateWebResourceProject">
+        <Message Importance="High"
+                 Text="Cleaning web resource output..." />
+
+        <Exec WorkingDirectory="$(MSBuildProjectDirectory)"
+              Command="$(NpmCleanCommand)"
+              IgnoreExitCode="true" />
+    </Target>
+
+    <Target Name="Rebuild"
+            DependsOnTargets="Clean;Build" />
+
+    <!--
+        Required by Microsoft.PowerApps.MSBuild.Solution.
+        .cdsproj calls GetProjectOutputPath on ProjectReference items.
+        Web resources are consumed through the Solution Packager mapping file,
+        so this target intentionally returns no output.
+    -->
+    <Target Name="GetProjectOutputPath" />
+
+</Project>
