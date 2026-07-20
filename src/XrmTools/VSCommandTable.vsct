@@ -140,7 +140,7 @@
       <!--[Solution Context Menu] > [Add] > "Dataverse Solution Project..."-->
       <Button guid="XrmToolsCmdSetId" id="AddDataverseSolutionProjectCmdId" priority="0x0900" type="Button">
         <Parent guid="guidSHLMainMenu" id="IDG_VS_CTXT_SOLUTION_ADD_PROJ" />
-        <Icon guid="ImageCatalogGuid" id="Package" />
+        <Icon guid="AssetsGuid" id="DataverseSolution" />
         <CommandFlag>IconIsMoniker</CommandFlag>
         <Strings>
           <ButtonText>Dataverse Solution Project...</ButtonText>
