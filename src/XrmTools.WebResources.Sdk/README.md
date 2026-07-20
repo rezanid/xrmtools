@@ -30,9 +30,6 @@ In a build pipeline the SDK switches to `npm ci` for a clean, reproducible insta
 
 You can force either behavior explicitly with `NpmRestoreCommand` (see below), or set `IsCiBuild` yourself.
 
-> [!NOTE]
-> Please note that you still need to run `npm install` when you add a new dependency by default, unless you customize the `NpmRestoreCommand`.
-
 ## Customization
 
 You can override any of the default commands or the output folder via MSBuild properties in your project:
