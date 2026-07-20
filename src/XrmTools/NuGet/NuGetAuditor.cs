@@ -15,7 +15,7 @@ using System.Threading.Tasks;
 
 internal sealed class NuGetAuditor
 {
-    private const string MinimumVersion = "1.1.7";
+    private const string MinimumVersion = "1.2.0";
 
     public async Task AuditAsync(CancellationToken ct)
     {

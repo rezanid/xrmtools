@@ -67,6 +67,7 @@
       <IncludeInVSIX>true</IncludeInVSIX>
     </Content>
     <Compile Include="CodeGen\BaseCodeGeneratorWithSiteAsync.cs" />
+    <Compile Include="CodeGen\CodeGenNaming.cs" />
     <Compile Include="CodeGen\EntityCodeGenerator.cs" />
     <Compile Include="CodeRefactoringProviders\PluginRefactoringProvider.cs" />
     <Compile Include="CodeRefactoringProviders\PropertyGenerator.cs" />
