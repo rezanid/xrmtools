@@ -33,7 +33,7 @@ public class CacheConfiguration : ICacheConfiguration
 /// </summary>
 public class SlidingCacheConfiguration : ICacheConfiguration
 {
-    public TimeSpan CacheExpiration { get; init; } = TimeSpan.FromMinutes(10);
+    public TimeSpan CacheExpiration { get; init; } = TimeSpan.FromMinutes(2);
     public bool UseSlidingExpiration { get; init; } = true;
 }
 #nullable restore
