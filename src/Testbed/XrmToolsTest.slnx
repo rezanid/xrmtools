@@ -7,4 +7,7 @@
   <Folder Name="/SDK-Style/">
     <Project Path="SdkStyle/SdkPluginsCS10/SdkPluginsCS10.csproj" />
   </Folder>
+  <Folder Name="/Solutions/">
+    <Project Path="Test/Test.cdsproj" Type="d3acb8f3-9e41-48cd-a302-4b7a9d6a2a49" />
+  </Folder>
 </Solution>

@@ -15,7 +15,7 @@ using XrmTools;
 
 namespace XrmGenTest
 {
-    [GeneratedCode("TemplatedCodeGenerator", "1.6.0.0")]
+    [GeneratedCode("TemplatedCodeGenerator", "2.0.0.0")]
     public partial class AccountGreetingPlugin
     {
         /// <summary>
