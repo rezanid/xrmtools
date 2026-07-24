@@ -61,8 +61,8 @@
   <ItemGroup>
     <Compile Include="AccountGreetingPlugin.cs">
       <Generator>XrmTools Plugin Code Generator</Generator>
-      <IsXrmPlugin>True</IsXrmPlugin>
       <LastGenOutput>AccountGreetingPlugin.g.cs</LastGenOutput>
+      <IsXrmPlugin>True</IsXrmPlugin>
     </Compile>
     <Compile Include="AccountGreetingPlugin.g.cs">
       <AutoGen>True</AutoGen>
@@ -135,7 +135,7 @@
       <PrivateAssets>all</PrivateAssets>
     </PackageReference>
     <PackageReference Include="XrmTools.Meta.Attributes">
-      <Version>1.1.4</Version>
+      <Version>1.2.0</Version>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
       <PrivateAssets>all</PrivateAssets>
     </PackageReference>
