@@ -64,5 +64,17 @@ public sealed class PluginAssemblyConfig : PluginAssembly//, IPluginAssemblyConf
     public new ICollection<PluginTypeConfig> PluginTypes { get; set; } = [];
 
     public ICollection<PluginTypeConfig> OtherPluginTypes { get; set; } = [];
+
+    /// <summary>
+    /// Gets or sets the set of every plugin type name (types implementing
+    /// <c>Microsoft.Xrm.Sdk.IPlugin</c>) compiled into the assembly, regardless of whether they are
+    /// annotated with XrmTools attributes. This is the authoritative source for deciding whether an
+    /// existing Dataverse plugin type still exists in the assembly (and therefore must be kept) or was
+    /// genuinely removed/renamed in code (and can be deleted). It is null when the plugin type set
+    /// could not be determined (e.g. <c>IPlugin</c> is not resolvable), in which case callers must not
+    /// delete any plugin types.
+    /// </summary>
+    [JsonIgnore]
+    public ISet<string>? AssemblyPluginTypeNames { get; set; }
 }
 #nullable restore

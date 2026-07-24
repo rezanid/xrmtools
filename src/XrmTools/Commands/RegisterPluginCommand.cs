@@ -134,7 +134,7 @@ internal sealed class RegisterPluginCommand : BaseCommand<RegisterPluginCommand>
                 return isUiContextActive || await project.IsXrmToolsPluginProjectAsync().ConfigureAwait(false);
 
             if (item.Type == SolutionItemType.PhysicalFile && item is PhysicalFile file)
-                return await file.IsXrmPluginFileAsync().ConfigureAwait(false);
+                return await file.LooksLikePluginFileAsync().ConfigureAwait(false);
 
             return false;
         }
