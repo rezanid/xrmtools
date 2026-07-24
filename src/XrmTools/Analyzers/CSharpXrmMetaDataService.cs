@@ -75,6 +75,8 @@ internal class CSharpXrmMetaDataService(ICSharpXrmMetaParser parser) : IXrmMetaD
                 .Select(p => new PluginTypeConfig { TypeName = p.TypeName })
                 .ToList();
 
+            config.AssemblyPluginTypeNames = GetAssemblyPluginTypeNames(compilation);
+
             return config;
         }
         catch (InvalidOperationException)
@@ -150,6 +152,8 @@ internal class CSharpXrmMetaDataService(ICSharpXrmMetaParser parser) : IXrmMetaD
 
             allPluginTypes.ForEach(config.PluginTypes.Add);
 
+            config.AssemblyPluginTypeNames = GetAssemblyPluginTypeNames(compilation);
+
             return config;
         }
         catch (InvalidOperationException)
@@ -175,6 +179,68 @@ internal class CSharpXrmMetaDataService(ICSharpXrmMetaParser parser) : IXrmMetaD
         if (duplicateCustomApis.Count > 0)
         {
             throw new InvalidOperationException($"Duplicate Custom API unique names were found: {string.Join("; ", duplicateCustomApis)}.");
+        }
+    }
+
+    /// <summary>
+    /// Enumerates every plugin type compiled into the assembly (types implementing
+    /// <c>Microsoft.Xrm.Sdk.IPlugin</c>, directly or through a base class), regardless of whether they
+    /// carry XrmTools attributes. Returns <see langword="null"/> when <c>IPlugin</c> cannot be resolved
+    /// in the compilation, so callers can conservatively avoid deleting plugin types.
+    /// </summary>
+    private static ISet<string>? GetAssemblyPluginTypeNames(Compilation compilation)
+    {
+        var pluginInterface = compilation.GetTypeByMetadataName("Microsoft.Xrm.Sdk.IPlugin");
+        if (pluginInterface is null)
+        {
+            return null;
+        }
+
+        var names = new HashSet<string>(StringComparer.Ordinal);
+        foreach (var type in EnumerateNamedTypes(compilation.Assembly.GlobalNamespace))
+        {
+            if (type.TypeKind != TypeKind.Class || type.IsAbstract || type.IsStatic)
+            {
+                continue;
+            }
+
+            if (type.AllInterfaces.Any(i => SymbolEqualityComparer.Default.Equals(i, pluginInterface)))
+            {
+                names.Add(type.ToDisplayString(SymbolDisplayFormat.CSharpErrorMessageFormat));
+            }
+        }
+
+        return names;
+    }
+
+    private static IEnumerable<INamedTypeSymbol> EnumerateNamedTypes(INamespaceSymbol root)
+    {
+        foreach (var type in root.GetTypeMembers())
+        {
+            foreach (var nested in EnumerateNamedTypesCore(type))
+            {
+                yield return nested;
+            }
+        }
+
+        foreach (var childNamespace in root.GetNamespaceMembers())
+        {
+            foreach (var type in EnumerateNamedTypes(childNamespace))
+            {
+                yield return type;
+            }
+        }
+    }
+
+    private static IEnumerable<INamedTypeSymbol> EnumerateNamedTypesCore(INamedTypeSymbol type)
+    {
+        yield return type;
+        foreach (var nested in type.GetTypeMembers())
+        {
+            foreach (var inner in EnumerateNamedTypesCore(nested))
+            {
+                yield return inner;
+            }
         }
     }
 

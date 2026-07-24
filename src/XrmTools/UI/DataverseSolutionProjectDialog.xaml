@@ -31,8 +31,6 @@
                     <ColumnDefinition Width="*"/>
                     <ColumnDefinition Width="Auto"/>
                 </Grid.ColumnDefinitions>
-                <!--<p:WatermarkedTextBox Watermark="Parent folder"
-                                      Text="{Binding ParentDirectory, UpdateSourceTrigger=PropertyChanged}"/>-->
                 <ctrls:TextBox HintText="Parent folder" Text="{Binding ParentDirectory, UpdateSourceTrigger=PropertyChanged}"/>
                 <ctrls:Button Grid.Column="1" Content="Browse..." Margin="8,0,0,0" MinWidth="80" Click="OnBrowseClick"/>
             </Grid>
@@ -57,7 +55,7 @@
                         <RowDefinition Height="Auto"/>
                         <RowDefinition Height="Auto"/>
                     </Grid.RowDefinitions>
-                    <ctrls:TextBlock Grid.Row="1" Text="Unmanaged solution:" Margin="0,0,0,6"/>
+                    <ctrls:TextBlock Grid.Row="1" Text="Unmanaged solution:" FontWeight="SemiBold" Margin="0,0,0,6"/>
                     <ctrls:ListBox Grid.Row="2" ItemsSource="{Binding Solutions}" SelectedItem="{Binding SelectedSolution}">
                         <ctrls:ListBox.ItemTemplate>
                             <DataTemplate>
@@ -68,7 +66,7 @@
                             </DataTemplate>
                         </ctrls:ListBox.ItemTemplate>
                     </ctrls:ListBox>
-                    <StackPanel Grid.Row="3" Margin="0,8,0,0">
+                    <StackPanel Grid.Row="3" Margin="0,12,0,0">
                         <ctrls:TextBlock Text="Project folder:" FontWeight="SemiBold"/>
                         <ctrls:TextBlock Text="{Binding CloneDestinationPath}" TextWrapping="Wrap"/>
                     </StackPanel>
@@ -87,8 +85,8 @@
                         <RowDefinition Height="Auto"/>
                         <RowDefinition Height="*"/>
                     </Grid.RowDefinitions>
-                    <Label Content="Project name:" Margin="0,0,8,8" Visibility="{Binding EmptyProjectVisibility}"/>
-                    <ctrls:TextBox Grid.Column="1" Margin="0,0,0,8"
+                    <Label Content="Project name:" Margin="0,8,8,8" Visibility="{Binding EmptyProjectVisibility}"/>
+                    <ctrls:TextBox Grid.Column="1" Margin="0,8,0,8"
                                               HintText="Dataverse solution project name"
                                               Text="{Binding ProjectName, UpdateSourceTrigger=PropertyChanged}"
                                               Visibility="{Binding EmptyProjectVisibility}"/>
@@ -106,7 +104,6 @@
             </Grid>
         </Border>
 
-        <!--<StackPanel Grid.Row="3" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,12,0,0">-->
         <Grid Grid.Row="3" Margin="0,12,0,0">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="*"/>
@@ -116,6 +113,5 @@
             <ctrls:Button Grid.Column="1" Content="Create" MinWidth="120" Click="OnCreateClick" Kind="Accent" IsDefault="True" Margin="8,0,0,0"/>
             <ctrls:Button Grid.Column="2" Content="Cancel" MinWidth="120" IsCancel="True" Margin="8,0,0,0"/>
         </Grid>
-        <!--</StackPanel>-->
     </Grid>
 </p:DialogWindow>

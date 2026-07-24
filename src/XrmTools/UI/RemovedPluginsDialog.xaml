@@ -1,0 +1,77 @@
+<p:DialogWindow xmlns:p="clr-namespace:Microsoft.VisualStudio.PlatformUI;assembly=Microsoft.VisualStudio.Shell.15.0"
+                xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+                xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+                xmlns:toolkit="clr-namespace:Community.VisualStudio.Toolkit;assembly=Community.VisualStudio.Toolkit"
+                xmlns:ctrls="clr-namespace:XrmTools.Shell.Controls"
+                x:Class="XrmTools.UI.RemovedPluginsDialog"
+                mc:Ignorable="d"
+                d:DesignHeight="360" d:DesignWidth="560"
+                x:Name="RemovedPlugins"
+                Title="Plugins missing from code"
+                ShowInTaskbar="False"
+                WindowStartupLocation="CenterOwner"
+                p:HasHelpButton="False"
+                toolkit:Themes.UseVsTheme="True"
+                Width="560" Height="380" MinWidth="460" MinHeight="300">
+    <Grid Margin="12">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <ctrls:TextBlock Grid.Row="0"
+                   TextWrapping="Wrap"
+                   Margin="0,0,0,8"
+                   Text="{Binding Headline}" />
+
+		<Grid Grid.Row="1" Margin="10,0,10,0">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="*"/>
+            </Grid.RowDefinitions>
+            <ctrls:ListBox Grid.Row="1" IsTabStop="False" ItemsSource="{Binding RemovedPlugins}">
+			    <ctrls:ListBox.ItemTemplate>
+				    <DataTemplate>
+				        <Grid>
+					        <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="8*"/>
+                                <ColumnDefinition Width="*"/>
+					        </Grid.ColumnDefinitions>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="1*"/>
+                                <RowDefinition Height="1*"/>
+                            </Grid.RowDefinitions>
+                            <ctrls:TextBlock Grid.Column="0" Grid.RowSpan="2" Text="{Binding TypeName}" VerticalAlignment="Center" />
+                            <ctrls:TextBlock Grid.Column="1" Text="{Binding StepCount, StringFormat='Steps: {0}'}" />
+                            <ctrls:TextBlock Grid.Column="1" Grid.Row="1" Text="{Binding CustomApiText, StringFormat='APIs: {0}'}" />
+				        </Grid>
+				    </DataTemplate>
+			    </ctrls:ListBox.ItemTemplate>
+		    </ctrls:ListBox>
+		</Grid>
+		
+        <ctrls:TextBlock Grid.Row="2"
+                   TextWrapping="Wrap"
+                   Margin="0,8,0,0"
+                   Text="These plugin types no longer exist in your compiled assembly (renamed or removed in code). Choose Delete to remove them from Dataverse so it matches your code, or Cancel to abort (for example, if the removal was accidental)." />
+
+        <StackPanel Grid.Row="3"
+                    Orientation="Horizontal"
+                    HorizontalAlignment="Right"
+                    Margin="0,12,0,0">
+            <ctrls:Button Content="_Delete"
+                    MinWidth="90" MinHeight="24" Margin="4,0"
+                    Kind="Accent"
+                    IsDefault="True"
+                    Click="OnDeleteClick" />
+            <ctrls:Button Content="Cancel"
+                    MinWidth="90" MinHeight="24" Margin="4,0"
+                    IsCancel="True"
+                    Click="OnCancelClick" />
+        </StackPanel>
+    </Grid>
+</p:DialogWindow>

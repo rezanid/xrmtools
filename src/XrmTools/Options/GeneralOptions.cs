@@ -75,6 +75,12 @@ internal class GeneralOptions : BaseOptionModel<GeneralOptions>
     [ReadOnlyWhen(nameof(DataverseExplorerSynchronizeWithSolutionExplorer), false)]
     public bool DataverseExplorerOpenInPreviewTab { get; set; }
 
+    [Category("Plugin Registration")]
+    [DisplayName("Prompt before deleting removed plugins (project registration)")]
+    [Description("When registering a whole project, prompt before deleting registrations that exist in Dataverse but are no longer present in code. When off, they are deleted automatically to keep code as the single source of truth.")]
+    [DefaultValue(true)]
+    public bool PromptBeforeDeletingRemovedPluginsAtProjectLevel { get; set; } = true;
+
     [Category("Advanced")]
     [DisplayName("Proxy")]
     [Description("Use a proxy server for all communications with Power Platform. Requires restarting Visual Studio.")]

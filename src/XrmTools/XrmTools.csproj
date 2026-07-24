@@ -127,6 +127,7 @@
     <Compile Include="DataverseSolutions\ProcessCommandRunner.cs" />
     <Compile Include="DataverseSolutions\SolutionManifestReader.cs" />
     <Compile Include="DataverseSolutions\VsPacAuthUserInteraction.cs" />
+    <Compile Include="Helpers\PluginDetectionHelper.cs" />
     <Compile Include="Helpers\SolutionNavigator.cs" />
     <Compile Include="Shell\Controls\Button.cs" />
     <Compile Include="Shell\Controls\DialogButton.cs" />
@@ -251,6 +252,11 @@
       <DependentUpon>DataverseSolutionProjectDialog.xaml</DependentUpon>
     </Compile>
     <Compile Include="UI\DataverseSolutionProjectDialogViewModel.cs" />
+    <Compile Include="UI\RemovedPluginsDecision.cs" />
+    <Compile Include="UI\RemovedPluginsDialog.xaml.cs">
+      <DependentUpon>RemovedPluginsDialog.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="UI\RemovedPluginsViewModel.cs" />
     <Compile Include="UI\VsPluginRegistrationUI.cs" />
     <Compile Include="Core\Repositories\ICacheConfiguration.cs" />
     <Compile Include="CustomMonikers.cs">
@@ -423,6 +429,9 @@
     <Compile Include="Xrm\Repositories\SystemRepository.cs" />
     <Compile Include="Xrm\Repositories\XrmRepository.cs" />
     <Compile Include="Logging\OutputLogger.cs" />
+    <Page Include="UI\RemovedPluginsDialog.xaml">
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
   </ItemGroup>
   <ItemGroup>
     <VSCTCompile Include="CustomMonikers.vsct">

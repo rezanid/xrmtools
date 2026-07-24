@@ -227,42 +227,28 @@ internal sealed class PluginRegistrationService(
                 model.Id = existingAssembly.Id;
                 _log.LogInformation($"Found existing assembly ({existingAssembly.Id}).");
 
-                if (!input.IsProject)
-                {
-                    var removedPlugins = existingAssembly.PluginTypes
-                        .Where(existing =>
-                            !model.PluginTypes.Any(p => p.TypeName == existing.TypeName) &&
-                            !model.OtherPluginTypes.Any(p => p.TypeName == existing.TypeName))
-                        .ToArray();
+                // A plugin type is only genuinely "removed" when its class no longer exists in the
+                // compiled assembly (i.e. it was renamed or deleted in code). Plugin types that are
+                // still compiled into the assembly remain valid registrations even when they are not
+                // (yet) annotated, so they must never be deleted. When the compiled plugin-type set is
+                // unknown (null), we conservatively treat nothing as removed. Steps, images and custom
+                // APIs are still reconciled against annotations by GenerateDeleteRequestsForCleanup.
+                var removedPlugins = ComputeRemovedPluginTypes(existingAssembly.PluginTypes, model.AssemblyPluginTypeNames);
 
-                    if (removedPlugins.Length > 0)
+                if (removedPlugins.Count > 0)
+                {
+                    var summaries = removedPlugins.Select(ToRemovedPluginSummary).ToArray();
+                    var decision = await ui.ConfirmRemovedPluginsAsync(summaries);
+                    if (decision == RemovedPluginsDecision.Cancel)
                     {
-                        var removedNames = removedPlugins.Select(p => p.TypeName ?? p.Name ?? string.Empty)
-                            .Where(n => !string.IsNullOrEmpty(n))
-                            .ToArray();
-                        var confirmed = await ui.ConfirmDeleteRemovedPluginsAsync(removedNames);
-                        if (confirmed)
-                        {
-                            foreach (var removedPlugin in removedPlugins)
-                            {
-                                requests.AddRange(removedPlugin.Steps
-                                    .Where(s => s.Id.HasValue)
-                                    .Select(s => new DeleteRequest(SdkMessageProcessingStep.CreateReference(s.Id!.Value))));
-                                if (removedPlugin.CustomApi.Count > 0 && removedPlugin.CustomApi[0].Id.HasValue)
-                                {
-                                    requests.Add(new DeleteRequest(CustomApi.CreateReference(removedPlugin.CustomApi[0].Id!.Value)));
-                                }
-                                if (removedPlugin.Id.HasValue)
-                                {
-                                    requests.Add(new DeleteRequest(PluginType.CreateReference(removedPlugin.Id!.Value)));
-                                }
-                            }
-                        }
+                        return PluginRegistrationResult.Success("Plugin registration was cancelled.");
                     }
                 }
 
                 requests.AddRange(GenerateDeleteRequestsForCleanup(
-                    newAssembly: model, existingAssembly: existingAssembly, deleteRemovedPlugins: input.IsProject));
+                    newAssembly: model,
+                    existingAssembly: existingAssembly,
+                    removedPlugins: removedPlugins));
                 _log.LogInformation($"Generated {requests.Count} delete requests for cleanup.");
             }
 
@@ -513,7 +499,7 @@ internal sealed class PluginRegistrationService(
     }
 
     private ICollection<HttpRequestMessage> GenerateDeleteRequestsForCleanup(
-        PluginAssemblyConfig newAssembly, PluginAssembly existingAssembly, bool deleteRemovedPlugins)
+        PluginAssemblyConfig newAssembly, PluginAssembly existingAssembly, IReadOnlyList<PluginType> removedPlugins)
     {
         var deleteRequests = new List<HttpRequestMessage>();
 
@@ -537,13 +523,43 @@ internal sealed class PluginRegistrationService(
                     }
                 }
             }
-            else if (deleteRemovedPlugins)
+            else if (removedPlugins.Contains(existingPlugin))
             {
                 AddDeleteRequestsForPlugin(deleteRequests, existingPlugin);
             }
         }
 
         return deleteRequests;
+    }
+
+    private static RemovedPluginSummary ToRemovedPluginSummary(PluginType plugin)
+        => new(
+            plugin.TypeName ?? plugin.Name ?? string.Empty,
+            plugin.Steps?.Count ?? 0,
+            plugin.CustomApi is { Count: > 0 });
+
+    /// <summary>
+    /// Determines which existing Dataverse plugin types have genuinely been removed from the compiled
+    /// assembly (renamed or deleted in code) and are therefore eligible for deletion. A plugin type is
+    /// considered removed only when its <c>TypeName</c> is absent from <paramref name="assemblyPluginTypeNames"/>.
+    /// When <paramref name="assemblyPluginTypeNames"/> is <see langword="null"/> (the compiled plugin-type
+    /// set could not be determined), nothing is treated as removed so that valid registrations are never
+    /// deleted.
+    /// </summary>
+    internal static IReadOnlyList<PluginType> ComputeRemovedPluginTypes(
+        IEnumerable<PluginType> existingPluginTypes, ISet<string>? assemblyPluginTypeNames)
+    {
+        if (assemblyPluginTypeNames is null)
+        {
+            return [];
+        }
+
+        return existingPluginTypes
+            .Where(existing =>
+                !string.IsNullOrEmpty(existing.Name) &&
+                !string.IsNullOrEmpty(existing.TypeName) &&
+                !assemblyPluginTypeNames.Contains(existing.TypeName!))
+            .ToArray();
     }
 
     private static void AddDeleteRequestsForPlugin(List<HttpRequestMessage> requests, PluginType existingPlugin)
