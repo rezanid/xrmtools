@@ -23,6 +23,10 @@ end -}}
   ret false
 end -}}
 
+{{func is_scope_prerequisite(dep)
+  ret !is_named(dep) && !dep.provided_by_property && (dep.full_type_name == "System.IServiceProvider" || (dep.full_type_name | is_known))
+end -}}
+
 {{func instantiate(dep) 
     # Prefer provider property when available (even if the dependency is named)
     if dep.provided_by_property 
@@ -119,10 +123,16 @@ protected {{existing_method ? 'override ' : '' }}IDisposable CreateScope(IServic
     {{~end~}}
     scope.Set<IServiceProvider>(serviceProvider);
 
+{{~ for dep in dependencies ~}}
+    {{~ if is_scope_prerequisite(dep) ~}}
+    scope.Set<{{ dep.full_type_name | remove_known_ns }}>({{ instantiate(dep) }});
+    {{~ end ~}}
+{{~ end ~}}
+
 {{~ if localDeclarations != "" ~}}
 {{ localDeclarations }}{{ "\r\n" }}{{~ end ~}}
 {{~ for dep in dependencies ~}}
-    {{~ if !is_named(dep) && dep.full_type_name != "System.String" ~}}
+    {{~ if !is_scope_prerequisite(dep) && !is_named(dep) && dep.full_type_name != "System.String" ~}}
     scope.Set<{{ dep.full_type_name | remove_known_ns }}>({{ instantiate(dep) }});
     {{~ end ~}}
 {{~ end ~}}
