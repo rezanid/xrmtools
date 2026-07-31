@@ -254,7 +254,13 @@ internal class CSharpXrmMetaDataService(ICSharpXrmMetaParser parser) : IXrmMetaD
         var pluginTypesByDocument = new Dictionary<DocumentId, List<PluginTypeConfig>>();
 
         foreach (var projectDocument in project.Documents.Where(
-            d => d.SourceCodeKind == SourceCodeKind.Regular && d.FilePath != null && !d.FilePath.Contains("\\xrmtools.meta.attributes\\")))
+            d => 
+                d.SourceCodeKind == SourceCodeKind.Regular && 
+                d.FilePath != null &&
+                !d.FilePath.EndsWith(".g.cs", StringComparison.OrdinalIgnoreCase) &&
+                !d.FilePath.EndsWith(".generated.cs", StringComparison.OrdinalIgnoreCase) &&
+                !d.FilePath.EndsWith(".designer.cs", StringComparison.OrdinalIgnoreCase) &&
+                d.FilePath.IndexOf("\\xrmtools.meta.attributes\\", StringComparison.OrdinalIgnoreCase) < 0))
         {
             var pluginTypes = await ParsePluginConfigsFromDocumentAsync(projectDocument, compilation, processedSymbols, semanticModelCache, cancellationToken).ConfigureAwait(false);
             pluginTypesByDocument[projectDocument.Id] = pluginTypes;
@@ -308,15 +314,16 @@ internal class CSharpXrmMetaDataService(ICSharpXrmMetaParser parser) : IXrmMetaD
 
             var typeKey = typeSymbol.ToDisplayString();
 
-            if (!processedSymbols.Add(typeKey))
+            if (processedSymbols.Contains(typeKey))
                 continue;
 
             var pluginType = AttributeParser.ParsePluginConfig(typeSymbol, compilation);
-            if (pluginType != null)
-            {
-                result.Add(pluginType);
-                pluginType.IsNullableEnabled = semanticModel.GetNullableContext(classDeclaration.SpanStart).AnnotationsEnabled();
-            }
+            if (pluginType == null)
+                continue;
+
+            processedSymbols.Add(typeKey);
+            result.Add(pluginType);
+            pluginType.IsNullableEnabled = semanticModel.GetNullableContext(classDeclaration.SpanStart).AnnotationsEnabled();
         }
 
         return result;
