@@ -264,8 +264,15 @@ public class InjectDependenciesTemplateTests
         output.Should().NotContain("\r\n\r\n\r\n");
         output.Split(["var contactPersister = new XrmGenTest.ContactPersister("], StringSplitOptions.None).Length.Should().Be(2);
 
-        output.IndexOf("var contactPersister = new XrmGenTest.ContactPersister(", StringComparison.Ordinal)
-            .Should().BeLessThan(output.IndexOf("scope.Set<XrmGenTest.IContactPersister>(contactPersister);", StringComparison.Ordinal));
+        var organizationServiceFactoryRegistration = output.IndexOf("scope.Set<IOrganizationServiceFactory>(", StringComparison.Ordinal);
+        var contactPersisterDeclaration = output.IndexOf("var contactPersister = new XrmGenTest.ContactPersister(", StringComparison.Ordinal);
+        var contactPersisterRegistration = output.IndexOf("scope.Set<XrmGenTest.IContactPersister>(contactPersister);", StringComparison.Ordinal);
+
+        organizationServiceFactoryRegistration.Should().BeGreaterThanOrEqualTo(0);
+        contactPersisterDeclaration
+            .Should().BeGreaterThan(organizationServiceFactoryRegistration);
+        contactPersisterDeclaration
+            .Should().BeLessThan(contactPersisterRegistration);
     }
 
     private static string GetTemplatePath()
