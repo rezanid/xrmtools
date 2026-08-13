@@ -55,7 +55,7 @@ public class {{entity_type_name}} : Entity
 
 		public partial class OptionSets
 		{
-		{{~for attribute_meta in step.primary_entity_definition.attributes | filter_enum_attributes~}}
+		{{~for attribute_meta in step.primary_entity_definition.attributes | filter_distinct_enum_attributes~}}
 		{{~if attribute_meta.option_set != null~}}
 		{{~if (attribute_meta.option_set.description | get_label 1033)~}}
 			/// <summary>

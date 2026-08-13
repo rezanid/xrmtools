@@ -143,6 +143,13 @@ public static class ScribanExtensions
             a => a.IsValidForRead && a.OptionSet is not null && a.OptionSet.OptionSetType != OptionSetType.Boolean) ?? [];
     public static IEnumerable<EnumAttributeMetadata> FilterGlobalEnumAttributes(this IEnumerable<AttributeMetadata>? attributes)
         => attributes.FilterEnumAttributes().Where(a => a.OptionSet?.IsGlobal == true) ?? [];
+
+    public static IEnumerable<EnumAttributeMetadata> FilterDistinctEnumAttributes(this IEnumerable<AttributeMetadata>? attributes)
+        => attributes.FilterEnumAttributes()
+            .GroupBy(attribute => attribute.OptionSet!.IsGlobal.GetValueOrDefault() && !string.IsNullOrEmpty(attribute.OptionSet.Name)
+                ? $"global:{attribute.OptionSet.Name}"
+                : $"attribute:{attribute.LogicalName}")
+            .Select(group => group.First());
     public static IEnumerable<EnumAttributeMetadata> FilterLocalEnumAttributes(this IEnumerable<AttributeMetadata>? attributes)
         => attributes.FilterEnumAttributes().Where(a => a.OptionSet?.IsGlobal != true) ?? [];
 
