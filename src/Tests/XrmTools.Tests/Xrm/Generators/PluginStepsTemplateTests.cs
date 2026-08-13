@@ -2,6 +2,7 @@
 
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Text.RegularExpressions;
 using FluentAssertions;
 using Scriban;
@@ -39,6 +40,42 @@ public class PluginStepsTemplateTests
         // across steps.
         Regex.Matches(output, @"public const string Name = ""my_name"";").Count.Should().Be(1);
         Regex.Matches(output, @"public const string Email = ""my_email"";").Count.Should().Be(1);
+    }
+
+    [Fact]
+    public void Render_TargetWithSharedGlobalOptionSet_ProducesOneNestedEnum()
+    {
+        var model = BuildModelWithTwoUpdateSteps();
+        model.PluginTypes.First().Steps.First().PrimaryEntityDefinition = BuildEntityWithSharedGlobalOptionSet();
+
+        var output = RenderPlugin(model);
+
+        Regex.Matches(output, @"public enum SharedStatus").Count.Should().Be(1);
+        output.Should().Contain("public UpdatePreOperationMy_entityEntity.Meta.OptionSets.SharedStatus? StatusOne");
+        output.Should().Contain("public UpdatePreOperationMy_entityEntity.Meta.OptionSets.SharedStatus? StatusTwo");
+    }
+
+    [Fact]
+    public void Render_ImageWithSharedGlobalOptionSet_ProducesOneNestedEnum()
+    {
+        var model = BuildModelWithTwoUpdateSteps();
+        var step = model.PluginTypes.First().Steps.First();
+        step.Images =
+        [
+            new()
+            {
+                ImageType = ImageTypes.PreImage,
+                Name = "PreImage",
+                MessagePropertyDefinition = BuildEntityWithSharedGlobalOptionSet()
+            }
+        ];
+
+        var output = RenderPlugin(model);
+
+        output.Should().Contain("class UpdatePreOperationPreImageMy_entity");
+        Regex.Matches(output, @"public enum SharedStatus").Count.Should().Be(1);
+        output.Should().Contain("public UpdatePreOperationPreImageMy_entity.Meta.OptionSets.SharedStatus? StatusOne");
+        output.Should().Contain("public UpdatePreOperationPreImageMy_entity.Meta.OptionSets.SharedStatus? StatusTwo");
     }
 
     private static PluginAssemblyConfig BuildModelWithTwoUpdateSteps()
@@ -127,6 +164,53 @@ public class PluginStepsTemplateTests
             Attributes = [.. attributeMetadata]
         };
     }
+
+    private static EntityMetadata BuildEntityWithSharedGlobalOptionSet()
+    {
+        var optionSet = new OptionSetMetadata
+        {
+            Name = "my_shared_status",
+            DisplayName = Label("Shared Status"),
+            Description = Label("Shared status values."),
+            IsCustomizable = new ManagedBooleanProperty(true),
+            ExternalTypeName = string.Empty,
+            IntroducedVersion = string.Empty,
+            IsGlobal = true,
+            OptionSetType = OptionSetType.Picklist,
+            Options = [new OptionMetadata(Label("Active"), 1)]
+        };
+
+        return new EntityMetadata("my_entity", "my_entities")
+        {
+            SchemaName = "My_entity",
+            PrimaryIdAttribute = "my_entityid",
+            LogicalCollectionName = "my_entities",
+            Attributes =
+            [
+                Picklist("StatusOne", "my_statusone", optionSet),
+                Picklist("StatusTwo", "my_statustwo", optionSet)
+            ]
+        };
+    }
+
+    private static PicklistAttributeMetadata Picklist(string schemaName, string logicalName, OptionSetMetadata optionSet) =>
+        new(schemaName)
+        {
+            LogicalName = logicalName,
+            SchemaName = schemaName,
+            IsPrimaryId = false,
+            IsLogical = false,
+            IsValidForCreate = true,
+            IsValidForRead = true,
+            IsValidForUpdate = true,
+            RequiredLevel = new AttributeRequiredLevelManagedProperty(AttributeRequiredLevel.None),
+            OptionSet = optionSet
+        };
+
+    private static Label Label(string value) => new()
+    {
+        LocalizedLabels = [new LocalizedLabel { LanguageCode = 1033, Label = value }]
+    };
 
     private static string RenderPlugin(PluginAssemblyConfig model)
     {

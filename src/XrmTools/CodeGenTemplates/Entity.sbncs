@@ -76,7 +76,7 @@ namespace {{ first_plugin_type?.namespace ?? config.default_namespace }}
 						? logicalName
 						: throw new ArgumentException("Invalid attribute logical name.", nameof(memberName));
 			}
-			{{~enum_attributes = model.global_option_set_code_gen.mode == 'GlobalOptionSetFile' ? (entity_definition.attributes | filter_local_enum_attributes) : (entity_definition.attributes | filter_enum_attributes)~}}
+			{{~enum_attributes = model.global_option_set_code_gen.mode == 'GlobalOptionSetFile' ? (entity_definition.attributes | filter_local_enum_attributes) : (entity_definition.attributes | filter_distinct_enum_attributes)~}}
 			{{~if enum_attributes && !(enum_attributes.empty?)}}
 			public partial class OptionSets
 			{
