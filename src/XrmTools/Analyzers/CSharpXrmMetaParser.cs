@@ -418,10 +418,15 @@ internal class CSharpXrmMetaParser(
         {
             //var attributes = attributeData.ConstructorArguments[1].Value;
             imageConfig.Attributes = attributeData.ConstructorArguments[1].Value as string;
-            return imageConfig;
+        }
+        else
+        {
+            imageConfig.Attributes = attributeData.NamedArguments.FirstOrDefault(a => a.Key == "Attributes").Value.Value as string;
         }
 
-        imageConfig.Attributes = attributeData.NamedArguments.FirstOrDefault(a => a.Key == "Attributes").Value.Value as string;
+        imageConfig.Attributes = imageConfig.Attributes is string attributes
+            ? string.Concat(attributes.Where(c => !char.IsWhiteSpace(c)))
+            : null;
 
         return imageConfig;
     }
