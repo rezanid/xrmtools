@@ -81,6 +81,12 @@ internal class GeneralOptions : BaseOptionModel<GeneralOptions>
     [DefaultValue(true)]
     public bool PromptBeforeDeletingRemovedPluginsAtProjectLevel { get; set; } = true;
 
+    [Category("Plugin Registration")]
+    [DisplayName("Show success dialog after registration")]
+    [Description("Show a dialog when plugin registration completes successfully.")]
+    [DefaultValue(false)]
+    public bool ShowPluginRegistrationSuccessDialog { get; set; }
+
     [Category("Advanced")]
     [DisplayName("Proxy")]
     [Description("Use a proxy server for all communications with Power Platform. Requires restarting Visual Studio.")]

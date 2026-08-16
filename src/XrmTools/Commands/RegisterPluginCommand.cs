@@ -14,6 +14,7 @@ using XrmTools.Analyzers;
 using XrmTools.Environments;
 using XrmTools.Helpers;
 using XrmTools.Logging.Compatibility;
+using XrmTools.Options;
 using XrmTools.Resources;
 using XrmTools.Services;
 using XrmTools.UI;
@@ -58,15 +59,21 @@ internal sealed class RegisterPluginCommand : BaseCommand<RegisterPluginCommand>
         var projectIsUpToDate = await VS.Build.ProjectIsUpToDateAsync(project);
         if (!projectIsUpToDate)
         {
+            Logger.LogInformation("The project is not up to date. Building it before plugin registration.");
             var buildSucceeded = await project.BuildAsync();
-            if (!buildSucceeded) return;
+            if (!buildSucceeded)
+            {
+                Logger.LogWarning("Plugin registration stopped because the project build failed.");
+                return;
+            }
         }
 
         var generatePackage = project.GetBuildProperty<bool>(BuildProperties.GeneratePackageOnBuild);
         var nugetFilePath = generatePackage ? Path.Combine(project.FullPath, project.GetOutputPackagePath()) : null;
 
-        await VS.StatusBar.StartAnimationAsync(StatusAnimation.General);
+        await VS.StatusBar.StartAnimationAsync(StatusAnimation.Sync);
         await VS.StatusBar.ShowMessageAsync("Registering plugin(s)...");
+        Logger.LogInformation("Starting plugin registration from the Solution Explorer selection.");
 
         try
         {
@@ -80,13 +87,21 @@ internal sealed class RegisterPluginCommand : BaseCommand<RegisterPluginCommand>
 
             if (!result.Succeeded)
             {
+                Logger.LogWarning("Plugin registration did not complete: {Message}", result.Message);
                 await VS.StatusBar.EndAnimationAsync(StatusAnimation.General);
                 await VS.StatusBar.ShowMessageAsync("Plugin registration failed.");
                 await VS.MessageBox.ShowErrorAsync(Vsix.Name, result.Message);
                 return;
             }
 
+            Logger.LogInformation("Plugin registration completed successfully: {Message}", result.Message);
             await VS.StatusBar.ShowMessageAsync(result.Message);
+
+            var options = await GeneralOptions.GetLiveInstanceAsync();
+            if (options.ShowPluginRegistrationSuccessDialog)
+            {
+                await VS.MessageBox.ShowAsync(Vsix.Name, result.Message,buttons: Microsoft.VisualStudio.Shell.Interop.OLEMSGBUTTON.OLEMSGBUTTON_OK);
+            }
         }
         catch (Exception ex)
         {
