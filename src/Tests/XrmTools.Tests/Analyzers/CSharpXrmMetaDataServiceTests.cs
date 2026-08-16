@@ -29,6 +29,22 @@ public class CSharpXrmMetaDataServiceTests
     }
 
     [Fact]
+    public async Task ParseProjectPluginsAsync_Should_Remove_Whitespace_From_Image_Attributes()
+    {
+        var workspace = CreateWorkspace();
+        var project = workspace.AddProject("ImageAttributesProject", LanguageNames.CSharp)
+            .AddMetadataReferences(GetMetadataReferences());
+
+        project = project.AddDocument("Attributes.cs", ImageAttributeSource, filePath: Path.Combine("C:\\", "Tests", "Attributes.cs")).Project;
+        project = project.AddDocument("ImagePlugin.cs", ImagePluginSource, filePath: Path.Combine("C:\\", "Tests", "ImagePlugin.cs")).Project;
+
+        var model = await CreateService().ParseProjectPluginsAsync(project);
+
+        model!.PluginTypes.Single().Steps.Single().Images.Single().Attributes
+            .Should().Be("firstname,lastname");
+    }
+
+    [Fact]
     public async Task ParsePluginsAsync_Should_Throw_When_CustomApi_UniqueName_Duplicates_Exist_In_Project()
     {
         var project = CreateProjectWithDuplicateCustomApiUniqueNames();
@@ -121,6 +137,50 @@ using XrmTools.Meta.Attributes;
 [Plugin(Name = ""SecondPlugin"")]
 [CustomApi(""contoso.duplicateapi"", Name = ""duplicateapi2"")]
 internal sealed class SecondPlugin
+{
+}";
+
+    private const string ImageAttributeSource = @"namespace XrmTools.Meta.Attributes;
+
+using System;
+
+public enum ExecutionMode { Synchronous = 0 }
+public enum Stages { PreOperation = 20 }
+public enum ImageTypes { PreImage = 0 }
+
+[AttributeUsage(AttributeTargets.Class, Inherited = true, AllowMultiple = false)]
+internal sealed class PluginAttribute : Attribute
+{
+    public string Name { get; set; } = string.Empty;
+}
+
+[AttributeUsage(AttributeTargets.Class, Inherited = true, AllowMultiple = true)]
+internal sealed class StepAttribute : Attribute
+{
+    public StepAttribute(string messageName, Stages stage, ExecutionMode mode) { }
+    public string PrimaryEntityName { get; set; } = string.Empty;
+    public string FilteringAttributes { get; set; } = string.Empty;
+}
+
+[AttributeUsage(AttributeTargets.Class, Inherited = true, AllowMultiple = true)]
+internal sealed class ImageAttribute : Attribute
+{
+    public ImageAttribute(ImageTypes imageType, string attributes) { Attributes = attributes; }
+    public string Attributes { get; }
+    public string Name { get; set; } = string.Empty;
+    public string EntityAlias { get; set; } = string.Empty;
+}
+
+";
+
+    private const string ImagePluginSource = @"namespace TestPlugins;
+
+using XrmTools.Meta.Attributes;
+
+[Plugin(Name = ""ImagePlugin"")]
+[Step(""Create"", Stages.PreOperation, ExecutionMode.Synchronous)]
+[Image(ImageTypes.PreImage, ""firstname, \t lastname"")]
+internal sealed class ImagePlugin
 {
 }";
 }
