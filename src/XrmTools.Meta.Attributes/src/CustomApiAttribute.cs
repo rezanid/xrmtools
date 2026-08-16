@@ -6,13 +6,13 @@
     /// Generates a Custom API for a plugin. If no name has been given, name of the type will be used.
     /// </summary>
     [AttributeUsage(AttributeTargets.Class, AllowMultiple = false, Inherited = false)]
-    public class CustomApiAttribute : Attribute
+    internal class CustomApiAttribute : Attribute
     {
         public string DisplayName { get; set; } = string.Empty;
         public string Name { get; set; } = string.Empty;
         public string UniqueName { get; }
         public string Description { get; set; } = string.Empty;
-        public ProcessingStepTypes StepType { get; set; } = ProcessingStepTypes.SyncAndAsync;
+        public ProcessingStepTypes StepType { get; set; } = ProcessingStepTypes.None;
         public BindingTypes BindingType { get; set; } = BindingTypes.Global;
         public string BoundEntityLogicalName { get; set; } = string.Empty;
         public string ExecutePrivilegeName { get; set; } = string.Empty;

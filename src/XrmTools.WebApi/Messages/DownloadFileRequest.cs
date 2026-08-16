@@ -3,11 +3,13 @@ namespace XrmTools.WebApi.Messages;
 
 using System;
 using System.Net.Http;
+using System.Threading;
+using System.Threading.Tasks;
 
 /// <summary>
 /// Contains the data to retrieve a file column value
 /// 
-public sealed class DownloadFileRequest : HttpRequestMessage
+public sealed class DownloadFileRequest : WebApiRequest<DownloadFileResponse>
 {
     /// <summary>
     /// Initializes the DownloadFileRequest
@@ -27,5 +29,8 @@ public sealed class DownloadFileRequest : HttpRequestMessage
             uriString: uriString,
             uriKind: UriKind.Relative);
     }
+
+    public override Task<DownloadFileResponse> CreateResponseAsync(HttpResponseMessage raw, CancellationToken ct)
+        => DownloadFileResponse.FromAsync(raw);
 }
 #nullable restore

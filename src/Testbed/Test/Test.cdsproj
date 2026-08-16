@@ -1,0 +1,5 @@
+<Project Sdk="AlbanianXrm.CDSProj.Sdk/1.0.11">
+  <ItemGroup>
+    <ProjectReference Include="..\Classic\ClassicPluginsCS13\ClassicPluginsCS13.csproj" />
+  </ItemGroup>
+</Project>

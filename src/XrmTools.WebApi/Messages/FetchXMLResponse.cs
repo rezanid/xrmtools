@@ -57,7 +57,7 @@ public sealed class FetchXmlResponse
 
         var root = raw.Content != null
             ? await raw.Content.ReadRootAsync().ConfigureAwait(false)
-            : new JObject();
+            : [];
 
         var resp = new FetchXmlResponse(raw.StatusCode, headers)
         {

@@ -3,11 +3,13 @@ namespace XrmTools.WebApi.Messages;
 
 using System;
 using System.Net.Http;
+using System.Threading;
+using System.Threading.Tasks;
 
 /// <summary>
 /// Contains the data to retrieve a column value
 /// </summary>
-public sealed class GetColumnValueRequest : HttpRequestMessage
+public sealed class GetColumnValueRequest<T> : WebApiRequest<GetColumnValueResponse<T>>
 {
     /// <summary>
     /// Initializes the GetColumnValueRequest
@@ -21,5 +23,8 @@ public sealed class GetColumnValueRequest : HttpRequestMessage
             uriString: $"{entityReference.Path}/{property}", 
             uriKind: UriKind.Relative);
     }
+
+    public override Task<GetColumnValueResponse<T>> CreateResponseAsync(HttpResponseMessage raw, CancellationToken ct)
+        => GetColumnValueResponse<T>.FromAsync(raw, ct);
 }
 #nullable restore

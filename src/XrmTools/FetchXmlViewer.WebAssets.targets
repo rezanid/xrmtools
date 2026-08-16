@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project>
+  <PropertyGroup>
+    <FetchXmlWebRoot>$(MSBuildThisFileDirectory)..\xrmtools.fetchxmlviewer\</FetchXmlWebRoot>
+    <FetchXmlWebDist>$(FetchXmlWebRoot)dist\</FetchXmlWebDist>
+    <FetchXmlHostDir>$(MSBuildThisFileDirectory)FetchXmlViewer\</FetchXmlHostDir>
+  </PropertyGroup>
+
+  <Target Name="BuildFetchXmlWeb"
+          BeforeTargets="BeforeBuild">
+
+    <Message Importance="High" Text="Copying FetchXml web assets from: $(FetchXmlWebRoot)" />
+
+    <RemoveDir Directories="$(FetchXmlHostDir)"
+               Condition="Exists('$(FetchXmlHostDir)')" />
+
+    <MakeDir Directories="$(FetchXmlHostDir)" />
+
+    <ItemGroup>
+      <FetchXmlDistFiles Include="$(FetchXmlWebDist)**\*" />
+    </ItemGroup>
+
+    <Copy SourceFiles="@(FetchXmlDistFiles)"
+          DestinationFiles="@(FetchXmlDistFiles->'$(FetchXmlHostDir)%(RecursiveDir)%(Filename)%(Extension)')"
+          SkipUnchangedFiles="true" />
+
+    <Message Importance="High" Text="Copied Vite dist -> $(FetchXmlHostDir)" />
+  </Target>
+</Project>

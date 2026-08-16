@@ -1,5 +1,7 @@
 ﻿namespace XrmTools.Authentication;
 using Microsoft.Identity.Client;
+using Microsoft.Internal.VisualStudio.PlatformUI;
+using Microsoft.VisualStudio.Shell;
 using System;
 using System.Linq;
 using System.Threading;
@@ -15,9 +17,9 @@ internal class IntegratedAuthenticator : DelegatingAuthenticator
     {
         cancellationToken.ThrowIfCancellationRequested();
 
-        // Fresh app per attempt to avoid sticky broker state
-        // Previously we cached the app instances in an AsyncDictionary<AuthenticationParameters, IPublicClientApplication>
-        var app = (await CreateClientAppAsync(parameters, cancellationToken)).AsPublicClient();
+        var appBase = await CreateClientAppAsync(parameters, cancellationToken).ConfigureAwait(false);
+        var app = appBase.AsPublicClient()
+                  ?? throw new InvalidOperationException("IntegratedAuthenticator requires a public client application.");
 
         if (clearTokenCache)
         {
@@ -25,42 +27,70 @@ internal class IntegratedAuthenticator : DelegatingAuthenticator
         }
 
         var accounts = await app.GetAccountsAsync().ConfigureAwait(false);
-        var firstAccount = accounts.FirstOrDefault(a => string.Equals(a.HomeAccountId?.TenantId, parameters.Tenant, StringComparison.OrdinalIgnoreCase));
+        var firstAccount = accounts
+            .FirstOrDefault(
+            a => string.Equals(a.HomeAccountId?.TenantId,
+                   parameters.Tenant,
+                   StringComparison.OrdinalIgnoreCase));
 
-        try
+        if (firstAccount is not null)
         {
-            return await app.AcquireTokenSilent(parameters.Scopes, firstAccount)
-                .ExecuteAsync(cancellationToken)
-                .ConfigureAwait(false);
-        }
-        catch (MsalUiRequiredException)
-        {
-            // continue to interactive
-        }
-        catch (OperationCanceledException)
-        {
-            throw;
+            try
+            {
+                return await app.AcquireTokenSilent(parameters.Scopes, firstAccount)
+                                .ExecuteAsync(cancellationToken)
+                                .ConfigureAwait(false);
+            }
+            catch (MsalUiRequiredException)
+            {
+                // fall through to interactive
+            }
+            catch (OperationCanceledException)
+            {
+                throw;
+            }
         }
 
-        // Interactive using embedded web view to avoid WAM hangs
-        // Add a hard timeout guard so we never wait forever if the broker/webview fails to signal cancel on repeated attempts
+        await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync(cancellationToken);
+
         var builder = app.AcquireTokenInteractive(parameters.Scopes)
+            .WithParentActivityOrWindow(WindowHelper.GetDialogOwnerHandle())
             .WithPrompt(Prompt.SelectAccount)
-            .WithUseEmbeddedWebView(true);
+            .WithUseEmbeddedWebView(false);
 
-        var execTask = builder.ExecuteAsync(cancellationToken);
-        var timeoutTask = Task.Delay(TimeSpan.FromSeconds(60));
-        var completed = await Task.WhenAny(execTask, timeoutTask).ConfigureAwait(false);
+        if (firstAccount is not null)
+        {
+            builder = builder.WithAccount(firstAccount);
+        }
+
+        using var timeoutCts = new CancellationTokenSource();
+        using var linkedCts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, timeoutCts.Token);
+
+        // Prefer the system browser to avoid the legacy IE-based embedded web view on .NET Framework.
+        var execTask = builder.ExecuteAsync(linkedCts.Token);
+        var timeoutTask = Task.Delay(TimeSpan.FromMinutes(2));
+
+        var completed = await Task.WhenAny(execTask, timeoutTask).ConfigureAwait(true);
         if (completed != execTask)
         {
+            timeoutCts.Cancel();
             throw new OperationCanceledException("Interactive authentication timed out.", cancellationToken);
         }
 
         try
         {
-            return await execTask.ConfigureAwait(false);
+            return await execTask.ConfigureAwait(true);
         }
-        catch (MsalException ex) when (ex.ErrorCode == "authentication_canceled" || ex.ErrorCode == "access_denied" || ex.ErrorCode == "user_canceled")
+        catch (MsalClientException ex) when (ex.ErrorCode == "loopback_redirect_uri")
+        {
+            throw new InvalidOperationException(
+                "Interactive authentication requires a loopback redirect URI when using the system browser. Configure the app registration with RedirectUri=http://localhost, or omit RedirectUri to use the built-in loopback default.",
+                ex);
+        }
+        catch (MsalException ex) when (
+            ex.ErrorCode == "authentication_canceled" ||
+            ex.ErrorCode == "access_denied" ||
+            ex.ErrorCode == "user_canceled")
         {
             throw new OperationCanceledException("User cancelled the authentication.", ex, cancellationToken);
         }

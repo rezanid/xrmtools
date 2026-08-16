@@ -47,6 +47,7 @@ internal class EntityMetadataRepository(IWebApiService service, ILogger logger) 
 
     public async Task<IEnumerable<string>> GetEntityNamesAsync(string messageName, CancellationToken cancellationToken = default)
     {
+        logger.LogTrace("Retrieving entity logical names for message {MessageName}", messageName);
         var response = await service.GetAsync(sdkMessageEntityNamesQuery.FormatWith(messageName), cancellationToken).ConfigureAwait(false);
         if (response.IsSuccessStatusCode)
         {
@@ -54,9 +55,12 @@ internal class EntityMetadataRepository(IWebApiService service, ILogger logger) 
             var typed = content.Deserialize<ODataQueryResponse<SdkMessageFilter>>().Value;
             if (typed is not null && typed.Any())
             {
+                logger.LogTrace("Found {Count} entities for message {MessageName}, before filtering", typed.Count(), messageName);
                 return typed.Select(e => e.PrimaryObjectTypeCode).Distinct();
             }
         }
+
+        logger.LogTrace("No entities found for message {MessageName}", messageName);
         return [];
     }
 

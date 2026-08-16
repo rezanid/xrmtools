@@ -52,19 +52,13 @@ public partial class XrmToolsPackage
 }
 
 [Export]
-internal sealed class NuGetInfra
+[method: ImportingConstructor]
+internal sealed class NuGetInfra(
+    IVsNuGetProjectUpdateEvents updateEvents,
+    IVsSemanticVersionComparer semverComparer)
 {
-    [ImportingConstructor]
-    public NuGetInfra(
-        IVsNuGetProjectUpdateEvents updateEvents,
-        IVsSemanticVersionComparer semverComparer)
-    {
-        UpdateEvents = updateEvents;
-        SemverComparer = semverComparer;
-    }
-
-    public IVsNuGetProjectUpdateEvents UpdateEvents { get; }
-    public IVsSemanticVersionComparer SemverComparer { get; }
+    public IVsNuGetProjectUpdateEvents UpdateEvents { get; } = updateEvents;
+    public IVsSemanticVersionComparer SemverComparer { get; } = semverComparer;
 }
 
 internal static class NuGetReadyGate

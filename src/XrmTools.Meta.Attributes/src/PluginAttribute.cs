@@ -7,7 +7,7 @@
     /// but you can specify the name explicitly, along with a description and other details.
     /// </summary>
     [AttributeUsage(AttributeTargets.Class, Inherited = true, AllowMultiple = false)]
-    public class PluginAttribute : Attribute
+    internal class PluginAttribute : Attribute
     {
         public string Id { get; set; } = string.Empty;
         public string Name { get; set; } = string.Empty;

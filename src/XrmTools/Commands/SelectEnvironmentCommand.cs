@@ -80,7 +80,7 @@ internal sealed class SelectEnvironmentCommand : BaseCommand<SelectEnvironmentCo
             return;
         }
 
-        await EnvironmentProvider.SetActiveEnvironmentAsync(environment);
+        await EnvironmentProvider.SetActiveEnvironmentAsync(environment, true);
     }
 
     private async Task<DataverseEnvironment> ChooseEnvironmentAsync(GeneralOptions options)

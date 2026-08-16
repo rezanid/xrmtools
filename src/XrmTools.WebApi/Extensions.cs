@@ -3,17 +3,25 @@ namespace XrmTools.WebApi;
 
 using Newtonsoft.Json.Linq;
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Net.Http;
-using System.Security.Cryptography.Xml;
+using System.Net.Http.Headers;
 using System.Text.Json;
-using System.Threading;
+using System.Text.Json.Serialization;
 using System.Threading.Tasks;
 using XrmTools.Core.Helpers;
 
 public static partial class Extensions
 {
-    //TODO: Using reflection to copy properties is not the best way to do this. Make sure we switch to CastAsync<T> for all responses.
+    internal static JsonSerializerOptions SerializerOptions { get; } = new()
+    {
+        PropertyNameCaseInsensitive = true,
+        DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
+        Converters = { new JsonStringEnumConverter() }
+    };
+
+    [Obsolete("Use typed WebApiRequest<TResponse> responses instead.")]
     /// <summary>
     /// Converts HttpResponseMessage to derived type
     /// </summary>
@@ -22,7 +30,8 @@ public static partial class Extensions
     /// <returns></returns>
     public static T As<T>(this HttpResponseMessage response) where T : HttpResponseMessage
     {
-        T? typedResponse = (T)Activator.CreateInstance(typeof(T));
+        T? typedResponse = (T?)Activator.CreateInstance(typeof(T))
+            ?? throw new InvalidOperationException($"Unable to create {typeof(T).Name}.");
 
         //Copy the properties
         typedResponse.StatusCode = response.StatusCode;
@@ -40,25 +49,33 @@ public static partial class Extensions
             throw new InvalidOperationException($"Unable to deserialize {typeof(T).Name}");
     }
 
+    internal static IReadOnlyDictionary<string, IEnumerable<string>> ToHeaderDictionary(this HttpHeaders headers)
+        => headers.ToDictionary(header => header.Key, header => header.Value, StringComparer.OrdinalIgnoreCase);
+
+    internal static string? GetHeaderValue(this HttpHeaders headers, string headerName)
+        => headers.TryGetValues(headerName, out var values) ? values.FirstOrDefault() : null;
+
+    internal static string? GetHeaderValue(this IReadOnlyDictionary<string, IEnumerable<string>> headers, string headerName)
+        => headers.TryGetValue(headerName, out var values) ? values.FirstOrDefault() : null;
+
+    public static EntityReference? GetEntityReference(this HttpResponseMessage response)
+    {
+        var value = response.Headers.GetHeaderValue("OData-EntityId");
+        return string.IsNullOrWhiteSpace(value) ? null : new EntityReference(value!);
+    }
+
     public static async Task<ServiceException> AsServiceExceptionAsync(this HttpResponseMessage response)
     {
-        string requestId = string.Empty;
-        if (response.Headers.Contains("REQ_ID"))
-        {
-            requestId = response.Headers.GetValues("REQ_ID").FirstOrDefault();
-        }
+        var requestId = response.Headers.GetHeaderValue("REQ_ID") ?? string.Empty;
 
-        var content = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
+        var content = response.Content is null
+            ? string.Empty
+            : await response.Content.ReadAsStringAsync().ConfigureAwait(false);
         ODataError? oDataError = null;
 
         try
         {
-            var options = new JsonSerializerOptions
-            {
-                PropertyNameCaseInsensitive = true
-            };
-
-            oDataError = JsonSerializer.Deserialize<ODataError>(content, options);
+            oDataError = JsonSerializer.Deserialize<ODataError>(content, SerializerOptions);
         }
         catch (Exception)
         {
@@ -67,56 +84,47 @@ public static partial class Extensions
 
         if (oDataError != null && oDataError.Error != null)
         {
-
-            var exception = oDataError.Error.Message is string msg ? new ServiceException(msg) : new ServiceException()
-            {
-                ODataError = oDataError,
-                Content = content,
-                ReasonPhrase = response.ReasonPhrase,
-                HttpStatusCode = response.StatusCode,
-                RequestId = requestId
-            };
-            return exception;
+            return CreateServiceException(
+                message: oDataError.Error.Message ?? response.ReasonPhrase,
+                response: response,
+                requestId: requestId,
+                content: content,
+                oDataError: oDataError);
         }
-        else
+
+        try
         {
-            try
-            {
-                var oDataException = JsonSerializer.Deserialize<ODataException>(content);
+            var oDataException = JsonSerializer.Deserialize<ODataException>(content, SerializerOptions);
+            var message = oDataException?.Message ?? oDataException?.ExceptionMessage ?? response.ReasonPhrase;
 
-                ServiceException otherException = oDataException?.Message is string msg ? new(msg) : new()
-                {
-                    Content = content,
-                    ReasonPhrase = response.ReasonPhrase,
-                    HttpStatusCode = response.StatusCode,
-                    RequestId = requestId
-                };
-                return otherException;
-
-            }
-            catch (Exception)
-            {
-
-            }
-
-            //When nothing else works
-            ServiceException exception = new(response.ReasonPhrase)
-            {
-                Content = content,
-                ReasonPhrase = response.ReasonPhrase,
-                HttpStatusCode = response.StatusCode,
-                RequestId = requestId
-            };
-            return exception;
+            return CreateServiceException(message, response, requestId, content);
         }
+        catch (Exception)
+        {
+        }
+
+        return CreateServiceException(response.ReasonPhrase, response, requestId, content);
     }
 
-    public static async Task<JObject> ReadRootAsync(this HttpContent content)
-    {
-        if (content == null) return [];
+    private static ServiceException CreateServiceException(
+        string? message,
+        HttpResponseMessage response,
+        string requestId,
+        string content,
+        ODataError? oDataError = null)
+        => new(message ?? response.ReasonPhrase ?? $"HTTP {(int)response.StatusCode}")
+        {
+            ODataError = oDataError,
+            Content = content,
+            ReasonPhrase = response.ReasonPhrase,
+            HttpStatusCode = response.StatusCode,
+            RequestId = requestId
+        };
 
-        // TODO: Buffer once so we can safely dispose the HttpResponseMessage afterwards.
-        // If LoadIntoBufferAsync isn’t available, I might need to replace with ReadAsByteArrayAsync().
+    public static async Task<JObject> ReadRootAsync(this HttpContent? content)
+    {
+        if (content == null) return new JObject();
+
         try
         {
             await content.LoadIntoBufferAsync().ConfigureAwait(false);
@@ -127,10 +135,10 @@ public static partial class Extensions
         }
 
         var json = await content.ReadAsStringAsync().ConfigureAwait(false);
-        if (string.IsNullOrWhiteSpace(json)) return [];
+        if (string.IsNullOrWhiteSpace(json)) return new JObject();
 
         try { return JObject.Parse(json); }
-        catch { return []; }
+        catch { return new JObject(); }
     }
 }
 #nullable restore

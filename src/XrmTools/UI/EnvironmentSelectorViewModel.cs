@@ -109,7 +109,7 @@ internal class EnvironmentSelectorViewModel : ViewModelBase
     {
         if (environment is null)
         {
-            _ = await VS.MessageBox.ShowAsync("No environment selected", "Please select and environment first.", OLEMSGICON.OLEMSGICON_WARNING, OLEMSGBUTTON.OLEMSGBUTTON_OK);
+            _ = await VS.MessageBox.ShowAsync("No environment selected", "Please select an environment first.", OLEMSGICON.OLEMSGICON_WARNING, OLEMSGBUTTON.OLEMSGBUTTON_OK);
             return;
         }
         if (repositoryFactory is null)

@@ -76,7 +76,7 @@ namespace {{ first_plugin_type?.namespace ?? config.default_namespace }}
 						? logicalName
 						: throw new ArgumentException("Invalid attribute logical name.", nameof(memberName));
 			}
-			{{~enum_attributes = model.global_option_set_code_gen.mode == 'GlobalOptionSetFile' ? (entity_definition.attributes | filter_local_enum_attributes) : (entity_definition.attributes | filter_enum_attributes)~}}
+			{{~enum_attributes = model.global_option_set_code_gen.mode == 'GlobalOptionSetFile' ? (entity_definition.attributes | filter_local_enum_attributes) : (entity_definition.attributes | filter_distinct_enum_attributes)~}}
 			{{~if enum_attributes && !(enum_attributes.empty?)}}
 			public partial class OptionSets
 			{
@@ -132,6 +132,17 @@ namespace {{ first_plugin_type?.namespace ?? config.default_namespace }}
 		public {{parent_type_name}}(Guid id) : base(Meta.EntityLogicalName, id) { }
 		public {{parent_type_name}}(string keyName, object keyValue) : base(Meta.EntityLogicalName, keyName, keyValue) { }
 		public {{parent_type_name}}(KeyAttributeCollection keyAttributes) : base(Meta.EntityLogicalName, keyAttributes) { }
+	}
+{{~end~}}
+{{~if model.organization_context_config~}}
+
+    public partial class {{model.organization_context_config.name}} : OrganizationServiceContext
+	{
+		public {{model.organization_context_config.name}}(IOrganizationService service) : base(service) { }
+	{{~for entity_definition in model.entity_definitions~}}
+
+		public IQueryable<{{entity_definition.schema_name}}> {{entity_definition.schema_name}}Set => CreateQuery<{{entity_definition.schema_name}}>();
+	{{~end~}}
 	}
 {{~end~}}
 }

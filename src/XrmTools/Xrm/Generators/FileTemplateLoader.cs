@@ -27,7 +27,7 @@ public class FileTemplateLoader(string baseDirectory) : ITemplateLoader
             _ => File.ReadAllText(templatePath)
         };
 
-    public async ValueTask<string> LoadAsync(TemplateContext context, SourceSpan callerSpan, string templatePath)
+    public async ValueTask<string?> LoadAsync(TemplateContext context, SourceSpan callerSpan, string templatePath)
         => ValidateTemplatePath(templatePath) switch
         {
 

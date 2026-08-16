@@ -1,0 +1,10 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+	<TargetFrameworks>net462;net48</TargetFrameworks>
+	<RestoreSources>$(XrmToolsMetaAttributesRestoreSources)</RestoreSources>
+  </PropertyGroup>
+
+  <ItemGroup>
+	<PackageReference Include="XrmTools.Meta.Attributes" Version="$(XrmToolsMetaAttributesPackageVersion)" />
+  </ItemGroup>
+</Project>

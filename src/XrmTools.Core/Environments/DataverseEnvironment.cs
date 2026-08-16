@@ -65,13 +65,17 @@ public record DataverseEnvironment
     [Browsable(false)]
     public bool IsValid { get => isValidConnectionString; }
 
+    [Browsable(false)]
+    public bool IsAutehnticated { get; set; }
+
     public virtual bool Equals(DataverseEnvironment? other)
     {
         if (other is null) return false;
         if (ReferenceEquals(this, other)) return true;
 
         // Only consider Url and ConnectionString in equality
-        return ConnectionString == other.ConnectionString;
+        return (Name is null && other.Name is null && string.IsNullOrEmpty(ConnectionString) && string.IsNullOrEmpty(other.ConnectionString))
+            || (Name is not null && other.Name is not null && ConnectionString == other.ConnectionString);
     }
 
     public override int GetHashCode()
@@ -82,11 +86,12 @@ public record DataverseEnvironment
         return hash;
     }
 
-    public override string? ToString()
-    {
-        return !string.IsNullOrEmpty(Name) ? Name : "New";
-    }
+    //public override string? ToString()
+    //{
+    //    return !string.IsNullOrEmpty(Name) ? Name : "New";
+    //}
 
     public static DataverseEnvironment Empty => new();
+
 }
 #nullable restore

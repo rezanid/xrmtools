@@ -1,0 +1,23 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<VSTemplate Version="3.0.0" Type="Project" xmlns="http://schemas.microsoft.com/developer/vstemplate/2005" xmlns:sdk="http://schemas.microsoft.com/developer/vstemplate-sdkextension/2010">
+  <TemplateData>
+    <Name>Power Platform Plugin (Xrm Tools)</Name>
+    <Description>A standard Power Platform plugin project that uses XrmTools registration attributes to simplify development and deployment.</Description>
+    <Icon>XrmTools.PluginProjectTemplate.ico</Icon>
+    <ProjectType>CSharp</ProjectType>
+    <LanguageTag>csharp</LanguageTag>
+    <RequiredFrameworkVersion>4.6.2</RequiredFrameworkVersion>
+    <SortOrder>1000</SortOrder>
+    <TemplateID>48562e2c-c2a8-4477-a89f-c41b1e6f6bd0</TemplateID>
+    <CreateNewFolder>true</CreateNewFolder>
+    <DefaultName>XrmToolsPlugin</DefaultName>
+    <ProvideDefaultName>true</ProvideDefaultName>
+    <EnableLocationBrowseButton>true</EnableLocationBrowseButton>
+  </TemplateData>
+  <TemplateContent>
+    <Project File="ProjectTemplate.csproj" ReplaceParameters="true">
+      <ProjectItem ReplaceParameters="true" TargetFileName="Properties\AssemblyInfo.cs">AssemblyInfo.cs</ProjectItem>
+      <ProjectItem ReplaceParameters="true" TargetFileName="HelloWorldPlugin.cs" OpenInEditor="true">HelloWorldPlugin.cs</ProjectItem>
+    </Project>
+  </TemplateContent>
+</VSTemplate>

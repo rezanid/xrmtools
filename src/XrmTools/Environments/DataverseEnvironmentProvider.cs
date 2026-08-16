@@ -1,38 +1,47 @@
 ﻿#nullable enable
 namespace XrmTools;
-using System.Linq;
-using System.Threading.Tasks;
-using XrmTools.Options;
-using System.ComponentModel.Composition;
-using XrmTools.Settings;
-using XrmTools.Environments;
+
+using Microsoft.VisualStudio.Shell;
 using System;
 using System.Collections.Generic;
+using System.ComponentModel.Composition;
+using System.Linq;
+using System.Threading.Tasks;
+using XrmTools.Environments;
+using XrmTools.Http;
+using XrmTools.Options;
+using XrmTools.Settings;
 
-internal class DataverseEnvironmentProvider : IEnvironmentProvider
+[Export(typeof(IEnvironmentProvider))]
+public class DataverseEnvironmentProvider : IEnvironmentProvider
 {
     public static event Action<DataverseEnvironment>? EnvironmentChanged;
 
-    private readonly ISettingsProvider settingsProvider;
+    [Import]
+    ISettingsProvider SettingsProvider { get; set; } = null!;
+    [Import]
+    IXrmHttpClientFactory HttpClientFactory { get; set; } = null!;
 
-    [ImportingConstructor]
-    public DataverseEnvironmentProvider([Import] ISettingsProvider settingsProvider)
+    public async Task<DataverseEnvironment?> GetActiveEnvironmentAsync(bool allowInteraction)
     {
-        this.settingsProvider = settingsProvider;
+        var environment = (await GeneralOptions.GetLiveInstanceAsync()).CurrentEnvironmentStorage switch
+        {
+            SettingsStorageTypes.Options => (await GeneralOptions.GetLiveInstanceAsync().ConfigureAwait(false)).CurrentEnvironment,
+            SettingsStorageTypes.Solution => GetEnvironmentFromSolution(),
+            SettingsStorageTypes.SolutionUser => GetEnvironmentFromSolutionUserFile(),
+            SettingsStorageTypes.Project => await GetEnvironmentFromProjectAsync().ConfigureAwait(false),
+            SettingsStorageTypes.ProjectUser => await GetEnvironmentFromProjectUserFileAsync().ConfigureAwait(false),
+            _ => GeneralOptions.Instance.CurrentEnvironment,
+        };
+
+        if (environment?.IsValid != true) return null;
+
+        await VerifyAuthenticatedAsync(environment, allowInteraction).ConfigureAwait(false);
+
+        return environment;
     }
 
-    public async Task<DataverseEnvironment?> GetActiveEnvironmentAsync()
-    => (await GeneralOptions.GetLiveInstanceAsync()).CurrentEnvironmentStorage switch
-    {
-        SettingsStorageTypes.Options => (await GeneralOptions.GetLiveInstanceAsync().ConfigureAwait(false)).CurrentEnvironment,
-        SettingsStorageTypes.Solution => GetEnvironmentFromSolution(),
-        SettingsStorageTypes.SolutionUser => GetEnvironmentFromSolutionUserFile(),
-        SettingsStorageTypes.Project => await GetEnvironmentFromProjectAsync().ConfigureAwait(false),
-        SettingsStorageTypes.ProjectUser => await GetEnvironmentFromProjectUserFileAsync().ConfigureAwait(false),
-        _ => GeneralOptions.Instance.CurrentEnvironment,
-    };
-
-    public async Task SetActiveEnvironmentAsync(DataverseEnvironment environment)
+    public async Task SetActiveEnvironmentAsync(DataverseEnvironment environment, bool allowInteraction)
     {
         if (environment?.IsValid != true) return;
 
@@ -67,6 +76,9 @@ internal class DataverseEnvironmentProvider : IEnvironmentProvider
                 SetEnvironmentInSolutionUserFile(null);
                 break;
         }
+
+        await VerifyAuthenticatedAsync(environment, allowInteraction).ConfigureAwait(false);
+
         EnvironmentChanged?.Invoke(environment);
     }
 
@@ -78,31 +90,48 @@ internal class DataverseEnvironmentProvider : IEnvironmentProvider
 
     private DataverseEnvironment? GetEnvironmentFromSolution()
     {
-        var url = settingsProvider.SolutionSettings.EnvironmentUrl();
+        var url = SettingsProvider.SolutionSettings.EnvironmentUrl();
         if (string.IsNullOrWhiteSpace(url)) return null;
         return GeneralOptions.Instance.Environments.FirstOrDefault(e => e.Url == url);
     }
     private DataverseEnvironment? GetEnvironmentFromSolutionUserFile()
     {
-        var url = settingsProvider.SolutionUserSettings.EnvironmentUrl();
+        var url = SettingsProvider.SolutionUserSettings.EnvironmentUrl();
         if (string.IsNullOrWhiteSpace(url)) return null;
         return GeneralOptions.Instance.Environments.FirstOrDefault(e => e.Url == url);
     }
     private async Task<DataverseEnvironment?> GetEnvironmentFromProjectAsync()
     {
-        var url = await settingsProvider.ProjectSettings.EnvironmentUrlAsync();
+        var url = await SettingsProvider.ProjectSettings.EnvironmentUrlAsync();
         if (string.IsNullOrWhiteSpace(url)) return null;
         return GeneralOptions.Instance.Environments.FirstOrDefault(e => e.Url == url);
     }
     private async Task<DataverseEnvironment?> GetEnvironmentFromProjectUserFileAsync()
     {
-        var url = await settingsProvider.ProjectUserSettings.EnvironmentUrlAsync();
+        var url = await SettingsProvider.ProjectUserSettings.EnvironmentUrlAsync();
         if (string.IsNullOrWhiteSpace(url)) return null;
         return GeneralOptions.Instance.Environments.FirstOrDefault(e => e.Url == url);
     }
-    private void SetEnvironmentInSolution(DataverseEnvironment? environment) => settingsProvider.SolutionSettings.EnvironmentUrl(environment?.Url);
-    private void SetEnvironmentInSolutionUserFile(DataverseEnvironment? environment) => settingsProvider.SolutionUserSettings.EnvironmentUrl(environment?.Url);
-    private async Task SetEnvironmentInProjectAsync(DataverseEnvironment? environment) => await settingsProvider.ProjectSettings.EnvironmentUrlAsync(environment?.Url);
-    private async Task SetEnvironmentInProjectUserFileAsync(DataverseEnvironment? environment) => await settingsProvider.ProjectUserSettings.EnvironmentUrlAsync(environment?.Url);
+    private void SetEnvironmentInSolution(DataverseEnvironment? environment) => SettingsProvider.SolutionSettings.EnvironmentUrl(environment?.Url);
+    private void SetEnvironmentInSolutionUserFile(DataverseEnvironment? environment) => SettingsProvider.SolutionUserSettings.EnvironmentUrl(environment?.Url);
+    private async Task SetEnvironmentInProjectAsync(DataverseEnvironment? environment) => await SettingsProvider.ProjectSettings.EnvironmentUrlAsync(environment?.Url);
+    private async Task SetEnvironmentInProjectUserFileAsync(DataverseEnvironment? environment) => await SettingsProvider.ProjectUserSettings.EnvironmentUrlAsync(environment?.Url);
+    private async Task VerifyAuthenticatedAsync(
+        DataverseEnvironment environment,
+        bool allowInteraction)
+    {
+        if (environment?.IsValid != true) return;
+        if (environment.IsAutehnticated) return;
+
+        try
+        {
+            if (allowInteraction)
+            {
+                await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync();
+            }
+            await HttpClientFactory.PreAuthenticateAsync(environment, allowInteraction);
+        }
+        catch (Exception) { }
+    }
 }
 #nullable restore

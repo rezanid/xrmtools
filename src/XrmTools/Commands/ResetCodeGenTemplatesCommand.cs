@@ -14,6 +14,7 @@ using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
 using XrmTools.CodeGen;
+using XrmTools.Helpers;
 
 [Command(PackageGuids.XrmToolsCmdSetIdString, PackageIds.ResetCodeGenTemplatesCmdId)]
 internal sealed class ResetCodeGenTemplatesCommand : BaseCommand<ResetCodeGenTemplatesCommand>
@@ -202,6 +203,25 @@ internal sealed class ResetCodeGenTemplatesCommand : BaseCommand<ResetCodeGenTem
 
     }
 
+    private static async Task<bool> IsXrmToolsPluginItemAsync(SolutionItem item)
+    {
+        var project = item as Project ?? item.FindParent(SolutionItemType.Project) as Project;
+        if (project is not null)
+            return await project.IsXrmToolsPluginProjectAsync().ConfigureAwait(false);
+
+        if (item is not Solution && item.FindParent(SolutionItemType.Solution) is not Solution)
+            return false;
+
+        var projects = await VS.Solutions.GetAllProjectsAsync();
+        foreach (var solutionProject in projects)
+        {
+            if (await solutionProject.IsXrmToolsPluginProjectAsync().ConfigureAwait(false))
+                return true;
+        }
+
+        return false;
+    }
+
     private static async Task<ResetCodeGenModes> DetectCommandModeAsync(SolutionItem? item)
     {
         if (item is null)
@@ -212,9 +232,8 @@ internal sealed class ResetCodeGenTemplatesCommand : BaseCommand<ResetCodeGenTem
         if (!KnownUIContexts.SolutionHasSingleProjectContext.IsActive && !KnownUIContexts.SolutionHasMultipleProjectsContext.IsActive)
             return ResetCodeGenModes.Disabled;
 
-        var proj = await VS.Solutions.GetActiveProjectAsync();
-        if (!proj?.IsCapabilityMatch("CSharp") ?? false)
-        return ResetCodeGenModes.Disabled;
+        if (!await IsXrmToolsPluginItemAsync(item).ConfigureAwait(false))
+            return ResetCodeGenModes.Disabled;
 
         if (item.Type == SolutionItemType.Solution || item.Type == SolutionItemType.Project)
         {

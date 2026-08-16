@@ -46,12 +46,19 @@ internal class OutputLogger(string name, IOutputLoggerService outputLoggerServic
             logRecord = $"{string.Join(" => ", scopeInfo)}: {logRecord}";
         }
 
-        if (exception != null && logLevel <= LogLevel.Debug)
-        {
-            logRecord += Environment.NewLine + exception.ToString();
-        }
+        logRecord = AppendException(logRecord, exception);
 
         outputLoggerService.OutputString(logRecord + Environment.NewLine);
+    }
+
+    internal static string AppendException(string logRecord, Exception? exception)
+    {
+        if (exception is null)
+        {
+            return logRecord;
+        }
+
+        return logRecord + Environment.NewLine + exception;
     }
 
     private class Scope(object state) : IDisposable

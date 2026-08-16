@@ -1,4 +1,5 @@
-﻿namespace XrmTools.Serialization;
+﻿#nullable enable
+namespace XrmTools.Serialization;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -17,21 +18,23 @@ public class PolymorphicJsonConverter<TBase> : JsonConverter<TBase>
 
     public override bool CanConvert(Type typeToConvert) => typeof(TBase).IsAssignableFrom(typeToConvert);
 
-    public override TBase Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
+    public override TBase? Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
     {
         using var doc = JsonDocument.ParseValue(ref reader);
         var root = doc.RootElement;
 
-        var derivedType = Resolver.ResolveType(root) ?? typeToConvert;// throw new JsonException($"Unable to resolve derived type for {typeof(TBase).Name}.");
+        var derivedType = Resolver.ResolveType(root) ?? throw new JsonException($"Unable to resolve derived type for {typeof(TBase).Name}.");
         var json = root.GetRawText();
 
         var newOptions = GetStrippedOptions(options);
 
-        return (TBase)JsonSerializer.Deserialize(json, derivedType, newOptions);
+        return (TBase?)JsonSerializer.Deserialize(json, derivedType, newOptions);
     }
 
     public override void Write(Utf8JsonWriter writer, TBase value, JsonSerializerOptions options)
     {
+        if (value is null) return;
+
         var newOptions = GetStrippedOptions(options);
 
         JsonSerializer.Serialize(writer, value, value.GetType(), newOptions);

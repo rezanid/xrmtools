@@ -4,6 +4,7 @@ namespace XrmTools.UI;
 using System;
 using System.ComponentModel.Composition;
 using System.Threading.Tasks;
+using XrmTools.Authentication;
 using XrmTools.Environments;
 using XrmTools.Http;
 
@@ -27,9 +28,12 @@ internal class EnvironmentEditor : IEnvironmentEditor
     [Import]
     public IXrmHttpClientFactory HttpClientFactory { get; set; } = null!;
 
+    [Import]
+    public IAuthenticationCacheService AuthenticationCacheService { get; set; } = null!;
+
     public async Task<bool> EditEnvironmentsAsync(DataverseEnvironment? newEnvironment = null)
     {
-        var viewModel = new EnvironmentEditorViewModel(EnvironmentProvider, HttpClientFactory);
+        var viewModel = new EnvironmentEditorViewModel(EnvironmentProvider, HttpClientFactory, AuthenticationCacheService);
         await viewModel.InitializeAsync(newEnvironment);
 
         var dialog = new EnvironmentEditorDialog

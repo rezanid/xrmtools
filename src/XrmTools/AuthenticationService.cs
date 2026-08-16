@@ -14,17 +14,16 @@ internal class AuthenticationService : IAuthenticationService
 {
     bool cleanTokenCache = false;
 
-    ITokenExpanderService TokenExpander { get; set; }
-
-    Lazy<IXrmHttpClientFactory> HttpClientFactory { get; set; }
+    private readonly ITokenExpanderService tokenExpander;
+    private readonly Lazy<IXrmHttpClientFactory> httpClientFactory;
 
     [ImportingConstructor]
     public AuthenticationService(
         ITokenExpanderService tokenExpander,
         Lazy<IXrmHttpClientFactory> httpClientFactory)
     {
-        TokenExpander = tokenExpander;
-        HttpClientFactory = httpClientFactory;
+        this.tokenExpander = tokenExpander;
+        this.httpClientFactory = httpClientFactory;
         GeneralOptions.Saved += (options) =>
         {
             cleanTokenCache = true;
@@ -41,8 +40,8 @@ internal class AuthenticationService : IAuthenticationService
 
     public async Task<AuthenticationResult> AuthenticateAsync(
         DataverseEnvironment environment,
-        Action<string> onMessageForUser = default,
-        CancellationToken cancellationToken = default)
+        bool allowInteraction,
+        Action<string> onMessageForUser = default, CancellationToken cancellationToken = default)
     {
         if (environment == null) { throw new ArgumentNullException(nameof(environment)); }
         if (!environment.IsValid) 
@@ -50,8 +49,11 @@ internal class AuthenticationService : IAuthenticationService
             throw new InvalidOperationException("Authentication failed. The current environment is not valid. Please make sure the environment configuration is correct in Tools > Options > Xrm Tools."); 
         }
         var current = Authenticator;
-        var connectionString = TokenExpander.ExpandTokens(environment.ConnectionString);
-        var authParams = await EnsureTenantAsync(AuthenticationParameters.Parse(connectionString));
+        var connectionString = tokenExpander.ExpandTokens(environment.ConnectionString);
+        var authParams = await AuthenticationParameterResolver.EnsureTenantAsync(
+            AuthenticationParameters.Parse(connectionString),
+            httpClientFactory.Value,
+            cancellationToken).ConfigureAwait(false);
         while (current != null && !current.CanAuthenticate(authParams))
         {
             current = current.NextAuthenticator;
@@ -66,19 +68,5 @@ internal class AuthenticationService : IAuthenticationService
         cleanTokenCache = false;
 
         return result;
-    }
-
-    private async Task<AuthenticationParameters> EnsureTenantAsync(AuthenticationParameters authParams)
-    {
-        if (string.IsNullOrEmpty(authParams.Tenant))
-        {
-            var url = authParams.Resource;
-            using var httpClient = await HttpClientFactory.Value.CreateClientAsync(DataverseEnvironment.Empty);
-            var response = await httpClient.SendAsync(new HttpRequestMessage(HttpMethod.Get, url)).ConfigureAwait(false);
-            var authUrl = response.Headers.Location;
-            var tenantId = authUrl.AbsolutePath[1..authUrl.AbsolutePath.IndexOf('/', 1)];
-            authParams.Tenant = tenantId;
-        }
-        return authParams;
     }
 }

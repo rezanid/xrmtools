@@ -55,6 +55,18 @@ internal sealed class NewFetchXmlFileCommand : BaseCommand<NewFetchXmlFileComman
         await FileHelper.AddItemAsync(fileName, string.Format(content, relativeSchema), activeItem ?? proj, selectItem: true);
     }
 
+    protected override void BeforeQueryStatus(EventArgs e)
+    {
+        ThreadHelper.JoinableTaskFactory.Run(async () =>
+        {
+            var uiContext = UIContext.FromUIContextGuid(PackageGuids.XrmToolsPluginProjectUIRule);
+            var project = await VS.Solutions.GetActiveProjectAsync();
+            Command.Supported = true;
+            Command.Visible = project is not null
+                && (uiContext?.IsActive is true || await project.IsXrmToolsPluginProjectAsync().ConfigureAwait(false));
+        });
+    }
+
     [MemberNotNull(nameof(Logger))]
     private void EnsureDependencies()
     {

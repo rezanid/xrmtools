@@ -6,7 +6,7 @@
     /// Apply this attribute to a property to control how it is converted to a request parameter.
     /// </summary>
     [AttributeUsage(AttributeTargets.Property, Inherited = false, AllowMultiple = false)]
-    public class CustomApiRequestParameterAttribute : Attribute 
+    internal class CustomApiRequestParameterAttribute : Attribute 
     {
         /// <summary>
         /// This is the name that should be used when calling the API.

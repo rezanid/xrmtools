@@ -2,14 +2,14 @@
 {
     using System;
 
-    public enum ProcessingStepTypes
+    internal enum ProcessingStepTypes
     {
         None = 0,
         AsyncOnly = 1,
         SyncAndAsync = 2,
     }
 
-    public enum PluginStepStates
+    internal enum PluginStepStates
     {
         Active = 0,
         Inactive = 1
@@ -18,7 +18,7 @@
     /// <summary>
     /// Read more about the stages of a plugin execution pipeline at https://learn.microsoft.com/en-us/power-apps/developer/data-platform/event-framework#event-execution-pipeline
     /// </summary>
-    public enum Stages
+    internal enum Stages
     {
         /// <summary>
         /// This provides an opportunity to include logic to cancel the operation before the database transaction.
@@ -44,14 +44,14 @@
         DepecratedPostOperation = 50
     }
 
-    public enum BindingTypes
+    internal enum BindingTypes
     {
         Global = 0,
         Entity = 1,
         EntityCollection = 2,
     }
 
-    public enum CustomApiFieldType
+    internal enum CustomApiFieldType
     {
         Boolean = 0,
         DateTime = 1,
@@ -68,27 +68,27 @@
         Guid = 12,
     }
 
-    public enum SupportedDeployments
+    internal enum SupportedDeployments
     {
         Server = 0,
         Client = 1,
         Both = 2
     }
 
-    public enum ExecutionMode
+    internal enum ExecutionMode
     {
         Synchronous = 0,
         Asynchronous = 1
     }
 
-    public enum ImageTypes
+    internal enum ImageTypes
     {
         PreImage = 0,
         PostImage = 1,
         Both = 2
     }
 
-    public enum IsolationModes
+    internal enum IsolationModes
     {
         [Obsolete]
         None = 1,
@@ -97,7 +97,7 @@
         External = 3
     }
 
-    public enum SourceTypes
+    internal enum SourceTypes
     {
         Database = 0,
         Disk = 1,

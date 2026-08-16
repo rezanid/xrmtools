@@ -1,0 +1,75 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net48</TargetFramework>
+    <OutputType>Exe</OutputType>
+    <TargetFrameworkProfile />
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+    <DebugSymbols>true</DebugSymbols>
+    <DebugType>full</DebugType>
+    <Optimize>false</Optimize>
+    <OutputPath>bin\Debug\</OutputPath>
+    <DefineConstants>DEBUG;TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+    <DebugType>pdbonly</DebugType>
+    <Optimize>true</Optimize>
+    <OutputPath>bin\Release\</OutputPath>
+    <DefineConstants>TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+  </PropertyGroup>
+  <PropertyGroup>
+    <SignAssembly>false</SignAssembly>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Remove="Properties\**" />
+    <EmbeddedResource Remove="Properties\**" />
+    <None Remove="Properties\**" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="coverlet.msbuild" Version="10.0.1">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
+    <PackageReference Include="FluentAssertions" Version="8.10.0" />
+    <PackageReference Include="Microsoft.Extensions.TimeProvider.Testing" Version="8.10.0" />
+    <PackageReference Include="Microsoft.CodeAnalysis.CSharp.Workspaces" Version="4.14.0" />
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="18.4.0" />
+    <PackageReference Include="Microsoft.VisualStudio.ProjectSystem" Version="17.9.380" PrivateAssets="all">
+      <IncludeAssets>runtime</IncludeAssets>
+    </PackageReference>
+    <PackageReference Include="Microsoft.VisualStudio.ProjectSystem.VS" Version="17.9.380" PrivateAssets="all">
+      <IncludeAssets>runtime</IncludeAssets>
+    </PackageReference>
+    <PackageReference Include="Moq" Version="4.20.72" />
+    <PackageReference Include="xunit.v3" Version="3.2.2" />
+    <PackageReference Include="xunit.runner.visualstudio">
+      <Version>3.1.5</Version>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+      <PrivateAssets>all</PrivateAssets>
+    </PackageReference>
+    <PackageReference Include="PolySharp">
+      <Version>1.16.0</Version>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+      <PrivateAssets>all</PrivateAssets>
+    </PackageReference>
+    <PackageReference Include="Microsoft.Identity.Client" Version="4.79.2" />
+    <!-- VS2022 supports System.Threading.Tasks.Extensions supports 4.6.0-->
+    <PackageReference Include="System.Threading.Tasks.Extensions" Version="4.6.0" NoWarn="NU1605" />
+	<!-- VS2022 only supports System.Text.Json 9.0.0 -->
+	<PackageReference Include="System.Text.Json" Version="9.0.0" NoWarn="NU1605" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\XrmTools.Core\XrmTools.Core.csproj">
+      <Project>{4e3f79aa-5694-4dd6-933d-aee2132486a5}</Project>
+      <Name>XrmTools.Core</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\..\XrmTools\XrmTools.csproj">
+      <Project>{592264a3-7b0d-40c5-a879-b2222676c532}</Project>
+      <Name>XrmTools</Name>
+    </ProjectReference>
+  </ItemGroup>
+</Project>

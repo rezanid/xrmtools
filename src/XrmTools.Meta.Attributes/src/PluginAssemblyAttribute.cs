@@ -9,7 +9,7 @@
     /// <remarks>Apply this attribute to an assembly to provide information used by plugin management systems,
     /// such as identifying the assembly, determining its source, and configuring its execution isolation.</remarks>
     [AttributeUsage(AttributeTargets.Assembly)]
-    public class PluginAssemblyAttribute : Attribute
+    internal class PluginAssemblyAttribute : Attribute
     {
         public static SourceTypes DefaultSourceType = SourceTypes.Database;
         public static IsolationModes DefaultIsolationMode = IsolationModes.Sandbox;

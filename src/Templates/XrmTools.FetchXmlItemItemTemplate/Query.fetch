@@ -1,0 +1,6 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<fetch xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="$fetch_xsd_relative_path$">
+    <entity name="account">
+	    <attribute name="name" />
+    </entity>
+</fetch>

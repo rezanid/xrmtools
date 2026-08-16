@@ -1,6 +1,22 @@
-XrmTools.Meta.Attributes brings source only attributes to decorate your Dataverse plugins, custom APIs, and typed entities. There are also contains interfaces like `ITypedOrganizationRequest`, `ITypedOrganizationResponse` and `TResponse ExecuteTyped<TRequest, TResponse>(this IOrganizationService service)` to make it very easy to call Custom API and actions. This package is part of the [Xrm Tools](https://marketplace.visualstudio.com/items?itemName=rezanid.XrmTools) extension for Visual Studio, which provides a set of tools to enhance your development experience with Microsoft Dataverse (formerly known as Common Data Service or Dynamics 365). Although the extension is not required to use this package, it provides a convenient way to manage your Dataverse projects and generate code based on your schema.
+XrmTools.Meta.Attributes is a source-only package that adds all the attribute types required by Xrm Tools. You would use these attributes to add metadata to your plugins and custom APIs and Xrm Tools enables you to deploy your plugins, generate code on-the-fly and many other cool things that make you more productive. You can now focus on more important matters, like your core business logic.
 
-If you aren't already using [Xrm Tools](https://marketplace.visualstudio.com/items?itemName=rezanid.XrmTools) for Power Platform development, I suggest checking out [Xrm Tools Wiki](https://github.com/rezanid/xrmtools/wiki) to learn how modern way of Power Platform development can enhance your experience. In short, the extension provides the code generation capabilities for your plugins and custom APIs. By using these attributes, you can easily register your plugins and custom APIs without writing boilerplate code, and you can also generate typed entities, typed requests and responses for your APIs and actions based on your Dataverse schema and keep them up-to-date without ever leaving Visual Studio.
+This package is part of the [Xrm Tools](https://marketplace.visualstudio.com/items?itemName=rezanid.XrmTools) extension for Visual Studio, which provides a set of tools to enhance your development experience with Microsoft Dataverse (formerly known as Common Data Service or Dynamics 365).
+
+If you aren't already using [Xrm Tools](https://marketplace.visualstudio.com/items?itemName=rezanid.XrmTools) for Power Platform development, I suggest checking out [Xrm Tools Wiki](https://github.com/rezanid/xrmtools/wiki) to learn how modern way of Power Platform development can enhance your experience. You can do pretty much everything with regards to plugins and API development without ever leaving Visual Studio.
+
+## Accessibility
+
+By default, the types generated into your project from `XrmTools.Meta.Attributes` are `internal`.
+
+If you want the generated types to be `public`, add the following property to your consuming project:
+
+```xml
+<PropertyGroup>
+  <XrmToolsMetaAttributesUsePublicAccessibility>true</XrmToolsMetaAttributesUsePublicAccessibility>
+</PropertyGroup>
+```
+
+This switch is optional. The NuGet package name remains `XrmTools.Meta.Attributes`.
 
 ## Attributes
 
@@ -42,6 +58,7 @@ It's a lot easier to add early-bound (typed) entities to your project. Just add 
 You can fine-tune code generation in Xrm Tools by adding the following global attributes to your `Assemblyinfo.cs` or any global `.cs` file.
 - `CodeGenReplacePrefixesAttribute`: Assembly scoped attribute that instructs the code generator to replace or remove the prefixes of the entity names with the given values. This is useful when you want to use a different prefix for your entities or remove prefixes in the generated code.
 - `CodeGenGlobalOptionSetAttribute`: Assembly scoped attribute that lets the developer decide if global option sets should be generated in the GlobalOptionSets.cs file or as enums in the typed entity files. By default, global option sets are generated locally.
+- `CodeGenNameCollisionSuffixAttribute`: Assembly scoped attribute that sets the suffix appended to a generated property when its name would otherwise clash with the name of its enclosing type. This happens when a Dataverse column shares the logical name of its table (e.g. a table `xxx_postalcode` with a column `xxx_postalcode`), which C# does not allow. The default suffix is `Value` (so the column above becomes a `PostalCodeValue` property); use this attribute to choose another, e.g. `[assembly: CodeGenNameCollisionSuffix("Attribute")]`.
 
 ### Other Global Attributes
 - `PluginAssemblyAttribute`: You can optionally customize the assembly level registration by adding this attribute to your `AssemblyInfor.cs` or any other global `.cs` file.

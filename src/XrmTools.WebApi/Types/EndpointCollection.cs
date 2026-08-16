@@ -17,11 +17,11 @@ public class EndpointCollection
     /// <summary>
     /// Collection containing the keys in the DataCollection.
     /// </summary>
-    public List<EndpointType> Keys { get; set; }
+    public List<EndpointType> Keys { get; set; } = [];
 
     /// <summary>
     /// Collection containing the values in the DataCollection.
     /// </summary>
-    public List<string> Values { get; set; }
+    public List<string> Values { get; set; } = [];
 }
 #nullable restore

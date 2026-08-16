@@ -52,6 +52,8 @@ internal class CSharpXrmMetaParser(
         AttributeData? solutionAttribute = null;
         List<AttributeData> codeGenPrefixAttribute = [];
         AttributeData? codeGenGlobalOptionSetsAttribute = null;
+        AttributeData? codeGenOrgContextAttribute = null;
+        AttributeData? codeGenNameCollisionAttribute = null;
         //List<EntityConfig> entityConfigs = [];
         foreach (var attr in assemblySymbol.GetAttributes())
         {
@@ -70,6 +72,14 @@ internal class CSharpXrmMetaParser(
             else if (attr.AttributeClass?.ToDisplayString() == typeof(CodeGenGlobalOptionSetAttribute).FullName)
             {
                 codeGenGlobalOptionSetsAttribute = attr;
+            }
+            else if (attr.AttributeClass?.ToDisplayString() == typeof(CodeGenOrganizationContextAttribute).FullName)
+            {
+                codeGenOrgContextAttribute = attr;
+            }
+            else if (attr.AttributeClass?.ToDisplayString() == typeof(CodeGenNameCollisionSuffixAttribute).FullName)
+            {
+                codeGenNameCollisionAttribute = attr;
             }
             //else if (attr.AttributeClass?.ToDisplayString() == typeof(EntityAttribute).FullName)
             //{
@@ -111,6 +121,20 @@ internal class CSharpXrmMetaParser(
         if (codeGenGlobalOptionSetsAttribute != null)
         {
             pluginAssemblyConfig.GlobalOptionSetCodeGen.SetPropertiesFromAttribute(codeGenGlobalOptionSetsAttribute);
+        }
+
+        if (codeGenOrgContextAttribute != null)
+        {
+            pluginAssemblyConfig.OrganizationContextConfig?.SetPropertiesFromAttribute(codeGenOrgContextAttribute);
+        }
+        else
+        {
+            pluginAssemblyConfig.OrganizationContextConfig = null;
+        }
+
+        if (codeGenNameCollisionAttribute != null)
+        {
+            pluginAssemblyConfig.NameCollision.SetPropertiesFromAttribute(codeGenNameCollisionAttribute);
         }
 
         if (assemblyAttribute == null) return pluginAssemblyConfig;
@@ -394,10 +418,15 @@ internal class CSharpXrmMetaParser(
         {
             //var attributes = attributeData.ConstructorArguments[1].Value;
             imageConfig.Attributes = attributeData.ConstructorArguments[1].Value as string;
-            return imageConfig;
+        }
+        else
+        {
+            imageConfig.Attributes = attributeData.NamedArguments.FirstOrDefault(a => a.Key == "Attributes").Value.Value as string;
         }
 
-        imageConfig.Attributes = attributeData.NamedArguments.FirstOrDefault(a => a.Key == "Attributes").Value.Value as string;
+        imageConfig.Attributes = imageConfig.Attributes is string attributes
+            ? string.Concat(attributes.Where(c => !char.IsWhiteSpace(c)))
+            : null;
 
         return imageConfig;
     }

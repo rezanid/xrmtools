@@ -5,8 +5,10 @@ using Community.VisualStudio.Toolkit;
 using EnvDTE;
 using EnvDTE80;
 using Microsoft;
+using Microsoft.CodeAnalysis.Elfie.Diagnostics;
 using Microsoft.VisualStudio;
 using Microsoft.VisualStudio.CommandBars;
+using Microsoft.VisualStudio.ComponentModelHost;
 using Microsoft.VisualStudio.Shell;
 using Microsoft.VisualStudio.Shell.Interop;
 using Microsoft.VisualStudio.TaskStatusCenter;
@@ -19,14 +21,15 @@ using System.Linq;
 using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Threading;
+using System.Threading.Tasks;
 using XrmTools.Commands;
+using XrmTools.DataverseExplorer.Services;
 using XrmTools.Environments;
-using XrmTools.FetchXml.Schema;
 using XrmTools.Helpers;
 using XrmTools.Logging;
+using XrmTools.Logging.Compatibility;
 using XrmTools.Options;
 using XrmTools.Settings;
-using XrmTools.Tokens;
 using XrmTools.UI.InfoBars;
 using XrmTools.Xrm.Generators;
 using Task = System.Threading.Tasks.Task;
@@ -52,11 +55,12 @@ using Task = System.Threading.Tasks.Task;
 [Guid(PackageGuids.XrmToolsPackageIdString)]
 [ProvideAutoLoad(UIContextGuids80.SolutionExists, PackageAutoLoadFlags.BackgroundLoad)]
 [ProvideCodeGenerator(typeof(EntityCodeGenerator), EntityCodeGenerator.Name, EntityCodeGenerator.Description, true, ProjectSystem = ProvideCodeGeneratorAttribute.CSharpProjectGuid, RegisterCodeBase = true)]
-[ProvideCodeGeneratorExtension(EntityCodeGenerator.Name, ".yaml")]
+[ProvideCodeGeneratorExtension(EntityCodeGenerator.Name, ".entity.yaml")]
 [ProvideCodeGenerator(typeof(PluginCodeGenerator), PluginCodeGenerator.Name, PluginCodeGenerator.Description, true, ProjectSystem = ProvideCodeGeneratorAttribute.CSharpProjectGuid, RegisterCodeBase = true)]
-[ProvideCodeGeneratorExtension(PluginCodeGenerator.Name, ".def.json")]
+[ProvideCodeGeneratorExtension(PluginCodeGenerator.Name, ".plugin.json")]
 [ProvideCodeGenerator(typeof(FetchXml.CodeGen.FetchXmlCodeGenerator), "XrmTools FetchXML Generator", "Generates C# code from FetchXML files.", true, ProjectSystem = ProvideCodeGeneratorAttribute.CSharpProjectGuid, RegisterCodeBase = true)]
 [ProvideCodeGeneratorExtension("XrmTools FetchXML Generator", ".fetch")]
+[ProvideFileIcon(".fetch", "KnownMonikers.XMLFile")]
 [ProvideMenuResource("Menus.ctmenu", 1)]
 // Decide the visibility of our commands when the commands are NOT yet loaded.
 [ProvideUIContextRule(PackageGuids.SetCustomToolEntitiesCmdUIRuleString,
@@ -105,40 +109,41 @@ using Task = System.Threading.Tasks.Task;
         "ActiveProjectCapability:CSharp",
         VSConstants.UICONTEXT.SolutionHasSingleProject_string,
         VSConstants.UICONTEXT.SolutionHasMultipleProjects_string])]
+[ProvideUIContextRule(PackageGuids.XrmToolsPluginProjectUIRuleString,
+    name: "UI Context XrmTools Plugin Project",
+    expression: "XrmToolsPlugin",
+    termNames: ["XrmToolsPlugin"],
+    termValues: ["ActiveProjectBuildProperty:IsXrmToolsPlugin=^true$"])]
 [ProvideService(typeof(IXrmCodeGenerator), IsAsyncQueryable = true, IsCacheable = true, IsFreeThreaded = true)]
 [ProvideService(typeof(IEnvironmentProvider), IsAsyncQueryable = true, IsCacheable = true, IsFreeThreaded = true)]
 [ProvideService(typeof(ISettingsProvider), IsAsyncQueryable = true, IsCacheable = true, IsFreeThreaded = true)]
 [ProvideOptionPage(typeof(OptionsProvider.GeneralOptions), Vsix.Name, "General", 0, 0, true, SupportsProfiles = true)]
 [ProvideOptionPage(typeof(OptionsProvider.FetchXmlOptions), Vsix.Name, "FetchXML", 0, 0, true, SupportsProfiles = true)]
+[ProvideToolWindow(typeof(DataverseExplorer.Views.DataverseExplorerWindow), Window = "DocumentWell", Style = VsDockStyle.Tabbed, DockedWidth = 300, Orientation = ToolWindowOrientation.Left)]
+[ProvideBindingPath]
 public sealed partial class XrmToolsPackage : ToolkitPackage
 {
     private static readonly object _lock = new();
 
-    // It has been observed that VS can call the constructor of the package twice! causing multiple instances of the singleton
-    // services to be created. To avoid side effects, we store them in static fields.
-    private readonly static IOutputLoggerService _loggerService;
-    private readonly static IEnvironmentProvider _environmentProvider;
-    private readonly static ISettingsProvider _settingsProvider;
-    private readonly static ITokenExpanderService _tokenExpanderService;
 
     public const string SolutionPersistanceKey = "XrmToolsProperies";
     private static readonly ExplicitInterfaceInvoker<Package> implicitInvoker = new();
     public DTE2? Dte;
 
-    [Export(typeof(TimeProvider))] internal TimeProvider TimeProvider { get => TimeProvider.System; }
-    [Export(typeof(IOutputLoggerService))] internal IOutputLoggerService OutputLoggerService { get => _loggerService; }
-    [Export(typeof(IEnvironmentProvider))] internal IEnvironmentProvider EnvironmentProvider { get => _environmentProvider; }
-    [Export(typeof(ISettingsProvider))] internal ISettingsProvider SettingsProvider { get => _settingsProvider; }
-    [Export(typeof(ITokenExpanderService))] internal ITokenExpanderService TokenExpanderService { get => _tokenExpanderService; }
+    [Import]
+    IOutputLoggerService OutputLoggerService { get; set; } = null!;
+
+    [Import]
+    IEnvironmentProvider EnvironmentProvider { get; set; } = null!;
+
+    [Import]
+    ISettingsProvider SettingsProvider { get; set; } = null!;
+
+    [Import]
+    IExplorerDataService ExplorerDataService { get; set; } = null!;
 
     static XrmToolsPackage()
     {
-        _loggerService = new OutputLoggerService();
-        _settingsProvider = new SettingsProvider();
-        _environmentProvider = new DataverseEnvironmentProvider(_settingsProvider);
-        _tokenExpanderService = new TokenExpanderService([
-            new CredentialTokenExpander(new CredentialManager()),
-            new EnvironmentTokenExpander()]);
         AppDomain.CurrentDomain.AssemblyResolve += CurrentDomain_AssemblyResolve;
     }
 
@@ -167,6 +172,16 @@ public sealed partial class XrmToolsPackage : ToolkitPackage
         // Ensure FetchXml XSD embedded schema is loaded early (non-blocking errors logged only)
         //FetchXmlSchemaLoader.EnsureLoaded(_loggerService);
 
+        try
+        {
+            var componentModel = await GetServiceAsync(typeof(SComponentModel)) as IComponentModel;
+            componentModel?.DefaultCompositionService.SatisfyImportsOnce(this);
+        }
+        catch (Exception ex)
+        {
+            throw;
+        }
+
         foreach (var key in SettingsProvider.SolutionUserSettings.Keys)
         {
             AddOptionKey(key);
@@ -189,12 +204,22 @@ public sealed partial class XrmToolsPackage : ToolkitPackage
         await SetCustomToolEntityGeneratorCommand.InitializeAsync(this);
         await SetCustomToolPluginGeneratorCommand.InitializeAsync(this);
         await RegisterPluginCommand.InitializeAsync(this);
+        await UnregisterCommand.InitializeAsync(this);
+        await AddDataverseSolutionProjectCommand.InitializeAsync(this);
+        await RecloneDataverseSolutionCommand.InitializeAsync(this);
+        await SynchronizeDataverseSolutionCommand.InitializeAsync(this);
+        await ImportDataverseSolutionCommand.InitializeAsync(this);
+        await PackDataverseSolutionCommand.InitializeAsync(this);
+        await UnpackDataverseSolutionCommand.InitializeAsync(this);
+        await ImportAndOpenDataverseSolutionCommand.InitializeAsync(this);
         await SelectEnvironmentCommand.InitializeAsync(this);
         await ResetCodeGenTemplatesCommand.InitializeAsync(this);
         // The following two commands contirbute to the dropdown combo box for selecting environments.
         await ManageEnvironmentsCommand.InitializeAsync(this);
         await ManageEnvironmentsGetListCommand.InitializeAsync(this);
         await NewFetchXmlFileCommand.InitializeAsync(this);
+        await ShowDataverseExplorerCommand.InitializeAsync(this);
+        await RefreshDataverseExplorerCommand.InitializeAsync(this);
 
         VS.Events.SolutionEvents.OnAfterOpenSolution += (solution) => OnAfterOpenSolution(solution, cancellationToken);
         VS.Events.SolutionEvents.OnAfterCloseSolution += () => OnAfterCloseSolution(cancellationToken);
@@ -215,6 +240,29 @@ public sealed partial class XrmToolsPackage : ToolkitPackage
             await options.SaveAsync();
         }
     }
+
+    public override IVsAsyncToolWindowFactory GetAsyncToolWindowFactory(Guid toolWindowType)
+    {
+        return toolWindowType.Equals(Guid.Parse(DataverseExplorer.Views.DataverseExplorerWindow.WindowGuidString)) ? this : null!;
+    }
+
+    protected override string GetToolWindowTitle(Type toolWindowType, int id)
+    {
+        return toolWindowType == typeof(DataverseExplorer.Views.DataverseExplorerWindow) ? DataverseExplorer.Views.DataverseExplorerWindow.WindowCaption : base.GetToolWindowTitle(toolWindowType, id);
+    }
+
+    protected override async Task<object> InitializeToolWindowAsync(Type toolWindowType, int id, CancellationToken cancellationToken)
+    {
+        if (toolWindowType == typeof(DataverseExplorer.Views.DataverseExplorerWindow))
+        {
+            return new DataverseExplorer.Views.DataverseExplorerSource
+            { 
+                DataService = ExplorerDataService,
+                Logger = new OutputLogger("Xrm Tools", OutputLoggerService)
+            };
+        }
+        return await base.InitializeToolWindowAsync(toolWindowType, id, cancellationToken);
+    }    
 
     private void OnAfterOpenSolution(Community.VisualStudio.Toolkit.Solution? solution, CancellationToken cancellationToken)
     {

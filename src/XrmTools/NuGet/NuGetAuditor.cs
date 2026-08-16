@@ -15,12 +15,14 @@ using System.Threading.Tasks;
 
 internal sealed class NuGetAuditor
 {
+    private const string MinimumVersion = "1.2.0";
+
     public async Task AuditAsync(CancellationToken ct)
     {
         // Acquire NuGet MEF infra, or bail if NuGet is not ready
         var nuget = await VS.GetMefServiceAsync<NuGetInfra>();
         if (nuget is null)
-            return; // NuGet MEF not ready yet; nothing to do.
+            return;
 
         // Wait for NuGet restore/ready signal so we don't query too early
         await NuGetReadyGate.WaitForSolutionReadyAsync(nuget.UpdateEvents, ct);
@@ -64,8 +66,7 @@ internal sealed class NuGetAuditor
 
                 if (match is null) continue;
 
-                // Compare against 1.0.55 using NuGet's semver comparer
-                if (comparer.Compare(match.Version, "1.0.57") < 0)
+                if (comparer.Compare(match.Version, MinimumVersion) < 0)
                 {
                     outdated.Add((project.Name, match.Version));
                 }

@@ -91,7 +91,7 @@ internal record AuthenticationParameters
         };
         if (string.IsNullOrEmpty(parameters.Authority) && !string.IsNullOrEmpty(parameters.Tenant))
         {
-            parameters.Authority = $"https://login.microsoftonline.com/{parameters.Tenant}/oauth2/authorize";
+            parameters.Authority = $"https://login.microsoftonline.com/{parameters.Tenant}";
         }
         return parameters;
     }

@@ -4,7 +4,6 @@ using Microsoft.VisualStudio.Shell;
 using System.ComponentModel.Composition;
 using System.IO;
 using XrmTools.Logging.Compatibility;
-using XrmTools.Settings;
 using Community.VisualStudio.Toolkit;
 using System.Threading.Tasks;
 using System.Reflection;
@@ -21,14 +20,14 @@ public interface ITemplateFileGenerator
 
 [Export(typeof(ITemplateFileGenerator))]
 [method: ImportingConstructor]
-public class TemplateFileGenerator(ISettingsProvider settings, ILogger<TemplateFileGenerator> logger) : ITemplateFileGenerator
+public class TemplateFileGenerator(ILogger<TemplateFileGenerator> logger) : ITemplateFileGenerator
 {
     public async Task GenerateTemplatesAsync(bool overwrite = false)
     {
         var proj = await VS.Solutions.GetActiveProjectAsync();
         if (proj == null)
         {
-            logger.LogWarning("Unable to find the acttive project. Consequently default templates won't be generated.");
+            logger.LogWarning("Unable to find the active project. Consequently default templates won't be generated.");
             return;
         }
         await GenerateTemplatesAsync(proj, overwrite);

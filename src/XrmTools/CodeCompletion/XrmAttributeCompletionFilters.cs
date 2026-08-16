@@ -25,5 +25,5 @@ internal static class XrmAttributeCompletionFilters
     public static readonly ImmutableArray<CompletionFilter> MoneyColumnFilters = [new("Currency", "C", MoneyColumnIcon)];
     public static readonly ImmutableArray<CompletionFilter> StringColumnFilters = [new("String", "S", StringColumnIcon)];
     public static readonly ImmutableArray<CompletionFilter> PickListColumnFilters = [new("PickList", "P", PickListColumnIcon)];
-    public static readonly ImmutableArray<CompletionFilter> MiscColumnFilters = [new("Misc", "M", MiscColumnIcon)];//, OtherColumnIcon)]
+    public static readonly ImmutableArray<CompletionFilter> MiscColumnFilters = [new("Misc", "M", MiscColumnIcon)];
 }

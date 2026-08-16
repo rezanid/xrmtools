@@ -1,0 +1,36 @@
+{{~for step in plugintype.steps~}}
+{{~if step.primary_entity_definition~}}
+{{~step_disc = plugintype.steps | step_type_discriminator step~}}
+{{~step_prefix = (plugintype.steps | array.size > 1) ? step.message_name : ""~}}
+{{~entity_type_name = step.message_name + step_disc + step.primary_entity_definition.schema_name + "Entity"~}}
+{{~if (plugintype.steps | array.size > 1) || (plugintype.steps[0].message.pairs[0].request[0].fields | array.size > 1)~}}
+public static class {{step_prefix + step_disc}}InputParameters
+{
+    {{include 'Plugin_Step_Inputs.sbncs'~}}
+}
+{{~else~}}
+{{include 'Plugin_Step_Inputs.sbncs'~}}
+{{~end~}}    
+{{~if step.images~}}
+{{include 'Images.sbncs'~}}
+{{~end~}}
+{{~for image in step.images~}}
+{{~image_type_name = step_prefix + step_disc + image.image_type + (step.primary_entity_definition.schema_name)~}}
+{{~image_collection_name = image.image_type == 'PreImage' ? 'PreEntityImages' : 'PostEntityImages'~}}
+{{~if step.message_name | string.ends_with('Multiple')~}}
+public {{image_type_name}}[] {{image.name}}s
+{
+    get
+    {
+        var imagesCollection = ((IPluginExecutionContext4)DependencyScope<AccountMultiGreetingPlugin>.Current.Require<IPluginExecutionContext>()).{{image_collection_name}}Collection;
+        return imagesCollection != null 
+            ? imagesCollection.Select(col => EntityOrDefault<{{image_type_name}}>(col, "{{image.name}}")).ToArray()
+            : Array.Empty<{{image_type_name}}>();
+    }
+}
+{{~else~}}
+public {{image_type_name}} {{image.name}} { get => EntityOrDefault<{{image_type_name}}>(DependencyScope<{{plugintype.type_name | last_segment }}>.Current.Require<IPluginExecutionContext>().{{image_collection_name}}, "{{image.name}}"); }
+{{~end~}}
+{{~end~}}
+{{~end~}}
+{{~end~}}

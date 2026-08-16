@@ -2,6 +2,7 @@
 namespace XrmTools.Tokens;
 
 using CredentialManagement;
+using System.ComponentModel.Composition;
 
 public interface ICredentialManager
 {
@@ -10,6 +11,7 @@ public interface ICredentialManager
     void SaveCredentials(string target, string username, string password);
 }
 
+[Export(typeof(ICredentialManager))]
 public class CredentialManager : ICredentialManager
 {
     public void SaveCredentials(string target, string username, string password)

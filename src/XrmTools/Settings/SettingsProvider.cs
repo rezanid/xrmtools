@@ -3,6 +3,7 @@ namespace XrmTools.Settings;
 using Community.VisualStudio.Toolkit;
 using System;
 using System.Collections.Generic;
+using System.ComponentModel.Composition;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Runtime.InteropServices;
@@ -55,14 +56,17 @@ public interface ISettingsProvider
     /// <summary>
     /// Searchs for the GlobalOptionSets file path in the active project settings.
     /// </summary>
+    /// <param name="projectDirectory">Known project directory to use for resolving relative paths without querying Visual Studio.</param>
+    /// <param name="solutionDirectory">Known solution directory to use for resolving relative paths without querying Visual Studio.</param>
     /// <returns>Full file path or null if the setting is not set.</returns>
-    Task<string?> GlobalOptionSetsFilePathAsync();
+    Task<string?> GlobalOptionSetsFilePathAsync(string? projectDirectory = null, string? solutionDirectory = null);
     Task DeleteEntityTemplateFilePathSettingAsync();
     Task DeletePluginTemplateFilePathSettingAsync();
     Task<string?> FetchXmlTemplateFilePathAsync();
 }
 
 [ComVisible(true)]
+[Export(typeof(ISettingsProvider))]
 public class SettingsProvider : ISettingsProvider
 {
     enum ResolveScope { Project, Solution }
@@ -159,18 +163,22 @@ public class SettingsProvider : ISettingsProvider
         }
     }
 
-    public async Task<string?> GlobalOptionSetsFilePathAsync()
+    public async Task<string?> GlobalOptionSetsFilePathAsync(string? projectDirectory = null, string? solutionDirectory = null)
     {
         var path = await ProjectSettings.GlobalOptionSetsFilePathAsync();
         if (string.IsNullOrWhiteSpace(path))
         {
             path = "GlobalOptionSets.cs";
         }
-        return await ResolveFilePathAsync(path, ResolveScope.Project);
+        return await ResolveFilePathAsync(path, ResolveScope.Project, projectDirectory, solutionDirectory);
     }
 
     [return: NotNullIfNotNull(nameof(filePath))]
-    private async Task<string?> ResolveFilePathAsync(string? filePath, ResolveScope resolveScope)
+    private async Task<string?> ResolveFilePathAsync(
+        string? filePath,
+        ResolveScope resolveScope,
+        string? projectDirectory = null,
+        string? solutionDirectory = null)
     {
         if (string.IsNullOrWhiteSpace(filePath)) return null;
 
@@ -179,6 +187,16 @@ public class SettingsProvider : ISettingsProvider
             filePath = filePath[1..];
         }
         if (Path.IsPathRooted(filePath)) return filePath;
+
+        if (resolveScope == ResolveScope.Project && !string.IsNullOrWhiteSpace(projectDirectory))
+        {
+            return Path.Combine(projectDirectory, filePath);
+        }
+
+        if (!string.IsNullOrWhiteSpace(solutionDirectory))
+        {
+            return Path.Combine(solutionDirectory, filePath);
+        }
 
         if (resolveScope == ResolveScope.Project)
         {

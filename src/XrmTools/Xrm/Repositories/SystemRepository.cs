@@ -17,7 +17,9 @@ internal class SystemRepository(IWebApiService service, ILogger logger) : XrmRep
 {
     public async Task<WhoAmIResponse> WhoAmIAsync(CancellationToken cancellationToken = default)
     {
-        var response = await service.SendAsync(new WhoAmIRequest(), cancellationToken).ConfigureAwait(false);
-        return await response.CastAsync<WhoAmIResponse>();
+        logger.LogTrace("Executing WhoAmI request.");
+        var result = await service.SendAsync(new WhoAmIRequest(), cancellationToken: cancellationToken).ConfigureAwait(false);
+        logger.LogTrace("WhoAmI request completed.");
+        return result;
     }
 }

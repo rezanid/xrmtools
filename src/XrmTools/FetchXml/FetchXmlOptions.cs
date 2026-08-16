@@ -4,6 +4,7 @@ namespace XrmTools.Options;
 using Community.VisualStudio.Toolkit;
 using System.ComponentModel;
 using System.Runtime.InteropServices;
+using XrmTools.ComponentModel;
 
 internal partial class OptionsProvider
 {

@@ -62,7 +62,7 @@ public sealed class MemoFormatName : ConstantsBase<string>
             return true;
         }
 
-        if (stringFormatA is null || (object)stringFormatB == null)
+        if (stringFormatA is null || stringFormatB is null)
         {
             return false;
         }

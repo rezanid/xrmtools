@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project Sdk="Microsoft.VisualStudio.JavaScript.SDK/1.0.5706140">
+
+	<PropertyGroup>
+		<Configuration Condition="'$(Configuration)' == ''">Debug</Configuration>
+
+		<ShouldRunBuildScript Condition="'$(ShouldRunBuildScript)' == ''">false</ShouldRunBuildScript>
+		<BuildOutputFolder Condition="'$(BuildOutputFolder)' == ''">$(MSBuildProjectDirectory)\dist</BuildOutputFolder>
+
+		<!--
+			Detect a CI/pipeline build. In CI we prefer a clean, reproducible install ('npm ci'),
+			but only when a committed 'package-lock.json' exists (it is required by 'npm ci').
+			For local development we default to 'npm install' so changes to package.json are
+			picked up automatically without running npm from a terminal.
+		-->
+		<IsCiBuild Condition="'$(IsCiBuild)' == '' and ('$(ContinuousIntegrationBuild)' == 'true' or '$(CI)' == 'true' or '$(TF_BUILD)' == 'true' or '$(GITHUB_ACTIONS)' == 'true')">true</IsCiBuild>
+
+		<NpmRestoreCommand Condition="'$(NpmRestoreCommand)' == '' and '$(IsCiBuild)' == 'true' and Exists('$(MSBuildProjectDirectory)\package-lock.json')">npm ci</NpmRestoreCommand>
+		<NpmRestoreCommand Condition="'$(NpmRestoreCommand)' == ''">npm install</NpmRestoreCommand>
+		<NpmCleanCommand Condition="'$(NpmCleanCommand)' == ''">npm run clean</NpmCleanCommand>
+
+		<NpmBuildCommand Condition="'$(NpmBuildCommand)' == '' and '$(Configuration)' == 'Debug'">npm run build:debug</NpmBuildCommand>
+		<NpmBuildCommand Condition="'$(NpmBuildCommand)' == '' and '$(Configuration)' != 'Debug'">npm run build:release</NpmBuildCommand>
+	</PropertyGroup>
+
+</Project>

@@ -6,6 +6,7 @@ using Microsoft.VisualStudio.ComponentModelHost;
 using Microsoft.VisualStudio.Shell;
 using System;
 using System.ComponentModel.Composition;
+using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Threading.Tasks;
@@ -15,14 +16,12 @@ using XrmTools.Helpers;
 using XrmTools.Logging.Compatibility;
 using XrmTools.Resources;
 using XrmTools.Services;
+using XrmTools.UI;
 using XrmTools.WebApi;
 using XrmTools.Xrm.Repositories;
 using static XrmTools.Helpers.ProjectExtensions;
 using Task = System.Threading.Tasks.Task;
 
-/// <summary>
-/// Command handler to set the custom tool of the selected item to the Xrm Plugin Code Generator.
-/// </summary>
 [Command(PackageGuids.XrmToolsCmdSetIdString, PackageIds.RegisterPluginCmdId)]
 internal sealed class RegisterPluginCommand : BaseCommand<RegisterPluginCommand>
 {
@@ -43,15 +42,6 @@ internal sealed class RegisterPluginCommand : BaseCommand<RegisterPluginCommand>
 
     [Import]
     internal IPluginRegistrationService PluginRegistrationService { get; set; } = null!;
-
-    [Import]
-    internal Validation.IValidationService Validator { get; set; } = null!;
-
-    public (bool suceeded, string message) RegisterPluginPackage()
-    {
-
-        return (true, string.Empty);
-    }
 
     protected override async Task ExecuteAsync(OleMenuCmdEventArgs e)
     {
@@ -130,20 +120,21 @@ internal sealed class RegisterPluginCommand : BaseCommand<RegisterPluginCommand>
     {
         ThreadHelper.JoinableTaskFactory.Run(async () =>
         {
+            var uiContext = UIContext.FromUIContextGuid(PackageGuids.XrmToolsPluginProjectUIRule);
             var item = await VS.Solutions.GetActiveItemAsync();
-            Command.Visible = await IsVisibleAsync(item).ConfigureAwait(false);
-        });
+            Command.Visible = await IsVisibleAsync(item, uiContext?.IsActive is true).ConfigureAwait(false);
+        });     
 
-        static async Task<bool> IsVisibleAsync(SolutionItem? item)
+        static async Task<bool> IsVisibleAsync(SolutionItem? item, bool isUiContextActive)
         {
             if (item is null)
                 return false;
 
-            if (item.Type == SolutionItemType.Project)
-                return true;
+            if (item.Type == SolutionItemType.Project && item is Project project)
+                return isUiContextActive || await project.IsXrmToolsPluginProjectAsync().ConfigureAwait(false);
 
             if (item.Type == SolutionItemType.PhysicalFile && item is PhysicalFile file)
-                return await file.IsXrmPluginFileAsync().ConfigureAwait(false);
+                return await file.LooksLikePluginFileAsync().ConfigureAwait(false);
 
             return false;
         }
@@ -158,15 +149,7 @@ internal sealed class RegisterPluginCommand : BaseCommand<RegisterPluginCommand>
         if (WebApiService == null) throw new InvalidOperationException(string.Format(Strings.MissingServiceDependency, nameof(RegisterPluginCommand), nameof(WebApiService)));
         if (EnvironmentProvider == null) throw new InvalidOperationException(string.Format(Strings.MissingServiceDependency, nameof(RegisterPluginCommand), nameof(EnvironmentProvider)));
         if (RepositoryFactory == null) throw new InvalidOperationException(string.Format(Strings.MissingServiceDependency, nameof(RegisterPluginCommand), nameof(RepositoryFactory)));
-    }
-
-    private sealed class VsPluginRegistrationUI : IPluginRegistrationUI
-    {
-        public async Task<bool> ConfirmRemovePluginsAsync(System.Collections.Generic.IEnumerable<string> removedTypeNames, System.Threading.CancellationToken cancellationToken)
-        {
-            var removedPluginNames = string.Join(", ", removedTypeNames);
-            return await VS.MessageBox.ShowConfirmAsync("Xrm Tools", "Looks like you have removed the following plugins. Continuing will remove these plugins from Dataverse too. Is that ok?\r\n" + removedPluginNames);
-        }
+        if (PluginRegistrationService == null) throw new InvalidOperationException(string.Format(Strings.MissingServiceDependency, nameof(RegisterPluginCommand), nameof(PluginRegistrationService)));
     }
 }
 #nullable restore

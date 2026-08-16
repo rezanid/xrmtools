@@ -1,0 +1,36 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>netstandard2.0</TargetFramework>
+    <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
+    <ImplicitUsings>disable</ImplicitUsings>
+    <IsPackable>false</IsPackable>
+    <DevelopmentDependency>true</DevelopmentDependency>
+    <VersionPrefix>1.2.0</VersionPrefix>
+    <Description>Attributes to be used by Xrm Tools for source generation, registration and other features in Visual Studio. This is a source only package with no assemblies included.</Description>
+    <Authors>Reza Niroomand</Authors>
+    <PackageIcon>XrmTools_256.png</PackageIcon>
+    <IncludeBuildOutput>false</IncludeBuildOutput>
+    <SuppressDependenciesWhenPacking>true</SuppressDependenciesWhenPacking>
+  </PropertyGroup>
+  <PropertyGroup>
+    <GeneratePackageOnBuild>false</GeneratePackageOnBuild>
+    <PackageTags>Power Platform Apps XRM Tools</PackageTags>
+    <PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+    <RepositoryUrl>https://github.com/rezanid/xrmtools</RepositoryUrl>
+  </PropertyGroup>
+  <ItemGroup>
+    <None Update="schemas\Fetch.xsd">
+      <SubType>Designer</SubType>
+    </None>
+  </ItemGroup>
+  
+  <ItemGroup>
+    <ProjectReference Include="..\Analyzers\XrmTools.Analyzers.CodeFixes\XrmTools.Analyzers.CodeFixes.csproj" />
+    <ProjectReference Include="..\Analyzers\XrmTools.Analyzers\XrmTools.Analyzers.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Update="tools\*.ps1" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+</Project>

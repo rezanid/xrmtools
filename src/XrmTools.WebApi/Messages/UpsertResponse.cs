@@ -1,26 +1,35 @@
 ﻿namespace XrmTools.WebApi.Messages;
 
+using System.Collections.Generic;
 using System.Linq;
+using System.Net;
 using System.Net.Http;
+using System.Threading;
+using System.Threading.Tasks;
 
 /// <summary>
 /// Contains the response from the UpsertRequest
 /// </summary>
-/// <remarks>
-/// This class must be instantiated by either:
-/// - The Service.SendAsync<T> method
-/// - The HttpResponseMessage.As<T> extension in Extensions.cs
-/// </remarks>
-public sealed class UpsertResponse : HttpResponseMessage
+public sealed class UpsertResponse
 {
+    private UpsertResponse(HttpStatusCode statusCode, IReadOnlyDictionary<string, IEnumerable<string>> headers)
+    {
+        StatusCode = statusCode;
+        Headers = headers;
+        EntityReference = headers.GetHeaderValue("OData-EntityId") is string entityId && !string.IsNullOrWhiteSpace(entityId)
+            ? new EntityReference(entityId)
+            : null;
+    }
+
+    public HttpStatusCode StatusCode { get; }
+
+    public IReadOnlyDictionary<string, IEnumerable<string>> Headers { get; }
+
     /// <summary>
     /// A reference to the record.
     /// </summary>
-    public EntityReference? EntityReference
-    {
-        get =>
-            Headers.TryGetValues("OData-EntityId", out var values) ?
-            new(uri: values.FirstOrDefault()) :
-            null;
-    }
+    public EntityReference? EntityReference { get; }
+
+    internal static Task<UpsertResponse> FromAsync(HttpResponseMessage raw, CancellationToken ct = default)
+        => Task.FromResult(new UpsertResponse(raw.StatusCode, raw.Headers.ToHeaderDictionary()));
 }

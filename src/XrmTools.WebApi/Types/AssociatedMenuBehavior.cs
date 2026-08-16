@@ -2,9 +2,8 @@
 
 using Newtonsoft.Json.Converters;
 using System.Runtime.Serialization;
-using System.Text.Json.Serialization;
 
-[JsonConverter(typeof(StringEnumConverter))]
+[Newtonsoft.Json.JsonConverter(typeof(StringEnumConverter))]
 public enum AssociatedMenuBehavior
 {
     [EnumMember(Value = "UseCollectionName")]

@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<!-- Example 3: Element-based parameter with default value -->
+<fetch distinct='false' aggregate='true'>
+  <entity name="account">
+    <attribute name='accountid' aggregate='count' alias='account_count' />
+    <param name='filterXml'>
+      <filter type='and'>
+        <condition attribute='address1_city' operator='eq' value='Redmond' />
+      </filter>
+    </param>
+  </entity>
+</fetch>

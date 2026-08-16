@@ -26,6 +26,7 @@ internal class XrmRepository : IDisposable, IAsyncDisposable
 
     protected async Task<T> GetOrCreateCacheItemAsync<T>(string cacheKey, Func<Task<T>> fetchFunction, CancellationToken cancellationToken)
     {
+        cacheKey = await ScopeCacheKeyAsync(cacheKey).ConfigureAwait(false);
         if (cache.Contains(cacheKey))
         {
             var cachedItem = (T)cache.Get(cacheKey);
@@ -66,6 +67,15 @@ internal class XrmRepository : IDisposable, IAsyncDisposable
         var cachePolicy = CreateCacheItemPolicy();
         cache.Add(cacheKey, data, cachePolicy);
         return data;
+    }
+
+    // Cache items are stored in the process-wide MemoryCache.Default which is shared across
+    // environments. Prefix the key with the active environment identifier so switching the
+    // current environment does not return another environment's cached data.
+    private async Task<string> ScopeCacheKeyAsync(string cacheKey)
+    {
+        var baseUrl = await service.GetBaseUrlAsync().ConfigureAwait(false);
+        return baseUrl is null ? cacheKey : $"{baseUrl}|{cacheKey}";
     }
 
     private CacheItemPolicy CreateCacheItemPolicy()

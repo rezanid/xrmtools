@@ -43,6 +43,7 @@ internal sealed class SetCustomToolEntityGeneratorCommand : BaseCommand<SetCusto
                 Path.GetFileNameWithoutExtension(file.FullPath)) + ".g.cs";
             if (!File.Exists(genFilePath)) await FileHelper.AddItemAsync(genFilePath, "", file);
             var genFile = await PhysicalFile.FromFileAsync(genFilePath);
+            if (genFile is null) return;
             await genFile.TrySetAttributeAsync(PhysicalFileAttribute.AutoGen, true);
             await genFile.TrySetAttributeAsync(PhysicalFileAttribute.DesignTime, true);
             await genFile.TrySetAttributeAsync(PhysicalFileAttribute.DependentUpon, Path.GetFileName(file.FullPath));

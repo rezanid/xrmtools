@@ -36,6 +36,7 @@ public class CustomApi : Entity<CustomApi>
     public string? ExecutePrivilegeName { get; set; }
     public bool IsFunction { get; set; }
     public bool IsPrivate { get; set; }
+    public DateTime? ModifiedOn { get; set; }
     [JsonPropertyName("customapiid")]
     [JsonProperty("customapiid")]
     public override Guid? Id { get; set; }

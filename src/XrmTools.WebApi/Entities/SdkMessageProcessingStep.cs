@@ -48,10 +48,13 @@ public class SdkMessageProcessingStep : Component<SdkMessageProcessingStep>
     public ManagedBooleanProperty? IsCustomizable { get; set; }
     public ManagedBooleanProperty? IsHidden { get; set; }
     [JsonPropertyName("sdkmessageprocessingstepid_sdkmessageprocessingstepimage")]
+    [JsonProperty("sdkmessageprocessingstepid_sdkmessageprocessingstepimage")]
     public List<SdkMessageProcessingStepImage> Images { get; set; } = [];
     [JsonPropertyName("sdkmessagefilterid")]
+    [JsonProperty("sdkmessagefilterid")]
     public SdkMessageFilter? SdkMessageFilter { get; set; }
     [JsonPropertyName("sdkmessageid")]
+    [JsonProperty("sdkmessageid")]
     public SdkMessage? Message { get; set; }
     //[JsonPropertyName("impersonatinguserid")]
     //public SystemUser? ImpersonatingUser { get; set; }

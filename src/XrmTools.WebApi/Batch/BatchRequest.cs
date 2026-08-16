@@ -4,8 +4,10 @@ using System;
 using System.Collections.Generic;
 using System.Net.Http;
 using System.Net.Http.Headers;
+using System.Threading;
+using System.Threading.Tasks;
 
-public class BatchRequest : HttpRequestMessage
+public sealed class BatchRequest : WebApiRequest<BatchResponse>
 {
     /// <summary>
     /// BatchRequest constructor
@@ -16,11 +18,11 @@ public class BatchRequest : HttpRequestMessage
         Method = HttpMethod.Post;
         RequestUri = new Uri(uriString: "$batch", uriKind: UriKind.Relative);
         Content = new MultipartContent("mixed", $"batch_{Guid.NewGuid()}");
-        ServiceBaseAddress = serviceBaseAddress;
+        this.serviceBaseAddress = serviceBaseAddress;
     }
 
     private bool continueOnError;
-    private readonly Uri ServiceBaseAddress;
+    private readonly Uri serviceBaseAddress;
 
     /// <summary>
     /// Sets the Prefer: odata.continue-on-error request header for the request.
@@ -48,25 +50,7 @@ public class BatchRequest : HttpRequestMessage
     /// </summary>
     public List<ChangeSet> ChangeSets
     {
-        set
-        {
-            value.ForEach(changeSet =>
-            {
-                var content = new MultipartContent("mixed", $"changeset_{Guid.NewGuid()}");
-
-                int count = 1;
-                changeSet.Requests.ForEach(request =>
-                {
-                    var messageContent = ToMessageContent(request);
-                    messageContent.Headers.Add("Content-ID", count.ToString());
-
-                    content.Add(messageContent);
-
-                    count++;
-                });
-                ((MultipartContent)Content).Add(content);
-            });
-        }
+        set => AddChangeSets(value);
     }
 
     /// <summary>
@@ -74,15 +58,44 @@ public class BatchRequest : HttpRequestMessage
     /// </summary>
     public List<HttpRequestMessage> Requests
     {
-        set
-        {
-            value.ForEach(request =>
-            {
-                ((MultipartContent)Content).Add(ToMessageContent(request));
+        set => AddRequests(value);
+    }
 
-            });
+    public void AddChangeSets(IEnumerable<ChangeSet> changeSets)
+    {
+        foreach (var changeSet in changeSets)
+        {
+            AddChangeSet(changeSet);
         }
     }
+
+    public void AddChangeSet(ChangeSet changeSet)
+    {
+        var content = new MultipartContent("mixed", $"changeset_{Guid.NewGuid()}");
+
+        int count = 1;
+        changeSet.Requests.ForEach(request =>
+        {
+            var messageContent = ToMessageContent(request);
+            messageContent.Headers.Add("Content-ID", count.ToString());
+
+            content.Add(messageContent);
+            count++;
+        });
+
+        ((MultipartContent)Content).Add(content);
+    }
+
+    public void AddRequests(IEnumerable<HttpRequestMessage> requests)
+    {
+        foreach (var request in requests)
+        {
+            AddRequest(request);
+        }
+    }
+
+    public void AddRequest(HttpRequestMessage request)
+        => ((MultipartContent)Content).Add(ToMessageContent(request));
 
     /// <summary>
     /// Converts an HttpRequestMessage to HttpMessageContent
@@ -94,7 +107,7 @@ public class BatchRequest : HttpRequestMessage
 
         //Relative URI is not allowed with MultipartContent
         request.RequestUri = new Uri(
-            baseUri: ServiceBaseAddress,
+            baseUri: serviceBaseAddress,
             relativeUri: request.RequestUri.ToString());
 
         if (request.Content != null)
@@ -109,4 +122,7 @@ public class BatchRequest : HttpRequestMessage
 
         return messageContent;
     }
+
+    public override Task<BatchResponse> CreateResponseAsync(HttpResponseMessage raw, CancellationToken ct)
+        => BatchResponse.FromAsync(raw, ct);
 }

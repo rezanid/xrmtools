@@ -5,12 +5,14 @@ using System;
 using System.Net.Http;
 using System.Text;
 using System.Text.Json;
+using System.Threading;
+using System.Threading.Tasks;
 
 /// <summary>
 /// Contains the data to set a column value
 /// </summary>
 /// <typeparam name="T">The type of the column value to set</typeparam>
-public sealed class SetColumnValueRequest<T> : HttpRequestMessage
+public sealed class SetColumnValueRequest<T> : WebApiRequest<EmptyResponse>
 {
     /// <summary>
     /// Initializes the SetColumnValueRequest
@@ -25,9 +27,12 @@ public sealed class SetColumnValueRequest<T> : HttpRequestMessage
             uriString: $"{entityReference.Path}/{propertyName}", 
             uriKind: UriKind.Relative);
         Content = new StringContent(
-            content: $"{{\"value\": {JsonSerializer.Serialize(value)}}}", 
+            content: $"{{\"value\": {JsonSerializer.Serialize(value, Extensions.SerializerOptions)}}}", 
             encoding: Encoding.UTF8, 
             mediaType: "application/json");
     }
+
+    public override Task<EmptyResponse> CreateResponseAsync(HttpResponseMessage raw, CancellationToken ct)
+        => Task.FromResult(EmptyResponse.Instance);
 }
 #nullable restore

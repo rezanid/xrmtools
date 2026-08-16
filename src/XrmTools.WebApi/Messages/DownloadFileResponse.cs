@@ -1,19 +1,21 @@
 ﻿namespace XrmTools.WebApi.Messages;
 
 using System.Net.Http;
+using System.Threading.Tasks;
 
 /// <summary>
 /// Contains the data from the GetColumnValueRequest.
 /// </summary>
-/// <remarks>
-/// This class must be instantiated by either:
-/// - The Service.SendAsync<T> method
-/// - The HttpResponseMessage.As<T> extension in Extensions.cs
-/// </remarks>
-public sealed class DownloadFileResponse : HttpResponseMessage
+public sealed class DownloadFileResponse
 {
     /// <summary>
     /// The requested file column  value.
     /// </summary>
-    public byte[] File => Content.ReadAsByteArrayAsync().GetAwaiter().GetResult();
+    public byte[]? File {  get; private set; }
+
+    private DownloadFileResponse(byte[]? file) => File = file;
+
+    internal async static Task<DownloadFileResponse> FromAsync(HttpResponseMessage raw)
+        => new(await raw.Content.ReadAsByteArrayAsync().ConfigureAwait(false));
+
 }

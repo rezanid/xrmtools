@@ -3,11 +3,13 @@ namespace XrmTools.WebApi.Messages;
 
 using System;
 using System.Net.Http;
+using System.Threading;
+using System.Threading.Tasks;
 
 /// <summary>
 /// Contains the data to delete a record
 /// </summary>
-public sealed class DeleteRequest : HttpRequestMessage
+public sealed class DeleteRequest : WebApiRequest<EmptyResponse>
 {
     /// <summary>
     /// Initializes the DeleteRequest
@@ -42,5 +44,8 @@ public sealed class DeleteRequest : HttpRequestMessage
             Headers.Add("If-Match", eTag);
         }
     }
+
+    public override Task<EmptyResponse> CreateResponseAsync(HttpResponseMessage raw, CancellationToken ct)
+        => Task.FromResult(EmptyResponse.Instance);
 }
 #nullable restore

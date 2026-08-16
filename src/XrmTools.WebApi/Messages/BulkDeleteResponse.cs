@@ -9,7 +9,7 @@ public sealed class BulkDeleteResponse : HttpResponseMessage
 {
 
     //Provides JObject for property getters
-    private JObject _jObject
+    private JObject? jObject
     {
         get
         {
@@ -20,11 +20,11 @@ public sealed class BulkDeleteResponse : HttpResponseMessage
     /// <summary>
     /// The contents of the downloaded file.
     /// </summary>
-    public Guid JobId
+    public Guid? JobId
     {
         get
         {
-            return (Guid)_jObject[nameof(JobId)];
+            return (Guid?)jObject?[nameof(JobId)];
         }
     }
 }

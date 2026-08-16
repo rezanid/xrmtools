@@ -1,32 +1,34 @@
 #nullable enable
 namespace XrmTools.Services;
 
-using System.Collections.Generic;
-using System.ComponentModel.DataAnnotations;
-using System.Threading;
-using System.Threading.Tasks;
 using System;
+using System.Collections.Generic;
+using System.ComponentModel.Composition;
+using System.ComponentModel.DataAnnotations;
 using System.IO;
 using System.Linq;
 using System.Net.Http;
-using XrmTools.WebApi;
-using XrmTools.Environments;
+using System.Threading;
+using System.Threading.Tasks;
 using XrmTools.Analyzers;
-using XrmTools.Xrm.Repositories;
-using XrmTools.Logging.Compatibility;
-using XrmTools.Meta.Model.Configuration;
-using XrmTools.WebApi.Entities;
+using XrmTools.Environments;
 using XrmTools.Helpers;
-using XrmTools.WebApi.Methods;
-using XrmTools.WebApi.Messages;
-using XrmTools.WebApi.Batch;
-using XrmTools.Xrm;
+using XrmTools.Logging.Compatibility;
 using XrmTools.Meta.Attributes;
-using System.ComponentModel.Composition;
+using XrmTools.Meta.Model.Configuration;
+using XrmTools.UI;
+using XrmTools.WebApi;
+using XrmTools.WebApi.Batch;
+using XrmTools.WebApi.Entities;
+using XrmTools.WebApi.Messages;
+using XrmTools.WebApi.Methods;
+using XrmTools.Xrm;
+using XrmTools.Xrm.Repositories;
 
 public interface IPluginRegistrationService
 {
-    Task<PluginRegistrationResult> RegisterAsync(RegistrationInput input, IPluginRegistrationUI ui, CancellationToken cancellationToken = default);
+    public Task<PluginRegistrationResult> RegisterAsync(RegistrationInput input, IPluginRegistrationUI ui, CancellationToken cancellationToken = default);
+    public Task<PluginRegistrationResult> UnregisterAsync(RegistrationInput input, IPluginRegistrationUI ui, CancellationToken cancellationToken = default);
 }
 
 [Export(typeof(IPluginRegistrationService))]
@@ -46,6 +48,124 @@ internal sealed class PluginRegistrationService(
     private readonly ILogger<PluginRegistrationService> _log = log;
     private readonly Validation.IValidationService _validator = validator;
 
+    public async Task<PluginRegistrationResult> UnregisterAsync(RegistrationInput input, IPluginRegistrationUI ui, CancellationToken cancellationToken = default)
+    {
+        if (!input.IsProject)
+        {
+            return PluginRegistrationResult.Failure(
+                "Unregistration is only supported for project (assembly). If you need to unregister a plugin, just remove the plugin from the project and register the plugin.");
+        }
+        PluginAssemblyConfig? model;
+        try
+        {
+            model = await _meta.ParseProjectPluginsAsync(input.ItemFullPath, cancellationToken);
+        }
+        catch (Exception ex)
+        {
+            _log.LogError(ex, "An error occurred while parsing registration code.");
+            return PluginRegistrationResult.Failure("Plugin registration failed due to an error while parsing registration code. " + ex.Message);
+        }
+
+        if (model is null)
+        {
+            return PluginRegistrationResult.Failure("No plugin definition found.");
+        }
+
+        var requests = new List<HttpRequestMessage>();
+        PluginAssembly? existingAssembly;
+
+        try
+        {
+            var assemblyQuery = await _webApi.RetrieveMultipleAsync<PluginAssembly>(
+                $"{PluginAssembly.Metadata.EntitySetName}?$select=name" +
+                $"&$filter=name eq '{model.Name}'" +
+                $"&$expand=PackageId($select=name),pluginassembly_plugintype($select=name,typename" +
+                $";$expand=plugintype_sdkmessageprocessingstep($select=name,stage),CustomAPIId($select=uniquename))");
+
+            existingAssembly = assemblyQuery?.Value?.SingleOrDefault();
+
+            if (existingAssembly is null)
+            {
+                return PluginRegistrationResult.Failure("No existing plugin assembly found to unregister.");
+            }
+
+            foreach (var existingPlugin in existingAssembly.PluginTypes)
+            {
+                AddDeleteRequestsForPlugin(requests, existingPlugin);
+            }
+            if (existingAssembly.Package?.Id is not null)
+            {
+                requests.Add(new DeleteRequest(existingAssembly.Package.ToReference()));
+            }
+            else
+            {
+                requests.Add(new DeleteRequest(existingAssembly.ToReference()));
+            }
+        }
+        catch (Exception ex)
+        {
+            _log.LogError(ex, "An error occurred while querying existing registrations.");
+            return PluginRegistrationResult.Failure("Plugin unregistration failed due to an error while querying existing registrations. " + ex.Message);
+        }
+
+        DataverseEnvironment? environment;
+        BatchRequest? batch;
+
+        try
+        {
+            environment = await _environmentProvider.GetActiveEnvironmentAsync(true);
+            var errMessage = environment is null
+                ? "No active environment found. Please connect to an environment and try again."
+                : environment.BaseServiceUrl is null
+                    ? "Active environment has no valid URL. Please check the environment and try again."
+                    : null;
+
+            if (errMessage is not null)
+            {
+                return PluginRegistrationResult.Failure(errMessage);
+            }
+
+            batch = new BatchRequest(environment!.BaseServiceUrl!)
+            {
+                ChangeSets = [new(requests)]
+            };
+        }
+        catch (Exception ex)
+        {
+            _log.LogError(ex, "An error occurred while generating plugin registration requests.");
+            return PluginRegistrationResult.Failure("Plugin registration failed due to an error while generating registration requests. " + ex.Message);
+        }
+
+        try
+        {
+            var batchResponse = await _webApi.SendAsync(batch!, noThrow: true, cancellationToken: cancellationToken).ConfigureAwait(false);
+            var responses = await batchResponse.ParseResponseAsync(cancellationToken).ConfigureAwait(false);
+
+            foreach (var response in responses)
+            {
+                if (!response.IsSuccessStatusCode)
+                {
+                    var error = await response.AsServiceExceptionAsync().ConfigureAwait(false);
+                    _log.LogCritical(error.ToString());
+                    return PluginRegistrationResult.Failure(error.Message);
+                }
+                else if (response.GetEntityReference() is EntityReference entityReference)
+                {
+                    _log.LogTrace($"Registered ({entityReference.Path}).");
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            _log.LogError(ex, "An error occurred while sending the batch request.");
+            return PluginRegistrationResult.Failure("Plugin unregistration failed. " + ex.Message);
+        }
+
+        return PluginRegistrationResult.Success(existingAssembly.Package?.Id is not null
+        ? "Plugin package unregistered successfully."
+        : "Plugin assembly unregistered successfully.");
+    }
+
     public async Task<PluginRegistrationResult> RegisterAsync(RegistrationInput input, IPluginRegistrationUI ui, CancellationToken cancellationToken = default)
     {
         PluginAssemblyConfig? model;
@@ -57,13 +177,13 @@ internal sealed class PluginRegistrationService(
         }
         catch (Exception ex)
         {
-            _log.LogError(ex, "An error occurred while parsing registration code.");
-            return PluginRegistrationResult.Failure("Plugin registration failed due to an error while parsing registration code. " + ex.Message);
+            _log.LogError(ex, "An error occurred while parsing registrations.");
+            return PluginRegistrationResult.Failure("Plugin registration failed due to an error while parsing registrations. " + ex.Message);
         }
 
         if (model is null)
         {
-            return PluginRegistrationResult.Failure("No plugin configuration found.");
+            return PluginRegistrationResult.Failure("No plugin definition found.");
         }
 
         try
@@ -71,6 +191,7 @@ internal sealed class PluginRegistrationService(
             if (!string.IsNullOrWhiteSpace(input.NugetPackagePath))
             {
                 model.Package = NugetParser.LoadFromNugetFile(input.NugetPackagePath!);
+                await TryApplySolutionPrefixToPackageAsync(model, cancellationToken).ConfigureAwait(false);
             }
             else
             {
@@ -106,42 +227,28 @@ internal sealed class PluginRegistrationService(
                 model.Id = existingAssembly.Id;
                 _log.LogInformation($"Found existing assembly ({existingAssembly.Id}).");
 
-                if (!input.IsProject)
-                {
-                    var removedPlugins = existingAssembly.PluginTypes
-                        .Where(existing =>
-                            !model.PluginTypes.Any(p => p.TypeName == existing.TypeName) &&
-                            !model.OtherPluginTypes.Any(p => p.TypeName == existing.TypeName))
-                        .ToArray();
+                // A plugin type is only genuinely "removed" when its class no longer exists in the
+                // compiled assembly (i.e. it was renamed or deleted in code). Plugin types that are
+                // still compiled into the assembly remain valid registrations even when they are not
+                // (yet) annotated, so they must never be deleted. When the compiled plugin-type set is
+                // unknown (null), we conservatively treat nothing as removed. Steps, images and custom
+                // APIs are still reconciled against annotations by GenerateDeleteRequestsForCleanup.
+                var removedPlugins = ComputeRemovedPluginTypes(existingAssembly.PluginTypes, model.AssemblyPluginTypeNames);
 
-                    if (removedPlugins.Length > 0)
+                if (removedPlugins.Count > 0)
+                {
+                    var summaries = removedPlugins.Select(ToRemovedPluginSummary).ToArray();
+                    var decision = await ui.ConfirmRemovedPluginsAsync(summaries);
+                    if (decision == RemovedPluginsDecision.Cancel)
                     {
-                        var removedNames = removedPlugins.Select(p => p.TypeName ?? p.Name ?? string.Empty)
-                                                         .Where(n => !string.IsNullOrEmpty(n))
-                                                         .ToArray();
-                        var confirmed = await ui.ConfirmRemovePluginsAsync(removedNames, cancellationToken);
-                        if (confirmed)
-                        {
-                            foreach (var removedPlugin in removedPlugins)
-                            {
-                                requests.AddRange(removedPlugin.Steps
-                                    .Where(s => s.Id.HasValue)
-                                    .Select(s => new DeleteRequest(SdkMessageProcessingStep.CreateReference(s.Id!.Value))));
-                                if (removedPlugin.CustomApi.Count > 0 && removedPlugin.CustomApi[0].Id.HasValue)
-                                {
-                                    requests.Add(new DeleteRequest(CustomApi.CreateReference(removedPlugin.CustomApi[0].Id!.Value)));
-                                }
-                                if (removedPlugin.Id.HasValue)
-                                {
-                                    requests.Add(new DeleteRequest(PluginType.CreateReference(removedPlugin.Id!.Value)));
-                                }
-                            }
-                        }
+                        return PluginRegistrationResult.Success("Plugin registration was cancelled.");
                     }
                 }
 
                 requests.AddRange(GenerateDeleteRequestsForCleanup(
-                    newAssembly: model, existingAssembly: existingAssembly, deleteRemovedPlugins: input.IsProject));
+                    newAssembly: model,
+                    existingAssembly: existingAssembly,
+                    removedPlugins: removedPlugins));
                 _log.LogInformation($"Generated {requests.Count} delete requests for cleanup.");
             }
 
@@ -159,7 +266,7 @@ internal sealed class PluginRegistrationService(
 
         try
         {
-            environment = await _environmentProvider.GetActiveEnvironmentAsync();
+            environment = await _environmentProvider.GetActiveEnvironmentAsync(true);
             var errMessage = environment is null
                 ? "No active environment found. Please connect to an environment and try again."
                 : environment.BaseServiceUrl is null
@@ -210,21 +317,20 @@ internal sealed class PluginRegistrationService(
 
         try
         {
-            var batchResponse = await _webApi.SendAsync<BatchResponse>(batch!);
-            var responses = await batchResponse.ParseResponseAsync(cancellationToken);
+            var batchResponse = await _webApi.SendAsync(batch!, noThrow: true, cancellationToken: cancellationToken).ConfigureAwait(false);
+            var responses = await batchResponse.ParseResponseAsync(cancellationToken).ConfigureAwait(false);
 
             foreach (var response in responses)
             {
                 if (!response.IsSuccessStatusCode)
                 {
-                    var error = await response.AsServiceExceptionAsync();
+                    var error = await response.AsServiceExceptionAsync().ConfigureAwait(false);
                     _log.LogCritical(error.ToString());
                     return PluginRegistrationResult.Failure(error.Message);
                 }
-                else if (response.Headers.Contains("OData-EntityId"))
+                else if (response.GetEntityReference() is EntityReference entityReference)
                 {
-                    var path = response.As<UpsertResponse>().EntityReference?.Path;
-                    _log.LogTrace($"Registered ({path}).");
+                    _log.LogTrace($"Registered ({entityReference.Path}).");
                 }
             }
         }
@@ -255,28 +361,27 @@ internal sealed class PluginRegistrationService(
                     ChangeSets = [new(upserts)]
                 };
 
-                var followupResponse = await _webApi.SendAsync<BatchResponse>(followupBatch);
-                var followupParts = await followupResponse.ParseResponseAsync(cancellationToken);
+                var followupResponse = await _webApi.SendAsync(followupBatch, noThrow: true, cancellationToken: cancellationToken).ConfigureAwait(false);
+                var followupParts = await followupResponse.ParseResponseAsync(cancellationToken).ConfigureAwait(false);
 
                 foreach (var response in followupParts)
                 {
                     if (!response.IsSuccessStatusCode)
                     {
-                        var error = await response.AsServiceExceptionAsync();
+                        var error = await response.AsServiceExceptionAsync().ConfigureAwait(false);
                         _log.LogCritical(error.ToString());
                         return PluginRegistrationResult.Failure(error.Message);
                     }
-                    else if (response.Headers.Contains("OData-EntityId"))
+                    else if (response.GetEntityReference() is EntityReference entityReference)
                     {
-                        var path = response.As<UpsertResponse>().EntityReference?.Path;
-                        _log.LogTrace($"Registered ({path}).");
+                        _log.LogTrace($"Registered ({entityReference.Path}).");
                     }
                 }
             }
-            catch (Exception ex)
+            catch (Exception ex)    
             {
                 _log.LogError(ex, "An error occurred while registering steps/custom APIs after package upload.");
-                return PluginRegistrationResult.Failure("Plugin registration failed during follow-up registration of steps/custom APIs.");
+                return PluginRegistrationResult.Failure("Plugin registration failed during follow-up registration of steps/custom APIs. Please check the Output window for more details.");
             }
         }
 
@@ -286,8 +391,10 @@ internal sealed class PluginRegistrationService(
     private async Task<Dictionary<string, SdkMessage>> FetchSdkMessagesAsync(PluginAssemblyConfig config, CancellationToken cancellationToken)
     {
         var stepEntities = config.PluginTypes
-            .SelectMany(p => p.Steps.Select(s => s.PrimaryEntityName))
+            .SelectMany(p => p.Steps.Select(s => s.PrimaryEntityName)
+            .Where(s => !string.IsNullOrEmpty(s)))
             .Distinct()
+            .Union(["none"])
             .ToArray();
 
         if (stepEntities == null || stepEntities.Length == 0)
@@ -300,6 +407,57 @@ internal sealed class PluginRegistrationService(
 
         return messages.ToDictionary(m => m.Name, m => m, StringComparer.OrdinalIgnoreCase);
     }
+
+    private async Task TryApplySolutionPrefixToPackageAsync(PluginAssemblyConfig config, CancellationToken cancellationToken)
+    {
+        var package = config.Package;
+        var solutionUniqueName = config.Solution?.UniqueName;
+
+        if (package is null || string.IsNullOrWhiteSpace(package.Name) || string.IsNullOrWhiteSpace(solutionUniqueName))
+        {
+            return;
+        }
+
+        try
+        {
+            var packagePrefix = await GetSolutionPackagePrefixAsync(solutionUniqueName, cancellationToken).ConfigureAwait(false);
+            if (string.IsNullOrWhiteSpace(packagePrefix))
+            {
+                _log.LogTrace("No publisher customization prefix found for solution '{SolutionUniqueName}'.", solutionUniqueName);
+                return;
+            }
+
+            var originalPackageName = package.Name;
+            package.Name = NugetParser.EnsurePackagePrefix(package.Name, packagePrefix);
+
+            if (!string.Equals(originalPackageName, package.Name, StringComparison.Ordinal))
+            {
+                _log.LogInformation(
+                    "Auto-detected publisher prefix '{PackagePrefix}' for solution '{SolutionUniqueName}' and updated plugin package name from '{OriginalPackageName}' to '{UpdatedPackageName}'.",
+                    packagePrefix,
+                    solutionUniqueName,
+                    originalPackageName,
+                    package.Name);
+            }
+        }
+        catch (Exception ex)
+        {
+            _log.LogWarning(ex, "Could not auto-detect the plugin package prefix for solution '{SolutionUniqueName}'.", solutionUniqueName);
+        }
+    }
+
+    private async Task<string?> GetSolutionPackagePrefixAsync(string solutionUniqueName, CancellationToken cancellationToken)
+    {
+        var solutionQuery = await _webApi.RetrieveMultipleAsync<Solution>(
+            $"{Solution.Metadata.EntitySetName}?$select=solutionid,uniquename" +
+            $"&$filter=uniquename eq '{EscapeODataString(solutionUniqueName)}'" +
+            "&$expand=publisherid($select=customizationprefix)",
+            cancellationToken: cancellationToken).ConfigureAwait(false);
+
+        return solutionQuery?.Value?.SingleOrDefault()?.Publisher?.CustomizationPrefix;
+    }
+
+    private static string EscapeODataString(string value) => value.Replace("'", "''");
 
     private void AssignIds(PluginAssemblyConfig pluginAssembly, PluginAssembly? existingPluginAssembly)
     {
@@ -341,7 +499,7 @@ internal sealed class PluginRegistrationService(
     }
 
     private ICollection<HttpRequestMessage> GenerateDeleteRequestsForCleanup(
-        PluginAssemblyConfig newAssembly, PluginAssembly existingAssembly, bool deleteRemovedPlugins)
+        PluginAssemblyConfig newAssembly, PluginAssembly existingAssembly, IReadOnlyList<PluginType> removedPlugins)
     {
         var deleteRequests = new List<HttpRequestMessage>();
 
@@ -365,20 +523,70 @@ internal sealed class PluginRegistrationService(
                     }
                 }
             }
-            else if (deleteRemovedPlugins)
+            else if (removedPlugins.Contains(existingPlugin))
             {
-                if (existingPlugin.CustomApi is not null && existingPlugin.CustomApi.Count > 0 && existingPlugin.CustomApi[0] is CustomApi api && api.Id.HasValue)
-                {
-                    deleteRequests.Add(new DeleteRequest(CustomApi.CreateReference(api.Id!.Value)));
-                }
-                if (existingPlugin.Id.HasValue)
-                {
-                    deleteRequests.Add(new DeleteRequest(PluginType.CreateReference(existingPlugin.Id!.Value)));
-                }
+                AddDeleteRequestsForPlugin(deleteRequests, existingPlugin);
             }
         }
 
         return deleteRequests;
+    }
+
+    private static RemovedPluginSummary ToRemovedPluginSummary(PluginType plugin)
+        => new(
+            plugin.TypeName ?? plugin.Name ?? string.Empty,
+            plugin.Steps?.Count ?? 0,
+            plugin.CustomApi is { Count: > 0 });
+
+    /// <summary>
+    /// Determines which existing Dataverse plugin types have genuinely been removed from the compiled
+    /// assembly (renamed or deleted in code) and are therefore eligible for deletion. A plugin type is
+    /// considered removed only when its <c>TypeName</c> is absent from <paramref name="assemblyPluginTypeNames"/>.
+    /// When <paramref name="assemblyPluginTypeNames"/> is <see langword="null"/> (the compiled plugin-type
+    /// set could not be determined), nothing is treated as removed so that valid registrations are never
+    /// deleted.
+    /// </summary>
+    internal static IReadOnlyList<PluginType> ComputeRemovedPluginTypes(
+        IEnumerable<PluginType> existingPluginTypes, ISet<string>? assemblyPluginTypeNames)
+    {
+        if (assemblyPluginTypeNames is null)
+        {
+            return [];
+        }
+
+        return existingPluginTypes
+            .Where(existing =>
+                !string.IsNullOrEmpty(existing.Name) &&
+                !string.IsNullOrEmpty(existing.TypeName) &&
+                !assemblyPluginTypeNames.Contains(existing.TypeName!))
+            .ToArray();
+    }
+
+    private static void AddDeleteRequestsForPlugin(List<HttpRequestMessage> requests, PluginType existingPlugin)
+    {
+        foreach (var step in existingPlugin.Steps)
+        {
+            if (step.Stage != Stages.MainOperation && step.Id.HasValue)
+            {
+                requests.Add(new DeleteRequest(SdkMessageProcessingStep.CreateReference(step.Id!.Value)));
+            }
+        }
+
+        if (existingPlugin.CustomApi is not null)
+        {
+            foreach (var customApi in existingPlugin.CustomApi)
+            {
+                if (customApi.Id.HasValue)
+                {
+                    requests.Add(new DeleteRequest(CustomApi.CreateReference(customApi.Id!.Value)));
+                }
+            }
+        }
+
+        if (existingPlugin.Id.HasValue)
+        {
+            requests.Add(new DeleteRequest(PluginType.CreateReference(existingPlugin.Id!.Value)));
+        }
     }
 }
 #nullable restore

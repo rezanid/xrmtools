@@ -7,7 +7,7 @@
     /// properties, fields, or constructor parameters. Optional Name allows named resolution.
     /// </summary>
     [AttributeUsage(AttributeTargets.Property | AttributeTargets.Field | AttributeTargets.Parameter, Inherited = true, AllowMultiple = false)]
-    public sealed class DependencyAttribute : Attribute
+    internal sealed class DependencyAttribute : Attribute
     {
         /// <summary>
         /// Optional name for named dependency resolution.

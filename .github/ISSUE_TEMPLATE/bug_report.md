@@ -25,8 +25,8 @@ If applicable, add screenshots to help explain your problem.
 
 **Setup (please complete the following information):**
  - OS: [e.g. Win11 (arm), Win11 (x86)]
- - Visual Studio [e.g. VS2022 17.3]
- - Version [e.g. 1.4.5]
+ - Visual Studio Version [e.g. VS2022 17.3]
+ - Xrm Tools Version [e.g. 1.4.5]
 
 **Additional context**
 Add any other context about the problem here.

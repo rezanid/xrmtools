@@ -10,5 +10,5 @@
     /// Currently, the class that the attribute is applied to, should be nested inside a Custom API plugin.
     /// </remarks>
     [AttributeUsage(AttributeTargets.Class, Inherited = false, AllowMultiple = false)]
-    public class CustomApiRequestAttribute : Attribute { }
+    internal class CustomApiRequestAttribute : Attribute { }
 }

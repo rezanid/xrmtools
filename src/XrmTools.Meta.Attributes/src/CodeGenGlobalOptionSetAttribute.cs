@@ -6,7 +6,7 @@ namespace XrmTools.Meta.Attributes
     /// Specifies the global option set generation mode for code generation.
     /// </summary>
     [AttributeUsage(AttributeTargets.Assembly, AllowMultiple = false, Inherited = false)]
-    public class CodeGenGlobalOptionSetAttribute : Attribute
+    internal class CodeGenGlobalOptionSetAttribute : Attribute
     {
         public GlobalOptionSetGenerationMode Mode { get; set; }
         public CodeGenGlobalOptionSetAttribute(GlobalOptionSetGenerationMode mode)
@@ -15,7 +15,7 @@ namespace XrmTools.Meta.Attributes
         }
     }
 
-    public enum GlobalOptionSetGenerationMode
+    internal enum GlobalOptionSetGenerationMode
     {
         /// <summary>
         /// Enum will be generated inside each entity class using it.

@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<!-- Example 1: Element-based parameter without default value -->
+<fetch distinct='false' aggregate='true'>
+  <entity name="account">
+    <attribute name='accountid' aggregate='count' alias='account_count' />
+    <param name='filterXml' />
+  </entity>
+</fetch>

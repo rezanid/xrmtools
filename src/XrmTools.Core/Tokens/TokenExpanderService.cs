@@ -2,6 +2,7 @@
 namespace XrmTools.Tokens;
 
 using System.Collections.Generic;
+using System.ComponentModel.Composition;
 using System.Text;
 
 public record TokenInfo(string OriginalToken, string Value, int StartIndex, int EndIndex);
@@ -12,7 +13,9 @@ public interface ITokenExpanderService
     IEnumerable<TokenInfo> GetTokens(string input);
 }
 
-public class TokenExpanderService(IEnumerable<ITokenExpander> expanders) : ITokenExpanderService
+[Export(typeof(ITokenExpanderService))]
+[method: ImportingConstructor]
+public class TokenExpanderService([ImportMany]IEnumerable<ITokenExpander> expanders) : ITokenExpanderService
 {
     public string ExpandTokens(string input)
     {

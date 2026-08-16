@@ -4,4 +4,7 @@
 
 .DS_Store
 *.snk
-/src/Testbed/XrmGenTestClassic/Entities.model.json
+**/*.model.json
+.nuget/
+**/nuget.config
+/.vs

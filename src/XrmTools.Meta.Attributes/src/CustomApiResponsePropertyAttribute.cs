@@ -6,7 +6,7 @@
     /// Apply this attribute to a property to control how it is converted to a response property.
     /// </summary>
     [AttributeUsage(AttributeTargets.Property, Inherited = false, AllowMultiple = false)]
-    public class CustomApiResponsePropertyAttribute : Attribute 
+    internal class CustomApiResponsePropertyAttribute : Attribute 
     {
         /// <summary>
         /// This is the name that will be used in the response of the API.
