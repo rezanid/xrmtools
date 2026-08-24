@@ -14,6 +14,7 @@ using XrmTools.DataverseSolutions;
 using XrmTools.Logging.Compatibility;
 using XrmTools.UI;
 using XrmTools.Xrm.Repositories;
+using ToolkitSolutionFolder = Community.VisualStudio.Toolkit.SolutionFolder;
 
 [Command(PackageGuids.XrmToolsCmdSetIdString, PackageIds.AddDataverseSolutionProjectCmdId)]
 internal sealed class AddDataverseSolutionProjectCommand : BaseCommand<AddDataverseSolutionProjectCommand>
@@ -48,14 +49,16 @@ internal sealed class AddDataverseSolutionProjectCommand : BaseCommand<AddDatave
             // When invoked from a solution folder, use that folder's path; otherwise fall back to solution directory.
             var selectedItems = await VS.Solutions.GetActiveItemsAsync().ConfigureAwait(false);
             var initialParentDirectory = solutionDir;
+            ToolkitSolutionFolder? selectedSolutionFolder = null;
             foreach (var item in selectedItems)
             {
-                if (item.Type == SolutionItemType.SolutionFolder && !string.IsNullOrEmpty(item.FullPath))
+                if (item is ToolkitSolutionFolder solutionFolder && !string.IsNullOrEmpty(item.FullPath))
                 {
                     var folderDir = Path.GetDirectoryName(item.FullPath);
                     if (!string.IsNullOrEmpty(folderDir))
                     {
                         initialParentDirectory = folderDir;
+                        selectedSolutionFolder = solutionFolder;
                     }
                     break;
                 }
@@ -78,7 +81,14 @@ internal sealed class AddDataverseSolutionProjectCommand : BaseCommand<AddDatave
                 throw new InvalidOperationException("Visual Studio solution automation is not available.");
             }
 
-            dte.Solution.AddFromFile(projectFilePath, Exclusive: false);
+            if (selectedSolutionFolder is not null)
+            {
+                await selectedSolutionFolder.AddExistingFilesAsync(projectFilePath);
+            }
+            else
+            {
+                dte.Solution.AddFromFile(projectFilePath, Exclusive: false);
+            }
         }
         catch (OperationCanceledException)
         {

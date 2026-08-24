@@ -18,7 +18,7 @@
 
     <IncludeBuildOutput>false</IncludeBuildOutput>
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
-    <Version>1.0.0</Version>
+    <Version>1.0.1</Version>
 
     <!-- This is an MSBuild SDK package that intentionally ships no lib/ref assemblies. -->
     <NoWarn>$(NoWarn);NU5128</NoWarn>

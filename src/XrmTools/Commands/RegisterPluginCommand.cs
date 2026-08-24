@@ -2,6 +2,8 @@
 namespace XrmTools.Commands;
 
 using Community.VisualStudio.Toolkit;
+using DTE = EnvDTE.DTE;
+using DTE2 = EnvDTE80.DTE2;
 using Microsoft.VisualStudio.ComponentModelHost;
 using Microsoft.VisualStudio.Shell;
 using System;
@@ -11,6 +13,7 @@ using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Threading.Tasks;
 using XrmTools.Analyzers;
+using XrmTools.DataverseSolutions;
 using XrmTools.Environments;
 using XrmTools.Helpers;
 using XrmTools.Logging.Compatibility;
@@ -44,6 +47,9 @@ internal sealed class RegisterPluginCommand : BaseCommand<RegisterPluginCommand>
     [Import]
     internal IPluginRegistrationService PluginRegistrationService { get; set; } = null!;
 
+    [Import]
+    internal IMsBuildProjectPropertyEvaluator MsBuildProjectPropertyEvaluator { get; set; } = null!;
+
     protected override async Task ExecuteAsync(OleMenuCmdEventArgs e)
     {
         var activeItem = await VS.Solutions.GetActiveItemAsync();
@@ -68,8 +74,37 @@ internal sealed class RegisterPluginCommand : BaseCommand<RegisterPluginCommand>
             }
         }
 
-        var generatePackage = project.GetBuildProperty<bool>(BuildProperties.GeneratePackageOnBuild);
-        var nugetFilePath = generatePackage ? Path.Combine(project.FullPath, project.GetOutputPackagePath()) : null;
+        string? nugetFilePath;
+        bool generatesPackage;
+        var configurationName = (Microsoft.VisualStudio.Shell.Package.GetGlobalService(typeof(DTE)) as DTE2)?.Solution?.SolutionBuild?.ActiveConfiguration?.Name ?? "Debug";
+        try
+        {
+            var properties = await MsBuildProjectPropertyEvaluator.EvaluateAsync(
+                project.FullPath,
+                configurationName,
+                [BuildProperties.GeneratePackageOnBuild, BuildProperties.PackageOutputPath]);
+            generatesPackage = properties.TryGetValue(BuildProperties.GeneratePackageOnBuild, out var generatePackageValue)
+                && bool.TryParse(generatePackageValue, out var generated)
+                ? generated
+                : false;
+            nugetFilePath = generatesPackage
+                ? FindOutputPackagePath(project.FullPath, properties.TryGetValue(BuildProperties.PackageOutputPath, out var packageOutputPath) ? packageOutputPath : null)
+                : null;
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Plugin registration stopped because MSBuild package output evaluation failed.");
+            await VS.MessageBox.ShowErrorAsync(Vsix.Name, "Plugin registration could not determine the project package output. " + ex.Message);
+            return;
+        }
+
+        if (generatesPackage && nugetFilePath is null)
+        {
+            const string message = "Plugin package generation is enabled, but no package was found in the configured package output path.";
+            Logger.LogWarning("Plugin registration stopped because {Message}", message);
+            await VS.MessageBox.ShowErrorAsync(Vsix.Name, message);
+            return;
+        }
 
         await VS.StatusBar.StartAnimationAsync(StatusAnimation.Sync);
         await VS.StatusBar.ShowMessageAsync("Registering plugin(s)...");
@@ -156,7 +191,8 @@ internal sealed class RegisterPluginCommand : BaseCommand<RegisterPluginCommand>
     }
 
     [MemberNotNull(nameof(Logger), nameof(MetaDataService), nameof(WebApiService),
-        nameof(EnvironmentProvider), nameof(RepositoryFactory))]
+        nameof(EnvironmentProvider), nameof(RepositoryFactory), nameof(PluginRegistrationService),
+        nameof(MsBuildProjectPropertyEvaluator))]
     private void EnsureDependencies()
     {
         if (Logger == null) throw new InvalidOperationException(string.Format(Strings.MissingServiceDependency, nameof(RegisterPluginCommand), nameof(Logger)));
@@ -165,6 +201,7 @@ internal sealed class RegisterPluginCommand : BaseCommand<RegisterPluginCommand>
         if (EnvironmentProvider == null) throw new InvalidOperationException(string.Format(Strings.MissingServiceDependency, nameof(RegisterPluginCommand), nameof(EnvironmentProvider)));
         if (RepositoryFactory == null) throw new InvalidOperationException(string.Format(Strings.MissingServiceDependency, nameof(RegisterPluginCommand), nameof(RepositoryFactory)));
         if (PluginRegistrationService == null) throw new InvalidOperationException(string.Format(Strings.MissingServiceDependency, nameof(RegisterPluginCommand), nameof(PluginRegistrationService)));
+        if (MsBuildProjectPropertyEvaluator == null) throw new InvalidOperationException(string.Format(Strings.MissingServiceDependency, nameof(RegisterPluginCommand), nameof(MsBuildProjectPropertyEvaluator)));
     }
 }
 #nullable restore

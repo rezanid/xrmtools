@@ -15,15 +15,9 @@ public static class ProjectExtensions
 {
     public static class BuildProperties
     {
-        public const string OutputPath = "OutputPath";
-        public const string AssemblyName = "AssemblyName";
-        public const string OutputType = "OutputType";
-        public const string GeneratePackageOnBuild = "GeneratePackageOnBuild";
-        public const string PackageId = "PackageId";
-        public const string PackageVersion = "PackageVersion";
-        public const string PackageOutputPath = "PackageOutputPath";
-        public const string VersionPrefix = "VersionPrefix";
         public const string IsXrmToolsPlugin = "IsXrmToolsPlugin";
+        public const string GeneratePackageOnBuild = "GeneratePackageOnBuild";
+        public const string PackageOutputPath = "PackageOutputPath";
     }
 
     private const string XrmToolsMetaAttributesPackageId = "XrmTools.Meta.Attributes";
@@ -57,9 +51,6 @@ public static class ProjectExtensions
         }
         return null;
     }
-
-    public static T? GetBuildProperty<T>(this Project project, string name) where T : IConvertible
-        => GetBuildProperty(project, name) is string value ? (T)Convert.ChangeType(value, typeof(T)) : default;
 
 #pragma warning disable VSTHRD109 // Visual Studio hierarchy access requires an explicit main-thread switch.
     public static async Task<bool> IsXrmToolsPluginProjectAsync(this Project project)
@@ -96,24 +87,19 @@ public static class ProjectExtensions
     }
 #pragma warning restore VSTHRD109
 
-    public static string? GetOutputAssemblyPath(this Project project)
+    public static string? FindOutputPackagePath(string projectFilePath, string? packageOutputPath)
     {
-        var storage = project.ToBuildPropertyStorage();
-        if (storage is null) return null;
-        var outputType = GetBuildProperty(storage, BuildProperties.OutputType);
-        var outputPath = GetBuildProperty(storage, BuildProperties.OutputPath);
-        var assemblyName = GetBuildProperty(storage, BuildProperties.AssemblyName);
-        return Path.Combine(Path.Combine(Path.GetDirectoryName(project.FullPath), outputPath), assemblyName + (outputType == "Library" ? ".dll" : ".exe"));
-    }
+        var projectDirectory = Path.GetDirectoryName(projectFilePath);
+        if (projectDirectory is null || string.IsNullOrWhiteSpace(packageOutputPath)) return null;
 
-    public static string? GetOutputPackagePath(this Project project)
-    {
-        var storage = project.ToBuildPropertyStorage();
-        if (storage is null) return null;
-        var packageOutputDir = GetBuildProperty(storage, BuildProperties.PackageOutputPath);
-        var packageName = GetBuildProperty(storage, BuildProperties.PackageId);
-        var packageVersion = GetBuildProperty(storage, BuildProperties.PackageVersion).TrimSuffix(".0");
-        return Path.Combine(Path.GetDirectoryName(project.FullPath), packageOutputDir, $"{packageName}.{packageVersion}.nupkg");
+        var outputDirectory = Path.GetFullPath(Path.Combine(projectDirectory, packageOutputPath));
+        if (!Directory.Exists(outputDirectory)) return null;
+
+        return Directory.EnumerateFiles(outputDirectory, "*.nupkg", SearchOption.TopDirectoryOnly)
+            .Where(path => !path.EndsWith(".symbols.nupkg", StringComparison.OrdinalIgnoreCase))
+            .Select(path => new FileInfo(path))
+            .OrderByDescending(file => file.LastWriteTimeUtc)
+            .FirstOrDefault()?.FullName;
     }
 
     private static string? GetBuildProperty(IVsBuildPropertyStorage storage, string name)

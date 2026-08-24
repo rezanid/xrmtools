@@ -6,12 +6,10 @@ using EnvDTE;
 using EnvDTE80;
 using Microsoft.VisualStudio.Shell;
 using System;
-using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.ComponentModel.Composition;
 using System.IO;
 using System.Linq;
-using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -31,9 +29,9 @@ internal sealed class SelectedCdsProject
 
 [Export(typeof(ICdsProjectResolver))]
 [method: ImportingConstructor]
-internal sealed class CdsProjectResolver(IProcessCommandRunner processCommandRunner) : ICdsProjectResolver
+internal sealed class CdsProjectResolver(IMsBuildProjectPropertyEvaluator msBuildProjectPropertyEvaluator) : ICdsProjectResolver
 {
-    private readonly IProcessCommandRunner _processCommandRunner = processCommandRunner;
+    private readonly IMsBuildProjectPropertyEvaluator _msBuildProjectPropertyEvaluator = msBuildProjectPropertyEvaluator;
 
     public async Task<bool> IsSelectedItemCdsProjectAsync()
     {
@@ -50,7 +48,11 @@ internal sealed class CdsProjectResolver(IProcessCommandRunner processCommandRun
         }
 
         var configurationName = await GetActiveConfigurationNameAsync(cancellationToken).ConfigureAwait(false);
-        var properties = await EvaluatePropertiesAsync(selection.ProjectFilePath, configurationName, cancellationToken).ConfigureAwait(false);
+        var properties = await _msBuildProjectPropertyEvaluator.EvaluateAsync(
+            selection.ProjectFilePath,
+            configurationName,
+            ["SolutionPackageMapFilePath", "SolutionRootPath", "SolutionPackageZipFilePath"],
+            cancellationToken).ConfigureAwait(false);
         var projectDirectory = Path.GetDirectoryName(selection.ProjectFilePath)
             ?? throw new InvalidOperationException($"Could not determine the directory of '{selection.ProjectFilePath}'.");
 
@@ -108,71 +110,8 @@ internal sealed class CdsProjectResolver(IProcessCommandRunner processCommandRun
         return null;
     }
 
-    private async Task<IReadOnlyDictionary<string, string?>> EvaluatePropertiesAsync(
-        string projectFilePath,
-        string configurationName,
-        CancellationToken cancellationToken)
-    {
-        var projectDirectory = Path.GetDirectoryName(projectFilePath)
-            ?? throw new InvalidOperationException($"Could not determine the directory of '{projectFilePath}'.");
-        var request = new ProcessCommandRequest
-        {
-            FileName = "dotnet",
-            WorkingDirectory = projectDirectory,
-            Arguments =
-            [
-                "msbuild",
-                projectFilePath,
-                "-nologo",
-                "-verbosity:quiet",
-                "-getProperty:SolutionPackageMapFilePath,SolutionRootPath,SolutionPackageZipFilePath",
-                $"-property:Configuration={configurationName}"
-            ]
-        };
-
-        var lines = new ConcurrentQueue<ProcessOutputLine>();
-        var result = await _processCommandRunner.RunAsync(
-            request,
-            new CollectingProgress(lines),
-            cancellationToken).ConfigureAwait(false);
-
-        if (!result.Succeeded)
-        {
-            throw new InvalidOperationException($"MSBuild evaluation failed for '{projectFilePath}'.");
-        }
-
-        var json = string.Join(
-            Environment.NewLine,
-            lines
-                .Where(line => line.Source == ProcessOutputSource.StandardOutput)
-                .Select(line => line.Text));
-
-        if (string.IsNullOrWhiteSpace(json))
-        {
-            throw new InvalidOperationException($"MSBuild evaluation produced no JSON output for '{projectFilePath}'.");
-        }
-
-        return ParsePropertiesJson(json);
-    }
-
     internal static IReadOnlyDictionary<string, string?> ParsePropertiesJson(string json)
-    {
-        using var document = JsonDocument.Parse(json);
-        if (!document.RootElement.TryGetProperty("Properties", out var propertiesElement))
-        {
-            return new Dictionary<string, string?>(StringComparer.OrdinalIgnoreCase);
-        }
-
-        var dictionary = new Dictionary<string, string?>(StringComparer.OrdinalIgnoreCase);
-        foreach (var property in propertiesElement.EnumerateObject())
-        {
-            dictionary[property.Name] = property.Value.ValueKind == JsonValueKind.Null
-                ? null
-                : property.Value.GetString();
-        }
-
-        return dictionary;
-    }
+        => MsBuildProjectPropertyEvaluator.ParsePropertiesJson(json);
 
     internal static string? ResolvePath(string projectDirectory, string? path)
     {
@@ -184,16 +123,6 @@ internal sealed class CdsProjectResolver(IProcessCommandRunner processCommandRun
         return Path.IsPathRooted(path)
             ? Path.GetFullPath(path)
             : Path.GetFullPath(Path.Combine(projectDirectory, path));
-    }
-
-    private sealed class CollectingProgress(ConcurrentQueue<ProcessOutputLine> lines) : IProgress<ProcessOutputLine>
-    {
-        private readonly ConcurrentQueue<ProcessOutputLine> _lines = lines;
-
-        public void Report(ProcessOutputLine value)
-        {
-            _lines.Enqueue(value);
-        }
     }
 
     private static bool IsCdsProjectPath(string? path)
