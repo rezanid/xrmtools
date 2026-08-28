@@ -94,17 +94,10 @@ public static class ProjectExtensions
 
         var outputDirectory = Path.GetFullPath(Path.Combine(projectDirectory, packageOutputPath));
         if (!Directory.Exists(outputDirectory)) return null;
-
         return Directory.EnumerateFiles(outputDirectory, "*.nupkg", SearchOption.TopDirectoryOnly)
             .Where(path => !path.EndsWith(".symbols.nupkg", StringComparison.OrdinalIgnoreCase))
             .Select(path => new FileInfo(path))
             .OrderByDescending(file => file.LastWriteTimeUtc)
             .FirstOrDefault()?.FullName;
-    }
-
-    private static string? GetBuildProperty(IVsBuildPropertyStorage storage, string name)
-    {
-        ThreadHelper.ThrowIfNotOnUIThread();
-        return storage?.GetPropertyValue(name, null, (uint)_PersistStorageType.PST_PROJECT_FILE, out var value) == VSConstants.S_OK ? value : null;
     }
 }
