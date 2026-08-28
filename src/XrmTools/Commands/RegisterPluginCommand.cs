@@ -97,7 +97,6 @@ internal sealed class RegisterPluginCommand : BaseCommand<RegisterPluginCommand>
             await VS.MessageBox.ShowErrorAsync(Vsix.Name, "Plugin registration could not determine the project package output. " + ex.Message);
             return;
         }
-
         if (generatesPackage && nugetFilePath is null)
         {
             const string message = "Plugin package generation is enabled, but no package was found in the configured package output path.";
