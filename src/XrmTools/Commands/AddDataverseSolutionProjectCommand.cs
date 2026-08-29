@@ -4,8 +4,10 @@ namespace XrmTools.Commands;
 using Community.VisualStudio.Toolkit;
 using EnvDTE;
 using EnvDTE80;
+using Microsoft.VisualStudio;
 using Microsoft.VisualStudio.ComponentModelHost;
 using Microsoft.VisualStudio.Shell;
+using Microsoft.VisualStudio.Shell.Interop;
 using System;
 using System.ComponentModel.Composition;
 using System.IO;
@@ -14,7 +16,6 @@ using XrmTools.DataverseSolutions;
 using XrmTools.Logging.Compatibility;
 using XrmTools.UI;
 using XrmTools.Xrm.Repositories;
-using ToolkitSolutionFolder = Community.VisualStudio.Toolkit.SolutionFolder;
 
 [Command(PackageGuids.XrmToolsCmdSetIdString, PackageIds.AddDataverseSolutionProjectCmdId)]
 internal sealed class AddDataverseSolutionProjectCommand : BaseCommand<AddDataverseSolutionProjectCommand>
@@ -46,26 +47,26 @@ internal sealed class AddDataverseSolutionProjectCommand : BaseCommand<AddDatave
             var solutionDir = Path.GetDirectoryName(solution.FullPath)
                 ?? throw new InvalidOperationException("The current solution must be saved before adding a project.");
 
-            // When invoked from a solution folder, use that folder's path; otherwise fall back to solution directory.
-            var selectedItems = await VS.Solutions.GetActiveItemsAsync().ConfigureAwait(false);
-            var initialParentDirectory = solutionDir;
-            ToolkitSolutionFolder? selectedSolutionFolder = null;
-            foreach (var item in selectedItems)
+            await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync(Package.DisposalToken);
+            var dte = await Package.GetServiceAsync(typeof(DTE)) as DTE2;
+            if (dte?.Solution is null)
             {
-                if (item is ToolkitSolutionFolder solutionFolder && !string.IsNullOrEmpty(item.FullPath))
+                throw new InvalidOperationException("Visual Studio solution automation is not available.");
+            }
+
+            string? selectedSolutionFolderUniqueName = null;
+            foreach (SelectedItem selectedItem in dte.SelectedItems)
+            {
+                var project = selectedItem.Project;
+                if (project?.Kind == "{66A26720-8FB5-11D2-AA7E-00C04F688DDE}")
                 {
-                    var folderDir = Path.GetDirectoryName(item.FullPath);
-                    if (!string.IsNullOrEmpty(folderDir))
-                    {
-                        initialParentDirectory = folderDir;
-                        selectedSolutionFolder = solutionFolder;
-                    }
+                    selectedSolutionFolderUniqueName = project.UniqueName;
                     break;
                 }
             }
 
             var request = await DataverseSolutionProjectDialog.ShowDialogAsync(
-                initialParentDirectory,
+                solutionDir,
                 RepositoryFactory,
                 Package.DisposalToken).ConfigureAwait(false);
             if (request is null)
@@ -75,15 +76,17 @@ internal sealed class AddDataverseSolutionProjectCommand : BaseCommand<AddDatave
 
             var projectFilePath = await ProjectCreationService.CreateAsync(request, Package.DisposalToken).ConfigureAwait(false);
             await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync(Package.DisposalToken);
-            var dte = await Package.GetServiceAsync(typeof(DTE)) as DTE2;
-            if (dte?.Solution is null)
-            {
-                throw new InvalidOperationException("Visual Studio solution automation is not available.");
-            }
 
-            if (selectedSolutionFolder is not null)
+            if (!string.IsNullOrEmpty(selectedSolutionFolderUniqueName))
             {
-                await selectedSolutionFolder.AddExistingFilesAsync(projectFilePath);
+                var solutionService = await Package.GetServiceAsync<SVsSolution, IVsSolution>().ConfigureAwait(true);
+                if (solutionService is not IVsSolution6 solutionService6)
+                {
+                    throw new InvalidOperationException("Visual Studio solution hierarchy automation is not available.");
+                }
+
+                ErrorHandler.ThrowOnFailure(solutionService.GetProjectOfUniqueName(selectedSolutionFolderUniqueName, out var parentHierarchy));
+                ErrorHandler.ThrowOnFailure(solutionService6.AddExistingProject(projectFilePath, parentHierarchy, out _));
             }
             else
             {
