@@ -10,6 +10,8 @@
 
 		<ShouldRunBuildScript Condition="'$(ShouldRunBuildScript)' == ''">false</ShouldRunBuildScript>
 		<BuildOutputFolder Condition="'$(BuildOutputFolder)' == ''">$(MSBuildProjectDirectory)\dist</BuildOutputFolder>
+		<!-- Optional visibility fast-path for Xrm Tools. The SDK identity remains authoritative. -->
+		<IsXrmToolsWebResourceProject Condition="'$(IsXrmToolsWebResourceProject)' == ''">true</IsXrmToolsWebResourceProject>
 
 		<!--
 			Detect a CI/pipeline build. In CI we prefer a clean, reproducible install ('npm ci'),
@@ -26,5 +28,17 @@
 		<NpmBuildCommand Condition="'$(NpmBuildCommand)' == '' and '$(Configuration)' == 'Debug'">npm run build:debug</NpmBuildCommand>
 		<NpmBuildCommand Condition="'$(NpmBuildCommand)' == '' and '$(Configuration)' != 'Debug'">npm run build:release</NpmBuildCommand>
 	</PropertyGroup>
+
+	<!--
+		Registration consumes these evaluated items after a successful build. Projects may use
+		WebResource Update="..." to override Name, DisplayName, Description, or WebResourceType.
+	-->
+	<ItemGroup>
+		<WebResource Include="$(BuildOutputFolder)\**\*.html;$(BuildOutputFolder)\**\*.htm;$(BuildOutputFolder)\**\*.css;$(BuildOutputFolder)\**\*.js;$(BuildOutputFolder)\**\*.xml;$(BuildOutputFolder)\**\*.png;$(BuildOutputFolder)\**\*.jpg;$(BuildOutputFolder)\**\*.jpeg;$(BuildOutputFolder)\**\*.gif;$(BuildOutputFolder)\**\*.xap;$(BuildOutputFolder)\**\*.xsl;$(BuildOutputFolder)\**\*.xslt;$(BuildOutputFolder)\**\*.ico;$(BuildOutputFolder)\**\*.svg;$(BuildOutputFolder)\**\*.resx"
+			Condition="Exists('$(BuildOutputFolder)')">
+			<Name>$(WebResourceNamePrefix)%(RecursiveDir)%(Filename)%(Extension)</Name>
+			<DisplayName>%(Name)</DisplayName>
+		</WebResource>
+	</ItemGroup>
 
 </Project>
