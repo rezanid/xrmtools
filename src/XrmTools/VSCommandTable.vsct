@@ -200,6 +200,16 @@
           <CanonicalName>.XrmTools.Unregister</CanonicalName>
         </Strings>
       </Button>
+      <Button guid="XrmToolsCmdSetId" id="RegisterWebResourcesCmdId" priority="0x203" type="Button">
+        <Parent guid="XrmToolsCmdSetId" id="XrmToolsProjectContextMenuGroup" />
+        <Icon guid="AssetsGuid" id="ApplyToDataverse" />
+        <CommandFlag>IconIsMoniker</CommandFlag>
+        <CommandFlag>DynamicVisibility</CommandFlag>
+        <Strings>
+          <ButtonText>Register Web Resources</ButtonText>
+          <CanonicalName>.XrmTools.RegisterWebResources</CanonicalName>
+        </Strings>
+      </Button>
       <Button guid="XrmToolsCmdSetId" id="SynchronizeDataverseSolutionCmdId" priority="0x0100" type="Button">
         <Parent guid="XrmToolsCmdSetId" id="XrmToolsProjectContextMenuGroup" />
         <Icon guid="ImageCatalogGuid" id="Refresh" />
@@ -424,6 +434,7 @@
       <IDSymbol name="ManageEnvironmenGetListCmdId" value="0x0511"/>
       <IDSymbol name="RegisterPluginCmdId" value="0x0910"/>
       <IDSymbol name="UnregisterPluginCmdId" value="0x0920"/>
+      <IDSymbol name="RegisterWebResourcesCmdId" value="0x0990"/>
       <IDSymbol name="SynchronizeDataverseSolutionCmdId" value="0x0930"/>
       <IDSymbol name="RecloneDataverseSolutionCmdId" value="0x0931"/>
       <IDSymbol name="ImportDataverseSolutionCmdId" value="0x0940"/>
