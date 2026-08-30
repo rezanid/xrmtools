@@ -9,7 +9,7 @@ If you aren't already using [Xrm Tools](https://marketplace.visualstudio.com/ite
 Reference the SDK from your web resource project file:
 
 ```xml
-<Project Sdk="XrmTools.WebResources.Sdk/1.0.0">
+<Project Sdk="XrmTools.WebResources.Sdk/1.1.0">
 </Project>
 ```
 
@@ -41,6 +41,30 @@ You can override any of the default commands or the output folder via MSBuild pr
   <NpmCleanCommand>npm run clean</NpmCleanCommand>
   <BuildOutputFolder>$(MSBuildProjectDirectory)\dist</BuildOutputFolder>
 </PropertyGroup>
+```
+
+## Dataverse registration
+
+Xrm Tools can register all supported files produced by the project. Configure the unmanaged
+solution and the logical-name prefix in the project file:
+
+```xml
+<PropertyGroup>
+  <DataverseSolutionUniqueName>ContosoSolution</DataverseSolutionUniqueName>
+  <WebResourceNamePrefix>contoso_/scripts/Contoso.</WebResourceNamePrefix>
+</PropertyGroup>
+```
+
+The prefix is also the ownership boundary used when reconciling resources removed from the
+project. Output paths below `BuildOutputFolder` are appended to the prefix and normalized to `/`.
+Individual resources can override their registration metadata:
+
+```xml
+<ItemGroup>
+  <WebResource Update="$(BuildOutputFolder)\app.js"
+               Name="contoso_/scripts/application.js"
+               DisplayName="Application script" />
+</ItemGroup>
 ```
 
 For example, to always use a reproducible install, pin the command regardless of environment:
