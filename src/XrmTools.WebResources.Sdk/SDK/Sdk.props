@@ -23,11 +23,18 @@
 
 		<NpmRestoreCommand Condition="'$(NpmRestoreCommand)' == '' and '$(IsCiBuild)' == 'true' and Exists('$(MSBuildProjectDirectory)\package-lock.json')">npm ci</NpmRestoreCommand>
 		<NpmRestoreCommand Condition="'$(NpmRestoreCommand)' == ''">npm install</NpmRestoreCommand>
+		<NpmRestoreStampFile Condition="'$(NpmRestoreStampFile)' == ''">$(MSBuildProjectDirectory)\node_modules\.xrmtools-restore.stamp</NpmRestoreStampFile>
 		<NpmCleanCommand Condition="'$(NpmCleanCommand)' == ''">npm run clean</NpmCleanCommand>
 
 		<NpmBuildCommand Condition="'$(NpmBuildCommand)' == '' and '$(Configuration)' == 'Debug'">npm run build:debug</NpmBuildCommand>
 		<NpmBuildCommand Condition="'$(NpmBuildCommand)' == '' and '$(Configuration)' != 'Debug'">npm run build:release</NpmBuildCommand>
 	</PropertyGroup>
+
+	<ItemGroup>
+		<_XrmToolsNpmRestoreInput Include="$(MSBuildProjectDirectory)\package.json" />
+		<_XrmToolsNpmRestoreInput Include="$(MSBuildProjectDirectory)\package-lock.json"
+			Condition="Exists('$(MSBuildProjectDirectory)\package-lock.json')" />
+	</ItemGroup>
 
 	<!--
 		Registration consumes these evaluated items after a successful build. Projects may use

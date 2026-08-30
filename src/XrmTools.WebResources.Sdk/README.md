@@ -9,7 +9,7 @@ If you aren't already using [Xrm Tools](https://marketplace.visualstudio.com/ite
 Reference the SDK from your web resource project file:
 
 ```xml
-<Project Sdk="XrmTools.WebResources.Sdk/1.1.0">
+<Project Sdk="XrmTools.WebResources.Sdk/1.2.0">
 </Project>
 ```
 
@@ -24,7 +24,10 @@ Your project directory must contain a `package.json`. The SDK invokes the follow
 
 ### Restore behavior
 
-For local development the Restore target runs `npm install`, so adding or changing packages in `package.json` is picked up automatically on the next build — no need to run `npm install` from a terminal.
+Build automatically runs Restore first. For local development Restore runs `npm install`, so the
+first build works without a separate terminal step. Restore is incremental: subsequent builds skip
+`npm install` until `package.json` or `package-lock.json` changes, or until `node_modules` is deleted.
+Adding, updating, or removing a dependency is therefore picked up automatically on the next build.
 
 In a build pipeline the SDK switches to `npm ci` for a clean, reproducible install, but only when a committed `package-lock.json` is present (it is required by `npm ci`). A build is treated as CI when any of `ContinuousIntegrationBuild`, `CI`, `TF_BUILD`, or `GITHUB_ACTIONS` is `true`. If no lock file exists, it falls back to `npm install`.
 
