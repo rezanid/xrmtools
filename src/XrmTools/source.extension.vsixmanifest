@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <PackageManifest Version="2.0.0" xmlns="http://schemas.microsoft.com/developer/vsx-schema/2011" xmlns:d="http://schemas.microsoft.com/developer/vsx-schema-design/2011">
   <Metadata>
-    <Identity Id="XrmTools.eba3cd26-ffad-444f-b4ef-771d430bacef" Version="2.1.0" Language="en-US" Publisher="Reza Niroomand" />
+    <Identity Id="XrmTools.eba3cd26-ffad-444f-b4ef-771d430bacef" Version="2.2.0" Language="en-US" Publisher="Reza Niroomand" />
     <DisplayName>Xrm Tools</DisplayName>
     <Description xml:space="preserve">Xrm Tools is a Visual Studio extension that makes Power Platform development feel native, with IntelliSense for plugins, boilerplate and typed entity generation, and first-class FetchXML support.</Description>
     <MoreInfo>https://github.com/rezanid/xrmtools</MoreInfo>
@@ -32,6 +32,7 @@
     <Asset Type="Microsoft.VisualStudio.MefComponent" Path="|%CurrentProject%|" d:Source="Project" d:ProjectName="%CurrentProject%" />
     <Asset Type="Microsoft.VisualStudio.MefComponent" Path="|XrmTools.Core|" d:Source="Project" d:ProjectName="XrmTools.Core" />
     <Asset Type="Microsoft.VisualStudio.MefComponent" Path="|XrmTools.WebApi|" d:Source="Project" d:ProjectName="XrmTools.WebApi" />
+    <Asset Type="Microsoft.VisualStudio.Assembly" Path="|XrmTools.WebResourceProjectTemplate|" d:Source="Project" d:ProjectName="XrmTools.WebResourceProjectTemplate" />
     <Asset Type="Microsoft.VisualStudio.ProjectTemplate" Path="ProjectTemplates" d:Source="Project" d:ProjectName="%CurrentProject%.PluginProjectTemplate" d:VsixSubPath="ProjectTemplates" d:TargetPath="|XrmTools.PluginProjectTemplate;TemplateProjectOutputGroup|" />
     <Asset Type="Microsoft.VisualStudio.ItemTemplate" Path="ItemTemplates" d:Source="Project" d:ProjectName="%CurrentProject%.PluginItemTemplate" d:VsixSubPath="ItemTemplates" d:TargetPath="|XrmTools.PluginItemTemplate;TemplateProjectOutputGroup|" />
     <Asset Type="Microsoft.VisualStudio.ItemTemplate" Path="ItemTemplates" d:Source="Project" d:ProjectName="%CurrentProject%.FetchXmlItemTemplate" d:VsixSubPath="ItemTemplates" d:TargetPath="|XrmTools.FetchXmlItemTemplate;TemplateProjectOutputGroup|" />

@@ -1,0 +1,15 @@
+{
+  "compileOnSave": true,
+  "compilerOptions": {
+    "rootDir": "./src",
+    "outDir": "./dist",
+    "sourceMap": true,
+    "target": "ES2020",
+    "module": "preserve",
+    "strict": true,
+    "types": ["xrm"]
+  },
+  "include": [
+    "src/**/*.ts"
+  ]
+}
