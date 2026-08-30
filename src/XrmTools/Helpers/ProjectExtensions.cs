@@ -9,13 +9,16 @@ using NuGet.VisualStudio.Contracts;
 using System.IO;
 using System;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
+using System.Xml.Linq;
 
 public static class ProjectExtensions
 {
     public static class BuildProperties
     {
         public const string IsXrmToolsPlugin = "IsXrmToolsPlugin";
+        public const string IsXrmToolsWebResourceProject = "IsXrmToolsWebResourceProject";
         public const string GeneratePackageOnBuild = "GeneratePackageOnBuild";
         public const string PackageOutputPath = "PackageOutputPath";
     }
@@ -38,6 +41,37 @@ public static class ProjectExtensions
         ThreadHelper.ThrowIfNotOnUIThread();
         project.GetItemInfo(out var hierarchy, out _, out _);
         return hierarchy is IVsBuildPropertyStorage buildPropertyStorage ? buildPropertyStorage : null;
+    }
+
+    public static async Task<string> GetActiveConfigurationNameAsync(this Project? project, CancellationToken cancellationToken = default)
+    {
+        await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync(cancellationToken);
+        if (project is null)
+        {
+            return "Debug";
+        }
+
+        project.GetItemInfo(out var hierarchy, out _, out _);
+        if (Package.GetGlobalService(typeof(SVsSolutionBuildManager)) is not IVsSolutionBuildManager buildManager)
+        {
+            return "Debug";
+        }
+
+        var activeConfiguration = new IVsProjectCfg[1];
+        if (ErrorHandler.Failed(buildManager.FindActiveProjectCfg(IntPtr.Zero, IntPtr.Zero, hierarchy, activeConfiguration))
+            || activeConfiguration[0] is null
+            || ErrorHandler.Failed(activeConfiguration[0].get_CanonicalName(out var activeConfigurationName))
+            || string.IsNullOrWhiteSpace(activeConfigurationName))
+        {
+            // Hint: get_IsDebug will be 1 when in a debug configuration and 0 for release. get_IsRelease will be the other way around.
+            return "Debug";
+        }
+
+        var separatorIndex = activeConfigurationName.IndexOf('|');
+        var configurationName = separatorIndex < 0
+            ? activeConfigurationName
+            : activeConfigurationName[..separatorIndex].Trim();
+        return string.IsNullOrWhiteSpace(configurationName) ? "Debug" : configurationName;
     }
 
     public static string? GetBuildProperty(this Project project, string name)
@@ -86,6 +120,47 @@ public static class ProjectExtensions
         }
     }
 #pragma warning restore VSTHRD109
+
+    public static async Task<bool> IsXrmToolsWebResourceProjectAsync(this Project project)
+    {
+        await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync();
+        if (bool.TryParse(project.GetBuildProperty(BuildProperties.IsXrmToolsWebResourceProject), out var isWebResourceProject)
+            && isWebResourceProject)
+        {
+            return true;
+        }
+
+        var projectFilePath = project.FullPath;
+        if (string.IsNullOrWhiteSpace(projectFilePath) || !File.Exists(projectFilePath)) return false;
+
+        try
+        {
+            string xml;
+            using (var reader = new StreamReader(projectFilePath))
+            {
+                xml = await reader.ReadToEndAsync().ConfigureAwait(false);
+            }
+            var document = XDocument.Parse(xml, LoadOptions.None);
+            var rootSdk = document.Root?.Attribute("Sdk")?.Value;
+            if (ContainsWebResourceSdk(rootSdk)) return true;
+
+            return document.Root?.Elements()
+                .Where(element => element.Name.LocalName == "Sdk")
+                .Select(element => element.Attribute("Name")?.Value)
+                .Any(ContainsWebResourceSdk) is true;
+        }
+        catch
+        {
+            return false;
+        }
+    }
+
+    private static bool ContainsWebResourceSdk(string? value)
+        => !string.IsNullOrWhiteSpace(value)
+        && value!.Split(';').Any(sdk => string.Equals(
+            sdk.Trim().Split('/')[0],
+            "XrmTools.WebResources.Sdk",
+            StringComparison.OrdinalIgnoreCase));
 
     public static string? FindOutputPackagePath(string projectFilePath, string? packageOutputPath)
     {

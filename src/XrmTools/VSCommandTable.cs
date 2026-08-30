@@ -28,6 +28,9 @@ namespace XrmTools
         public const string XrmToolsPluginProjectUIRuleString = "2cf22ed1-984d-4e9c-a165-e8cc44c966bc";
         public static Guid XrmToolsPluginProjectUIRule = new Guid(XrmToolsPluginProjectUIRuleString);
 
+        public const string XrmToolsWebResourceProjectUIRuleString = "a15d56a6-9d99-4cf7-9b32-7ab5b3dd0901";
+        public static Guid XrmToolsWebResourceProjectUIRule = new Guid(XrmToolsWebResourceProjectUIRuleString);
+
         public const string CodeGenerationTemplateCmdUIRuleString = "be4c5f8f-c72b-4442-9b9c-d2b5f7f2b9a0";
         public static Guid CodeGenerationTemplateCmdUIRule = new Guid(CodeGenerationTemplateCmdUIRuleString);
 
@@ -81,6 +84,7 @@ namespace XrmTools
         public const int UnpackDataverseSolutionCmdId = 0x0960;
         public const int ImportAndOpenDataverseSolutionCmdId = 0x0970;
         public const int AddDataverseSolutionProjectCmdId = 0x0980;
+        public const int RegisterWebResourcesCmdId = 0x0990;
         public const int XrmToolsToolbar = 0x2000;
         public const int XrmToolsToolbarGroup = 0x2010;
         public const int XrmToolsContextSubMenu = 0x1000;

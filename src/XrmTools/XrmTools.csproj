@@ -259,6 +259,7 @@
     </Compile>
     <Compile Include="UI\RemovedPluginsViewModel.cs" />
     <Compile Include="UI\VsPluginRegistrationUI.cs" />
+    <Compile Include="UI\WebResourceRegistrationUI.cs" />
     <Compile Include="Core\Repositories\ICacheConfiguration.cs" />
     <Compile Include="CustomMonikers.cs">
       <AutoGen>True</AutoGen>
@@ -308,6 +309,7 @@
     <Compile Include="CodeGen\TemplatePathFinder.cs" />
     <Compile Include="Commands\SelectEnvironmentCommand.cs" />
     <Compile Include="Commands\RegisterPluginCommand.cs" />
+    <Compile Include="Commands\RegisterWebResourcesCommand.cs" />
     <Compile Include="Commands\SetEntityGeneratorTemplateInProjectCommand.cs" />
     <Compile Include="Commands\SetPluginGeneratorTemplateInProjectCommand.cs" />
     <Compile Include="Commands\SetEntityGeneratorTemplateInSolutionCommand.cs" />
@@ -331,6 +333,8 @@
     <Compile Include="UI\InfoBars\NugetUpdateInfoBar.cs" />
     <Compile Include="UI\InfoBars\FoundNewEnvironmentInfoBar.cs" />
     <Compile Include="Services\PluginRegistrationService.cs" />
+    <Compile Include="Services\WebResourceProjectManifestReader.cs" />
+    <Compile Include="Services\WebResourceRegistrationService.cs" />
     <Compile Include="Logging\LoggerFactory.cs" />
     <Compile Include="Logging\OutputLoggerService.cs" />
     <Compile Include="ComponentModel\CurrentEnvironmentConverter.cs" />

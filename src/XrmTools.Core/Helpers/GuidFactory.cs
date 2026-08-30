@@ -16,7 +16,8 @@ internal static class GuidFactory
         Image = 4,
         CustomApi = 5,
         CustomApiRequestParameter = 6,
-        CustomApiResponseProperty = 7
+        CustomApiResponseProperty = 7,
+        WebResource = 8
     }
     private static readonly Guid Namespace_PluginPackage = Guid.Parse("22222222-2222-2222-2222-222222222222");
     private static readonly Guid Namespace_PluginAssembly = Guid.Parse("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa");
@@ -26,6 +27,7 @@ internal static class GuidFactory
     private static readonly Guid Namespace_CustommApi = Guid.Parse("eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee");
     private static readonly Guid Namespace_CustommApiInput = Guid.Parse("ffffffff-ffff-ffff-ffff-ffffffffffff");
     private static readonly Guid Namespace_CustommApiOutput = Guid.Parse("11111111-1111-1111-1111-111111111111");
+    private static readonly Guid Namespace_WebResource = Guid.Parse("33333333-3333-3333-3333-333333333333");
 
     /// <summary>
     /// Ensures that the Guid is set to a valid value. If not, it will be set to a deterministic Guid based on the namespace and name.
@@ -48,6 +50,7 @@ internal static class GuidFactory
             Namespace.CustomApi => Namespace_CustommApi,
             Namespace.CustomApiRequestParameter => Namespace_CustommApiInput,
             Namespace.CustomApiResponseProperty => Namespace_CustommApiOutput,
+            Namespace.WebResource => Namespace_WebResource,
             _ => throw new ArgumentOutOfRangeException(nameof(@namespace))
         }, name);
 

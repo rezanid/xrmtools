@@ -2,9 +2,7 @@
 namespace XrmTools.DataverseSolutions;
 
 using Community.VisualStudio.Toolkit;
-using EnvDTE;
-using EnvDTE80;
-using Microsoft.VisualStudio.Shell;
+using XrmTools.Helpers;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel.Composition;
@@ -25,6 +23,8 @@ internal sealed class SelectedCdsProject
     public string ProjectFilePath { get; set; } = string.Empty;
 
     public string ProjectName { get; set; } = string.Empty;
+
+    public Project? Project { get; set; }
 }
 
 [Export(typeof(ICdsProjectResolver))]
@@ -47,7 +47,7 @@ internal sealed class CdsProjectResolver(IMsBuildProjectPropertyEvaluator msBuil
             return null;
         }
 
-        var configurationName = await GetActiveConfigurationNameAsync(cancellationToken).ConfigureAwait(false);
+        var configurationName = await selection.Project.GetActiveConfigurationNameAsync(cancellationToken).ConfigureAwait(false);
         var properties = await _msBuildProjectPropertyEvaluator.EvaluateAsync(
             selection.ProjectFilePath,
             configurationName,
@@ -81,7 +81,8 @@ internal sealed class CdsProjectResolver(IMsBuildProjectPropertyEvaluator msBuil
             return new SelectedCdsProject
             {
                 ProjectFilePath = project.FullPath!,
-                ProjectName = project.Name
+                ProjectName = project.Name,
+                Project = project
             };
         }
 
@@ -90,7 +91,8 @@ internal sealed class CdsProjectResolver(IMsBuildProjectPropertyEvaluator msBuil
             return new SelectedCdsProject
             {
                 ProjectFilePath = activeItem.FullPath,
-                ProjectName = Path.GetFileNameWithoutExtension(activeItem.FullPath)
+                ProjectName = Path.GetFileNameWithoutExtension(activeItem.FullPath),
+                Project = activeItem.FindParent(SolutionItemType.Project) as Community.VisualStudio.Toolkit.Project
             };
         }
 
@@ -102,7 +104,8 @@ internal sealed class CdsProjectResolver(IMsBuildProjectPropertyEvaluator msBuil
                 return new SelectedCdsProject
                 {
                     ProjectFilePath = parentProject.FullPath!,
-                    ProjectName = parentProject.Name
+                    ProjectName = parentProject.Name,
+                    Project = parentProject
                 };
             }
         }
@@ -129,11 +132,5 @@ internal sealed class CdsProjectResolver(IMsBuildProjectPropertyEvaluator msBuil
         => !string.IsNullOrWhiteSpace(path)
             && string.Equals(Path.GetExtension(path), ".cdsproj", StringComparison.OrdinalIgnoreCase);
 
-    private static async Task<string> GetActiveConfigurationNameAsync(CancellationToken cancellationToken)
-    {
-        await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync(cancellationToken);
-        return (Package.GetGlobalService(typeof(DTE)) as DTE2)?.Solution?.SolutionBuild?.ActiveConfiguration?.Name
-            ?? "Debug";
-    }
 }
 #nullable restore

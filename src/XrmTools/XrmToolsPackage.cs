@@ -114,6 +114,11 @@ using Task = System.Threading.Tasks.Task;
     expression: "XrmToolsPlugin",
     termNames: ["XrmToolsPlugin"],
     termValues: ["ActiveProjectBuildProperty:IsXrmToolsPlugin=^true$"])]
+[ProvideUIContextRule(PackageGuids.XrmToolsWebResourceProjectUIRuleString,
+    name: "UI Context XrmTools Web Resource Project",
+    expression: "XrmToolsWebResource",
+    termNames: ["XrmToolsWebResource"],
+    termValues: ["ActiveProjectBuildProperty:IsXrmToolsWebResourceProject=^true$"])]
 [ProvideService(typeof(IXrmCodeGenerator), IsAsyncQueryable = true, IsCacheable = true, IsFreeThreaded = true)]
 [ProvideService(typeof(IEnvironmentProvider), IsAsyncQueryable = true, IsCacheable = true, IsFreeThreaded = true)]
 [ProvideService(typeof(ISettingsProvider), IsAsyncQueryable = true, IsCacheable = true, IsFreeThreaded = true)]
@@ -204,6 +209,7 @@ public sealed partial class XrmToolsPackage : ToolkitPackage
         await SetCustomToolEntityGeneratorCommand.InitializeAsync(this);
         await SetCustomToolPluginGeneratorCommand.InitializeAsync(this);
         await RegisterPluginCommand.InitializeAsync(this);
+        await RegisterWebResourcesCommand.InitializeAsync(this);
         await UnregisterCommand.InitializeAsync(this);
         await AddDataverseSolutionProjectCommand.InitializeAsync(this);
         await RecloneDataverseSolutionCommand.InitializeAsync(this);

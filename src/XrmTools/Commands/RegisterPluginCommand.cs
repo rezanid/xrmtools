@@ -2,8 +2,6 @@
 namespace XrmTools.Commands;
 
 using Community.VisualStudio.Toolkit;
-using DTE = EnvDTE.DTE;
-using DTE2 = EnvDTE80.DTE2;
 using Microsoft.VisualStudio.ComponentModelHost;
 using Microsoft.VisualStudio.Shell;
 using System;
@@ -76,7 +74,7 @@ internal sealed class RegisterPluginCommand : BaseCommand<RegisterPluginCommand>
 
         string? nugetFilePath;
         bool generatesPackage;
-        var configurationName = (Microsoft.VisualStudio.Shell.Package.GetGlobalService(typeof(DTE)) as DTE2)?.Solution?.SolutionBuild?.ActiveConfiguration?.Name ?? "Debug";
+        var configurationName = await project.GetActiveConfigurationNameAsync();
         try
         {
             var properties = await MsBuildProjectPropertyEvaluator.EvaluateAsync(
