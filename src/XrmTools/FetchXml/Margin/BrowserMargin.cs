@@ -1,23 +1,34 @@
-﻿namespace XrmTools.FetchXml.Margin;
+namespace XrmTools.FetchXml.Margin;
 
-using Microsoft.VisualStudio.PlatformUI;
 using Microsoft.VisualStudio.Shell;
 using Microsoft.VisualStudio.Text.Editor;
-using Microsoft.Web.WebView2.Core;
-using Microsoft.Web.WebView2.Wpf;
 using System;
+using System.Collections.Generic;
+using System.ComponentModel;
 using System.Diagnostics;
+using System.Globalization;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Controls.Primitives;
+using System.Windows.Data;
+using System.Windows.Input;
 using XrmTools.Core.Repositories;
 using XrmTools.FetchXml.CodeGen;
 using XrmTools.Logging.Compatibility;
 using XrmTools.Options;
+using XrmTools.Shell.Styles;
 using XrmTools.WebApi;
 using XrmTools.WebApi.Methods;
 using XrmTools.Xrm.Repositories;
+using ShellButton = XrmTools.Shell.Controls.Button;
+using ShellContextMenu = XrmTools.Shell.Controls.ContextMenu;
+using ShellDataGrid = XrmTools.Shell.Controls.DataGrid;
+using ShellDataGridTextColumn = XrmTools.Shell.Controls.DataGridTextColumn;
+using ShellMenuItem = XrmTools.Shell.Controls.MenuItem;
+using ShellProgressControl = XrmTools.Shell.Controls.ProgressControl;
+using ShellTextBlock = XrmTools.Shell.Controls.TextBlock;
 
 internal class BrowserMargin : DockPanel, IWpfTextViewMargin
 {
@@ -25,280 +36,175 @@ internal class BrowserMargin : DockPanel, IWpfTextViewMargin
     private readonly IRepositoryFactory repositoryFactory;
     private readonly FetchXmlDocument document;
     private readonly ITextView textView;
-    private bool _isDisposed;
-
-    private CancellationTokenSource _activeFetchCts;
-    private Guid? _activeRequestId;
-
-    public FrameworkElement VisualElement => this;
-    public double MarginSize => FetchXmlOptions.Instance.FetchXmlPreviewWindowWidth;
-    public bool Enabled => true;
-    public Browser Browser { get; private set; }
+    private readonly Dictionary<DataGridColumn, int> columnIndexes = [];
+    private FrameworkElement resultsView;
+    private ShellDataGrid resultsGrid = null!;
+    private ShellTextBlock statusText = null!;
+    private ShellButton actionButton = null!;
+    private ShellProgressControl progressIndicator = null!;
+    private CancellationTokenSource? activeFetchCts;
+    private Guid? activeRequestId;
+    private bool isDisposed;
 
     public BrowserMargin(ITextView textView, IWebApiService webApi, IRepositoryFactory repositoryFactory, ILogger logger)
     {
         this.webApi = webApi ?? throw new ArgumentNullException(nameof(webApi));
         this.repositoryFactory = repositoryFactory ?? throw new ArgumentNullException(nameof(repositoryFactory));
-        this.textView = textView;
+        this.textView = textView ?? throw new ArgumentNullException(nameof(textView));
         document = textView.TextBuffer.GetFetchXmlDocument(logger);
-        Visibility = FetchXmlOptions.Instance.EnableFetchXmlPreviewWindow ? Visibility.Visible : Visibility.Collapsed;
 
+        Visibility = FetchXmlOptions.Instance.EnableFetchXmlPreviewWindow ? Visibility.Visible : Visibility.Collapsed;
         SetResourceReference(BackgroundProperty, VsBrushes.ToolWindowBackgroundKey);
 
-        Browser = new Browser();
-        Browser.webView.CoreWebView2InitializationCompleted += OnBrowserInitCompleted;
+        resultsView = CreateResultsView();
+        CreateMarginControls(resultsView);
 
-        CreateMarginControls(Browser.webView);
+        Loaded += OnLoaded;
+        document.Parsed += UpdateResults;
+        FetchXmlOptions.Saved += OptionsSaved;
     }
+
+    public FrameworkElement VisualElement => this;
+
+    public double MarginSize => FetchXmlOptions.Instance.PreviewWindowLocation == FetchXmlPreviewLocation.Vertical
+        ? FetchXmlOptions.Instance.FetchXmlPreviewWindowWidth
+        : FetchXmlOptions.Instance.FetchXmlPreviewWindowHeight;
+
+    public bool Enabled => true;
 
     public void Dispose()
     {
-        if (_isDisposed)
-        {
-            return;
-        }
+        if (isDisposed) return;
 
-        document.Parsed -= UpdateBrowser;
-        VSColorTheme.ThemeChanged -= OnThemeChange;
-        FetchXmlOptions.Saved -= Options_Saved;
-        if (Browser != null)
-        {
-            Browser.webView.CoreWebView2InitializationCompleted -= OnBrowserInitCompleted;
-            Browser.WebMessageReceived -= Browser_WebMessageReceived;
-        }
+        isDisposed = true;
+        Loaded -= OnLoaded;
+        document.Parsed -= UpdateResults;
+        FetchXmlOptions.Saved -= OptionsSaved;
+        resultsGrid.Sorting -= ResultsGridSorting;
+        actionButton.Click -= ActionButtonClick;
 
-        _activeFetchCts?.Cancel();
-        _activeFetchCts?.Dispose();
-        _activeFetchCts = null;
-        _activeRequestId = null;
-
-        Browser.Dispose();
-
-        _isDisposed = true;
-    }
-
-    private static bool IsVsDarkTheme()
-    {
-        var brush = (System.Windows.Media.SolidColorBrush)Application.Current.Resources[CommonControlsColors.TextBoxBackgroundBrushKey];
-        var contrast = ColorUtilities.CompareContrastWithBlackAndWhite(brush.Color);
-        var useLightTheme = contrast == ContrastComparisonResult.ContrastHigherWithBlack;
-        return !useLightTheme;
-    }
-
-    private void OnBrowserInitCompleted(object sender, CoreWebView2InitializationCompletedEventArgs e)
-    {
-        if (!e.IsSuccess)
-        {
-            throw e.InitializationException;
-        }
-
-        WebView2 view = sender as WebView2;
-
-        view.SetResourceReference(BackgroundProperty, VsBrushes.ToolWindowBackgroundKey);
-        view.CoreWebView2.Profile.PreferredColorScheme = IsVsDarkTheme() ? CoreWebView2PreferredColorScheme.Dark : CoreWebView2PreferredColorScheme.Light;
-
-        document.Parsed += UpdateBrowser;
-        FetchXmlOptions.Saved += Options_Saved;
-        VSColorTheme.ThemeChanged += OnThemeChange;
-        Browser.WebMessageReceived += Browser_WebMessageReceived;
-
-        var isDark = IsVsDarkTheme();
-        _ = Browser.SetHostThemeAsync(isDark);
-
-        // Seed initial preview / run on open respecting options
-        if (document.XmlDocument != null && !document.IsParsing)
-        {
-            // If execution mode is OnChange, behave like before (run on change)
-            // Otherwise, only run on open if the user opted in
-            var execMode = FetchXmlOptions.Instance.FetchXmlExecution;
-            var runOnOpen = FetchXmlOptions.Instance.RunQueryOnDocumentOpen;
-
-            if (runOnOpen)
-            {
-                ScheduleFetch(delayMilliseconds: 200);
-            }
-            //if (execMode == FetchXmlExecutionMode.OnChange)
-            //{
-            //    UpdateBrowser(document);
-            //}
-            //else if (runOnOpen)
-            //{
-            //    // Run one-shot on open
-            //    TriggerFetch(immediate: true);
-            //}
-        }
-    }
-
-    private void Browser_WebMessageReceived(object sender, string json)
-    {
-        // Lightweight parse for cancellation or manual refresh
-        try
-        {
-            var env = Newtonsoft.Json.JsonConvert.DeserializeObject<WebEnvelope>(json);
-            if (env == null || env.V != 1) return;
-            switch (env.Kind?.ToLowerInvariant())
-            {
-                case "fetchxml/cancel":
-                    if (env.RequestId != Guid.Empty)
-                    {
-                        TryCancelActiveFetch(env.RequestId);
-                    }
-                    break;
-                case "fetchxml/refresh":
-                    // Manual refresh request from SPA (button when idle)
-                    if (!_activeRequestId.HasValue)
-                    {
-                        // Trigger immediate fetch bypassing parse debounce (use current document state)
-                        ScheduleFetch(delayMilliseconds: 0);
-                    }
-                    break;
-            }
-        }
-        catch { }
-    }
-
-    private bool TryCancelActiveFetch(Guid requestId)
-    {
-        if (_activeRequestId.HasValue && _activeRequestId.Value == requestId && _activeFetchCts != null && !_activeFetchCts.IsCancellationRequested)
-        {
-            _activeFetchCts.Cancel();
-            return true;
-        }
-        return false;
-    }
-
-    private void CreateMarginControls(WebView2 view)
-    {
-        if (FetchXmlOptions.Instance.PreviewWindowLocation == FetchXmlPreviewLocation.Vertical)
-        {
-            CreateRightMarginControls(view);
-        }
-        else
-        {
-            CreateBottomMarginControls(view);
-        }
-
-        void CreateRightMarginControls(WebView2 view)
-        {
-            int width = FetchXmlOptions.Instance.FetchXmlPreviewWindowWidth;
-
-            Grid grid = new();
-            grid.ColumnDefinitions.Add(new ColumnDefinition() { Width = new GridLength(0, GridUnitType.Star) });
-            grid.ColumnDefinitions.Add(new ColumnDefinition() { Width = new GridLength(5, GridUnitType.Pixel) });
-            grid.ColumnDefinitions.Add(new ColumnDefinition() { Width = new GridLength(width, GridUnitType.Pixel), MinWidth = 150 });
-            grid.RowDefinitions.Add(new RowDefinition());
-            grid.SetResourceReference(BackgroundProperty, VsBrushes.ToolWindowBackgroundKey);
-
-            Children.Add(grid);
-
-            grid.Children.Add(view);
-            Grid.SetColumn(view, 2);
-            Grid.SetRow(view, 0);
-
-            GridSplitter splitter = new()
-            {
-                Width = 5,
-                ResizeDirection = GridResizeDirection.Columns,
-                VerticalAlignment = VerticalAlignment.Stretch,
-                HorizontalAlignment = HorizontalAlignment.Stretch
-            };
-            splitter.SetResourceReference(BackgroundProperty, VsBrushes.ToolWindowBackgroundKey);
-            splitter.DragCompleted += SplitterDragCompleted;
-
-            grid.Children.Add(splitter);
-            Grid.SetColumn(splitter, 1);
-            Grid.SetRow(splitter, 0);
-
-            Action fixWidth = new(() =>
-            {
-                double newWidth = textView.ViewportWidth + grid.ActualWidth - 150;
-                if (newWidth < 150)
-                {
-                    if (grid.ColumnDefinitions[2].MinWidth != 0)
-                    {
-                        grid.ColumnDefinitions[2].MinWidth = 0;
-                        grid.ColumnDefinitions[2].MaxWidth = 0;
-                    }
-                }
-                else
-                {
-                    grid.ColumnDefinitions[2].MaxWidth = newWidth;
-                    if (grid.ColumnDefinitions[2].MinWidth == 0)
-                    {
-                        grid.ColumnDefinitions[2].MinWidth = 150;
-                    }
-                }
-            });
-
-            grid.SizeChanged += (e, s) => fixWidth();
-            textView.ViewportWidthChanged += (e, s) => fixWidth();
-        }
-
-        void CreateBottomMarginControls(WebView2 view)
-        {
-            int height = FetchXmlOptions.Instance.FetchXmlPreviewWindowHeight;
-
-            Grid grid = new();
-            grid.RowDefinitions.Add(new RowDefinition() { Height = new GridLength(0, GridUnitType.Star) });
-            grid.RowDefinitions.Add(new RowDefinition() { Height = new GridLength(5, GridUnitType.Pixel) });
-            grid.RowDefinitions.Add(new RowDefinition() { Height = new GridLength(height, GridUnitType.Pixel) });
-            grid.ColumnDefinitions.Add(new ColumnDefinition());
-            grid.SetResourceReference(BackgroundProperty, VsBrushes.ToolWindowBackgroundKey);
-
-            Children.Add(grid);
-
-            grid.Children.Add(view);
-            Grid.SetColumn(view, 0);
-            Grid.SetRow(view, 2);
-
-            GridSplitter splitter = new()
-            {
-                Height = 5,
-                ResizeDirection = GridResizeDirection.Rows,
-                VerticalAlignment = VerticalAlignment.Stretch,
-                HorizontalAlignment = HorizontalAlignment.Stretch
-            };
-            splitter.SetResourceReference(BackgroundProperty, VsBrushes.ToolWindowBackgroundKey);
-            splitter.DragCompleted += SplitterDragCompleted;
-
-            grid.Children.Add(splitter);
-            Grid.SetColumn(splitter, 0);
-            Grid.SetRow(splitter, 1);
-        }
-    }
-
-    private void Options_Saved(FetchXmlOptions options)
-    {
-        RefreshAsync().FireAndForget();
-    }
-
-    private void OnThemeChange(ThemeChangedEventArgs e)
-    {
-        var isDark = IsVsDarkTheme();
-        _ = Browser.SetHostThemeAsync(isDark);
-        RefreshAsync().FireAndForget();
+        activeFetchCts?.Cancel();
+        activeFetchCts?.Dispose();
+        activeFetchCts = null;
+        activeRequestId = null;
     }
 
     public async Task RefreshAsync()
     {
-        FetchXmlOptions options = await FetchXmlOptions.GetLiveInstanceAsync();
+        var options = await FetchXmlOptions.GetLiveInstanceAsync();
+        await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync();
 
-        if (options.EnableFetchXmlPreviewWindow && Visibility != Visibility.Visible)
+        Visibility = options.EnableFetchXmlPreviewWindow ? Visibility.Visible : Visibility.Collapsed;
+    }
+
+    public void TriggerFetch(bool immediate = true) => ScheduleFetch(immediate ? 0 : 350);
+
+    public ITextViewMargin GetTextViewMargin(string marginName) => this;
+
+    private FrameworkElement CreateResultsView()
+    {
+        var root = new Grid();
+        root.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
+        root.RowDefinitions.Add(new RowDefinition { Height = new GridLength(1, GridUnitType.Star) });
+
+        var toolbar = new DockPanel { Margin = Spacings.S };
+        statusText = new ShellTextBlock
         {
-            Visibility = Visibility.Visible;
-            await Browser.RefreshAsync();
-        }
-        else if (Visibility != Visibility.Collapsed)
+            Text = "Records: 0 | Time: -",
+            VerticalAlignment = VerticalAlignment.Center,
+        };
+        statusText.SetResourceReference(TextBlock.ForegroundProperty, ShellColors.TextFillPrimaryBrushKey);
+        actionButton = new ShellButton
         {
-            Visibility = Visibility.Collapsed;
+            Content = "Execute",
+            Kind = ButtonKind.Standard,
+            Margin = Spacings.LeftS,
+            MinWidth = 72,
+        };
+        actionButton.Click += ActionButtonClick;
+        DockPanel.SetDock(actionButton, Dock.Right);
+
+        progressIndicator = new ShellProgressControl
+        {
+            Height = Sizes.IconS,
+            Width = Sizes.IconS,
+            IsRunning = false,
+            Kind = ProgressKind.RingIndeterminate,
+            Margin = Spacings.LeftS,
+            RingDiameter = Sizes.IconS,
+            VerticalAlignment = VerticalAlignment.Center,
+            Visibility = Visibility.Collapsed,
+        };
+        DockPanel.SetDock(progressIndicator, Dock.Right);
+
+        toolbar.Children.Add(actionButton);
+        toolbar.Children.Add(progressIndicator);
+        toolbar.Children.Add(statusText);
+        root.Children.Add(toolbar);
+
+        resultsGrid = new ShellDataGrid
+        {
+            AutoGenerateColumns = false,
+            CanUserAddRows = false,
+            CanUserDeleteRows = false,
+            CanUserReorderColumns = true,
+            CanUserResizeColumns = true,
+            CanUserResizeRows = false,
+            CanUserSortColumns = true,
+            ClipboardCopyMode = DataGridClipboardCopyMode.IncludeHeader,
+            HeadersVisibility = DataGridHeadersVisibility.Column,
+            HorizontalScrollBarVisibility = ScrollBarVisibility.Auto,
+            IsReadOnly = true,
+            SelectionMode = DataGridSelectionMode.Extended,
+            SelectionUnit = DataGridSelectionUnit.FullRow,
+            VerticalScrollBarVisibility = ScrollBarVisibility.Auto,
+        };
+        resultsGrid.SetResourceReference(Control.ForegroundProperty, ShellColors.TextFillPrimaryBrushKey);
+        resultsGrid.Sorting += ResultsGridSorting;
+        resultsGrid.ContextMenu = CreateResultsContextMenu();
+        Grid.SetRow(resultsGrid, 1);
+        root.Children.Add(resultsGrid);
+
+        return root;
+    }
+
+    private ShellContextMenu CreateResultsContextMenu()
+    {
+        var menu = new ShellContextMenu();
+        menu.Items.Add(new ShellMenuItem
+        {
+            Header = "Copy selected rows",
+            Command = ApplicationCommands.Copy,
+            CommandTarget = resultsGrid,
+        });
+        return menu;
+    }
+
+    private void OnLoaded(object sender, RoutedEventArgs e)
+    {
+        Loaded -= OnLoaded;
+        if (FetchXmlOptions.Instance.RunQueryOnDocumentOpen && document.XmlDocument is not null && !document.IsParsing)
+        {
+            ScheduleFetch(200);
         }
     }
 
-    private void UpdateBrowser(FetchXmlDocument document)
+    private void ActionButtonClick(object sender, RoutedEventArgs e)
     {
-        if (document.IsParsing) return;
-        // Respect execution mode
-        if (FetchXmlOptions.Instance.FetchXmlExecution == FetchXmlExecutionMode.OnChange)
+        if (activeFetchCts is { IsCancellationRequested: false })
+        {
+            activeFetchCts.Cancel();
+            return;
+        }
+
+        ScheduleFetch(0);
+    }
+
+    private void OptionsSaved(FetchXmlOptions options) => RefreshAsync().FireAndForget();
+
+    private void UpdateResults(FetchXmlDocument parsedDocument)
+    {
+        if (!parsedDocument.IsParsing && FetchXmlOptions.Instance.FetchXmlExecution == FetchXmlExecutionMode.OnChange)
         {
             ScheduleFetch();
         }
@@ -306,42 +212,39 @@ internal class BrowserMargin : DockPanel, IWpfTextViewMargin
 
     private void ScheduleFetch(int delayMilliseconds = 350)
     {
+        if (isDisposed) return;
         _ = ThreadHelper.JoinableTaskFactory.StartOnIdle(() =>
         {
-            var execDebouncer = textView.TextBuffer.GetDebouncer("fetchxml-exec", millisecondsToWait: delayMilliseconds);
-            execDebouncer.Debounce(ct => ExecuteAndRenderAsync(ct), key: "exec");
+            var debouncer = textView.TextBuffer.GetDebouncer("fetchxml-exec", millisecondsToWait: delayMilliseconds);
+            debouncer.Debounce(token => ExecuteAndRenderAsync(token), key: "exec");
         }, VsTaskRunContext.UIThreadIdlePriority);
-    }
-
-    // Public trigger to allow external callers (e.g., save/load handlers) to execute the query
-    public void TriggerFetch(bool immediate = true)
-    {
-        ScheduleFetch(0);
     }
 
     private async Task ExecuteAndRenderAsync(CancellationToken debounceToken)
     {
-        // cancel existing
-        _activeFetchCts?.Cancel();
-        _activeFetchCts?.Dispose();
-        _activeFetchCts = CancellationTokenSource.CreateLinkedTokenSource(debounceToken);
-        var token = _activeFetchCts.Token;
+        activeFetchCts?.Cancel();
+        activeFetchCts?.Dispose();
+        activeFetchCts = CancellationTokenSource.CreateLinkedTokenSource(debounceToken);
+        var cancellationToken = activeFetchCts.Token;
         var requestId = Guid.NewGuid();
-        _activeRequestId = requestId;
+        activeRequestId = requestId;
 
-        //TODO: Removed for now: await Browser.SetLoadingStateAsync(true).ConfigureAwait(false);
-        await Browser.NotifyFetchStartedAsync(requestId).ConfigureAwait(false);
-        await Browser.PostMessageAsync(new { v = 1, kind = "fetchxml/started", requestId }).ConfigureAwait(false);
+        await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync();
+        SetLoading(true);
 
-        FetchQueryResultModel result = null;
-        Exception error = null;
+        FetchQueryResultModel? result = null;
+        FetchXmlResultSet? resultSet = null;
+        Exception? error = null;
         try
         {
-            result = await ExecuteFetchXmlAsync(document, token).ConfigureAwait(false);
+            result = await ExecuteFetchXmlAsync(document, cancellationToken).ConfigureAwait(false);
+            if (string.IsNullOrEmpty(result.Error))
+            {
+                resultSet = await Task.Run(() => FetchXmlResultSet.Create(result.Records), cancellationToken).ConfigureAwait(false);
+            }
         }
         catch (OperationCanceledException)
         {
-            // expected on cancellation
         }
         catch (Exception ex)
         {
@@ -349,111 +252,247 @@ internal class BrowserMargin : DockPanel, IWpfTextViewMargin
         }
         finally
         {
-            bool isCurrent = _activeRequestId == requestId;
-            if (token.IsCancellationRequested)
+            await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync();
+            var isCurrent = activeRequestId == requestId;
+            if (isCurrent && !isDisposed)
             {
-                if (isCurrent)
+                if (cancellationToken.IsCancellationRequested)
                 {
-                    await Browser.NotifyFetchCancelledAsync(requestId).ConfigureAwait(false);
-                    await Browser.SetLoadingStateAsync(false).ConfigureAwait(false);
+                    statusText.Text = "Cancelled";
                 }
-            }
-            else if (error != null)
-            {
-                if (isCurrent)
+                else if (error is not null)
                 {
-                    await Browser.RenderFetchXmlResultAsync(new FetchQueryResultModel { Result = null, Error = error.Message }).ConfigureAwait(false);
-                    await Browser.PostMessageAsync(new { v = 1, kind = "fetchxml/error", requestId, error = new { message = error.Message } }).ConfigureAwait(false);
-                    await Browser.SetLoadingStateAsync(false).ConfigureAwait(false);
+                    ShowError(error.Message);
                 }
-            }
-            else
-            {
-                if (isCurrent)
+                else if (result?.Error is { Length: > 0 } resultError)
                 {
-                    await Browser.RenderFetchXmlResultAsync(result).ConfigureAwait(false);
-                    await Browser.PostMessageAsync(new { v = 1, kind = "fetchxml/result", requestId, elapsedMs = result.ElapsedMs }).ConfigureAwait(false);
-                    await Browser.SetLoadingStateAsync(false).ConfigureAwait(false);
+                    ShowError(resultError);
                 }
-            }
+                else if (result is not null)
+                {
+                    ShowResult(resultSet ?? FetchXmlResultSet.Empty, result.ElapsedMs, result.MoreRecords);
+                }
+                else
+                {
+                    ShowError("The query did not return a result.");
+                }
+                SetLoading(false);
 
-            if (isCurrent)
-            {
-                _activeFetchCts?.Dispose();
-                _activeFetchCts = null;
-                _activeRequestId = null;
+                activeFetchCts?.Dispose();
+                activeFetchCts = null;
+                activeRequestId = null;
             }
         }
     }
 
-    private async Task<FetchQueryResultModel> ExecuteFetchXmlAsync(FetchXmlDocument document, CancellationToken cancellationToken)
+    private async Task<FetchQueryResultModel> ExecuteFetchXmlAsync(FetchXmlDocument? parsedDocument, CancellationToken cancellationToken)
     {
-        if (document == null || string.IsNullOrWhiteSpace(document.XmlDocument?.ToFullString()))
+        var xmlDocument = parsedDocument?.XmlDocument;
+        if (parsedDocument is null || xmlDocument is null || string.IsNullOrWhiteSpace(xmlDocument.ToFullString()))
         {
-            return new FetchQueryResultModel { Result = "null", ElapsedMs = 0 };
+            return new FetchQueryResultModel();
         }
+
         var parser = new FetchXmlParser();
-        var query = await parser.ParseAsync(document.XmlDocument, document.RawXml, cancellationToken).ConfigureAwait(false);
-        var queryToExecute = string.IsNullOrEmpty(query.Defaulted) ? document.RawXml : query.Defaulted;
+        var query = await parser.ParseAsync(xmlDocument, parsedDocument.RawXml, cancellationToken).ConfigureAwait(false);
+        var queryToExecute = string.IsNullOrEmpty(query.Defaulted) ? parsedDocument.RawXml : query.Defaulted;
 
-        using var repo = repositoryFactory.CreateRepository<IEntityMetadataRepository>();
-        var entity = await repo.GetAsync(document.EntityName, cancellationToken).ConfigureAwait(false);
+        using var repository = repositoryFactory.CreateRepository<IEntityMetadataRepository>();
+        var entity = await repository.GetAsync(parsedDocument.EntityName, cancellationToken).ConfigureAwait(false);
 
-
-        Stopwatch stopwatch = null;
+        var stopwatch = Stopwatch.StartNew();
         try
         {
-            stopwatch = Stopwatch.StartNew();
             var response = await webApi.FetchXmlAsync(entity.EntitySetName, queryToExecute, false, cancellationToken).ConfigureAwait(false);
+            if (response is null) return new FetchQueryResultModel { Error = "The Web API returned no response." };
             stopwatch.Stop();
             return new FetchQueryResultModel
             {
-                Result = response.Records.ToString(Newtonsoft.Json.Formatting.None),
+                Records = response.Records,
                 ElapsedMs = stopwatch.ElapsedMilliseconds,
+                MoreRecords = response.MoreRecords,
             };
         }
         catch (ServiceException ex)
         {
-            return new FetchQueryResultModel
-            {
-                Error = ex.ODataError is not null
-                ? System.Text.Json.JsonSerializer.Serialize(ex.ODataError.Error)
-                : $"{{\"message\":\"{System.Text.Json.JsonEncodedText.Encode(ex.Message)}\"}}"
-            };
+            return new FetchQueryResultModel { Error = ex.ODataError?.Error?.Message ?? ex.Message };
         }
         catch (Exception ex)
         {
-            return new FetchQueryResultModel
-            {
-                Error = ex.Message
-            };
+            return new FetchQueryResultModel { Error = ex.Message };
         }
         finally
         {
-            if (stopwatch?.IsRunning ?? false) stopwatch?.Stop();
+            if (stopwatch.IsRunning) stopwatch.Stop();
         }
     }
 
-    public ITextViewMargin GetTextViewMargin(string marginName) => this;
-
-    private void SplitterDragCompleted(object sender, System.Windows.Controls.Primitives.DragCompletedEventArgs e)
+    private void ShowResult(FetchXmlResultSet resultSet, long elapsedMilliseconds, bool moreRecords)
     {
-        if (FetchXmlOptions.Instance.PreviewWindowLocation == FetchXmlPreviewLocation.Vertical && !double.IsNaN(Browser.webView.ActualWidth))
+        columnIndexes.Clear();
+        resultsGrid.ItemsSource = null;
+        resultsGrid.Columns.Clear();
+
+        foreach (var resultColumn in resultSet.Columns)
         {
-            FetchXmlOptions.Instance.FetchXmlPreviewWindowWidth = (int)Browser.webView.ActualWidth;
-            FetchXmlOptions.Instance.Save();
+            var valuePath = $"[{resultColumn.Index}]";
+            var elementStyle = new Style(typeof(ShellTextBlock));
+            elementStyle.Setters.Add(new Setter(TextBlock.TextWrappingProperty, TextWrapping.NoWrap));
+            elementStyle.Setters.Add(new Setter(TextBlock.TextTrimmingProperty, TextTrimming.CharacterEllipsis));
+            elementStyle.Setters.Add(new Setter(FrameworkElement.ToolTipProperty, new Binding(valuePath)));
+
+            var gridColumn = new ShellDataGridTextColumn
+            {
+                Header = resultColumn.Name,
+                Binding = new Binding(valuePath)
+                {
+                    Converter = SingleLineTextConverter.Instance,
+                    Mode = BindingMode.OneWay,
+                },
+                ClipboardContentBinding = new Binding(valuePath) { Mode = BindingMode.OneWay },
+                ElementStyle = elementStyle,
+                IsReadOnly = true,
+                MinWidth = 80,
+                SortMemberPath = resultColumn.Index.ToString(CultureInfo.InvariantCulture),
+                Width = new DataGridLength(160),
+            };
+            resultsGrid.Columns.Add(gridColumn);
+            columnIndexes.Add(gridColumn, resultColumn.Index);
         }
-        else if (!double.IsNaN(Browser.webView.ActualHeight))
+
+        resultsGrid.ItemsSource = resultSet.Rows;
+        statusText.Text = $"Records: {resultSet.Rows.Count:N0} | Time: {elapsedMilliseconds:N0} ms"
+            + (moreRecords ? " | More records available" : string.Empty);
+    }
+
+    private void ShowError(string message) => statusText.Text = $"Error: {message}";
+
+    private void SetLoading(bool loading)
+    {
+        progressIndicator.IsRunning = loading;
+        progressIndicator.Visibility = loading ? Visibility.Visible : Visibility.Collapsed;
+        actionButton.Content = loading ? "Cancel" : "Execute";
+    }
+
+    private void ResultsGridSorting(object sender, DataGridSortingEventArgs e)
+    {
+        if (!columnIndexes.TryGetValue(e.Column, out var columnIndex)) return;
+
+        e.Handled = true;
+        var direction = e.Column.SortDirection == ListSortDirection.Ascending
+            ? ListSortDirection.Descending
+            : ListSortDirection.Ascending;
+
+        foreach (var column in resultsGrid.Columns)
         {
-            FetchXmlOptions.Instance.FetchXmlPreviewWindowHeight = (int)Browser.webView.ActualHeight;
-            FetchXmlOptions.Instance.Save();
+            column.SortDirection = null;
+        }
+
+        if (CollectionViewSource.GetDefaultView(resultsGrid.ItemsSource) is ListCollectionView view)
+        {
+            view.CustomSort = new FetchXmlResultRowComparer(columnIndex, direction);
+        }
+        e.Column.SortDirection = direction;
+    }
+
+    private void CreateMarginControls(FrameworkElement content)
+    {
+        if (FetchXmlOptions.Instance.PreviewWindowLocation == FetchXmlPreviewLocation.Vertical)
+        {
+            var width = FetchXmlOptions.Instance.FetchXmlPreviewWindowWidth;
+            var grid = new Grid();
+            grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(0, GridUnitType.Star) });
+            grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(5) });
+            grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(width), MinWidth = 150 });
+            grid.RowDefinitions.Add(new RowDefinition());
+            grid.SetResourceReference(BackgroundProperty, VsBrushes.ToolWindowBackgroundKey);
+            Children.Add(grid);
+
+            grid.Children.Add(content);
+            Grid.SetColumn(content, 2);
+
+            var splitter = new GridSplitter
+            {
+                Width = 5,
+                ResizeDirection = GridResizeDirection.Columns,
+                VerticalAlignment = VerticalAlignment.Stretch,
+                HorizontalAlignment = HorizontalAlignment.Stretch,
+            };
+            splitter.SetResourceReference(BackgroundProperty, VsBrushes.ToolWindowBackgroundKey);
+            splitter.DragCompleted += SplitterDragCompleted;
+            grid.Children.Add(splitter);
+            Grid.SetColumn(splitter, 1);
+
+            void FixWidth()
+            {
+                var newWidth = textView.ViewportWidth + grid.ActualWidth - 150;
+                if (newWidth < 150)
+                {
+                    grid.ColumnDefinitions[2].MinWidth = 0;
+                    grid.ColumnDefinitions[2].MaxWidth = 0;
+                }
+                else
+                {
+                    grid.ColumnDefinitions[2].MaxWidth = newWidth;
+                    if (grid.ColumnDefinitions[2].MinWidth == 0) grid.ColumnDefinitions[2].MinWidth = 150;
+                }
+            }
+
+            grid.SizeChanged += (_, _) => FixWidth();
+            textView.ViewportWidthChanged += (_, _) => FixWidth();
+        }
+        else
+        {
+            var height = FetchXmlOptions.Instance.FetchXmlPreviewWindowHeight;
+            var grid = new Grid();
+            grid.RowDefinitions.Add(new RowDefinition { Height = new GridLength(0, GridUnitType.Star) });
+            grid.RowDefinitions.Add(new RowDefinition { Height = new GridLength(5) });
+            grid.RowDefinitions.Add(new RowDefinition { Height = new GridLength(height), MinHeight = 100 });
+            grid.ColumnDefinitions.Add(new ColumnDefinition());
+            grid.SetResourceReference(BackgroundProperty, VsBrushes.ToolWindowBackgroundKey);
+            Children.Add(grid);
+
+            grid.Children.Add(content);
+            Grid.SetRow(content, 2);
+
+            var splitter = new GridSplitter
+            {
+                Height = 5,
+                ResizeDirection = GridResizeDirection.Rows,
+                VerticalAlignment = VerticalAlignment.Stretch,
+                HorizontalAlignment = HorizontalAlignment.Stretch,
+            };
+            splitter.SetResourceReference(BackgroundProperty, VsBrushes.ToolWindowBackgroundKey);
+            splitter.DragCompleted += SplitterDragCompleted;
+            grid.Children.Add(splitter);
+            Grid.SetRow(splitter, 1);
         }
     }
 
-    private class WebEnvelope
+    private void SplitterDragCompleted(object sender, DragCompletedEventArgs e)
     {
-        public int V { get; set; }
-        public string Kind { get; set; }
-        public Guid RequestId { get; set; }
+        if (FetchXmlOptions.Instance.PreviewWindowLocation == FetchXmlPreviewLocation.Vertical && !double.IsNaN(resultsView.ActualWidth))
+        {
+            FetchXmlOptions.Instance.FetchXmlPreviewWindowWidth = (int)resultsView.ActualWidth;
+        }
+        else if (!double.IsNaN(resultsView.ActualHeight))
+        {
+            FetchXmlOptions.Instance.FetchXmlPreviewWindowHeight = (int)resultsView.ActualHeight;
+        }
+        FetchXmlOptions.Instance.Save();
+    }
+
+    private sealed class SingleLineTextConverter : IValueConverter
+    {
+        public static SingleLineTextConverter Instance { get; } = new();
+
+        public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
+        {
+            if (value is not string text) return value ?? string.Empty;
+            return text.Replace("\r\n", " ").Replace('\r', ' ').Replace('\n', ' ');
+        }
+
+        public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
+            => Binding.DoNothing;
     }
 }

@@ -1,0 +1,26 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:ctrls="clr-namespace:XrmTools.Shell.Controls"
+                    xmlns:styles="clr-namespace:XrmTools.Shell.Styles">
+  <Style TargetType="{x:Type ctrls:DataGridRow}">
+    <Setter Property="Control.Background" Value="{DynamicResource {x:Static styles:ShellColors.ControlFillTransparentBrushKey}}"/>
+    <Setter Property="Control.BorderBrush" Value="{DynamicResource {x:Static styles:ShellColors.ControlStrokeTransparentBrushKey}}"/>
+    <Setter Property="Control.BorderThickness" Value="{x:Static styles:StrokeWidths.None}"/>
+    <Setter Property="Validation.ErrorTemplate"><Setter.Value><ControlTemplate/></Setter.Value></Setter>
+    <Setter Property="Control.Template">
+      <Setter.Value>
+        <ControlTemplate TargetType="{x:Type ctrls:DataGridRow}">
+          <Border Background="{TemplateBinding Control.Background}" BorderBrush="{TemplateBinding Control.BorderBrush}"
+                  BorderThickness="{TemplateBinding Control.BorderThickness}">
+            <ctrls:DataGridCellsPresenter ItemsPanel="{TemplateBinding DataGridRow.ItemsPanel}"/>
+          </Border>
+        </ControlTemplate>
+      </Setter.Value>
+    </Setter>
+    <Style.Triggers>
+      <Trigger Property="DataGridRow.IsSelected" Value="True">
+        <Setter Property="Control.Background" Value="{DynamicResource {x:Static styles:ShellColors.SubtleFillSecondaryBrushKey}}"/>
+      </Trigger>
+    </Style.Triggers>
+  </Style>
+</ResourceDictionary>

@@ -43,11 +43,6 @@
     <Project Path="Analyzers/XrmTools.Analyzers/XrmTools.Analyzers.csproj" />
   </Folder>
   <Project Path="XrmTools.Core/XrmTools.Core.csproj" Id="4e3f79aa-5694-4dd6-933d-aee2132486a5" />
-  <Project Path="XrmTools.FetchXmlViewer/xrmtools.fetchxmlviewer.esproj">
-    <Platform Project="AnyCPU" />
-    <Build />
-    <Deploy />
-  </Project>
   <Project Path="XrmTools.Meta.Attributes.Package/XrmTools.Meta.Attributes.Package.msbuildproj" Type="13b669be-bb05-4ddf-9536-439f39a36129" />
   <Project Path="XrmTools.Meta.Attributes.SourceGenerator/XrmTools.Meta.Attributes.SourceGenerator.csproj" />
   <Project Path="XrmTools.Meta.Attributes/XrmTools.Meta.Attributes.csproj" Type="13b669be-bb05-4ddf-9536-439f39a36129">
@@ -57,7 +52,6 @@
   <Project Path="XrmTools.UI.Controls/XrmTools.UI.Controls.csproj" Id="179df0ac-6f44-4656-8332-034d3c594ed1" />
   <Project Path="XrmTools.WebApi/XrmTools.WebApi.csproj" />
   <Project Path="XrmTools/XrmTools.csproj" Id="592264a3-7b0d-40c5-a879-b2222676c532">
-    <BuildDependency Project="XrmTools.FetchXmlViewer/xrmtools.fetchxmlviewer.esproj" />
     <Platform Solution="*|arm64" Project="arm64" />
     <Platform Solution="*|x86" Project="x86" />
   </Project>

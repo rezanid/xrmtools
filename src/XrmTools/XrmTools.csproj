@@ -131,7 +131,16 @@
     <Compile Include="Helpers\PluginDetectionHelper.cs" />
     <Compile Include="Helpers\SolutionNavigator.cs" />
     <Compile Include="Shell\Controls\Button.cs" />
+    <Compile Include="Shell\Controls\DataGrid.cs" />
+    <Compile Include="Shell\Controls\DataGridCell.cs" />
+    <Compile Include="Shell\Controls\DataGridCellsPresenter.cs" />
+    <Compile Include="Shell\Controls\DataGridColumnHeader.cs" />
+    <Compile Include="Shell\Controls\DataGridColumnHeadersPresenter.cs" />
+    <Compile Include="Shell\Controls\DataGridRow.cs" />
+    <Compile Include="Shell\Controls\DataGridTextColumn.cs" />
+    <Compile Include="Shell\Controls\DataGridThumb.cs" />
     <Compile Include="Shell\Controls\DialogButton.cs" />
+    <Compile Include="Shell\Controls\DropDownButton.cs" />
     <Compile Include="Shell\Controls\Expander.cs" />
     <Compile Include="Shell\Controls\FlyoutSurface.cs" />
     <Compile Include="Shell\Controls\Indicator.cs" />
@@ -141,6 +150,7 @@
     <Compile Include="Shell\Controls\MenuScrollViewer.cs" />
     <Compile Include="Shell\Controls\PassThroughBorder.cs" />
     <Compile Include="Shell\Controls\Popup.cs" />
+    <Compile Include="Shell\Controls\ProgressControl.cs" />
     <Compile Include="Shell\Controls\RadioButton.cs" />
     <Compile Include="Shell\Controls\ScrollBar.cs" />
     <Compile Include="Shell\Controls\ScrollViewer.cs" />
@@ -156,7 +166,9 @@
     <Compile Include="Shell\Conveters\ColorOpacityConverter.cs" />
     <Compile Include="Shell\Conveters\Converters.cs" />
     <Compile Include="Shell\Conveters\NumericComparisonConverter.cs" />
+    <Compile Include="Shell\Conveters\RingGeometryConverter.cs" />
     <Compile Include="Shell\Helpers\Boxes.cs" />
+    <Compile Include="Shell\Helpers\DataGridColumns.cs" />
     <Compile Include="Shell\Helpers\Property.cs" />
     <Compile Include="Shell\Helpers\VisualTree.cs" />
     <Compile Include="Shell\Styles\ButtonKind.cs" />
@@ -174,6 +186,30 @@
     <Page Include="Shell\Styles\ButtonStyle.xaml">
       <Generator>MSBuild:Compile</Generator>
     </Page>
+    <Page Include="Shell\Styles\DataGrid\DataGridCellStyle.xaml">
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="Shell\Styles\DataGrid\DataGridCellsPresenterStyle.xaml">
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="Shell\Styles\DataGrid\DataGridColumnHeaderStyle.xaml">
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="Shell\Styles\DataGrid\DataGridColumnHeadersPresenterStyle.xaml">
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="Shell\Styles\DataGrid\DataGridRowStyle.xaml">
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="Shell\Styles\DataGrid\DataGridStyle.xaml">
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="Shell\Styles\DataGrid\DataGridThumbStyle.xaml">
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="Shell\Styles\DropDownButtonStyle.xaml">
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
     <Page Include="Shell\Styles\ListBoxItemStyle.xaml">
       <Generator>MSBuild:Compile</Generator>
     </Page>
@@ -184,6 +220,9 @@
       <Generator>MSBuild:Compile</Generator>
     </Page>
     <Page Include="Shell\Styles\RadioButtonStyle.xaml">
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="Shell\Styles\ProgressControlStyle.xaml">
       <Generator>MSBuild:Compile</Generator>
     </Page>
     <Page Include="Shell\Styles\TextBlockStyle.xaml">
@@ -272,10 +311,10 @@
     <Compile Include="FetchXml\Completion\FetchXmlCompletionSource.cs" />
     <Compile Include="FetchXml\FetchXmlDocument.cs" />
     <Compile Include="FetchXml\FetchQueryResultModel.cs" />
+    <Compile Include="FetchXml\FetchXmlResultSet.cs" />
     <Compile Include="FetchXml\FetchXmlContentTypeDefinitions.cs" />
     <Compile Include="FetchXml\FetchXmlOptions.cs" />
     <Compile Include="FetchXml\FetchXmlParameterParser.cs" />
-    <Compile Include="FetchXml\Margin\Browser.cs" />
     <Compile Include="FetchXml\Margin\BrowserMargin.cs" />
     <Compile Include="FetchXml\Margin\BrowserMarginProvider.cs" />
     <Compile Include="FetchXml\Margin\Debouncer.cs" />
@@ -443,18 +482,6 @@
       <Generator>VsctGenerator</Generator>
       <LastGenOutput>CustomMonikers.cs</LastGenOutput>
     </VSCTCompile>
-    <Content Include="FetchXmlViewer\assets\index-Df-1zudZ.js">
-      <IncludeInVSIX>true</IncludeInVSIX>
-    </Content>
-    <Content Include="FetchXmlViewer\assets\index-DW_6Iuza.css">
-      <IncludeInVSIX>true</IncludeInVSIX>
-    </Content>
-    <Content Include="FetchXmlViewer\index.html">
-      <IncludeInVSIX>true</IncludeInVSIX>
-    </Content>
-    <Content Include="FetchXmlViewer\icon.svg">
-      <IncludeInVSIX>true</IncludeInVSIX>
-    </Content>
     <Content Include="Microsoft.Bcl.TimeProvider\Microsoft.Bcl.TimeProvider.dll">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
       <IncludeInVSIX>true</IncludeInVSIX>
@@ -564,9 +591,6 @@
     <Content Include="CodeGenTemplates\GlobalOptionSets.sbncs">
       <IncludeInVSIX>true</IncludeInVSIX>
     </Content>
-    <Content Include="FetchXmlViewer\assets\index-Df-1zudZ.js.map">
-      <IncludeInVSIX>true</IncludeInVSIX>
-    </Content>
     <Content Include="CodeGenTemplates\Plugin_Steps.sbncs">
       <IncludeInVSIX>true</IncludeInVSIX>
     </Content>
@@ -577,7 +601,6 @@
       <IncludeInVSIX>true</IncludeInVSIX>
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
-    <None Include="FetchXmlViewer.WebAssets.targets" />
     <None Include="IncludeNuGetResolvedAssets.targets" />
     <None Include="PrepareImageManifest.targets" />
     <None Include="source.extension.vsixmanifest">
@@ -631,7 +654,6 @@
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
       <PrivateAssets>all</PrivateAssets>
     </PackageReference>
-    <PackageReference Include="Microsoft.Web.WebView2" Version="1.0.3856.49" />
     <PackageReference Include="Microsoft.Xaml.Behaviors.Wpf" Version="1.1.135" />
     <PackageReference Include="Newtonsoft.Json" Version="13.0.4" />
     <PackageReference Include="Nito.AsyncEx" Version="5.1.2" />
@@ -787,7 +809,6 @@
           SkipUnchangedFiles="true" />
   </Target>
   <Import Project="PrepareImageManifest.targets" />
-  <Import Project="FetchXmlViewer.WebAssets.targets" Condition="Exists('FetchXmlViewer.WebAssets.targets')" />
   <ProjectExtensions />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.
