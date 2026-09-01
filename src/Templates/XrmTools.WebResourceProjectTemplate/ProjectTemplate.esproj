@@ -1,0 +1,13 @@
+<Project Sdk="XrmTools.WebResources.Sdk/1.2.0">
+  <PropertyGroup Label="Globals">
+    <ProjectGuid>$guid1$</ProjectGuid>
+    <!-- Change these two values before registering web resources. -->
+    <DataverseSolutionUniqueName>YourSolutionUniqueName</DataverseSolutionUniqueName>
+    <WebResourceNamePrefix>new_/scripts/</WebResourceNamePrefix>
+  </PropertyGroup>
+
+  <!-- Build output is generated; keep it out of Solution Explorer. -->
+  <ItemGroup>
+    <None Remove="dist/**" />
+  </ItemGroup>
+</Project>

@@ -50,6 +50,10 @@ using XrmTools;
     CodeBase = @"$PackageFolder$\XrmTools.UI.Controls.dll")]
 
 [assembly: ProvideCodeBase(
+    AssemblyName = @"XrmTools.WebResourceProjectTemplate",
+    CodeBase = @"$PackageFolder$\ProjectTemplates\XrmTools.WebResourceProjectTemplate.dll")]
+
+[assembly: ProvideCodeBase(
     AssemblyName = @"Microsoft.Bcl.TimeProvider",
     CodeBase = @"$PackageFolder$\Microsoft.Bcl.TimeProvider.dll")]
 

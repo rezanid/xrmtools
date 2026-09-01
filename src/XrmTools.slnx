@@ -24,6 +24,10 @@
       <Platform Solution="*|arm64" Project="arm64" />
       <Platform Solution="*|x86" Project="x86" />
     </Project>
+    <Project Path="Templates/XrmTools.WebResourceProjectTemplate/XrmTools.WebResourceProjectTemplate.csproj" Id="f1ef29f3-fda3-45d9-873c-13ffbde7f416">
+      <Platform Solution="*|arm64" Project="arm64" />
+      <Platform Solution="*|x86" Project="x86" />
+    </Project>
   </Folder>
   <Folder Name="/Tests/">
     <Project Path="Analyzers/XrmTools.Analyzers.Test/XrmTools.Analyzers.Test.csproj" />

@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<VSTemplate Version="3.0.0" Type="Project" xmlns="http://schemas.microsoft.com/developer/vstemplate/2005">
+  <TemplateData>
+    <Name>Power Platform Web Resources (Xrm Tools)</Name>
+    <Description>A TypeScript web-resource project that builds and registers with Xrm Tools from Visual Studio.</Description>
+    <ProjectType>JavaScript</ProjectType>
+    <LanguageTag>TypeScript</LanguageTag>
+    <SortOrder>1000</SortOrder>
+    <TemplateID>4aa25562-70b5-4b9a-86d0-f6a98ff3bdd0</TemplateID>
+    <CreateNewFolder>true</CreateNewFolder>
+    <DefaultName>WebResources</DefaultName>
+    <ProvideDefaultName>true</ProvideDefaultName>
+    <EnableLocationBrowseButton>true</EnableLocationBrowseButton>
+  </TemplateData>
+  <TemplateContent>
+    <Project File="ProjectTemplate.esproj" ReplaceParameters="true">
+      <!-- JSPS skips these legacy items; the wizard materializes their embedded copies. -->
+      <ProjectItem ReplaceParameters="true" TargetFileName=".gitignore">gitignore.txt</ProjectItem>
+      <ProjectItem ReplaceParameters="true" TargetFileName="package.json">package.json</ProjectItem>
+      <ProjectItem ReplaceParameters="true" TargetFileName="README.md">README.md</ProjectItem>
+      <ProjectItem ReplaceParameters="true" TargetFileName="tsconfig.json">tsconfig.json</ProjectItem>
+      <ProjectItem ReplaceParameters="true" TargetFileName="src\AccountExperience.ts">src\AccountExperience.ts</ProjectItem>
+    </Project>
+  </TemplateContent>
+  <WizardExtension>
+    <Assembly>XrmTools.WebResourceProjectTemplate, Version=1.0.0.0, Culture=neutral, PublicKeyToken=26be58bdab7122ab</Assembly>
+    <FullClassName>XrmTools.WebResourceProjectTemplate.WebResourceProjectWizard</FullClassName>
+  </WizardExtension>
+</VSTemplate>

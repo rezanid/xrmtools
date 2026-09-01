@@ -8,16 +8,22 @@
     </Target>
 
     <Target Name="Restore"
-            DependsOnTargets="ValidateWebResourceProject">
+            DependsOnTargets="ValidateWebResourceProject"
+            Inputs="@(_XrmToolsNpmRestoreInput)"
+            Outputs="$(NpmRestoreStampFile)">
         <Message Importance="High"
                  Text="Restoring web resource npm packages..." />
 
         <Exec WorkingDirectory="$(MSBuildProjectDirectory)"
               Command="$(NpmRestoreCommand)" />
+
+        <MakeDir Directories="$([System.IO.Path]::GetDirectoryName('$(NpmRestoreStampFile)'))" />
+        <Touch Files="$(NpmRestoreStampFile)"
+               AlwaysCreate="true" />
     </Target>
 
     <Target Name="Build"
-            DependsOnTargets="ValidateWebResourceProject">
+            DependsOnTargets="Restore">
         <Message Importance="High"
                  Text="Building web resources using $(NpmBuildCommand)..." />
 
