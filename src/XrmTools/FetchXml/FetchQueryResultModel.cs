@@ -1,8 +1,11 @@
-﻿namespace XrmTools.FetchXml;
+namespace XrmTools.FetchXml;
+
+using Newtonsoft.Json.Linq;
 
 public class FetchQueryResultModel
 {
-    public string Result { get; set; }
+    public JArray Records { get; set; } = [];
     public long ElapsedMs { get; set; }
-    public string Error { get; set; }
+    public string? Error { get; set; }
+    public bool MoreRecords { get; set; }
 }

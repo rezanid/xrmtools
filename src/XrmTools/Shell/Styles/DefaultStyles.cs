@@ -47,34 +47,34 @@ internal static class DefaultStyles
           typeof (ContextMenu),
           "/XrmTools;component/Shell/Styles/ContextMenuStyle.xaml"
         },
-        //{
-        //  typeof (DataGrid),
-        //  "/XrmTools;component/Shell/Styles/DataGrid/DataGridStyle.xaml"
-        //},
-        //{
-        //  typeof (DataGridCell),
-        //  "/XrmTools;component/Shell/Styles/DataGrid/DataGridCellStyle.xaml"
-        //},
-        //{
-        //  typeof (DataGridCellsPresenter),
-        //  "/XrmTools;component/Shell/Styles/DataGrid/DataGridCellsPresenterStyle.xaml"
-        //},
-        //{
-        //  typeof (DataGridColumnHeader),
-        //  "/XrmTools;component/Shell/Styles/DataGrid/DataGridColumnHeaderStyle.xaml"
-        //},
-        //{
-        //  typeof (DataGridColumnHeadersPresenter),
-        //  "/XrmTools;component/Shell/Styles/DataGrid/DataGridColumnHeadersPresenterStyle.xaml"
-        //},
-        //{
-        //  typeof (DataGridRow),
-        //  "/XrmTools;component/Shell/Styles/DataGrid/DataGridRowStyle.xaml"
-        //},
-        //{
-        //  typeof (DataGridThumb),
-        //  "/XrmTools;component/Shell/Styles/DataGrid/DataGridThumbStyle.xaml"
-        //},
+        {
+          typeof (DataGrid),
+          "/XrmTools;component/Shell/Styles/DataGrid/DataGridStyle.xaml"
+        },
+        {
+          typeof (DataGridCell),
+          "/XrmTools;component/Shell/Styles/DataGrid/DataGridCellStyle.xaml"
+        },
+        {
+          typeof (DataGridCellsPresenter),
+          "/XrmTools;component/Shell/Styles/DataGrid/DataGridCellsPresenterStyle.xaml"
+        },
+        {
+          typeof (DataGridColumnHeader),
+          "/XrmTools;component/Shell/Styles/DataGrid/DataGridColumnHeaderStyle.xaml"
+        },
+        {
+          typeof (DataGridColumnHeadersPresenter),
+          "/XrmTools;component/Shell/Styles/DataGrid/DataGridColumnHeadersPresenterStyle.xaml"
+        },
+        {
+          typeof (DataGridRow),
+          "/XrmTools;component/Shell/Styles/DataGrid/DataGridRowStyle.xaml"
+        },
+        {
+          typeof (DataGridThumb),
+          "/XrmTools;component/Shell/Styles/DataGrid/DataGridThumbStyle.xaml"
+        },
         //{
         //  typeof (DialogButton),
         //  "/XrmTools;component/Shell/Styles/Window/DialogButtonStyle.xaml"
@@ -87,10 +87,10 @@ internal static class DefaultStyles
         //  typeof (DialogWindow),
         //  "/XrmTools;component/Shell/Styles/Window/DialogWindowStyle.xaml"
         //},
-        //{
-        //  typeof (DropDownButton),
-        //  "/XrmTools;component/Shell/Styles/DropDownButtonStyle.xaml"
-        //},
+        {
+          typeof (DropDownButton),
+          "/XrmTools;component/Shell/Styles/DropDownButtonStyle.xaml"
+        },
         //{
         //  typeof (EmphasisInline),
         //  "/XrmTools;component/Shell/Styles/MarkdownViewer/EmphasisInlineStyle.xaml"
@@ -195,10 +195,10 @@ internal static class DefaultStyles
           typeof (Popup),
           "/XrmTools;component/Shell/Styles/PopupStyle.xaml"
         },
-        //{
-        //  typeof (ProgressControl),
-        //  "/XrmTools;component/Shell/Styles/ProgressControlStyle.xaml"
-        //},
+        {
+          typeof (ProgressControl),
+          "/XrmTools;component/Shell/Styles/ProgressControlStyle.xaml"
+        },
         {
           typeof (RadioButton),
           "/XrmTools;component/Shell/Styles/RadioButtonStyle.xaml"

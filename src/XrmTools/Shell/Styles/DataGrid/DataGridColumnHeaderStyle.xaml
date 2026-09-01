@@ -1,0 +1,99 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:ctrls="clr-namespace:XrmTools.Shell.Controls"
+                    xmlns:styles="clr-namespace:XrmTools.Shell.Styles">
+  <Style TargetType="{x:Type ctrls:DataGridColumnHeader}">
+    <Setter Property="Control.Background" Value="{DynamicResource {x:Static styles:ShellColors.ControlFillTransparentBrushKey}}"/>
+    <Setter Property="Control.BorderBrush" Value="{DynamicResource {x:Static styles:ShellColors.ControlStrokeTransparentBrushKey}}"/>
+    <Setter Property="Control.BorderThickness" Value="{x:Static styles:StrokeWidths.None}"/>
+    <Setter Property="ctrls:DataGridColumnHeader.ColumnsCount" Value="{Binding Columns.Count, RelativeSource={RelativeSource AncestorType={x:Type ctrls:DataGrid}}}"/>
+    <Setter Property="UIElement.Focusable" Value="True"/>
+    <Setter Property="FrameworkElement.FocusVisualStyle" Value="{x:Null}"/>
+    <Setter Property="Control.Padding" Value="{x:Static styles:Spacings.HorizontalS}"/>
+    <Setter Property="Control.VerticalContentAlignment" Value="Center"/>
+    <Setter Property="Control.Template">
+      <Setter.Value>
+        <ControlTemplate TargetType="{x:Type ctrls:DataGridColumnHeader}">
+          <Border Background="{TemplateBinding Control.Background}" BorderBrush="{TemplateBinding Control.BorderBrush}"
+                  BorderThickness="{TemplateBinding Control.BorderThickness}">
+            <Grid>
+              <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="Auto"/>
+              </Grid.ColumnDefinitions>
+              <ctrls:Indicator x:Name="Indicator" Grid.Column="0" Visibility="Hidden"/>
+              <ContentPresenter Grid.Column="1" HorizontalAlignment="{TemplateBinding Control.HorizontalContentAlignment}"
+                                Margin="{TemplateBinding Control.Padding}" MinHeight="{x:Static styles:Sizes.ContentMinHeight}"
+                                MinWidth="{x:Static styles:Sizes.ControlMinWidth}"
+                                VerticalAlignment="{TemplateBinding Control.VerticalContentAlignment}"/>
+              <ctrls:DropDownButton x:Name="PART_HeaderOptions" Grid.Column="2" CornerRadius="{x:Static styles:CornerRadii.None}"
+                                    Focusable="False" Kind="Subtle" Margin="{x:Static styles:Spacings.LeftXSNudge}"
+                                    Padding="{x:Static styles:Spacings.None}" ShowDropDownGlyph="False" Visibility="Collapsed"
+                                    Width="{x:Static styles:Sizes.IconL}">
+                <ctrls:DropDownButton.DropDown>
+                  <ctrls:ContextMenu>
+                    <ctrls:MenuItem Header="Resize column" Command="{x:Static ctrls:DataGridColumnHeader.ResizeCommand}"
+                                    CommandParameter="{Binding RelativeSource={RelativeSource TemplatedParent}}"/>
+                    <ctrls:Separator/>
+                    <ctrls:MenuItem Header="Move left" Command="{x:Static ctrls:DataGridColumnHeader.MoveLeftCommand}"
+                                    CommandParameter="{Binding RelativeSource={RelativeSource TemplatedParent}}"/>
+                    <ctrls:MenuItem Header="Move right" Command="{x:Static ctrls:DataGridColumnHeader.MoveRightCommand}"
+                                    CommandParameter="{Binding RelativeSource={RelativeSource TemplatedParent}}"/>
+                    <ctrls:Separator/>
+                    <ctrls:MenuItem x:Name="SortAscending" Header="Sort ascending" IsCheckable="True"
+                                    Command="{x:Static ctrls:DataGridColumnHeader.SortAscendingCommand}"
+                                    CommandParameter="{Binding RelativeSource={RelativeSource TemplatedParent}}"/>
+                    <ctrls:MenuItem x:Name="SortDescending" Header="Sort descending" IsCheckable="True"
+                                    Command="{x:Static ctrls:DataGridColumnHeader.SortDescendingCommand}"
+                                    CommandParameter="{Binding RelativeSource={RelativeSource TemplatedParent}}"/>
+                  </ctrls:ContextMenu>
+                </ctrls:DropDownButton.DropDown>
+                <Path Data="{x:Static styles:Geometries.ChevronDownSmall}" Fill="{TemplateBinding Control.Foreground}"
+                      Height="{x:Static styles:Sizes.IconS}" HorizontalAlignment="Center" VerticalAlignment="Center"
+                      Width="{x:Static styles:Sizes.IconS}"/>
+              </ctrls:DropDownButton>
+              <ctrls:DataGridThumb x:Name="PART_RightHeaderGripper" Grid.Column="2" HorizontalAlignment="Right" Visibility="Collapsed"/>
+              <ctrls:Separator Grid.Column="2" HorizontalAlignment="Right" Margin="{x:Static styles:Spacings.None}"/>
+            </Grid>
+          </Border>
+          <ControlTemplate.Triggers>
+            <Trigger Property="UIElement.IsKeyboardFocused" Value="True">
+              <Setter TargetName="Indicator" Property="UIElement.Visibility" Value="Visible"/>
+            </Trigger>
+            <Trigger Property="ctrls:DataGridColumnHeader.CanUserReorder" Value="True">
+              <Setter TargetName="PART_HeaderOptions" Property="UIElement.Visibility" Value="Visible"/>
+            </Trigger>
+            <Trigger Property="ctrls:DataGridColumnHeader.CanUserResize" Value="True">
+              <Setter TargetName="PART_HeaderOptions" Property="UIElement.Visibility" Value="Visible"/>
+              <Setter TargetName="PART_RightHeaderGripper" Property="UIElement.Visibility" Value="Visible"/>
+            </Trigger>
+            <Trigger Property="DataGridColumnHeader.CanUserSort" Value="True">
+              <Setter TargetName="PART_HeaderOptions" Property="UIElement.Visibility" Value="Visible"/>
+            </Trigger>
+            <Trigger Property="DataGridColumnHeader.SortDirection" Value="Ascending">
+              <Setter TargetName="SortAscending" Property="MenuItem.IsChecked" Value="True"/>
+              <Setter TargetName="SortDescending" Property="MenuItem.IsChecked" Value="False"/>
+            </Trigger>
+            <Trigger Property="DataGridColumnHeader.SortDirection" Value="Descending">
+              <Setter TargetName="SortAscending" Property="MenuItem.IsChecked" Value="False"/>
+              <Setter TargetName="SortDescending" Property="MenuItem.IsChecked" Value="True"/>
+            </Trigger>
+            <Trigger Value="{x:Null}" Property="DataGridColumnHeader.SortDirection">
+              <Setter TargetName="SortAscending" Property="MenuItem.IsChecked" Value="False"/>
+              <Setter TargetName="SortDescending" Property="MenuItem.IsChecked" Value="False"/>
+            </Trigger>
+          </ControlTemplate.Triggers>
+        </ControlTemplate>
+      </Setter.Value>
+    </Setter>
+    <Style.Triggers>
+      <Trigger Property="UIElement.IsEnabled" Value="False">
+        <Setter Property="Control.Foreground" Value="{DynamicResource {x:Static styles:ShellColors.TextFillDisabledBrushKey}}"/>
+      </Trigger>
+      <Trigger Property="UIElement.IsKeyboardFocused" Value="True">
+        <Setter Property="Control.Background" Value="{DynamicResource {x:Static styles:ShellColors.SubtleFillSecondaryBrushKey}}"/>
+      </Trigger>
+    </Style.Triggers>
+  </Style>
+</ResourceDictionary>

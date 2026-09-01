@@ -34,7 +34,7 @@ public sealed class FetchXmlRequest : WebApiRequest<FetchXmlResponse>
 
         Method = HttpMethod.Get;
         RequestUri = new Uri(
-            $"{entitySetName}?fetchXml={WebUtility.UrlEncode(fetchXml)}&$count=true",
+            $"{entitySetName}?fetchXml={WebUtility.UrlEncode(fetchXml)}",
             UriKind.Relative);
 
         if (includeAnnotations)
