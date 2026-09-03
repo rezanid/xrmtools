@@ -4,6 +4,7 @@
 
 .DS_Store
 *.snk
+!src/key.public.snk
 **/*.model.json
 .nuget/
 **/nuget.config

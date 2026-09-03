@@ -16,6 +16,12 @@
     <AssemblyName>XrmTools.WebResourceProjectTemplate</AssemblyName>
     <TargetFrameworkVersion>v4.8</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
+    <SignAssembly>true</SignAssembly>
+    <PrivateStrongNameKeyFile>$(MSBuildProjectDirectory)\..\..\key.snk</PrivateStrongNameKeyFile>
+    <PublicStrongNameKeyFile>$(MSBuildProjectDirectory)\..\..\key.public.snk</PublicStrongNameKeyFile>
+    <AssemblyOriginatorKeyFile Condition="Exists('$(PrivateStrongNameKeyFile)')">$(PrivateStrongNameKeyFile)</AssemblyOriginatorKeyFile>
+    <AssemblyOriginatorKeyFile Condition="!Exists('$(PrivateStrongNameKeyFile)')">$(PublicStrongNameKeyFile)</AssemblyOriginatorKeyFile>
+    <DelaySign Condition="!Exists('$(PrivateStrongNameKeyFile)')">true</DelaySign>
     <GeneratePkgDefFile>false</GeneratePkgDefFile>
     <IncludeAssemblyInVSIXContainer>true</IncludeAssemblyInVSIXContainer>
     <IncludeDebugSymbolsInVSIXContainer>false</IncludeDebugSymbolsInVSIXContainer>
