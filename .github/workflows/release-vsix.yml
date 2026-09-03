@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
     inputs:
       nightly_tag:
-        description: "Nightly tag to promote (e.g. nightly/1.2.3.456)"
+        description: "Nightly tag to promote (e.g. nightly/vsix/1.2.3.456)"
         required: true
       release_title:
         description: "Optional GitHub Release title (default: v<version>)"
@@ -27,7 +27,7 @@ on:
         default: false
 
 permissions:
-  contents: write   # create tag + GitHub release
+  contents: read
   actions: read
 
 concurrency:
@@ -48,7 +48,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Show latest nightly/* tags in summary
-        uses: actions/github-script@v7
+        uses: actions/github-script@f28e40c7f34bde8b3046d885e986cb6290c5673b # v7
         with:
           script: |
             const tags = await github.paginate(github.rest.repos.listTags, {
@@ -72,26 +72,26 @@ jobs:
     runs-on: windows-latest
 
     environment: vs-marketplace
+    permissions:
+      contents: write
 
     steps:
       - name: Derive version from nightly tag
         id: derive
         shell: pwsh
+        env:
+          NIGHTLY_TAG_INPUT: ${{ inputs.nightly_tag }}
         run: |
-          $tag = "${{ inputs.nightly_tag }}".Trim()
-
-          if (-not $tag.StartsWith("nightly/vsix/")) {
-            throw "nightly_tag must start with 'nightly/vsix/'. Got: '$tag'"
+          $tag = $env:NIGHTLY_TAG_INPUT.Trim()
+          if ($tag -notmatch '^nightly/vsix/(?<version>[0-9]+(?:\.[0-9]+){1,3})$') {
+            throw "nightly_tag must match nightly/vsix/<numeric-version>. Got: '$tag'"
           }
 
-          $version = $tag.Substring("nightly/vsix/".Length).Trim()
-          if ([string]::IsNullOrWhiteSpace($version)) { throw "Nightly tag has no version segment: '$tag'" }
-
-          "version=$version" >> $env:GITHUB_OUTPUT
+          "version=$($Matches.version)" >> $env:GITHUB_OUTPUT
           "nightly_tag=$tag" >> $env:GITHUB_OUTPUT
 
       - name: Checkout nightly tag
-        uses: actions/checkout@v4
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
         with:
           ref: ${{ steps.derive.outputs.nightly_tag }}
           fetch-depth: 0
@@ -113,7 +113,7 @@ jobs:
           }
 
       - name: Setup build tooling (MSBuild + .NET)
-        uses: timheuer/bootstrap-dotnet@v1
+        uses: timheuer/bootstrap-dotnet@297919189407e7c88a8659dc534aa9daafe64908 # v2
         with:
           msbuild: "true"
           sdk: "true"
@@ -121,14 +121,53 @@ jobs:
 
       - name: Stamp VSIX version (exact)
         id: vsix_version
-        uses: timheuer/vsix-version-stamp@v2
+        uses: timheuer/vsix-version-stamp@9d38292e99e54046455bb68c6a2b5113d269a7d0 # v2
         with:
           manifest-file: ${{ env.VSIX_MANIFEST_PATH }}
           vsix-token-source-file: ${{ env.VSIX_MANIFEST_SOURCE_PATH }}
           version-number: ${{ steps.derive.outputs.version }}
 
-      - name: Build (after stamping)
-        run: msbuild "${{ env.SOLUTION_PATH }}" /v:m -restore /p:Configuration=${{ env.CONFIGURATION }}
+      - name: Materialize key, build, verify, and remove key
+        shell: pwsh
+        env:
+          STRONG_NAME_KEY_BASE64: ${{ secrets.STRONG_NAME_KEY_BASE64 }}
+        run: |
+          if ([string]::IsNullOrWhiteSpace($env:STRONG_NAME_KEY_BASE64)) {
+            throw "STRONG_NAME_KEY_BASE64 is unavailable. Configure it on the vs-marketplace environment."
+          }
+
+          $keyPath = Join-Path $env:GITHUB_WORKSPACE "src\key.snk"
+          $wizardAssembly = Join-Path $env:GITHUB_WORKSPACE "src\Templates\XrmTools.WebResourceProjectTemplate\bin\${{ env.CONFIGURATION }}\XrmTools.WebResourceProjectTemplate.dll"
+          $sn = "${env:ProgramFiles(x86)}\Microsoft SDKs\Windows\v10.0A\bin\NETFX 4.8 Tools\sn.exe"
+
+          try {
+            $keyBytes = [Convert]::FromBase64String($env:STRONG_NAME_KEY_BASE64)
+            [IO.File]::WriteAllBytes($keyPath, $keyBytes)
+
+            msbuild "${{ env.SOLUTION_PATH }}" /v:m -restore /p:Configuration=${{ env.CONFIGURATION }}
+            if ($LASTEXITCODE -ne 0) { throw "Signed MSBuild failed." }
+
+            & $sn -vf $wizardAssembly
+            if ($LASTEXITCODE -ne 0) { throw "Strong-name verification failed." }
+
+            $token = ([Reflection.AssemblyName]::GetAssemblyName($wizardAssembly).GetPublicKeyToken() |
+              ForEach-Object { $_.ToString("x2") }) -join ""
+            if ($token -ne "26be58bdab7122ab") {
+              throw "Unexpected wizard public-key token '$token'."
+            }
+          }
+          finally {
+            Remove-Item -LiteralPath $keyPath -Force -ErrorAction SilentlyContinue
+            Remove-Item Env:\STRONG_NAME_KEY_BASE64 -ErrorAction SilentlyContinue
+          }
+
+      - name: Guard - private key was removed
+        shell: pwsh
+        run: |
+          $keyPath = Join-Path $env:GITHUB_WORKSPACE "src\key.snk"
+          if (Test-Path -LiteralPath $keyPath) {
+            throw "Private strong-name key remains on disk."
+          }
 
       - name: Stage VSIX (deterministic)
         id: stage_vsix
@@ -155,14 +194,14 @@ jobs:
 
       - name: Publish to Visual Studio Marketplace
         if: ${{ !inputs.dry_run }}
-        uses: cezarypiatek/VsixPublisherAction@1.0
+        uses: cezarypiatek/VsixPublisherAction@9c6b58b5955df9901a6e9834be1d0a94cd54aeba # 1.0
         with:
           extension-file: ${{ steps.stage_vsix.outputs.vsix }}
           publish-manifest-file: "vs-publish.json"
           personal-access-code: ${{ secrets.VS_PUBLISHER_ACCESS_TOKEN }}
 
       - name: Create GitHub Release (tag = vsix/<version>)
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@3bb12739c298aeb8a4eeaf626c5b8d85266b0e65 # v2
         with:
           tag_name: vsix/${{ steps.derive.outputs.version }}
           name: ${{ inputs.release_title != '' && inputs.release_title || format('Xrm Tools v{0}', steps.derive.outputs.version) }}
