@@ -67,7 +67,7 @@ jobs:
           version-type: revision
           build-number: ${{ github.run_number }}
 
-      - name: Build with public key (delay-signed wizard)
+      - name: Build with public key (delay-signed wizard, no VSIX packaging)
         shell: pwsh
         run: |
           $privateKey = Join-Path $env:GITHUB_WORKSPACE "src\key.snk"
@@ -75,7 +75,13 @@ jobs:
             throw "Private strong-name key must not be present in the validation job."
           }
 
-          msbuild "${{ env.SOLUTION_PATH }}" /v:m -restore /p:Configuration=${{ env.CONFIGURATION }}
+          # CreatePkgDef loads registered assemblies. A delay-signed assembly cannot be
+          # loaded because its final strong-name signature is intentionally absent.
+          # The trusted package_signed job performs the complete VSIX packaging build.
+          msbuild "${{ env.SOLUTION_PATH }}" /v:m -restore `
+            /p:Configuration=${{ env.CONFIGURATION }} `
+            /p:GeneratePkgDefFile=false `
+            /p:CreateVsixContainer=false
           if ($LASTEXITCODE -ne 0) { throw "MSBuild failed." }
 
           $wizardAssembly = Join-Path $env:GITHUB_WORKSPACE "src\Templates\XrmTools.WebResourceProjectTemplate\bin\${{ env.CONFIGURATION }}\XrmTools.WebResourceProjectTemplate.dll"
@@ -114,7 +120,7 @@ jobs:
           }
 
       - name: Publish test report (PR Checks)
-        if: ${{ always() }}
+        if: ${{ always() && hashFiles('artifacts/test-results/*.trx') != '' }}
         uses: dorny/test-reporter@3eeb9fc888e82e8be2fb356bbeec2750231672bc # v1
         with:
           name: Unit Tests
@@ -123,7 +129,7 @@ jobs:
           fail-on-error: true
 
       - name: Upload test results artifact
-        if: ${{ always() }}
+        if: ${{ always() && hashFiles('artifacts/test-results/*.trx') != '' }}
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: test-results
