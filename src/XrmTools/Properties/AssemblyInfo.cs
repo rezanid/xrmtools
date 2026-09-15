@@ -34,51 +34,5 @@ using XrmTools;
     Capabilities = CdsProjectRegistration.Capabilities)]
 
 [assembly: ProvideCodeBase(
-    AssemblyName = @"XrmTools.Core",
-    CodeBase = @"$PackageFolder$\XrmTools.Core.dll")]
-
-[assembly: ProvideCodeBase(
-    AssemblyName = @"XrmTools.Meta",
-    CodeBase = @"$PackageFolder$\XrmTools.Meta.dll")]
-
-[assembly: ProvideCodeBase(
-    AssemblyName = @"XrmTools.WebApi",
-    CodeBase = @"$PackageFolder$\XrmTools.WebApi.dll")]
-
-[assembly: ProvideCodeBase(
-    AssemblyName = @"XrmTools.UI.Controls",
-    CodeBase = @"$PackageFolder$\XrmTools.UI.Controls.dll")]
-
-[assembly: ProvideCodeBase(
     AssemblyName = @"XrmTools.WebResourceProjectTemplate",
     CodeBase = @"$PackageFolder$\ProjectTemplates\XrmTools.WebResourceProjectTemplate.dll")]
-
-[assembly: ProvideCodeBase(
-    AssemblyName = @"Microsoft.Bcl.TimeProvider",
-    CodeBase = @"$PackageFolder$\Microsoft.Bcl.TimeProvider.dll")]
-
-[assembly: ProvideCodeBase(
-    AssemblyName = @"Microsoft.Identity.Client",
-    CodeBase = @"$PackageFolder$\Microsoft.Identity.Client.dll")]
-
-[assembly: ProvideCodeBase(
-    AssemblyName = @"Microsoft.Identity.Client.Extensions.Msal",
-    CodeBase = @"$PackageFolder$\Microsoft.Identity.Client.Extensions.Msal.dll")]
-
-[assembly: ProvideCodeBase(
-    AssemblyName = @"Polly",
-    CodeBase = @"$PackageFolder$\Polly.dll")]
-
-[assembly: ProvideCodeBase(
-    AssemblyName = @"Polly.Core",
-    CodeBase = @"$PackageFolder$\Polly.Core.dll")]
-
-[assembly: ProvideCodeBase(
-    AssemblyName = @"System.Net.Http.Formatting",
-    CodeBase = @"$PackageFolder$\System.Net.Http.Formatting.dll")]
-
-// The following is important for Microsoft.Identity.Client, when authenticating
-// otherwise there is a chance of FileNotFound: Assembly not found exception.
-[assembly: ProvideCodeBase(
-    AssemblyName = @"Microsoft.IdentityModel.Abstractions",
-    CodeBase = @"$PackageFolder$\Microsoft.IdentityModel.Abstractions.dll")]
