@@ -1,0 +1,27 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:ctrls="clr-namespace:XrmTools.Shell.Controls"
+                    xmlns:styles="clr-namespace:XrmTools.Shell.Styles">
+  <Style TargetType="{x:Type ctrls:Hyperlink}">
+    <Setter Property="FrameworkContentElement.Cursor" Value="Hand"/>
+    <Setter Property="FrameworkContentElement.FocusVisualStyle"
+            Value="{x:Static styles:ShellStyles.FocusVisual}"/>
+    <Setter Property="TextElement.Foreground"
+            Value="{DynamicResource {x:Static styles:ShellColors.HyperlinkFillPrimaryBrushKey}}"/>
+    <Setter Property="Inline.TextDecorations" Value="Underline"/>
+    <Style.Triggers>
+      <Trigger Property="ContentElement.IsEnabled" Value="False">
+        <Setter Property="TextElement.Foreground"
+                Value="{DynamicResource {x:Static styles:ShellColors.HyperlinkFillDisabledBrushKey}}"/>
+      </Trigger>
+      <Trigger Property="ContentElement.IsMouseOver" Value="True">
+        <Setter Property="TextElement.Foreground"
+                Value="{DynamicResource {x:Static styles:ShellColors.HyperlinkFillSecondaryBrushKey}}"/>
+      </Trigger>
+      <DataTrigger Binding="{Binding IsVisible, RelativeSource={RelativeSource AncestorType={x:Type UIElement}}, FallbackValue=False}"
+                   Value="False">
+        <Setter Property="ContentElement.IsEnabled" Value="False"/>
+      </DataTrigger>
+    </Style.Triggers>
+  </Style>
+</ResourceDictionary>

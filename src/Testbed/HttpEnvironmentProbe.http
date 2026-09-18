@@ -1,0 +1,26 @@
+# Open XrmToolsTest.slnx in the experimental instance with a Debug build of Xrm Tools.
+# Select the xrmtools-probe environment in this editor's environment dropdown.
+# Do not edit or reopen this HTTP file between requests, or switch the dropdown.
+# The disposable http-client.env.json changes every 10 seconds; keep it closed.
+# Run the request below repeatedly. Both query values should advance together
+# if environment-file changes invalidate cached process variables.
+# revision changes but q stays fixed: environment files reload, process values stay cached.
+# Neither changes: this experiment did not trigger live reevaluation.
+GET https://www.google.com/search?q={{$processEnv XRMTOOLS_HTTP_PROBE}}&revision={{ProbeRevision}}
+Cache-Control: no-cache
+
+### Original process-variable-only comparison
+# Run in the experimental Visual Studio instance after Xrm Tools loads (Debug build).
+# Repeat after at least 10 seconds without closing this file.
+# Compare the resolved request URL with the hosting debugger's Debug Output:
+# [XrmTools HTTP probe] XRMTOOLS_HTTP_PROBE=xrmtools-probe-N
+GET https://www.google.com/search?q={{$processEnv XRMTOOLS_HTTP_PROBE}}
+Cache-Control: no-cache
+
+###############
+GET https://www.google.com/search?q={{$processEnv XRMTOOLS_HTTP_PROBE}}
+Cache-Control: no-cache
+
+###############
+GET https://www.google.com/search?q={{$processEnv computername}}
+Cache-Control: no-cache 

@@ -1,0 +1,18 @@
+# Select your environment in the Xrm Tools toolbar.
+# Relative URLs resolve against that environment's /api/data/v9.2/ root.
+# Send Request authenticates at execution time; no tokens belong in this file.
+@limit = 5
+
+### Current user
+GET /WhoAmI
+
+### Account names
+GET /accounts?$select=accountid,name&$top={{limit}}
+Prefer: odata.include-annotations="*"
+
+### Metadata
+GET /EntityDefinitions?$select=LogicalName,DisplayName
+
+### Test
+GET https://services.odata.org/TripPinRESTierService/People
+
