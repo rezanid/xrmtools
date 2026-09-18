@@ -326,6 +326,8 @@
     <Compile Include="FetchXml\FetchXmlContentTypeDefinitions.cs" />
     <Compile Include="FetchXml\FetchXmlOptions.cs" />
     <Compile Include="FetchXml\FetchXmlParameterParser.cs" />
+    <Compile Include="FetchXml\FetchXmlExecutionInput.cs" />
+    <Compile Include="FetchXml\FetchXmlActionTagger.cs" />
     <Compile Include="FetchXml\Margin\BrowserMargin.cs" />
     <Compile Include="FetchXml\Margin\BrowserMarginProvider.cs" />
     <Compile Include="FetchXml\Margin\Debouncer.cs" />
