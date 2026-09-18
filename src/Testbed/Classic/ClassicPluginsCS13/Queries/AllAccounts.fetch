@@ -3,5 +3,6 @@
   <entity name="account">
 	  <attribute name="name" />
 	  <attribute name="description" />
+	  <attribute name="accountnumber" />
   </entity>
 </fetch>
