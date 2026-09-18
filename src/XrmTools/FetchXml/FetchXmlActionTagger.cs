@@ -1,4 +1,4 @@
-#nullable enable
+﻿#nullable enable
 namespace XrmTools.FetchXml;
 
 using Microsoft.VisualStudio.Shell;
@@ -19,7 +19,7 @@ using XrmTools.Xrm.Repositories;
 using Hyperlink = XrmTools.Shell.Controls.Hyperlink;
 
 [Export(typeof(IViewTaggerProvider)), ContentType(FetchXmlContentTypeDefinitions.ContentTypeName)]
-[TagType(typeof(IntraTextAdornmentTag)), TextViewRole(PredefinedTextViewRoles.Debuggable)]
+[TagType(typeof(InterLineAdornmentTag)), TextViewRole(PredefinedTextViewRoles.Debuggable)]
 internal sealed class FetchXmlActionProvider : IViewTaggerProvider
 {
     [Import] internal IWebApiService WebApi { get; set; } = null!;
@@ -34,13 +34,13 @@ internal sealed class FetchXmlActionProvider : IViewTaggerProvider
 }
 
 /// <summary>A single action for the document's fetch root, using the preview's execution command.</summary>
-internal sealed class FetchXmlActionTagger : ITagger<IntraTextAdornmentTag>, IDisposable
+internal sealed class FetchXmlActionTagger : ITagger<InterLineAdornmentTag>, IDisposable
 {
     private readonly ITextView view;
     private readonly BrowserMargin margin;
     private ITextSnapshot snapshot;
     private int? position;
-    private IntraTextAdornmentTag? tag;
+    private InterLineAdornmentTag? tag;
     private bool disposed;
     public event EventHandler<SnapshotSpanEventArgs>? TagsChanged;
 
@@ -73,27 +73,28 @@ internal sealed class FetchXmlActionTagger : ITagger<IntraTextAdornmentTag>, IDi
     private void ExecutionChanged(object? sender, EventArgs e) { tag = null; Invalidate(); }
     private void Invalidate() => TagsChanged?.Invoke(this, new SnapshotSpanEventArgs(new SnapshotSpan(snapshot, 0, snapshot.Length)));
 
-    public IEnumerable<ITagSpan<IntraTextAdornmentTag>> GetTags(NormalizedSnapshotSpanCollection spans)
+    public IEnumerable<ITagSpan<InterLineAdornmentTag>> GetTags(NormalizedSnapshotSpanCollection spans)
     {
         if (disposed || !position.HasValue || spans.Count == 0 || spans[0].Snapshot != snapshot) yield break;
         var span = new SnapshotSpan(snapshot, position.Value, 0);
         if (!spans.Any(s => s.IntersectsWith(span))) yield break;
         if (tag == null)
         {
-            var link = new Hyperlink(new Run(margin.IsExecuting ? "Cancel query" : "Execute query"))
-            { TextDecorations = null, ToolTip = "Execute the FetchXML document using the selected Xrm Tools environment." };
-            link.Click += (_, _) =>
+            tag = new InterLineAdornmentTag((_, _, _) =>
             {
-                ThreadHelper.ThrowIfNotOnUIThread();
-                if (!disposed) margin.ExecuteOrCancel();
-            };
-            var text = new TextBlock { FontSize = 12, Padding = new System.Windows.Thickness(2, 1, 2, 1) };
-            text.Inlines.Add(link);
-            var canvas = new Canvas { Width = 0, Height = 36, ClipToBounds = false };
-            canvas.Children.Add(text);
-            tag = new IntraTextAdornmentTag(canvas, null, 0, 36, 36, 0, PositionAffinity.Successor);
+                var link = new Hyperlink(new Run(margin.IsExecuting ? "Cancel query" : "Execute query"))
+                { TextDecorations = null, ToolTip = "Execute the FetchXML document using the selected Xrm Tools environment." };
+                link.Click += (_, _) =>
+                {
+                    ThreadHelper.ThrowIfNotOnUIThread();
+                    if (!disposed) margin.ExecuteOrCancel();
+                };
+                var text = new TextBlock { FontSize = 12, Padding = new System.Windows.Thickness(2, 0, 2, 0) };
+                text.Inlines.Add(link);
+                return text;
+            }, true, 15.0, HorizontalPositioningMode.TextRelative, 0.0, null);
         }
-        yield return new TagSpan<IntraTextAdornmentTag>(span, tag);
+        yield return new TagSpan<InterLineAdornmentTag>(span, tag);
     }
 
     private void Closed(object sender, EventArgs e) => Dispose();

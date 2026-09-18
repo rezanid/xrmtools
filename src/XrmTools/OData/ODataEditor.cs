@@ -53,7 +53,7 @@ internal sealed class ODataRightMarginProvider : IWpfTextViewMarginProvider
 }
 
 [Export(typeof(IViewTaggerProvider)), ContentType(ODataContentType.Name)]
-[TagType(typeof(IntraTextAdornmentTag)), TextViewRole(PredefinedTextViewRoles.Document)]
+[TagType(typeof(InterLineAdornmentTag)), TextViewRole(PredefinedTextViewRoles.Document)]
 internal sealed class ODataActionProvider : IViewTaggerProvider
 {
     [Import] internal ODataExecutionService Execution { get; set; } = null!;
@@ -65,11 +65,11 @@ internal sealed class ODataActionProvider : IViewTaggerProvider
     }
 }
 
-internal sealed class ODataActionTagger : ITagger<IntraTextAdornmentTag>, IDisposable
+internal sealed class ODataActionTagger : ITagger<InterLineAdornmentTag>, IDisposable
 {
     private readonly IWpfTextView view;
     private readonly ODataResponseMargin margin;
-    private readonly Dictionary<int, IntraTextAdornmentTag> tags = [];
+    private readonly Dictionary<int, InterLineAdornmentTag> tags = [];
     private ITextSnapshot snapshot;
     private ODataDocument document;
     private bool disposed;
@@ -100,7 +100,7 @@ internal sealed class ODataActionTagger : ITagger<IntraTextAdornmentTag>, IDispo
         TagsChanged?.Invoke(this, new SnapshotSpanEventArgs(new SnapshotSpan(snapshot, 0, snapshot.Length)));
     }
 
-    public IEnumerable<ITagSpan<IntraTextAdornmentTag>> GetTags(NormalizedSnapshotSpanCollection spans)
+    public IEnumerable<ITagSpan<InterLineAdornmentTag>> GetTags(NormalizedSnapshotSpanCollection spans)
     {
         if (disposed || spans.Count == 0 || spans[0].Snapshot != snapshot) yield break;
         foreach (var request in document.Requests)
@@ -110,37 +110,36 @@ internal sealed class ODataActionTagger : ITagger<IntraTextAdornmentTag>, IDispo
             if (!spans.Any(s => s.IntersectsWith(span))) continue;
             if (!tags.TryGetValue(request.Line, out var tag))
             {
-                var running = margin.IsRequestExecuting(snapshot, request.Line);
-                var capturedRequestId = running ? margin.ActiveRequestId : null;
-                var link = new Hyperlink(new Run(running ? "Cancel Request" : "Send Request"))
-                {
-                    TextDecorations = null,
-                    IsEnabled = running || !margin.IsExecuting,
-                    ToolTip = running ? "Cancel this request. Work already sent may still complete on the server." :
-                        "Send using the selected Xrm Tools environment. No automatic retries."
-                };
                 var capturedSnapshot = snapshot;
                 var capturedDocument = document;
-                link.Click += (_, _) =>
+                tag = new InterLineAdornmentTag((_, _, _) =>
                 {
-                    ThreadHelper.ThrowIfNotOnUIThread();
-                    if (disposed) return;
-                    // Cancellation belongs to the dispatched operation, even if the document was edited.
-                    if (capturedRequestId.HasValue) { margin.Cancel(capturedRequestId); return; }
-                    if (margin.IsExecuting || view.TextSnapshot != capturedSnapshot) return;
-                    margin.Send(capturedDocument, request);
-                };
-                var text = new TextBlock { FontSize = 12, Padding = new Thickness(2, 1, 2, 1) };
-                text.Inlines.Add(link);
-                if (request.Error != null) text.ToolTip = request.Error;
-                // A zero-width adornment reserves vertical space above the request without
-                // inserting characters or shifting the request line horizontally.
-                var canvas = new Canvas { Width = 0, Height = 36, ClipToBounds = false };
-                canvas.Children.Add(text);
-                tag = new IntraTextAdornmentTag(canvas, null, 0, 36, 36, 0, PositionAffinity.Successor);
+                    var running = margin.IsRequestExecuting(capturedSnapshot, request.Line);
+                    var capturedRequestId = running ? margin.ActiveRequestId : null;
+                    var link = new Hyperlink(new Run(running ? "Cancel Request" : "Send Request"))
+                    {
+                        TextDecorations = null,
+                        IsEnabled = running || !margin.IsExecuting,
+                        ToolTip = running ? "Cancel this request. Work already sent may still complete on the server." :
+                            "Send using the selected Xrm Tools environment. No automatic retries."
+                    };
+                    link.Click += (_, _) =>
+                    {
+                        ThreadHelper.ThrowIfNotOnUIThread();
+                        if (disposed) return;
+                        // Cancellation belongs to the dispatched operation, even if the document was edited.
+                        if (capturedRequestId.HasValue) { margin.Cancel(capturedRequestId); return; }
+                        if (margin.IsExecuting || view.TextSnapshot != capturedSnapshot) return;
+                        margin.Send(capturedDocument, request);
+                    };
+                    var text = new TextBlock { FontSize = 12, Padding = new Thickness(2, 0, 2, 0) };
+                    text.Inlines.Add(link);
+                    if (request.Error != null) text.ToolTip = request.Error;
+                    return text;
+                }, true, 15.0, HorizontalPositioningMode.TextRelative, 0.0, null);
                 tags.Add(request.Line, tag);
             }
-            yield return new TagSpan<IntraTextAdornmentTag>(span, tag);
+            yield return new TagSpan<InterLineAdornmentTag>(span, tag);
         }
     }
 

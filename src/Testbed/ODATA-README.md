@@ -1,6 +1,6 @@
 # Dataverse request editor
 
-Open `DataverseRequests.odata` in the experimental Visual Studio instance after building Xrm Tools. Select an environment using the existing Xrm Tools toolbar. Opening a `.odata` file is the opt-in; there is no separate enable setting. The editor shows a Send Request link above each request and a resizable response pane with Body, Headers and Raw tabs. The response pane starts hidden and appears on the first Send Request attempt, including when validation fails. It remains visible for the rest of that document session. Send at caret is also available once the pane is visible.
+Open `DataverseRequests.odata` in the experimental Visual Studio instance after building Xrm Tools. Select an environment using the existing Xrm Tools toolbar. Opening a `.odata` file is the opt-in; there is no separate enable setting. The editor shows a Send Request link above each request and a resizable response pane with Body, Headers and Raw tabs. The response pane starts hidden and appears on the first Send Request attempt, including when validation fails. It remains visible for the rest of that document session. Send at caret is also available once the pane is visible. While a request runs, its inline action becomes Cancel Request and other request actions are disabled. The action returns to Send Request when execution finishes.
 
 The environment name and URL are shown above the response. Refresh environment rereads the selection without signing in. Sending obtains a valid token using the existing authentication service. If the displayed environment no longer matches the current selection before dispatch, the request is rejected; refresh and send again. A request already dispatched stays bound to its captured environment. Cancel stops waiting; it cannot undo server-side work.
 
@@ -36,7 +36,7 @@ This is a separate content type, not Visual Studio's HTTP editor. Environment JS
 2. Execute WhoAmI and accounts; inspect body, response headers and the resolved request URL.
 3. Switch environments and confirm the target label updates. Change environment during authentication and verify no request is dispatched to the new target.
 4. Run a malformed request or unknown variable; confirm an actionable error without a network request.
-5. Start a request, cancel, close the document, and reopen it; verify the editor remains usable.
+5. Start a request using either its link or Send at caret. Verify only that request shows Cancel Request and other links are disabled. Insert lines above the running request and cancel using its moved link. Check that all links reset after success, failure and cancellation. Also close during execution and reopen; verify the editor remains usable.
 6. Check dark/light themes and resizing the response pane in both layouts. Change the layout option with a document open: its current response should remain intact; close and reopen it to apply the new layout. Verify Send Request and Send at caret both target the visible pane.
 
 The old HTTP probe document is retained for investigation history; its timer and environment-file writer have been removed.

@@ -16,3 +16,9 @@ GET /EntityDefinitions?$select=LogicalName,DisplayName
 ### Test
 GET https://services.odata.org/TripPinRESTierService/People
 
+### POST TEST
+POST /accounts
+
+{
+  "name": "Test Account"
+}
