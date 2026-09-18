@@ -72,6 +72,7 @@ internal sealed class ODataActionTagger : ITagger<IntraTextAdornmentTag>, IDispo
     private readonly Dictionary<int, IntraTextAdornmentTag> tags = [];
     private ITextSnapshot snapshot;
     private ODataDocument document;
+    private bool disposed;
     public event EventHandler<SnapshotSpanEventArgs>? TagsChanged;
 
     public ODataActionTagger(IWpfTextView view, ODataResponseMargin margin)
@@ -82,6 +83,7 @@ internal sealed class ODataActionTagger : ITagger<IntraTextAdornmentTag>, IDispo
         document = ODataDocument.Parse(snapshot.GetText());
         view.TextBuffer.Changed += Changed;
         view.Closed += Closed;
+        margin.ExecutionStateChanged += ExecutionChanged;
     }
 
     private void Changed(object sender, TextContentChangedEventArgs e)
@@ -92,9 +94,15 @@ internal sealed class ODataActionTagger : ITagger<IntraTextAdornmentTag>, IDispo
         TagsChanged?.Invoke(this, new SnapshotSpanEventArgs(new SnapshotSpan(snapshot, 0, snapshot.Length)));
     }
 
+    private void ExecutionChanged(object? sender, EventArgs e)
+    {
+        tags.Clear();
+        TagsChanged?.Invoke(this, new SnapshotSpanEventArgs(new SnapshotSpan(snapshot, 0, snapshot.Length)));
+    }
+
     public IEnumerable<ITagSpan<IntraTextAdornmentTag>> GetTags(NormalizedSnapshotSpanCollection spans)
     {
-        if (spans.Count == 0 || spans[0].Snapshot != snapshot) yield break;
+        if (disposed || spans.Count == 0 || spans[0].Snapshot != snapshot) yield break;
         foreach (var request in document.Requests)
         {
             var line = snapshot.GetLineFromLineNumber(request.Line);
@@ -102,13 +110,24 @@ internal sealed class ODataActionTagger : ITagger<IntraTextAdornmentTag>, IDispo
             if (!spans.Any(s => s.IntersectsWith(span))) continue;
             if (!tags.TryGetValue(request.Line, out var tag))
             {
-                var link = new Hyperlink(new Run("Send Request")) { TextDecorations = null, ToolTip = "Send using the selected Xrm Tools environment. No automatic retries." };
+                var running = margin.IsRequestExecuting(snapshot, request.Line);
+                var capturedRequestId = running ? margin.ActiveRequestId : null;
+                var link = new Hyperlink(new Run(running ? "Cancel Request" : "Send Request"))
+                {
+                    TextDecorations = null,
+                    IsEnabled = running || !margin.IsExecuting,
+                    ToolTip = running ? "Cancel this request. Work already sent may still complete on the server." :
+                        "Send using the selected Xrm Tools environment. No automatic retries."
+                };
                 var capturedSnapshot = snapshot;
                 var capturedDocument = document;
                 link.Click += (_, _) =>
                 {
                     ThreadHelper.ThrowIfNotOnUIThread();
-                    if (view.TextSnapshot != capturedSnapshot) return;
+                    if (disposed) return;
+                    // Cancellation belongs to the dispatched operation, even if the document was edited.
+                    if (capturedRequestId.HasValue) { margin.Cancel(capturedRequestId); return; }
+                    if (margin.IsExecuting || view.TextSnapshot != capturedSnapshot) return;
                     margin.Send(capturedDocument, request);
                 };
                 var text = new TextBlock { FontSize = 12, Padding = new Thickness(2, 1, 2, 1) };
@@ -128,6 +147,9 @@ internal sealed class ODataActionTagger : ITagger<IntraTextAdornmentTag>, IDispo
     private void Closed(object sender, EventArgs e) => Dispose();
     public void Dispose()
     {
+        if (disposed) return;
+        disposed = true;
+        margin.ExecutionStateChanged -= ExecutionChanged;
         view.TextBuffer.Changed -= Changed;
         view.Closed -= Closed;
         tags.Clear();

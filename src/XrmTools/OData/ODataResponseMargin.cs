@@ -5,6 +5,7 @@ using Microsoft.VisualStudio.Shell;
 using Microsoft.VisualStudio.PlatformUI;
 using System.Windows.Input;
 using Microsoft.VisualStudio.Text.Editor;
+using Microsoft.VisualStudio.Text;
 using Microsoft.VisualStudio.Threading;
 using System;
 using System.Linq;
@@ -39,6 +40,20 @@ internal sealed class ODataResponseMargin : Grid, IWpfTextViewMargin
     private readonly TextBox requestInfo = ResponseText();
     private readonly RadioButton[] responseTabs = new RadioButton[3];
     private CancellationTokenSource? active;
+    private ITrackingPoint? activeRequestPosition;
+    internal Guid? ActiveRequestId { get; private set; }
+    internal bool IsExecuting => active != null;
+    internal event EventHandler? ExecutionStateChanged;
+
+    internal bool IsRequestExecuting(ITextSnapshot snapshot, int line) =>
+        activeRequestPosition != null &&
+        activeRequestPosition.GetPoint(snapshot).GetContainingLine().LineNumber == line;
+
+    internal void Cancel(Guid? requestId)
+    {
+        ThreadHelper.ThrowIfNotOnUIThread();
+        if (!disposed && requestId.HasValue && requestId == ActiveRequestId) active?.Cancel();
+    }
     private DataverseEnvironment? displayedEnvironment;
     private bool disposed;
     private int environmentRevision;
@@ -164,7 +179,7 @@ internal sealed class ODataResponseMargin : Grid, IWpfTextViewMargin
             // Keep actions and environment readable in a narrow side pane.
             DockPanel.SetDock(actions, Dock.Top);
         }
-        cancel.Click += (_, _) => active?.Cancel();
+        cancel.Click += (_, _) => Cancel(ActiveRequestId);
         refresh.Click += (_, _) => RefreshEnvironment();
         send.Click += (_, _) =>
         {
@@ -192,6 +207,9 @@ internal sealed class ODataResponseMargin : Grid, IWpfTextViewMargin
         var captured = displayedEnvironment with { };
         var cts = new CancellationTokenSource();
         active = cts;
+        ActiveRequestId = Guid.NewGuid();
+        activeRequestPosition = view.TextSnapshot.CreateTrackingPoint(
+            view.TextSnapshot.GetLineFromLineNumber(request.Line).Start.Position, PointTrackingMode.Positive);
         send.IsEnabled = false;
         cancel.IsEnabled = true;
         responseTabs[0].IsChecked = true;
@@ -200,6 +218,7 @@ internal sealed class ODataResponseMargin : Grid, IWpfTextViewMargin
         time.Text = "--";
         size.Text = "--";
         status.Text = $"Authenticating and sending to {captured.Name ?? captured.Url}…";
+        ExecutionStateChanged?.Invoke(this, EventArgs.Empty);
         tasks.RunAsync(async () =>
         {
             try
@@ -233,8 +252,15 @@ internal sealed class ODataResponseMargin : Grid, IWpfTextViewMargin
             {
                 await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync();
                 active = null;
+                activeRequestPosition = null;
+                ActiveRequestId = null;
                 cts.Dispose();
-                if (!disposed) { send.IsEnabled = true; cancel.IsEnabled = false; }
+                if (!disposed)
+                {
+                    send.IsEnabled = true;
+                    cancel.IsEnabled = false;
+                    ExecutionStateChanged?.Invoke(this, EventArgs.Empty);
+                }
             }
         }).FileAndForget("XrmTools/OData/Send");
     }
