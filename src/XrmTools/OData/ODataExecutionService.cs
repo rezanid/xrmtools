@@ -1,4 +1,4 @@
-#nullable enable
+﻿#nullable enable
 namespace XrmTools.OData;
 
 using System;
@@ -40,6 +40,15 @@ internal sealed class ODataTransport : IODataTransport
         handler.UseProxy = !string.IsNullOrWhiteSpace(options.Proxy);
         if (handler.UseProxy) handler.Proxy = new WebProxy(options.Proxy);
         using var client = new HttpClient(handler) { Timeout = TimeSpan.FromMinutes(2), MaxResponseContentBufferSize = 4 * 1024 * 1024 };
+        return await SendCoreAsync(client, request, cancellationToken).ConfigureAwait(false);
+    }
+
+    internal static async Task<ODataResponse> SendCoreAsync(HttpClient client, HttpRequestMessage request, CancellationToken cancellationToken)
+    {
+        // .NET Framework HttpClient disposes request content after sending.
+        // Capture the redacted display before dispatch, so formatting cannot reread disposed content.
+        var capturedRequest = await ODataResponseFormatter.RequestAsync(request).ConfigureAwait(false);
+        cancellationToken.ThrowIfCancellationRequested();
         var watch = Stopwatch.StartNew();
         // One send only: never retry mutations or forward bearer credentials across redirects.
         using var response = await client.SendAsync(request, HttpCompletionOption.ResponseContentRead, cancellationToken).ConfigureAwait(false);
@@ -56,7 +65,7 @@ internal sealed class ODataTransport : IODataTransport
             Headers = ODataResponseFormatter.Headers(response.Headers) + ODataResponseFormatter.Headers(response.Content?.Headers),
             Body = body,
             Request = $"{request.Method} {request.RequestUri}",
-            Raw = await ODataResponseFormatter.RawAsync(request, response, body).ConfigureAwait(false),
+            Raw = ODataResponseFormatter.Raw(capturedRequest, response, body),
         };
     }
 }

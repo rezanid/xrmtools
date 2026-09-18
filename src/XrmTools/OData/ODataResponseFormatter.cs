@@ -1,4 +1,4 @@
-#nullable enable
+﻿#nullable enable
 namespace XrmTools.OData;
 
 using System;
@@ -29,12 +29,18 @@ internal static class ODataResponseFormatter
         return text.ToString();
     }
 
-    public static async Task<string> RawAsync(HttpRequestMessage request, HttpResponseMessage response, string responseBody)
+    public static async Task<string> RequestAsync(HttpRequestMessage request)
     {
         var text = new StringBuilder("=== REQUEST ===").AppendLine()
             .AppendLine($"{request.Method} {request.RequestUri} HTTP/{request.Version}")
             .Append(Headers(request.Headers)).Append(Headers(request.Content?.Headers)).AppendLine();
         if (request.Content != null) text.AppendLine(await request.Content.ReadAsStringAsync().ConfigureAwait(false));
+        return text.ToString();
+    }
+
+    public static string Raw(string capturedRequest, HttpResponseMessage response, string responseBody)
+    {
+        var text = new StringBuilder(capturedRequest);
         text.AppendLine().AppendLine("=== RESPONSE ===")
             .AppendLine($"HTTP/{response.Version} {(int)response.StatusCode} {response.ReasonPhrase}")
             .Append(Headers(response.Headers)).Append(Headers(response.Content?.Headers)).AppendLine().Append(responseBody);
