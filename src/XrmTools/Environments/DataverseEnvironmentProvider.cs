@@ -13,7 +13,8 @@ using XrmTools.Options;
 using XrmTools.Settings;
 
 [Export(typeof(IEnvironmentProvider))]
-public class DataverseEnvironmentProvider : IEnvironmentProvider
+[Export(typeof(IEnvironmentSelection))]
+public class DataverseEnvironmentProvider : IEnvironmentProvider, IEnvironmentSelection
 {
     public static event Action<DataverseEnvironment>? EnvironmentChanged;
 
@@ -23,6 +24,14 @@ public class DataverseEnvironmentProvider : IEnvironmentProvider
     IXrmHttpClientFactory HttpClientFactory { get; set; } = null!;
 
     public async Task<DataverseEnvironment?> GetActiveEnvironmentAsync(bool allowInteraction)
+    {
+        var environment = await GetSelectedEnvironmentAsync();
+        if (environment == null) return null;
+        await VerifyAuthenticatedAsync(environment, allowInteraction).ConfigureAwait(false);
+        return environment;
+    }
+
+    public async Task<DataverseEnvironment?> GetSelectedEnvironmentAsync()
     {
         var environment = (await GeneralOptions.GetLiveInstanceAsync()).CurrentEnvironmentStorage switch
         {
@@ -35,8 +44,6 @@ public class DataverseEnvironmentProvider : IEnvironmentProvider
         };
 
         if (environment?.IsValid != true) return null;
-
-        await VerifyAuthenticatedAsync(environment, allowInteraction).ConfigureAwait(false);
 
         return environment;
     }

@@ -1,0 +1,194 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" xmlns:ctrls="clr-namespace:XrmTools.Shell.Controls" xmlns:styles="clr-namespace:XrmTools.Shell.Styles" xmlns:platformUI="clr-namespace:Microsoft.VisualStudio.PlatformUI;assembly=Microsoft.VisualStudio.Shell.15.0">
+    <Style x:Key="ThemedFocusVisual">
+      <Setter Property="Control.Template">
+        <Setter.Value>
+          <ControlTemplate>
+            <Rectangle Stroke="{DynamicResource {x:Static platformUI:EnvironmentColors.SystemHighlightBrushKey}}"
+                       StrokeThickness="1" SnapsToDevicePixels="True"/>
+          </ControlTemplate>
+        </Setter.Value>
+      </Setter>
+    </Style>
+    <Style x:Key="ViewTabStyle" TargetType="{x:Type RadioButton}">
+      <Setter Property="Control.Background" Value="Transparent"/>
+      <Setter Property="Control.Foreground"
+              Value="{DynamicResource {x:Static platformUI:EnvironmentColors.ToolWindowTextBrushKey}}"/>
+      <Setter Property="Control.BorderBrush" Value="Transparent"/>
+      <Setter Property="Control.Padding" Value="12,6"/>
+      <Setter Property="FrameworkElement.Margin" Value="0,0,4,0"/>
+      <Setter Property="FrameworkElement.Cursor" Value="Hand"/>
+      <Setter Property="FrameworkElement.FocusVisualStyle" Value="{x:Null}"/>
+      <Setter Property="Control.Template">
+        <Setter.Value>
+          <ControlTemplate TargetType="{x:Type RadioButton}">
+            <Border x:Name="TabBorder" Background="{TemplateBinding Control.Background}"
+                    Padding="{TemplateBinding Control.Padding}" BorderThickness="0,0,0,2" BorderBrush="Transparent">
+              <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+            </Border>
+            <ControlTemplate.Triggers>
+              <Trigger Property="ToggleButton.IsChecked" Value="True">
+                <Setter TargetName="TabBorder"
+                        Value="{DynamicResource {x:Static platformUI:EnvironmentColors.FileTabSelectedBorderBrushKey}}"
+                        Property="Border.BorderBrush"/>
+                <Setter Property="Control.FontWeight" Value="SemiBold"/>
+              </Trigger>
+              <Trigger Property="UIElement.IsMouseOver" Value="True">
+                <Setter TargetName="TabBorder"
+                        Value="{DynamicResource {x:Static platformUI:EnvironmentColors.CommandBarMouseOverBackgroundGradientBrushKey}}"
+                        Property="Border.Background"/>
+              </Trigger>
+              <Trigger Property="UIElement.IsKeyboardFocused" Value="True">
+                <Setter TargetName="TabBorder"
+                        Value="{DynamicResource {x:Static platformUI:EnvironmentColors.SystemHighlightBrushKey}}"
+                        Property="Border.BorderBrush"/>
+                <Setter TargetName="TabBorder"
+                        Value="{DynamicResource {x:Static platformUI:EnvironmentColors.CommandBarMouseOverBackgroundGradientBrushKey}}"
+                        Property="Border.Background"/>
+              </Trigger>
+            </ControlTemplate.Triggers>
+          </ControlTemplate>
+        </Setter.Value>
+      </Setter>
+    </Style>
+  <ControlTemplate x:Key="ODataHeadersScrollViewerTemplate" TargetType="{x:Type ctrls:ScrollViewer}">
+    <Grid>
+      <Grid.ColumnDefinitions>
+        <ColumnDefinition x:Name="PresenterColumn" Width="*"/>
+        <ColumnDefinition x:Name="ScrollBarColumn" Width="Auto"/>
+      </Grid.ColumnDefinitions>
+      <Grid.RowDefinitions>
+        <RowDefinition x:Name="HeaderRow" Height="Auto"/>
+        <RowDefinition x:Name="PresenterRow" Height="*"/>
+        <RowDefinition x:Name="ScrollBarRow" Height="Auto"/>
+      </Grid.RowDefinitions>
+      <DataGridColumnHeadersPresenter x:Name="PART_ColumnHeadersPresenter" Grid.Column="0" Grid.ColumnSpan="2" Grid.Row="0"/>
+      <ScrollContentPresenter x:Name="PART_ScrollContentPresenter" Grid.Column="0" Grid.Row="1"
+                              CanContentScroll="{TemplateBinding ScrollViewer.CanContentScroll}"
+                              Margin="{TemplateBinding Control.Padding}"
+                              VerticalAlignment="{TemplateBinding Control.VerticalContentAlignment}"/>
+      <ctrls:ScrollBar x:Name="PART_VerticalScrollBar" Grid.Column="0" Grid.ColumnSpan="2" Grid.Row="1"
+                       HorizontalAlignment="Right" Maximum="{TemplateBinding ScrollViewer.ScrollableHeight}"
+                       Orientation="Vertical" Value="{TemplateBinding ScrollViewer.VerticalOffset}"
+                       ViewportSize="{TemplateBinding ScrollViewer.ViewportHeight}"
+                       Visibility="{TemplateBinding ScrollViewer.ComputedVerticalScrollBarVisibility}"/>
+      <ctrls:ScrollBar x:Name="PART_HorizontalScrollBar" Grid.Column="0" Grid.Row="1" Grid.RowSpan="2"
+                       Maximum="{TemplateBinding ScrollViewer.ScrollableWidth}" Orientation="Horizontal"
+                       Value="{TemplateBinding ScrollViewer.HorizontalOffset}" VerticalAlignment="Bottom"
+                       ViewportSize="{TemplateBinding ScrollViewer.ViewportWidth}"
+                       Visibility="{TemplateBinding ScrollViewer.ComputedHorizontalScrollBarVisibility}"/>
+    </Grid>
+    <ControlTemplate.Triggers>
+      <Trigger Property="ScrollViewer.ComputedHorizontalScrollBarVisibility" Value="Visible">
+        <Setter TargetName="ScrollBarRow" Value="{x:Static ctrls:ScrollViewer.ScrollBarReservedSize}" Property="RowDefinition.MinHeight"/>
+      </Trigger>
+      <Trigger Property="ScrollViewer.ComputedVerticalScrollBarVisibility" Value="Visible">
+        <Setter TargetName="ScrollBarColumn" Value="{x:Static ctrls:ScrollViewer.ScrollBarReservedSize}" Property="ColumnDefinition.MinWidth"/>
+      </Trigger>
+      <MultiDataTrigger>
+        <MultiDataTrigger.Conditions>
+          <Condition Binding="{Binding AreDynamicScrollBarsEnabled, Source={x:Static styles:VisualOptions.Instance}}" Value="False"/>
+          <Condition Binding="{Binding ComputedHorizontalScrollBarVisibility, RelativeSource={RelativeSource Self}}" Value="Visible"/>
+        </MultiDataTrigger.Conditions>
+        <Setter TargetName="ScrollBarRow" Value="{Binding SystemHorizontalScrollBarHeight, Source={x:Static styles:VisualOptions.Instance}}"
+                Property="RowDefinition.MinHeight"/>
+      </MultiDataTrigger>
+      <MultiDataTrigger>
+        <MultiDataTrigger.Conditions>
+          <Condition Binding="{Binding AreDynamicScrollBarsEnabled, Source={x:Static styles:VisualOptions.Instance}}" Value="False"/>
+          <Condition Binding="{Binding ComputedVerticalScrollBarVisibility, RelativeSource={RelativeSource Self}}" Value="Visible"/>
+        </MultiDataTrigger.Conditions>
+        <Setter TargetName="ScrollBarColumn" Value="{Binding SystemVerticalScrollBarWidth, Source={x:Static styles:VisualOptions.Instance}}"
+                Property="ColumnDefinition.MinWidth"/>
+      </MultiDataTrigger>
+    </ControlTemplate.Triggers>
+  </ControlTemplate>
+    <Style TargetType="{x:Type DataGrid}">
+      <Setter Property="Control.Template">
+        <Setter.Value>
+          <ControlTemplate TargetType="{x:Type DataGrid}">
+            <Border Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}"
+                    BorderThickness="{TemplateBinding BorderThickness}">
+              <ctrls:ScrollViewer x:Name="DG_ScrollViewer" Focusable="False"
+                  CanContentScroll="{TemplateBinding ScrollViewer.CanContentScroll}"
+                  HorizontalScrollBarVisibility="{TemplateBinding ScrollViewer.HorizontalScrollBarVisibility}"
+                  VerticalScrollBarVisibility="{TemplateBinding ScrollViewer.VerticalScrollBarVisibility}"
+                  Template="{StaticResource ODataHeadersScrollViewerTemplate}">
+                <ItemsPresenter/>
+              </ctrls:ScrollViewer>
+            </Border>
+          </ControlTemplate>
+        </Setter.Value>
+      </Setter>
+      <Setter Property="Control.Background"
+              Value="{DynamicResource {x:Static platformUI:EnvironmentColors.ToolWindowBackgroundBrushKey}}"/>
+      <Setter Property="Control.Foreground"
+              Value="{DynamicResource {x:Static platformUI:EnvironmentColors.ToolWindowTextBrushKey}}"/>
+      <Setter Property="Control.BorderThickness" Value="0"/>
+      <Setter Property="DataGrid.RowBackground"
+              Value="{DynamicResource {x:Static platformUI:EnvironmentColors.ToolWindowBackgroundBrushKey}}"/>
+      <Setter Property="DataGrid.AlternatingRowBackground"
+              Value="{DynamicResource {x:Static platformUI:EnvironmentColors.CommandBarGradientBrushKey}}"/>
+      <Setter Property="DataGrid.HorizontalGridLinesBrush"
+              Value="{DynamicResource {x:Static platformUI:EnvironmentColors.ToolWindowBorderBrushKey}}"/>
+      <Setter Property="DataGrid.VerticalGridLinesBrush"
+              Value="{DynamicResource {x:Static platformUI:EnvironmentColors.ToolWindowBorderBrushKey}}"/>
+    </Style>
+    <Style TargetType="{x:Type DataGridColumnHeader}">
+      <Setter Property="Control.Background"
+              Value="{DynamicResource {x:Static platformUI:EnvironmentColors.CommandBarGradientBrushKey}}"/>
+      <Setter Property="Control.Foreground"
+              Value="{DynamicResource {x:Static platformUI:EnvironmentColors.ToolWindowTextBrushKey}}"/>
+      <Setter Property="Control.BorderBrush"
+              Value="{DynamicResource {x:Static platformUI:EnvironmentColors.ToolWindowBorderBrushKey}}"/>
+      <Setter Property="Control.BorderThickness" Value="0,0,1,1"/>
+      <Setter Property="Control.Padding" Value="8,6"/>
+      <Setter Property="Control.FontWeight" Value="SemiBold"/>
+    </Style>
+    <Style TargetType="{x:Type DataGridCell}">
+      <Setter Property="Control.Background" Value="Transparent"/>
+      <Setter Property="Control.Foreground"
+              Value="{DynamicResource {x:Static platformUI:EnvironmentColors.ToolWindowTextBrushKey}}"/>
+      <Setter Property="Control.BorderBrush" Value="Transparent"/>
+      <Setter Property="Control.Padding" Value="6,4"/>
+      <Setter Property="FrameworkElement.FocusVisualStyle" Value="{StaticResource ThemedFocusVisual}"/>
+      <Style.Triggers>
+        <Trigger Property="DataGridCell.IsSelected" Value="True">
+          <Setter Property="Control.Background"
+                  Value="{DynamicResource {x:Static platformUI:EnvironmentColors.SystemHighlightBrushKey}}"/>
+          <Setter Property="Control.Foreground"
+                  Value="{DynamicResource {x:Static platformUI:EnvironmentColors.SystemHighlightTextBrushKey}}"/>
+        </Trigger>
+      </Style.Triggers>
+    </Style>
+    <Style TargetType="{x:Type DataGridRow}">
+      <Setter Property="Control.Background" Value="Transparent"/>
+      <Style.Triggers>
+        <Trigger Property="DataGridRow.IsSelected" Value="True">
+          <Setter Property="Control.Background"
+                  Value="{DynamicResource {x:Static platformUI:EnvironmentColors.SystemHighlightBrushKey}}"/>
+        </Trigger>
+        <Trigger Property="UIElement.IsMouseOver" Value="True">
+          <Setter Property="Control.Background"
+                  Value="{DynamicResource {x:Static platformUI:EnvironmentColors.CommandBarMouseOverBackgroundGradientBrushKey}}"/>
+        </Trigger>
+      </Style.Triggers>
+    </Style>
+    <Style x:Key="RawTextBoxStyle" TargetType="{x:Type TextBox}">
+      <Setter Property="Control.Background"
+              Value="{DynamicResource {x:Static platformUI:EnvironmentColors.ToolWindowBackgroundBrushKey}}"/>
+      <Setter Property="Control.Foreground"
+              Value="{DynamicResource {x:Static platformUI:EnvironmentColors.ToolWindowTextBrushKey}}"/>
+      <Setter Property="Control.BorderBrush"
+              Value="{DynamicResource {x:Static platformUI:EnvironmentColors.ToolWindowBorderBrushKey}}"/>
+      <Setter Property="TextBoxBase.CaretBrush"
+              Value="{DynamicResource {x:Static platformUI:EnvironmentColors.ToolWindowTextBrushKey}}"/>
+      <Setter Property="TextBoxBase.SelectionBrush"
+              Value="{DynamicResource {x:Static platformUI:EnvironmentColors.SystemHighlightBrushKey}}"/>
+      <Setter Property="FrameworkElement.FocusVisualStyle" Value="{StaticResource ThemedFocusVisual}"/>
+    </Style>
+    <Style TargetType="{x:Type ctrls:ScrollViewer}">
+      <Setter Property="Control.Background"
+              Value="{DynamicResource {x:Static platformUI:EnvironmentColors.ToolWindowBackgroundBrushKey}}"/>
+      <Setter Property="FrameworkElement.FocusVisualStyle" Value="{StaticResource ThemedFocusVisual}"/>
+    </Style>
+  </ResourceDictionary>

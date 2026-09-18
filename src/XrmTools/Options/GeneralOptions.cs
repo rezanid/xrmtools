@@ -87,6 +87,13 @@ internal class GeneralOptions : BaseOptionModel<GeneralOptions>
     [DefaultValue(false)]
     public bool ShowPluginRegistrationSuccessDialog { get; set; }
 
+    [Category("OData Editor")]
+    [DisplayName("Preview location")]
+    [Description("Determines if the preview window should be shown on the side or below the document. Close and reopen existing .odata documents to apply a change.")]
+    [DefaultValue(ODataResponseLayout.Below)]
+    [TypeConverter(typeof(EnumDescriptionConverter))]
+    public ODataResponseLayout ODataResponseLayout { get; set; } = ODataResponseLayout.Below;
+
     [Category("Advanced")]
     [DisplayName("Proxy")]
     [Description("Use a proxy server for all communications with Power Platform. Requires restarting Visual Studio.")]
@@ -123,5 +130,12 @@ public enum DataverseSolutionProjectSdk
 
     [Description("Microsoft.PowerApps.MSBuild.Solution (PAC CLI default)")]
     MicrosoftPowerApps
+}
+public enum ODataResponseLayout
+{
+    [Description("Below the document")]
+    Below,
+    [Description("On the side")]
+    Right
 }
 #nullable restore

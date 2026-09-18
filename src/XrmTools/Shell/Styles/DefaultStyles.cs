@@ -7,6 +7,9 @@ internal static class DefaultStyles
 {
     public static DeferredStyleDictionary Instance { get; } = DeferredStyleDictionary.Create(new Dictionary<object, string>()
     {
+        { typeof(TabControl), "/XrmTools;component/Shell/Styles/TabControlStyle.xaml" },
+        { typeof(TabItem), "/XrmTools;component/Shell/Styles/TabItemStyle.xaml" },
+        { typeof(Hyperlink), "/XrmTools;component/Shell/Styles/HyperlinkStyle.xaml" },
         {
           typeof (Button),
           "/XrmTools;component/Shell/Styles/ButtonStyle.xaml"
