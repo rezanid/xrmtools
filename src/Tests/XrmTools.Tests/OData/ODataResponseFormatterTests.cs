@@ -1,4 +1,4 @@
-namespace XrmTools.Tests.OData;
+﻿namespace XrmTools.Tests.OData;
 
 using System.Net;
 using System.Net.Http;
@@ -19,7 +19,7 @@ public class ODataResponseFormatterTests
         request.Headers.Add("Prefer", "return=representation");
         using var response = new HttpResponseMessage(HttpStatusCode.Created) { Content = new StringContent("{\"id\":1}") };
         response.Headers.Add("Set-Cookie", "session=secret-response-cookie");
-        string raw = await ODataResponseFormatter.RawAsync(request, response, "{\"id\":1}");
+        string raw = ODataResponseFormatter.Raw(await ODataResponseFormatter.RequestAsync(request), response, "{\"id\":1}");
         Assert.Contains("=== REQUEST ===", raw);
         Assert.Contains("POST https://example.test/api/data/v9.2/accounts HTTP/1.1", raw);
         Assert.Contains("Prefer: return=representation", raw);
@@ -37,7 +37,7 @@ public class ODataResponseFormatterTests
     {
         using var request = new HttpRequestMessage(HttpMethod.Get, "https://example.test/WhoAmI");
         using var response = new HttpResponseMessage(HttpStatusCode.NoContent);
-        Assert.Contains("204 No Content", await ODataResponseFormatter.RawAsync(request, response, ""));
+        Assert.Contains("204 No Content", ODataResponseFormatter.Raw(await ODataResponseFormatter.RequestAsync(request), response, ""));
     }
 
     [Theory]
