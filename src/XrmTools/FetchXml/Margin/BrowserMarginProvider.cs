@@ -1,8 +1,6 @@
 ﻿namespace XrmTools.FetchXml.Margin;
-using Microsoft.VisualStudio.Shell;
 using Microsoft.VisualStudio.Text.Editor;
 using Microsoft.VisualStudio.Utilities;
-using System;
 using System.ComponentModel.Composition;
 using XrmTools.Logging.Compatibility;
 using XrmTools.Options;
@@ -21,32 +19,16 @@ internal class PreviewMarginVerticalProvider(
     IRepositoryFactory repositoryFactory,
     ILogger<PreviewMarginVerticalProvider> logger) : IWpfTextViewMarginProvider
 {
-    private BrowserMargin _browserMargin;
-
     public IWpfTextViewMargin CreateMargin(IWpfTextViewHost wpfTextViewHost, IWpfTextViewMargin marginContainer)
     {
-        if (FetchXmlOptions.Instance.PreviewWindowLocation == FetchXmlPreviewLocation.Horizontal)
+        var margin = wpfTextViewHost.TextView.Properties.GetOrCreateSingletonProperty(
+            () => new BrowserMargin(wpfTextViewHost.TextView, webApi, repositoryFactory, logger));
+        if (margin.PreviewLocation == FetchXmlPreviewLocation.Horizontal)
         {
             return null;
         }
 
-        FetchXmlOptions.Saved += Options_Saved;
-        wpfTextViewHost.Closed += OnWpfTextViewHostClosed;
-        _browserMargin = new BrowserMargin(wpfTextViewHost.TextView, webApi, repositoryFactory, logger);
-
-        return wpfTextViewHost.TextView.Properties.GetOrCreateSingletonProperty(() => _browserMargin);
-    }
-
-    private void OnWpfTextViewHostClosed(object sender, EventArgs e)
-    {
-        IWpfTextViewHost host = (IWpfTextViewHost)sender;
-        host.Closed -= OnWpfTextViewHostClosed;
-        FetchXmlOptions.Saved -= Options_Saved;
-    }
-
-    private void Options_Saved(FetchXmlOptions options)
-    {
-        _browserMargin?.RefreshAsync().FireAndForget();
+        return margin;
     }
 }
 
@@ -62,31 +44,15 @@ internal class PreviewMarginHorizontalProvider(
     IRepositoryFactory repositoryFactory,
     ILogger<PreviewMarginHorizontalProvider> logger) : IWpfTextViewMarginProvider
 {
-    private BrowserMargin _browserMargin;
-
     public IWpfTextViewMargin CreateMargin(IWpfTextViewHost wpfTextViewHost, IWpfTextViewMargin marginContainer)
     {
-        if (FetchXmlOptions.Instance.PreviewWindowLocation == FetchXmlPreviewLocation.Vertical)
+        var margin = wpfTextViewHost.TextView.Properties.GetOrCreateSingletonProperty(
+            () => new BrowserMargin(wpfTextViewHost.TextView, webApi, repositoryFactory, logger));
+        if (margin.PreviewLocation == FetchXmlPreviewLocation.Vertical)
         {
             return null;
         }
 
-        FetchXmlOptions.Saved += Options_Saved;
-        wpfTextViewHost.Closed += OnWpfTextViewHostClosed;
-        _browserMargin = new BrowserMargin(wpfTextViewHost.TextView, webApi, repositoryFactory, logger);
-
-        return wpfTextViewHost.TextView.Properties.GetOrCreateSingletonProperty(() => _browserMargin);
-    }
-
-    private void OnWpfTextViewHostClosed(object sender, EventArgs e)
-    {
-        IWpfTextViewHost host = (IWpfTextViewHost)sender;
-        host.Closed -= OnWpfTextViewHostClosed;
-        FetchXmlOptions.Saved -= Options_Saved;
-    }
-
-    private void Options_Saved(FetchXmlOptions options)
-    {
-        _browserMargin?.RefreshAsync().FireAndForget();
+        return margin;
     }
 }

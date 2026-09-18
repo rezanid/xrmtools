@@ -2,6 +2,7 @@ namespace XrmTools.FetchXml.Margin;
 
 using Microsoft.VisualStudio.Shell;
 using Microsoft.VisualStudio.Text.Editor;
+using Microsoft.VisualStudio.Threading;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
@@ -14,8 +15,9 @@ using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
 using System.Windows.Data;
 using System.Windows.Input;
+using System.Windows.Media;
+using Microsoft.VisualStudio.PlatformUI;
 using XrmTools.Core.Repositories;
-using XrmTools.FetchXml.CodeGen;
 using XrmTools.Logging.Compatibility;
 using XrmTools.Options;
 using XrmTools.Shell.Styles;
@@ -37,7 +39,6 @@ internal class BrowserMargin : DockPanel, IWpfTextViewMargin
     private readonly FetchXmlDocument document;
     private readonly ITextView textView;
     private readonly Dictionary<DataGridColumn, int> columnIndexes = [];
-    private FrameworkElement resultsView;
     private ShellDataGrid resultsGrid = null!;
     private ShellTextBlock statusText = null!;
     private ShellButton actionButton = null!;
@@ -45,6 +46,16 @@ internal class BrowserMargin : DockPanel, IWpfTextViewMargin
     private CancellationTokenSource? activeFetchCts;
     private Guid? activeRequestId;
     private bool isDisposed;
+    private CancellationTokenSource? pendingFetchCts;
+    private Border statusBadge = null!;
+    private TextBlock statusLabel = null!;
+    private TextBox errorDetails = null!;
+    private bool hasResults;
+    private bool explicitlyShown;
+    private bool previewEnabled = FetchXmlOptions.Instance.EnableFetchXmlPreviewWindow;
+    internal FetchXmlPreviewLocation PreviewLocation { get; } = FetchXmlOptions.Instance.PreviewWindowLocation;
+    internal bool IsExecuting => activeFetchCts is { IsCancellationRequested: false };
+    internal event EventHandler? ExecutionStateChanged;
 
     public BrowserMargin(ITextView textView, IWebApiService webApi, IRepositoryFactory repositoryFactory, ILogger logger)
     {
@@ -53,24 +64,25 @@ internal class BrowserMargin : DockPanel, IWpfTextViewMargin
         this.textView = textView ?? throw new ArgumentNullException(nameof(textView));
         document = textView.TextBuffer.GetFetchXmlDocument(logger);
 
-        Visibility = FetchXmlOptions.Instance.EnableFetchXmlPreviewWindow ? Visibility.Visible : Visibility.Collapsed;
+        Visibility = previewEnabled ? Visibility.Visible : Visibility.Collapsed;
         SetResourceReference(BackgroundProperty, VsBrushes.ToolWindowBackgroundKey);
 
-        resultsView = CreateResultsView();
-        CreateMarginControls(resultsView);
+        CreateMarginControls(CreateResultsView());
 
         Loaded += OnLoaded;
+        textView.Closed += OnViewClosed;
         document.Parsed += UpdateResults;
         FetchXmlOptions.Saved += OptionsSaved;
     }
 
     public FrameworkElement VisualElement => this;
 
-    public double MarginSize => FetchXmlOptions.Instance.PreviewWindowLocation == FetchXmlPreviewLocation.Vertical
-        ? FetchXmlOptions.Instance.FetchXmlPreviewWindowWidth
-        : FetchXmlOptions.Instance.FetchXmlPreviewWindowHeight;
+    public double MarginSize => Visibility == Visibility.Collapsed ? 0 :
+        PreviewLocation == FetchXmlPreviewLocation.Vertical ? ActualWidth : ActualHeight;
 
-    public bool Enabled => true;
+    public bool Enabled => !isDisposed;
+
+    private void OnViewClosed(object sender, EventArgs e) => Dispose();
 
     public void Dispose()
     {
@@ -78,13 +90,14 @@ internal class BrowserMargin : DockPanel, IWpfTextViewMargin
 
         isDisposed = true;
         Loaded -= OnLoaded;
+        textView.Closed -= OnViewClosed;
         document.Parsed -= UpdateResults;
         FetchXmlOptions.Saved -= OptionsSaved;
         resultsGrid.Sorting -= ResultsGridSorting;
         actionButton.Click -= ActionButtonClick;
 
         activeFetchCts?.Cancel();
-        activeFetchCts?.Dispose();
+        pendingFetchCts?.Cancel();
         activeFetchCts = null;
         activeRequestId = null;
     }
@@ -94,23 +107,30 @@ internal class BrowserMargin : DockPanel, IWpfTextViewMargin
         var options = await FetchXmlOptions.GetLiveInstanceAsync();
         await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync();
 
-        Visibility = options.EnableFetchXmlPreviewWindow ? Visibility.Visible : Visibility.Collapsed;
+        if (isDisposed) return;
+        if (previewEnabled != options.EnableFetchXmlPreviewWindow) explicitlyShown = false;
+        previewEnabled = options.EnableFetchXmlPreviewWindow;
+        Visibility = previewEnabled || explicitlyShown ? Visibility.Visible : Visibility.Collapsed;
     }
 
     public void TriggerFetch(bool immediate = true) => ScheduleFetch(immediate ? 0 : 350);
 
-    public ITextViewMargin GetTextViewMargin(string marginName) => this;
+    public ITextViewMargin GetTextViewMargin(string marginName) => marginName ==
+        (PreviewLocation == FetchXmlPreviewLocation.Vertical ? nameof(PreviewMarginVerticalProvider) :
+        nameof(PreviewMarginHorizontalProvider)) ? this : null;
 
     private FrameworkElement CreateResultsView()
     {
         var root = new Grid();
+        root.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
         root.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
         root.RowDefinitions.Add(new RowDefinition { Height = new GridLength(1, GridUnitType.Star) });
 
         var toolbar = new DockPanel { Margin = Spacings.S };
         statusText = new ShellTextBlock
         {
-            Text = "Records: 0 | Time: -",
+            Text = "Time: -- · Records: --",
+            TextWrapping = TextWrapping.Wrap,
             VerticalAlignment = VerticalAlignment.Center,
         };
         statusText.SetResourceReference(TextBlock.ForegroundProperty, ShellColors.TextFillPrimaryBrushKey);
@@ -139,8 +159,22 @@ internal class BrowserMargin : DockPanel, IWpfTextViewMargin
 
         toolbar.Children.Add(actionButton);
         toolbar.Children.Add(progressIndicator);
+        statusLabel = new TextBlock { FontWeight = FontWeights.SemiBold };
+        statusBadge = new Border { CornerRadius = new CornerRadius(4), Padding = new Thickness(10, 4, 10, 4),
+            Margin = new Thickness(0, 0, 12, 0), VerticalAlignment = VerticalAlignment.Center, Child = statusLabel };
+        DockPanel.SetDock(statusBadge, Dock.Left);
+        toolbar.Children.Add(statusBadge);
         toolbar.Children.Add(statusText);
+        SetStatus("Ready", 0);
         root.Children.Add(toolbar);
+
+        errorDetails = new TextBox { IsReadOnly = true, TextWrapping = TextWrapping.Wrap,
+            BorderThickness = new Thickness(0), Margin = Spacings.S, MaxHeight = 140,
+            VerticalScrollBarVisibility = ScrollBarVisibility.Auto, Visibility = Visibility.Collapsed };
+        errorDetails.SetResourceReference(Control.BackgroundProperty, EnvironmentColors.ToolWindowBackgroundBrushKey);
+        errorDetails.SetResourceReference(Control.ForegroundProperty, EnvironmentColors.ToolWindowTextBrushKey);
+        Grid.SetRow(errorDetails, 1);
+        root.Children.Add(errorDetails);
 
         resultsGrid = new ShellDataGrid
         {
@@ -162,7 +196,7 @@ internal class BrowserMargin : DockPanel, IWpfTextViewMargin
         resultsGrid.SetResourceReference(Control.ForegroundProperty, ShellColors.TextFillPrimaryBrushKey);
         resultsGrid.Sorting += ResultsGridSorting;
         resultsGrid.ContextMenu = CreateResultsContextMenu();
-        Grid.SetRow(resultsGrid, 1);
+        Grid.SetRow(resultsGrid, 2);
         root.Children.Add(resultsGrid);
 
         return root;
@@ -189,14 +223,20 @@ internal class BrowserMargin : DockPanel, IWpfTextViewMargin
         }
     }
 
-    private void ActionButtonClick(object sender, RoutedEventArgs e)
+    private void ActionButtonClick(object sender, RoutedEventArgs e) => ExecuteOrCancel();
+
+    internal void ExecuteOrCancel()
     {
-        if (activeFetchCts is { IsCancellationRequested: false })
+        ThreadHelper.ThrowIfNotOnUIThread();
+        if (isDisposed) return;
+        explicitlyShown = true;
+        Visibility = Visibility.Visible;
+        if (IsExecuting)
         {
-            activeFetchCts.Cancel();
+            pendingFetchCts?.Cancel();
+            activeFetchCts?.Cancel();
             return;
         }
-
         ScheduleFetch(0);
     }
 
@@ -204,7 +244,7 @@ internal class BrowserMargin : DockPanel, IWpfTextViewMargin
 
     private void UpdateResults(FetchXmlDocument parsedDocument)
     {
-        if (!parsedDocument.IsParsing && FetchXmlOptions.Instance.FetchXmlExecution == FetchXmlExecutionMode.OnChange)
+        if (!parsedDocument.IsParsing && FetchXmlOptions.Instance.EnableFetchXmlPreviewWindow && FetchXmlOptions.Instance.FetchXmlExecution == FetchXmlExecutionMode.OnChange)
         {
             ScheduleFetch();
         }
@@ -212,20 +252,38 @@ internal class BrowserMargin : DockPanel, IWpfTextViewMargin
 
     private void ScheduleFetch(int delayMilliseconds = 350)
     {
-        if (isDisposed) return;
-        _ = ThreadHelper.JoinableTaskFactory.StartOnIdle(() =>
+        ThreadHelper.JoinableTaskFactory.RunAsync(async () =>
         {
-            var debouncer = textView.TextBuffer.GetDebouncer("fetchxml-exec", millisecondsToWait: delayMilliseconds);
-            debouncer.Debounce(token => ExecuteAndRenderAsync(token), key: "exec");
-        }, VsTaskRunContext.UIThreadIdlePriority);
+            await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync();
+            if (isDisposed) return;
+            pendingFetchCts?.Cancel();
+            var pending = new CancellationTokenSource();
+            pendingFetchCts = pending;
+            try
+            {
+                await Task.Delay(delayMilliseconds, pending.Token);
+                await ExecuteAndRenderAsync(pending.Token);
+            }
+            catch (OperationCanceledException) { }
+            finally
+            {
+                await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync();
+                if (ReferenceEquals(pendingFetchCts, pending)) pendingFetchCts = null;
+                pending.Dispose();
+            }
+        }).FileAndForget("XrmTools/FetchXml/Execute");
     }
 
     private async Task ExecuteAndRenderAsync(CancellationToken debounceToken)
     {
+        await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync();
+        if (isDisposed) return;
+        debounceToken.ThrowIfCancellationRequested();
         activeFetchCts?.Cancel();
-        activeFetchCts?.Dispose();
-        activeFetchCts = CancellationTokenSource.CreateLinkedTokenSource(debounceToken);
-        var cancellationToken = activeFetchCts.Token;
+        using var executionCts = CancellationTokenSource.CreateLinkedTokenSource(debounceToken);
+        activeFetchCts = executionCts;
+        var cancellationToken = executionCts.Token;
+        var queryText = textView.TextSnapshot.GetText();
         var requestId = Guid.NewGuid();
         activeRequestId = requestId;
 
@@ -237,7 +295,7 @@ internal class BrowserMargin : DockPanel, IWpfTextViewMargin
         Exception? error = null;
         try
         {
-            result = await ExecuteFetchXmlAsync(document, cancellationToken).ConfigureAwait(false);
+            result = await ExecuteFetchXmlAsync(queryText, cancellationToken).ConfigureAwait(false);
             if (string.IsNullOrEmpty(result.Error))
             {
                 resultSet = await Task.Run(() => FetchXmlResultSet.Create(result.Records), cancellationToken).ConfigureAwait(false);
@@ -258,7 +316,8 @@ internal class BrowserMargin : DockPanel, IWpfTextViewMargin
             {
                 if (cancellationToken.IsCancellationRequested)
                 {
-                    statusText.Text = "Cancelled";
+                    SetStatus("Canceled", 0);
+                    statusText.Text = hasResults ? "Previous results retained." : "Query canceled.";
                 }
                 else if (error is not null)
                 {
@@ -276,34 +335,24 @@ internal class BrowserMargin : DockPanel, IWpfTextViewMargin
                 {
                     ShowError("The query did not return a result.");
                 }
-                SetLoading(false);
-
-                activeFetchCts?.Dispose();
                 activeFetchCts = null;
+                SetLoading(false);
                 activeRequestId = null;
             }
         }
     }
 
-    private async Task<FetchQueryResultModel> ExecuteFetchXmlAsync(FetchXmlDocument? parsedDocument, CancellationToken cancellationToken)
+    private async Task<FetchQueryResultModel> ExecuteFetchXmlAsync(string rawXml, CancellationToken cancellationToken)
     {
-        var xmlDocument = parsedDocument?.XmlDocument;
-        if (parsedDocument is null || xmlDocument is null || string.IsNullOrWhiteSpace(xmlDocument.ToFullString()))
-        {
-            return new FetchQueryResultModel();
-        }
-
-        var parser = new FetchXmlParser();
-        var query = await parser.ParseAsync(xmlDocument, parsedDocument.RawXml, cancellationToken).ConfigureAwait(false);
-        var queryToExecute = string.IsNullOrEmpty(query.Defaulted) ? parsedDocument.RawXml : query.Defaulted;
-
+        var query = await Task.Run(() => FetchXmlExecutionInput.ParseAsync(rawXml, cancellationToken),
+            cancellationToken).ConfigureAwait(false);
         using var repository = repositoryFactory.CreateRepository<IEntityMetadataRepository>();
-        var entity = await repository.GetAsync(parsedDocument.EntityName, cancellationToken).ConfigureAwait(false);
+        var entity = await repository.GetAsync(query.EntityName, cancellationToken).ConfigureAwait(false);
 
         var stopwatch = Stopwatch.StartNew();
         try
         {
-            var response = await webApi.FetchXmlAsync(entity.EntitySetName, queryToExecute, false, cancellationToken).ConfigureAwait(false);
+            var response = await webApi.FetchXmlAsync(entity.EntitySetName, query.Xml, false, cancellationToken).ConfigureAwait(false);
             if (response is null) return new FetchQueryResultModel { Error = "The Web API returned no response." };
             stopwatch.Stop();
             return new FetchQueryResultModel
@@ -313,6 +362,7 @@ internal class BrowserMargin : DockPanel, IWpfTextViewMargin
                 MoreRecords = response.MoreRecords,
             };
         }
+        catch (OperationCanceledException) { throw; }
         catch (ServiceException ex)
         {
             return new FetchQueryResultModel { Error = ex.ODataError?.Error?.Message ?? ex.Message };
@@ -361,17 +411,42 @@ internal class BrowserMargin : DockPanel, IWpfTextViewMargin
         }
 
         resultsGrid.ItemsSource = resultSet.Rows;
+        hasResults = true;
+        SetStatus("Success", 200);
         statusText.Text = $"Records: {resultSet.Rows.Count:N0} | Time: {elapsedMilliseconds:N0} ms"
             + (moreRecords ? " | More records available" : string.Empty);
     }
 
-    private void ShowError(string message) => statusText.Text = $"Error: {message}";
+    private void ShowError(string message)
+    {
+        SetStatus("Error", 500);
+        statusText.Text = hasResults ? "Previous results retained." : "Query failed.";
+        errorDetails.Text = message;
+        errorDetails.Visibility = Visibility.Visible;
+    }
+
+    private void SetStatus(string label, int code)
+    {
+        statusLabel.Text = label;
+        statusBadge.Background = SystemParameters.HighContrast ? SystemColors.HighlightBrush :
+            new SolidColorBrush(code >= 400 ? Color.FromRgb(205, 51, 51) :
+                code >= 200 ? Color.FromRgb(46, 139, 87) : Color.FromRgb(128, 128, 128));
+        statusLabel.Foreground = SystemParameters.HighContrast ? SystemColors.HighlightTextBrush : Brushes.White;
+    }
 
     private void SetLoading(bool loading)
     {
+        if (loading)
+        {
+            SetStatus("Running", 0);
+            statusText.Text = hasResults ? "Executing query · Previous results retained." : "Executing query…";
+            errorDetails.Clear();
+            errorDetails.Visibility = Visibility.Collapsed;
+        }
         progressIndicator.IsRunning = loading;
         progressIndicator.Visibility = loading ? Visibility.Visible : Visibility.Collapsed;
         actionButton.Content = loading ? "Cancel" : "Execute";
+        ExecutionStateChanged?.Invoke(this, EventArgs.Empty);
     }
 
     private void ResultsGridSorting(object sender, DataGridSortingEventArgs e)
@@ -397,89 +472,31 @@ internal class BrowserMargin : DockPanel, IWpfTextViewMargin
 
     private void CreateMarginControls(FrameworkElement content)
     {
-        if (FetchXmlOptions.Instance.PreviewWindowLocation == FetchXmlPreviewLocation.Vertical)
+        bool vertical = PreviewLocation == FetchXmlPreviewLocation.Vertical;
+        if (vertical) { Width = Math.Max(150, FetchXmlOptions.Instance.FetchXmlPreviewWindowWidth); MinWidth = 150; }
+        else { Height = Math.Max(100, FetchXmlOptions.Instance.FetchXmlPreviewWindowHeight); MinHeight = 100; }
+        var splitter = new Thumb { Cursor = vertical ? Cursors.SizeWE : Cursors.SizeNS };
+        if (vertical) splitter.Width = 5;
+        else splitter.Height = 5;
+        var template = new ControlTemplate(typeof(Thumb));
+        var border = new FrameworkElementFactory(typeof(Border));
+        border.SetResourceReference(Border.BackgroundProperty, ShellColors.ControlStrokeDefaultBrushKey);
+        template.VisualTree = border;
+        splitter.Template = template;
+        splitter.DragDelta += (_, e) =>
         {
-            var width = FetchXmlOptions.Instance.FetchXmlPreviewWindowWidth;
-            var grid = new Grid();
-            grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(0, GridUnitType.Star) });
-            grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(5) });
-            grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(width), MinWidth = 150 });
-            grid.RowDefinitions.Add(new RowDefinition());
-            grid.SetResourceReference(BackgroundProperty, VsBrushes.ToolWindowBackgroundKey);
-            Children.Add(grid);
-
-            grid.Children.Add(content);
-            Grid.SetColumn(content, 2);
-
-            var splitter = new GridSplitter
-            {
-                Width = 5,
-                ResizeDirection = GridResizeDirection.Columns,
-                VerticalAlignment = VerticalAlignment.Stretch,
-                HorizontalAlignment = HorizontalAlignment.Stretch,
-            };
-            splitter.SetResourceReference(BackgroundProperty, VsBrushes.ToolWindowBackgroundKey);
-            splitter.DragCompleted += SplitterDragCompleted;
-            grid.Children.Add(splitter);
-            Grid.SetColumn(splitter, 1);
-
-            void FixWidth()
-            {
-                var newWidth = textView.ViewportWidth + grid.ActualWidth - 150;
-                if (newWidth < 150)
-                {
-                    grid.ColumnDefinitions[2].MinWidth = 0;
-                    grid.ColumnDefinitions[2].MaxWidth = 0;
-                }
-                else
-                {
-                    grid.ColumnDefinitions[2].MaxWidth = newWidth;
-                    if (grid.ColumnDefinitions[2].MinWidth == 0) grid.ColumnDefinitions[2].MinWidth = 150;
-                }
-            }
-
-            grid.SizeChanged += (_, _) => FixWidth();
-            textView.ViewportWidthChanged += (_, _) => FixWidth();
-        }
-        else
+            if (vertical) Width = Math.Max(150, Math.Min(1600, Width - e.HorizontalChange));
+            else Height = Math.Max(100, Math.Min(800, Height - e.VerticalChange));
+        };
+        splitter.DragCompleted += (_, _) =>
         {
-            var height = FetchXmlOptions.Instance.FetchXmlPreviewWindowHeight;
-            var grid = new Grid();
-            grid.RowDefinitions.Add(new RowDefinition { Height = new GridLength(0, GridUnitType.Star) });
-            grid.RowDefinitions.Add(new RowDefinition { Height = new GridLength(5) });
-            grid.RowDefinitions.Add(new RowDefinition { Height = new GridLength(height), MinHeight = 100 });
-            grid.ColumnDefinitions.Add(new ColumnDefinition());
-            grid.SetResourceReference(BackgroundProperty, VsBrushes.ToolWindowBackgroundKey);
-            Children.Add(grid);
-
-            grid.Children.Add(content);
-            Grid.SetRow(content, 2);
-
-            var splitter = new GridSplitter
-            {
-                Height = 5,
-                ResizeDirection = GridResizeDirection.Rows,
-                VerticalAlignment = VerticalAlignment.Stretch,
-                HorizontalAlignment = HorizontalAlignment.Stretch,
-            };
-            splitter.SetResourceReference(BackgroundProperty, VsBrushes.ToolWindowBackgroundKey);
-            splitter.DragCompleted += SplitterDragCompleted;
-            grid.Children.Add(splitter);
-            Grid.SetRow(splitter, 1);
-        }
-    }
-
-    private void SplitterDragCompleted(object sender, DragCompletedEventArgs e)
-    {
-        if (FetchXmlOptions.Instance.PreviewWindowLocation == FetchXmlPreviewLocation.Vertical && !double.IsNaN(resultsView.ActualWidth))
-        {
-            FetchXmlOptions.Instance.FetchXmlPreviewWindowWidth = (int)resultsView.ActualWidth;
-        }
-        else if (!double.IsNaN(resultsView.ActualHeight))
-        {
-            FetchXmlOptions.Instance.FetchXmlPreviewWindowHeight = (int)resultsView.ActualHeight;
-        }
-        FetchXmlOptions.Instance.Save();
+            if (vertical) FetchXmlOptions.Instance.FetchXmlPreviewWindowWidth = (int)Width;
+            else FetchXmlOptions.Instance.FetchXmlPreviewWindowHeight = (int)Height;
+            FetchXmlOptions.Instance.Save();
+        };
+        SetDock(splitter, vertical ? Dock.Left : Dock.Top);
+        Children.Add(splitter);
+        Children.Add(content);
     }
 
     private sealed class SingleLineTextConverter : IValueConverter

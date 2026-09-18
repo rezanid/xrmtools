@@ -22,7 +22,7 @@ internal class FetchXmlOptions : BaseOptionModel<FetchXmlOptions>
 
     [Category("FetchXML Preview")]
     [DisplayName("Preview location")]
-    [Description("Determines if the preview window should be shown on the side or below the document.")]
+    [Description("Determines if the preview window should be shown on the side or below the document. Close and reopen existing documents to apply a location change.")]
     [DefaultValue(FetchXmlPreviewLocation.Vertical)]
     [TypeConverter(typeof(EnumDescriptionConverter))]
     public FetchXmlPreviewLocation PreviewWindowLocation { get; set; } = FetchXmlPreviewLocation.Vertical;
