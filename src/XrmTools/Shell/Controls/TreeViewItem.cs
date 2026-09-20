@@ -11,6 +11,14 @@ public class TreeViewItem : System.Windows.Controls.TreeViewItem
 {
     private const string PART_Border = "PART_Border";
     private Border? border;
+    public static readonly DependencyProperty HasUnloadedChildrenProperty = DependencyProperty.Register(
+        nameof(HasUnloadedChildren), typeof(bool), typeof(TreeViewItem), new PropertyMetadata(false));
+
+    public bool HasUnloadedChildren
+    {
+        get => (bool)GetValue(HasUnloadedChildrenProperty);
+        set => SetValue(HasUnloadedChildrenProperty, value);
+    }
     public static readonly DependencyProperty BringHeaderIntoViewOnSelectionProperty = Property.Register<TreeViewItem, bool>(nameof(BringHeaderIntoViewOnSelection));
     private static readonly DependencyPropertyKey HeaderHeightPropertyKey = Property.RegisterReadOnly<TreeViewItem, double>(nameof(HeaderHeight));
     public static readonly DependencyProperty HeaderHeightProperty = HeaderHeightPropertyKey.DependencyProperty;

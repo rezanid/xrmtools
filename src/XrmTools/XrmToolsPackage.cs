@@ -16,6 +16,7 @@ using Microsoft.VisualStudio.TextTemplating.VSHost;
 using Microsoft.VisualStudio.Threading;
 using System;
 using System.ComponentModel.Composition;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Reflection;
@@ -144,8 +145,11 @@ public sealed partial class XrmToolsPackage : ToolkitPackage
     [Import]
     ISettingsProvider SettingsProvider { get; set; } = null!;
 
-    [Import]
-    IExplorerDataService ExplorerDataService { get; set; } = null!;
+    [ImportMany]
+    IEnumerable<IExplorerCategoryProvider> ExplorerCategories { get; set; } = [];
+
+    [ImportMany]
+    IEnumerable<IExplorerCommandProvider> ExplorerCommands { get; set; } = [];
 
     static XrmToolsPackage()
     {
@@ -263,7 +267,8 @@ public sealed partial class XrmToolsPackage : ToolkitPackage
         {
             return new DataverseExplorer.Views.DataverseExplorerSource
             { 
-                DataService = ExplorerDataService,
+                Categories = ExplorerCategories,
+                Commands = ExplorerCommands,
                 Logger = new OutputLogger("Xrm Tools", OutputLoggerService)
             };
         }

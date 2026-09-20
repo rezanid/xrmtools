@@ -19,7 +19,7 @@ using XrmTools.WebApi.Types;
 
 /// <summary>
 /// Implementation of the explorer data service.
-/// Manages data loading from repositories and maintains a simple in-memory index.
+/// Loads built-in artifacts. Loaded state belongs to the tree session, not a shared cache.
 /// </summary>
 [Export(typeof(IExplorerDataService))]
 [method: ImportingConstructor]
@@ -27,7 +27,7 @@ internal sealed class ExplorerDataService(
     [Import] IWebApiService webApi,
     [Import] ILogger<ExplorerDataService> logger) : IExplorerDataService
 {
-    private const string assembliesQuery = "pluginassemblies?$select=name,version,isolationmode,publickeytoken,sourcetype,description,modifiedon&$expand=PackageId($select=name,version,content)";
+    private const string assembliesQuery = "pluginassemblies?$select=name,version,isolationmode,publickeytoken,sourcetype,description,modifiedon";
     private const string plugintypesQuery = "plugintypes?" +
         "$filter=_pluginassemblyid_value eq '{0}'" +
         "&$select=name,typename,friendlyname,description,workflowactivitygroupname,modifiedon&" +
@@ -46,22 +46,41 @@ internal sealed class ExplorerDataService(
     private const string tableViewsQuery = "savedqueries?$select=savedqueryid,name,description,querytype,isquickfindquery,isdefault,advancedgroupby,conditionalformatting,enablecrosspartition,iscustom,isdefault,isuserdefined,offlinesqlquery,statecode,statuscode,modifiedon,createdon&$filter=returnedtypecode eq '{0}'";
 
     private readonly ILogger _logger = logger;
-    private readonly Dictionary<Guid, AssemblyNode> _assemblyCache = [];
-    private readonly Dictionary<string, TableNode> _tableCache = new(StringComparer.OrdinalIgnoreCase);
-    private bool _assembliesLoaded;
-    private bool _tablesLoaded;
-
-    public async Task<IEnumerable<AssemblyNode>> LoadAssembliesAsync(CancellationToken cancellationToken)
+    public async Task<IEnumerable<PackageNode>> LoadPackagesAsync(CancellationToken cancellationToken)
     {
-        if (_assembliesLoaded)
+        var response = await webApi.RetrieveMultipleAsync<PluginPackage>(
+            "pluginpackages?$select=pluginpackageid,name,version,modifiedon&$orderby=name", cancellationToken: cancellationToken);
+        cancellationToken.ThrowIfCancellationRequested();
+        return response.Value.Select(package =>
         {
-            return _assemblyCache.Values;
-        }
+            var node = new PackageNode
+            {
+                Id = package.Id.ToString(), PackageId = package.Id ?? Guid.Empty,
+                DisplayName = package.Name ?? "Unknown Package", Version = package.Version,
+                ModifiedOn = package.ModifiedOn, ImageMoniker = KnownMonikers.NuGet,
+            };
+            node.LoadChildrenAsync = async token =>
+            {
+                var assemblies = await LoadAssembliesAsync(token, node.PackageId);
+                token.ThrowIfCancellationRequested();
+                node.Children.Clear();
+                foreach (var assembly in assemblies)
+                {
+                    assembly.Parent = node;
+                    node.Children.Add(assembly);
+                }
+            };
+            return node;
+        }).ToList();
+    }
+
+    public async Task<IEnumerable<AssemblyNode>> LoadAssembliesAsync(CancellationToken cancellationToken, Guid? packageId = null)
+    {
         ODataQueryResponse<PluginAssembly>? queryResponse;
         try
         {
             queryResponse = await webApi.RetrieveMultipleAsync<PluginAssembly>(
-                assembliesQuery, cancellationToken: cancellationToken);
+                assembliesQuery + "&$filter=_packageid_value eq " + (packageId?.ToString() ?? "null") + "&$orderby=name", cancellationToken: cancellationToken);
         }
         catch (Exception ex)
         {
@@ -69,17 +88,18 @@ internal sealed class ExplorerDataService(
             throw;
         }
 
-        _assemblyCache.Clear();
+        cancellationToken.ThrowIfCancellationRequested();
+        var assemblies = new List<AssemblyNode>();
         foreach (var assembly in queryResponse.Value)
         {
             var assemblyId = assembly.Id ?? Guid.Empty;
             var node = new AssemblyNode
             {
-                ImageMoniker = assembly.Package is not null ? KnownMonikers.NuGet : KnownMonikers.Assembly,
+                ImageMoniker = KnownMonikers.Assembly,
                 Id = assemblyId.ToString(),
                 AssemblyId = assemblyId,
                 DisplayName = assembly.Name ?? "Unknown Assembly",
-                Description = string.Empty,
+                Description = assembly.Description ?? string.Empty,
                 PublicKeyToken = assembly.PublicKeyToken,
                 Version = assembly.Version,
                 IsolationMode = assembly.IsolationMode?.ToString(),
@@ -87,11 +107,11 @@ internal sealed class ExplorerDataService(
                 ModifiedOn = assembly.ModifiedOn,
                 AreChildrenLoaded = false
             };
-            _assemblyCache[assemblyId] = node;
+            node.LoadChildrenAsync = token => LoadAssemblyChildrenAsync(node, token);
+            assemblies.Add(node);
         }
 
-        _assembliesLoaded = true;
-        return _assemblyCache.Values;
+        return assemblies;
     }
 
     public async Task<IEnumerable<ExplorerNodeBase>> LoadAssemblyChildrenAsync(AssemblyNode assembly, CancellationToken cancellationToken)
@@ -107,6 +127,7 @@ internal sealed class ExplorerDataService(
             _logger.LogError(ex, "Error loading plugin types for assembly {0}", assembly.DisplayName);
             throw;
         }
+        cancellationToken.ThrowIfCancellationRequested();
         assembly.Children.Clear();
         foreach (var plugin in queryResponse.Value)
         {
@@ -128,11 +149,6 @@ internal sealed class ExplorerDataService(
 
     public async Task<IEnumerable<TableNode>> LoadTablesAsync(CancellationToken cancellationToken)
     {
-        if (_tablesLoaded)
-        {
-            return _tableCache.Values;
-        }
-
         ODataQueryResponse<EntityMetadata>? queryResponse;
         try
         {
@@ -145,7 +161,8 @@ internal sealed class ExplorerDataService(
             throw;
         }
 
-        _tableCache.Clear();
+        cancellationToken.ThrowIfCancellationRequested();
+        var tables = new List<TableNode>();
         foreach (var table in queryResponse.Value.OrderBy(e => GetEntityDisplayName(e), StringComparer.OrdinalIgnoreCase))
         {
             if (string.IsNullOrWhiteSpace(table.LogicalName))
@@ -170,11 +187,11 @@ internal sealed class ExplorerDataService(
                 AreChildrenLoaded = false,
             };
 
-            _tableCache[table.LogicalName] = tableNode;
+            tableNode.LoadChildrenAsync = token => LoadTableChildrenAsync(tableNode, token);
+            tables.Add(tableNode);
         }
 
-        _tablesLoaded = true;
-        return _tableCache.Values;
+        return tables;
     }
 
     public async Task<IEnumerable<ExplorerNodeBase>> LoadTableChildrenAsync(TableNode table, CancellationToken cancellationToken)
@@ -196,6 +213,10 @@ internal sealed class ExplorerDataService(
             throw;
         }
 
+        // Fetch everything before publishing children, so failures do not leave a partial tree.
+        var forms = await LoadTableFormsAsync(table.LogicalName, cancellationToken);
+        var views = await LoadTableViewsAsync(table.LogicalName, cancellationToken);
+        cancellationToken.ThrowIfCancellationRequested();
         table.Children.Clear();
 
         var columnsGroup = CreateTableGroupNode(table, "Columns", KnownMonikers.Column);
@@ -253,7 +274,7 @@ internal sealed class ExplorerDataService(
         table.Children.Add(keysGroup);
 
         var formsGroup = CreateTableGroupNode(table, "Forms", KnownMonikers.Dialog);
-        foreach (var form in await LoadTableFormsAsync(table.LogicalName, cancellationToken))
+        foreach (var form in forms)
         {
             formsGroup.Children.Add(new TableFormNode
             {
@@ -274,7 +295,7 @@ internal sealed class ExplorerDataService(
         table.Children.Add(formsGroup);
 
         var viewsGroup = CreateTableGroupNode(table, "Views", KnownMonikers.QueryView);
-        foreach (var view in await LoadTableViewsAsync(table.LogicalName, cancellationToken))
+        foreach (var view in views)
         {
             viewsGroup.Children.Add(new TableViewNode
             {
@@ -418,62 +439,6 @@ internal sealed class ExplorerDataService(
         Parent = step,
     };
 
-    public Task<IEnumerable<ExplorerNodeBase>> LoadPluginTypeChildrenAsync(
-        PluginTypeNode pluginType, CancellationToken cancellationToken)
-    {
-        // Children are already loaded when we expand the assembly.
-        // This method is for potential future lazy loading scenarios.
-        return Task.FromResult(pluginType.Children.AsEnumerable());
-    }
-
-    public Task<IEnumerable<PluginImageNode>> LoadPluginStepChildrenAsync(
-        PluginStepNode step, CancellationToken cancellationToken)
-    {
-        // Children are already loaded when we expand the assembly.
-        // This method is for potential future lazy loading scenarios.
-        return Task.FromResult(step.Children.OfType<PluginImageNode>());
-    }
-
-    public void ClearCache()
-    {
-        _assemblyCache.Clear();
-        _assembliesLoaded = false;
-        _tableCache.Clear();
-        _tablesLoaded = false;
-    }
-
-    public IEnumerable<ExplorerNodeBase> Search(string searchTerm, IEnumerable<ExplorerNodeBase> nodes)
-    {
-        if (string.IsNullOrWhiteSpace(searchTerm))
-        {
-            return nodes;
-        }
-
-        var lowerTerm = searchTerm.ToLowerInvariant();
-        var results = new List<ExplorerNodeBase>();
-
-        foreach (var node in nodes)
-        {
-            if (MatchesSearch(node, lowerTerm))
-            {
-                results.Add(node);
-            }
-
-            // Recursively search children
-            var childResults = Search(searchTerm, node.Children);
-            results.AddRange(childResults.Where(r => !results.Contains(r)));
-        }
-
-        return results;
-    }
-
-    private static bool MatchesSearch(ExplorerNodeBase node, string lowerTerm)
-    {
-        return node.DisplayName.IndexOf(lowerTerm, StringComparison.OrdinalIgnoreCase) >= 0 ||
-               (!string.IsNullOrWhiteSpace(node.Description) &&
-                node.Description.IndexOf(lowerTerm, StringComparison.OrdinalIgnoreCase) >= 0);
-    }
-
     private static string GetEntityDisplayName(EntityMetadata entity)
     {
         return GetLabelText(entity.DisplayName) is string displayName && !string.IsNullOrWhiteSpace(displayName)
@@ -549,7 +514,7 @@ internal sealed class ExplorerDataService(
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error loading forms for table {0}", logicalName);
-            return [];
+            throw;
         }
 
         return queryResponse.Value;
@@ -566,7 +531,7 @@ internal sealed class ExplorerDataService(
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error loading views for table {0}", logicalName);
-            return [];
+            throw;
         }
 
         return queryResponse.Value;
