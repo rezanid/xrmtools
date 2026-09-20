@@ -24,7 +24,8 @@ using XrmTools.Options;
 internal class DataverseExplorerSource
 {
     public required ILogger Logger { get; init; }
-    public required IExplorerDataService DataService { get; init; }
+    public required IEnumerable<IExplorerCategoryProvider> Categories { get; init; }
+    public required IEnumerable<IExplorerCommandProvider> Commands { get; init; }
 
 }
 
@@ -44,8 +45,6 @@ internal class DataverseExplorerWindow : ToolWindowPane // BaseToolWindow<Datave
     
     public ILogger Logger { get; set; }
 
-    internal IExplorerDataService DataService { get; set; }
-
     public DataverseExplorerWindow(DataverseExplorerSource source) : base()
     {
         var componentModel = (IComponentModel)Microsoft.VisualStudio.Shell.Package.GetGlobalService(typeof(SComponentModel));
@@ -57,11 +56,11 @@ internal class DataverseExplorerWindow : ToolWindowPane // BaseToolWindow<Datave
         ToolBarLocation = (int)VSTWT_LOCATION.VSTWT_TOP;
 
         Logger = source.Logger;
-        DataService = source.DataService;
 
         var control = new DataverseExplorerWindowControl();
-        _viewModel = new DataverseExplorerViewModel(DataService, Logger);
+        _viewModel = new DataverseExplorerViewModel(source.Categories, Logger);
         _viewModel.SelectedNodeChanged += OnSelectedNodeChanged;
+        control.CommandProviders = source.Commands;
         control.DataContext = _viewModel;
         Content = control;
     }
@@ -162,6 +161,7 @@ internal class DataverseExplorerWindow : ToolWindowPane // BaseToolWindow<Datave
         if (disposing && _viewModel != null)
         {
             _viewModel.SelectedNodeChanged -= OnSelectedNodeChanged;
+            _viewModel.Dispose();
             if (ThreadHelper.CheckAccess())
             {
                 UpdatePropertiesWindowSelection(null);
@@ -203,7 +203,7 @@ internal class DataverseExplorerWindow : ToolWindowPane // BaseToolWindow<Datave
 
     private async Task SyncWithProjectSystemAsync(ExplorerNodeBase? node)
     {
-        if (node == null || node.ArtifactCategory != "Assemblies")
+        if (node == null)
         {
             return;
         }

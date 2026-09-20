@@ -71,6 +71,9 @@
                         <Trigger Property="ItemsControl.HasItems" Value="True">
                             <Setter TargetName="Expander" Property="UIElement.Visibility" Value="Visible"/>
                         </Trigger>
+                        <Trigger Property="HasUnloadedChildren" Value="True">
+                            <Setter TargetName="Expander" Property="UIElement.Visibility" Value="Visible"/>
+                        </Trigger>
                         <Trigger Property="TreeViewItem.IsExpanded" Value="True">
                             <Setter TargetName="Arrow" Value="{x:Static styles:Geometries.ChevronDownSmall}" Property="Path.Data"/>
                             <Setter TargetName="ItemsHost" Property="UIElement.Visibility" Value="Visible"/>

@@ -29,6 +29,7 @@ public interface IPluginRegistrationService
 {
     public Task<PluginRegistrationResult> RegisterAsync(RegistrationInput input, IPluginRegistrationUI ui, CancellationToken cancellationToken = default);
     public Task<PluginRegistrationResult> UnregisterAsync(RegistrationInput input, IPluginRegistrationUI ui, CancellationToken cancellationToken = default);
+    public Task<PluginRegistrationResult> UnregisterAsync(EntityReference target, CancellationToken cancellationToken = default);
 }
 
 [Export(typeof(IPluginRegistrationService))]
@@ -71,101 +72,101 @@ internal sealed class PluginRegistrationService(
             return PluginRegistrationResult.Failure("No plugin definition found.");
         }
 
-        var requests = new List<HttpRequestMessage>();
-        PluginAssembly? existingAssembly;
-
         try
         {
-            var assemblyQuery = await _webApi.RetrieveMultipleAsync<PluginAssembly>(
-                $"{PluginAssembly.Metadata.EntitySetName}?$select=name" +
-                $"&$filter=name eq '{model.Name}'" +
-                $"&$expand=PackageId($select=name),pluginassembly_plugintype($select=name,typename" +
-                $";$expand=plugintype_sdkmessageprocessingstep($select=name,stage),CustomAPIId($select=uniquename))");
-
-            existingAssembly = assemblyQuery?.Value?.SingleOrDefault();
-
-            if (existingAssembly is null)
-            {
-                return PluginRegistrationResult.Failure("No existing plugin assembly found to unregister.");
-            }
-
-            foreach (var existingPlugin in existingAssembly.PluginTypes)
-            {
-                AddDeleteRequestsForPlugin(requests, existingPlugin);
-            }
-            if (existingAssembly.Package?.Id is not null)
-            {
-                requests.Add(new DeleteRequest(existingAssembly.Package.ToReference()));
-            }
-            else
-            {
-                requests.Add(new DeleteRequest(existingAssembly.ToReference()));
-            }
+            var response = await _webApi.RetrieveMultipleAsync<PluginAssembly>(
+                $"{PluginAssembly.Metadata.EntitySetName}?$select=name&$filter=name eq '{model.Name.Replace("'", "''")}'" +
+                "&$expand=PackageId($select=pluginpackageid)", cancellationToken: cancellationToken);
+            var assembly = response.Value.SingleOrDefault();
+            if (assembly is null) return PluginRegistrationResult.Failure("No existing plugin assembly found to unregister.");
+            return await UnregisterAsync(assembly.Package?.Id is not null ? assembly.Package.ToReference() : assembly.ToReference(), cancellationToken);
         }
+        catch (OperationCanceledException) { throw; }
         catch (Exception ex)
         {
             _log.LogError(ex, "An error occurred while querying existing registrations.");
-            return PluginRegistrationResult.Failure("Plugin unregistration failed due to an error while querying existing registrations. " + ex.Message);
-        }
-
-        DataverseEnvironment? environment;
-        BatchRequest? batch;
-
-        try
-        {
-            environment = await _environmentProvider.GetActiveEnvironmentAsync(true);
-            var errMessage = environment is null
-                ? "No active environment found. Please connect to an environment and try again."
-                : environment.BaseServiceUrl is null
-                    ? "Active environment has no valid URL. Please check the environment and try again."
-                    : null;
-
-            if (errMessage is not null)
-            {
-                return PluginRegistrationResult.Failure(errMessage);
-            }
-
-            batch = new BatchRequest(environment!.BaseServiceUrl!)
-            {
-                ChangeSets = [new(requests)]
-            };
-        }
-        catch (Exception ex)
-        {
-            _log.LogError(ex, "An error occurred while generating plugin registration requests.");
-            return PluginRegistrationResult.Failure("Plugin registration failed due to an error while generating registration requests. " + ex.Message);
-        }
-
-        try
-        {
-            var batchResponse = await _webApi.SendAsync(batch!, noThrow: true, cancellationToken: cancellationToken).ConfigureAwait(false);
-            var responses = await batchResponse.ParseResponseAsync(cancellationToken).ConfigureAwait(false);
-
-            foreach (var response in responses)
-            {
-                if (!response.IsSuccessStatusCode)
-                {
-                    var error = await response.AsServiceExceptionAsync().ConfigureAwait(false);
-                    _log.LogCritical(error.ToString());
-                    return PluginRegistrationResult.Failure(error.Message);
-                }
-                else if (response.GetEntityReference() is EntityReference entityReference)
-                {
-                    _log.LogTrace($"Registered ({entityReference.Path}).");
-                }
-            }
-        }
-        catch (Exception ex)
-        {
-            _log.LogError(ex, "An error occurred while sending the batch request.");
             return PluginRegistrationResult.Failure("Plugin unregistration failed. " + ex.Message);
         }
-
-        return PluginRegistrationResult.Success(existingAssembly.Package?.Id is not null
-        ? "Plugin package unregistered successfully."
-        : "Plugin assembly unregistered successfully.");
     }
 
+    /// <summary>Unregisters an exact server record, independently of the active project.</summary>
+    public async Task<PluginRegistrationResult> UnregisterAsync(EntityReference target, CancellationToken cancellationToken = default)
+    {
+        var isPackage = target.SetName == PluginPackage.Metadata.EntitySetName;
+        if ((!isPackage && target.SetName != PluginAssembly.Metadata.EntitySetName) || target.Id is null || target.Id == Guid.Empty)
+            return PluginRegistrationResult.Failure("Select a plugin package or standalone assembly to unregister.");
+
+        try
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            var environment = await _environmentProvider.GetActiveEnvironmentAsync(true);
+            var baseUrl = environment?.BaseServiceUrl;
+            if (baseUrl is null) return PluginRegistrationResult.Failure("No active environment with a valid URL found.");
+            cancellationToken.ThrowIfCancellationRequested();
+
+            // Pin every request to this environment, including the outer batch request.
+            var query = $"pluginassemblies?$select=pluginassemblyid&$filter={(isPackage ? "_packageid_value" : "pluginassemblyid")} eq {target.Id}" +
+                "&$expand=PackageId($select=pluginpackageid),pluginassembly_plugintype($select=plugintypeid" +
+                ";$expand=plugintype_sdkmessageprocessingstep($select=sdkmessageprocessingstepid,stage),CustomAPIId($select=customapiid))";
+            var assemblies = new List<PluginAssembly>();
+            string? next = new Uri(baseUrl, query).AbsoluteUri;
+            while (next != null)
+            {
+                var page = await _webApi.RetrieveMultipleAsync<PluginAssembly>(next, cancellationToken: cancellationToken);
+                cancellationToken.ThrowIfCancellationRequested();
+                assemblies.AddRange(page.Value);
+                next = page.NextLink;
+            }
+            if (!isPackage && assemblies.Count == 0)
+                return PluginRegistrationResult.Failure("The selected plugin assembly no longer exists. Refresh Dataverse Explorer.");
+            if (!isPackage && assemblies.Any(assembly => assembly.Package?.Id != null))
+                return PluginRegistrationResult.Failure("This assembly belongs to a plugin package. Unregister the package instead.");
+
+            using var batch = new BatchRequest(baseUrl)
+            {
+                RequestUri = new Uri(baseUrl, "$batch"),
+                ChangeSets = [new(CreateUnregisterRequests(target, assemblies))]
+            };
+            cancellationToken.ThrowIfCancellationRequested();
+            var response = await _webApi.SendAsync(batch, noThrow: true, cancellationToken: cancellationToken);
+            var responses = await response.ParseResponseAsync(cancellationToken);
+            try
+            {
+                if ((int)response.StatusCode >= 400 || responses.Count == 0)
+                    return PluginRegistrationResult.Failure("Dataverse did not confirm unregistration.");
+                foreach (var item in responses)
+                {
+                    if (!item.IsSuccessStatusCode)
+                    {
+                        var error = await item.AsServiceExceptionAsync();
+                        _log.LogError(error, "Plugin unregistration failed.");
+                        return PluginRegistrationResult.Failure(error.Message);
+                    }
+                }
+            }
+            finally
+            {
+                foreach (var item in responses) item.Dispose();
+            }
+            return PluginRegistrationResult.Success(isPackage ? "Plugin package unregistered successfully." : "Plugin assembly unregistered successfully.");
+        }
+        catch (OperationCanceledException) { throw; }
+        catch (Exception ex)
+        {
+            _log.LogError(ex, "Plugin unregistration failed.");
+            return PluginRegistrationResult.Failure("Plugin unregistration failed. " + ex.Message);
+        }
+    }
+
+    internal static List<HttpRequestMessage> CreateUnregisterRequests(EntityReference target, IEnumerable<PluginAssembly> assemblies)
+    {
+        var requests = new List<HttpRequestMessage>();
+        foreach (var assembly in assemblies)
+            foreach (var plugin in assembly.PluginTypes)
+                AddDeleteRequestsForPlugin(requests, plugin);
+        requests.Add(new DeleteRequest(target));
+        return requests;
+    }
     public async Task<PluginRegistrationResult> RegisterAsync(RegistrationInput input, IPluginRegistrationUI ui, CancellationToken cancellationToken = default)
     {
         _log.LogInformation(

@@ -1,4 +1,4 @@
-﻿#nullable enable
+#nullable enable
 namespace XrmTools.Commands;
 
 using Community.VisualStudio.Toolkit;
@@ -8,6 +8,7 @@ using System;
 using System.Collections.Generic;
 using System.ComponentModel.Composition;
 using System.Threading.Tasks;
+using System.Threading;
 using XrmTools.Analyzers;
 using XrmTools.Environments;
 using XrmTools.Helpers;
@@ -56,40 +57,48 @@ internal sealed class UnregisterCommand : BaseCommand<UnregisterCommand>
         var confirmed = await ui.ConfirmUnregsiterAssemblyAsync(project.Name);
         if (!confirmed) return;
 
+        var input = new RegistrationInput(activeItem.FullPath, isProject: true, nugetPackagePath: null);
+        await RunUnregisterAsync(() => PluginRegistrationService.UnregisterAsync(input, ui), Logger);
+    }
+
+    internal static async Task<bool> ExecuteTargetAsync(EntityReference target, string displayName,
+        IPluginRegistrationService service, ILogger logger, CancellationToken cancellationToken)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+        var kind = target.SetName == "pluginpackages" ? "package" : "assembly";
+        var confirmed = await VS.MessageBox.ShowConfirmAsync(Vsix.Name,
+            $"Are you sure you want to unregister the plugin {kind} '{displayName}' from Dataverse? Its plugin registrations will also be removed.");
+        if (!confirmed || cancellationToken.IsCancellationRequested) return false;
+        return await RunUnregisterAsync(() => service.UnregisterAsync(target, cancellationToken), logger);
+    }
+
+    private static async Task<bool> RunUnregisterAsync(Func<Task<PluginRegistrationResult>> unregister, ILogger logger)
+    {
         await VS.StatusBar.StartAnimationAsync(StatusAnimation.General);
         await VS.StatusBar.ShowMessageAsync("Unregistering from Dataverse...");
-
         try
         {
-            var input = new RegistrationInput(
-                itemFullPath: activeItem.FullPath,
-                isProject: true,
-                nugetPackagePath: null);
-
-            var result = await PluginRegistrationService!.UnregisterAsync(input, ui);
-
-            if (!result.Succeeded)
-            {
-                await VS.StatusBar.EndAnimationAsync(StatusAnimation.General);
-                await VS.StatusBar.ShowMessageAsync("Unregistration failed.");
-                await VS.MessageBox.ShowErrorAsync(Vsix.Name, result.Message);
-                return;
-            }
-
-            await VS.StatusBar.ShowMessageAsync(result.Message);
+            var result = await unregister();
+            await VS.StatusBar.ShowMessageAsync(result.Succeeded ? result.Message : "Unregistration failed.");
+            if (!result.Succeeded) await VS.MessageBox.ShowErrorAsync(Vsix.Name, result.Message);
+            return result.Succeeded;
+        }
+        catch (OperationCanceledException)
+        {
+            await VS.StatusBar.ShowMessageAsync("Unregistration cancelled. Refresh the explorer to verify the current registration state.");
+            return false;
         }
         catch (Exception ex)
         {
-            Logger.LogError(ex, "An unexpected error occurred during plugin registration.");
+            logger.LogError(ex, "An unexpected error occurred during plugin unregistration.");
             await VS.MessageBox.ShowErrorAsync(Vsix.Name, "Unregistration failed due to an unexpected error. " + ex.Message);
+            return false;
         }
         finally
         {
             await VS.StatusBar.EndAnimationAsync(StatusAnimation.General);
         }
     }
-
-
     protected override async Task InitializeCompletedAsync()
     {
         //Command.Supported = false;

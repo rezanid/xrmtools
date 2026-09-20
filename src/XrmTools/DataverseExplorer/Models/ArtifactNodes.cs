@@ -1,7 +1,6 @@
 #nullable enable
 namespace XrmTools.DataverseExplorer.Models;
 
-using Microsoft.VisualStudio.Imaging.Interop;
 using System;
 using System.ComponentModel;
 
@@ -22,14 +21,6 @@ internal sealed class AssemblyNode : ExplorerNodeBaseWithDates
     [ReadOnly(true)]
     public string? SourceType { get; set; }
 
-    /// <summary>
-    /// Indicates whether child plugin types have been loaded from Dataverse.
-    /// </summary>
-    [Browsable(false)]
-    public bool AreChildrenLoaded { get; set; }
-
-    [Browsable(false)]
-    public override bool CanLoadChildren => !AreChildrenLoaded;
     [Browsable(false)]
     public override string ArtifactCategory => "Assemblies";
 }
@@ -49,15 +40,6 @@ public class PluginTypeNode : ExplorerNodeBaseWithDates
     [ReadOnly(true)]
     public string? WorkflowActivityGroupName { get; set; }
 
-
-    /// <summary>
-    /// Indicates whether child steps and images have been loaded from Dataverse.
-    /// </summary>
-    [Browsable(false)]
-    public bool AreChildrenLoaded { get; set; }
-
-    [Browsable(false)]
-    public override bool CanLoadChildren => !AreChildrenLoaded;
     [Browsable(false)]
     public override string ArtifactCategory => "Assemblies";
 }
@@ -89,14 +71,6 @@ public class PluginStepNode : ExplorerNodeBaseWithDates
     [ReadOnly(true)]
     public string? SupportedDeployment { get; set; }
 
-    /// <summary>
-    /// Indicates whether child images have been loaded.
-    /// </summary>
-    [Browsable(false)]
-    public bool AreChildrenLoaded { get; set; }
-
-    [Browsable(false)]
-    public override bool CanLoadChildren => !AreChildrenLoaded;
     [Browsable(false)]
     public override string ArtifactCategory => "Assemblies";
 }
@@ -145,12 +119,6 @@ public class CategoryNode : ExplorerNodeBase
         _artifactCategory = category;
     }
 
-    /// <summary>
-    /// Indicates whether child artifacts of this category have been loaded.
-    /// </summary>
-    public bool AreChildrenLoaded { get; set; }
-
-    public override bool CanLoadChildren => !AreChildrenLoaded;
 }
 
 /// <summary>
@@ -163,13 +131,6 @@ public class CustomApiNode : ExplorerNodeBaseWithDates
     [ReadOnly(true)]
     public string? Name { get; set; }
 
-    /// <summary>
-    /// Indicates whether child custom API request parameters have been loaded.
-    /// </summary>
-    [Browsable(false)]
-    public bool AreChildrenLoaded { get; set; }
-    [Browsable(false)]
-    public override bool CanLoadChildren => !AreChildrenLoaded;
     [Browsable(false)]
     public override string ArtifactCategory => "Assemblies";
     [Browsable(false)]
@@ -187,17 +148,9 @@ internal class CustomApiParameterNode : ExplorerNodeBaseWithDates
     [ReadOnly(true)]
     public bool IsOptional { get; set; }
 
-    /// <summary>
-    /// Indicates whether child custom API request parameters have been loaded.
-    /// </summary>
-    [Browsable(false)]
-    public bool AreChildrenLoaded { get; set; }
-    [Browsable(false)]
-    public override bool CanLoadChildren => !AreChildrenLoaded;
     [Browsable(false)]
     public override string ArtifactCategory => "Assemblies";
 }
-
 
 internal class CustomApiResponseNode : ExplorerNodeBaseWithDates
 {
@@ -208,13 +161,6 @@ internal class CustomApiResponseNode : ExplorerNodeBaseWithDates
     [ReadOnly(true)]
     public string? PropertyType { get; set; }
 
-    /// <summary>
-    /// Indicates whether child custom API request parameters have been loaded.
-    /// </summary>
-    [Browsable(false)]
-    public bool AreChildrenLoaded { get; set; }
-    [Browsable(false)]
-    public override bool CanLoadChildren => !AreChildrenLoaded;
     [Browsable(false)]
     public override string ArtifactCategory => "Assemblies";
 }
@@ -236,10 +182,6 @@ internal sealed class TableNode : ExplorerNodeBaseWithDates
     [ReadOnly(true)]
     public string? OwnershipType { get; set; }
 
-    [Browsable(false)]
-    public bool AreChildrenLoaded { get; set; }
-    [Browsable(false)]
-    public override bool CanLoadChildren => !AreChildrenLoaded;
     [Browsable(false)]
     public override string ArtifactCategory => "Tables";
 }
