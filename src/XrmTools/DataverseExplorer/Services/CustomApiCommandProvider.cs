@@ -32,17 +32,15 @@ internal sealed class CustomApiCommandProvider : IExplorerCommandProvider
     public IEnumerable<ExplorerMenuItem> GetCommands(ExplorerNodeBase node)
     {
         if (node is not CustomApiNode api || api.CustomApiId == Guid.Empty) yield break;
-        var root = node;
-        while (root.Parent != null) root = root.Parent;
         yield return new ExplorerMenuItem
         {
             Header = "Generate client code",
             Children =
             [
-                Item("C# (for plugins)", CustomApiClientLanguage.PluginCSharp, api.CustomApiId, root.SessionToken),
-                Item("TypeScript (Dataverse forms)", CustomApiClientLanguage.TypeScript, api.CustomApiId, root.SessionToken),
-                Item("HTTP", CustomApiClientLanguage.Http, api.CustomApiId, root.SessionToken),
-                Item("OData", CustomApiClientLanguage.OData, api.CustomApiId, root.SessionToken),
+                Item("C# (for plugins)", CustomApiClientLanguage.PluginCSharp, api.CustomApiId, node.SessionToken),
+                Item("TypeScript (Dataverse forms)", CustomApiClientLanguage.TypeScript, api.CustomApiId, node.SessionToken),
+                Item("HTTP", CustomApiClientLanguage.Http, api.CustomApiId, node.SessionToken),
+                Item("OData", CustomApiClientLanguage.OData, api.CustomApiId, node.SessionToken),
             ],
         };
     }

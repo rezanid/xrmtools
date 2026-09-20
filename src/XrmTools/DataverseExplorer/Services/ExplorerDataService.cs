@@ -46,10 +46,13 @@ internal sealed class ExplorerDataService(
     private const string tableViewsQuery = "savedqueries?$select=savedqueryid,name,description,querytype,isquickfindquery,isdefault,advancedgroupby,conditionalformatting,enablecrosspartition,iscustom,isdefault,isuserdefined,offlinesqlquery,statecode,statuscode,modifiedon,createdon&$filter=returnedtypecode eq '{0}'";
 
     private readonly ILogger _logger = logger;
-    public async Task<IEnumerable<PackageNode>> LoadPackagesAsync(CancellationToken cancellationToken)
+    public Task<IEnumerable<PackageNode>> LoadPackagesAsync(CancellationToken cancellationToken) => LoadPackagesAsync(cancellationToken, null);
+
+    private async Task<IEnumerable<PackageNode>> LoadPackagesAsync(CancellationToken cancellationToken, Guid? id)
     {
         var response = await webApi.RetrieveMultipleAsync<PluginPackage>(
-            "pluginpackages?$select=pluginpackageid,name,version,modifiedon&$orderby=name", cancellationToken: cancellationToken);
+            "pluginpackages?$select=pluginpackageid,name,version,modifiedon&$orderby=name" +
+            (id.HasValue ? "&$filter=pluginpackageid eq " + id : ""), cancellationToken: cancellationToken);
         cancellationToken.ThrowIfCancellationRequested();
         return response.Value.Select(package =>
         {
@@ -59,6 +62,7 @@ internal sealed class ExplorerDataService(
                 DisplayName = package.Name ?? "Unknown Package", Version = package.Version,
                 ModifiedOn = package.ModifiedOn, ImageMoniker = KnownMonikers.NuGet,
             };
+            node.ReloadAsync = async token => (await LoadPackagesAsync(token, node.PackageId)).SingleOrDefault();
             node.LoadChildrenAsync = async token =>
             {
                 var assemblies = await LoadAssembliesAsync(token, node.PackageId);
@@ -74,13 +78,16 @@ internal sealed class ExplorerDataService(
         }).ToList();
     }
 
-    public async Task<IEnumerable<AssemblyNode>> LoadAssembliesAsync(CancellationToken cancellationToken, Guid? packageId = null)
+    public Task<IEnumerable<AssemblyNode>> LoadAssembliesAsync(CancellationToken cancellationToken, Guid? packageId = null) => LoadAssembliesAsync(cancellationToken, packageId, null);
+
+    private async Task<IEnumerable<AssemblyNode>> LoadAssembliesAsync(CancellationToken cancellationToken, Guid? packageId, Guid? id)
     {
         ODataQueryResponse<PluginAssembly>? queryResponse;
         try
         {
             queryResponse = await webApi.RetrieveMultipleAsync<PluginAssembly>(
-                assembliesQuery + "&$filter=_packageid_value eq " + (packageId?.ToString() ?? "null") + "&$orderby=name", cancellationToken: cancellationToken);
+                assembliesQuery + "&$filter=_packageid_value eq " + (packageId?.ToString() ?? "null") +
+                (id.HasValue ? " and pluginassemblyid eq " + id : "") + "&$orderby=name", cancellationToken: cancellationToken);
         }
         catch (Exception ex)
         {
@@ -108,6 +115,7 @@ internal sealed class ExplorerDataService(
                 AreChildrenLoaded = false
             };
             node.LoadChildrenAsync = token => LoadAssemblyChildrenAsync(node, token);
+            node.ReloadAsync = async token => (await LoadAssembliesAsync(token, packageId, assemblyId)).SingleOrDefault();
             assemblies.Add(node);
         }
 
@@ -147,13 +155,15 @@ internal sealed class ExplorerDataService(
         return assembly.Children;
     }
 
-    public async Task<IEnumerable<TableNode>> LoadTablesAsync(CancellationToken cancellationToken)
+    public Task<IEnumerable<TableNode>> LoadTablesAsync(CancellationToken cancellationToken) => LoadTablesAsync(cancellationToken, null);
+
+    private async Task<IEnumerable<TableNode>> LoadTablesAsync(CancellationToken cancellationToken, string? logicalName)
     {
         ODataQueryResponse<EntityMetadata>? queryResponse;
         try
         {
             queryResponse = await webApi.RetrieveMultipleAsync<EntityMetadata>(
-                tablesQuery, cancellationToken: cancellationToken);
+                tablesQuery + (logicalName == null ? "" : "&$filter=LogicalName eq '" + EscapeODataString(logicalName) + "'"), cancellationToken: cancellationToken);
         }
         catch (Exception ex)
         {
@@ -188,6 +198,7 @@ internal sealed class ExplorerDataService(
             };
 
             tableNode.LoadChildrenAsync = token => LoadTableChildrenAsync(tableNode, token);
+            tableNode.ReloadAsync = async token => (await LoadTablesAsync(token, tableNode.LogicalName)).SingleOrDefault();
             tables.Add(tableNode);
         }
 

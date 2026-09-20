@@ -151,6 +151,12 @@ public sealed partial class XrmToolsPackage : ToolkitPackage
     [ImportMany]
     IEnumerable<IExplorerCommandProvider> ExplorerCommands { get; set; } = [];
 
+    [Import]
+    XrmTools.Services.IPluginRegistrationService PluginRegistrationService { get; set; } = null!;
+
+    [Import]
+    IEnvironmentSelection EnvironmentSelection { get; set; } = null!;
+
     static XrmToolsPackage()
     {
         AppDomain.CurrentDomain.AssemblyResolve += CurrentDomain_AssemblyResolve;
@@ -269,6 +275,8 @@ public sealed partial class XrmToolsPackage : ToolkitPackage
             { 
                 Categories = ExplorerCategories,
                 Commands = ExplorerCommands,
+                Registration = PluginRegistrationService,
+                GetEnvironmentUrl = async () => (await EnvironmentSelection.GetSelectedEnvironmentAsync())?.BaseServiceUrl,
                 Logger = new OutputLogger("Xrm Tools", OutputLoggerService)
             };
         }
