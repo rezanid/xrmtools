@@ -27,9 +27,17 @@ using XrmTools.Xrm.Repositories;
 
 public interface IPluginRegistrationService
 {
+    event EventHandler<PluginRegistrationChangedEventArgs>? RegistrationChanged;
     public Task<PluginRegistrationResult> RegisterAsync(RegistrationInput input, IPluginRegistrationUI ui, CancellationToken cancellationToken = default);
     public Task<PluginRegistrationResult> UnregisterAsync(RegistrationInput input, IPluginRegistrationUI ui, CancellationToken cancellationToken = default);
     public Task<PluginRegistrationResult> UnregisterAsync(EntityReference target, CancellationToken cancellationToken = default);
+}
+
+public sealed class PluginRegistrationChangedEventArgs(Uri environmentUrl, Guid? packageId, Guid? assemblyId) : EventArgs
+{
+    public Uri EnvironmentUrl { get; } = environmentUrl;
+    public Guid? PackageId { get; } = packageId;
+    public Guid? AssemblyId { get; } = assemblyId;
 }
 
 [Export(typeof(IPluginRegistrationService))]
@@ -48,6 +56,20 @@ internal sealed class PluginRegistrationService(
     private readonly IRepositoryFactory _repositoryFactory = repositoryFactory;
     private readonly ILogger<PluginRegistrationService> _log = log;
     private readonly Validation.IValidationService _validator = validator;
+
+    public event EventHandler<PluginRegistrationChangedEventArgs>? RegistrationChanged;
+
+    private void NotifyRegistrationChanged(Uri environmentUrl, Guid? packageId, Guid? assemblyId)
+    {
+        var handlers = RegistrationChanged;
+        if (handlers == null) return;
+        var change = new PluginRegistrationChangedEventArgs(environmentUrl, packageId, assemblyId);
+        foreach (EventHandler<PluginRegistrationChangedEventArgs> handler in handlers.GetInvocationList())
+        {
+            try { handler(this, change); }
+            catch (Exception ex) { _log.LogError(ex, "Unable to notify a registration change listener."); }
+        }
+    }
 
     public async Task<PluginRegistrationResult> UnregisterAsync(RegistrationInput input, IPluginRegistrationUI ui, CancellationToken cancellationToken = default)
     {
@@ -148,6 +170,7 @@ internal sealed class PluginRegistrationService(
             {
                 foreach (var item in responses) item.Dispose();
             }
+            NotifyRegistrationChanged(baseUrl, isPackage ? target.Id : null, isPackage ? null : target.Id);
             return PluginRegistrationResult.Success(isPackage ? "Plugin package unregistered successfully." : "Plugin assembly unregistered successfully.");
         }
         catch (OperationCanceledException) { throw; }
@@ -326,6 +349,7 @@ internal sealed class PluginRegistrationService(
 
                 batch = new BatchRequest(environment!.BaseServiceUrl!)
                 {
+                    RequestUri = new Uri(environment.BaseServiceUrl!, "$batch"),
                     ChangeSets = [new(requests)]
                 };
             }
@@ -339,6 +363,7 @@ internal sealed class PluginRegistrationService(
 
                 batch = new BatchRequest(environment!.BaseServiceUrl!)
                 {
+                    RequestUri = new Uri(environment.BaseServiceUrl!, "$batch"),
                     ChangeSets = [new(requests)]
                 };
             }
@@ -353,61 +378,17 @@ internal sealed class PluginRegistrationService(
             return PluginRegistrationResult.Failure("Plugin registration failed due to an error while generating registration requests. " + ex.Message);
         }
 
+        var registrationChanged = false;
         try
-        {
-            _log.LogInformation("Sending the initial plugin registration batch.");
-            var batchResponse = await _webApi.SendAsync(batch!, noThrow: true, cancellationToken: cancellationToken).ConfigureAwait(false);
-            var responses = await batchResponse.ParseResponseAsync(cancellationToken).ConfigureAwait(false);
-            _log.LogInformation("Initial registration batch completed with {ResponseCount} response(s).", responses.Count);
-
-            foreach (var response in responses)
-            {
-                if (!response.IsSuccessStatusCode)
-                {
-                    var error = await response.AsServiceExceptionAsync().ConfigureAwait(false);
-                    _log.LogCritical(error.ToString());
-                    return PluginRegistrationResult.Failure(error.Message);
-                }
-                else if (response.GetEntityReference() is EntityReference entityReference)
-                {
-                    _log.LogTrace($"Registered ({entityReference.Path}).");
-                }
-            }
-        }
-        catch (Exception ex)
-        {
-            _log.LogError(ex, "An error occurred while sending the batch request.");
-            return PluginRegistrationResult.Failure("Plugin registration failed. " + ex.Message);
-        }
-
-        if (model.Package is not null)
         {
             try
             {
-                _log.LogInformation("Preparing the follow-up registration of plugin steps and custom APIs.");
-                var assemblyQuery = await _webApi.RetrieveMultipleAsync<PluginAssembly>(
-                    $"{PluginAssembly.Metadata.EntitySetName}?$select=name" +
-                    $"&$filter=name eq '{model.Name}'" +
-                    $"&$expand=PackageId($select=name),pluginassembly_plugintype($select=name,typename" +
-                    $";$expand=plugintype_sdkmessageprocessingstep($select=name,stage),CustomAPIId($select=uniquename))");
+                _log.LogInformation("Sending the initial plugin registration batch.");
+                var batchResponse = await _webApi.SendAsync(batch!, noThrow: true, cancellationToken: cancellationToken).ConfigureAwait(false);
+                var responses = await batchResponse.ParseResponseAsync(cancellationToken).ConfigureAwait(false);
+                _log.LogInformation("Initial registration batch completed with {ResponseCount} response(s).", responses.Count);
 
-                var existing = assemblyQuery?.Value?.SingleOrDefault();
-                AssignIds(model, existing);
-
-                var builder = new UpsertRequestBuilder(model, sdkMessages!);
-                var upserts = builder.WithStepsAndCustomApis().Build();
-                _log.LogInformation("Prepared {RequestCount} follow-up request(s) for plugin steps and custom APIs.", upserts.Count);
-
-                var followupBatch = new BatchRequest(environment.BaseServiceUrl!)
-                {
-                    ChangeSets = [new(upserts)]
-                };
-
-                var followupResponse = await _webApi.SendAsync(followupBatch, noThrow: true, cancellationToken: cancellationToken).ConfigureAwait(false);
-                var followupParts = await followupResponse.ParseResponseAsync(cancellationToken).ConfigureAwait(false);
-                _log.LogInformation("Follow-up registration batch completed with {ResponseCount} response(s).", followupParts.Count);
-
-                foreach (var response in followupParts)
+                foreach (var response in responses)
                 {
                     if (!response.IsSuccessStatusCode)
                     {
@@ -420,16 +401,73 @@ internal sealed class PluginRegistrationService(
                         _log.LogTrace($"Registered ({entityReference.Path}).");
                     }
                 }
+                registrationChanged = responses.Count > 0 && (int)batchResponse.StatusCode is >= 200 and < 300;
             }
-            catch (Exception ex)    
+            catch (Exception ex)
             {
-                _log.LogError(ex, "An error occurred while registering steps/custom APIs after package upload.");
-                return PluginRegistrationResult.Failure("Plugin registration failed during follow-up registration of steps/custom APIs. Please check the Output window for more details.");
+                _log.LogError(ex, "An error occurred while sending the batch request.");
+                return PluginRegistrationResult.Failure("Plugin registration failed. " + ex.Message);
             }
-        }
 
-        _log.LogInformation("Plugin assembly '{AssemblyName}' registered successfully.", model.Name);
-        return PluginRegistrationResult.Success();
+            if (model.Package is not null)
+            {
+                try
+                {
+                    _log.LogInformation("Preparing the follow-up registration of plugin steps and custom APIs.");
+                    var assemblyQuery = await _webApi.RetrieveMultipleAsync<PluginAssembly>(
+                        new Uri(environment!.BaseServiceUrl!, $"{PluginAssembly.Metadata.EntitySetName}?$select=name" +
+                        $"&$filter=name eq '{model.Name}'" +
+                        $"&$expand=PackageId($select=name),pluginassembly_plugintype($select=name,typename" +
+                        $";$expand=plugintype_sdkmessageprocessingstep($select=name,stage),CustomAPIId($select=uniquename))").AbsoluteUri,
+                        cancellationToken: cancellationToken);
+
+                    var existing = assemblyQuery?.Value?.SingleOrDefault();
+                    AssignIds(model, existing);
+
+                    var builder = new UpsertRequestBuilder(model, sdkMessages!);
+                    var upserts = builder.WithStepsAndCustomApis().Build();
+                    _log.LogInformation("Prepared {RequestCount} follow-up request(s) for plugin steps and custom APIs.", upserts.Count);
+
+                    var followupBatch = new BatchRequest(environment.BaseServiceUrl!)
+                    {
+                        RequestUri = new Uri(environment.BaseServiceUrl!, "$batch"),
+                        ChangeSets = [new(upserts)]
+                    };
+
+                    var followupResponse = await _webApi.SendAsync(followupBatch, noThrow: true, cancellationToken: cancellationToken).ConfigureAwait(false);
+                    var followupParts = await followupResponse.ParseResponseAsync(cancellationToken).ConfigureAwait(false);
+                    _log.LogInformation("Follow-up registration batch completed with {ResponseCount} response(s).", followupParts.Count);
+
+                    foreach (var response in followupParts)
+                    {
+                        if (!response.IsSuccessStatusCode)
+                        {
+                            var error = await response.AsServiceExceptionAsync().ConfigureAwait(false);
+                            _log.LogCritical(error.ToString());
+                            return PluginRegistrationResult.Failure(error.Message);
+                        }
+                        else if (response.GetEntityReference() is EntityReference entityReference)
+                        {
+                            _log.LogTrace($"Registered ({entityReference.Path}).");
+                        }
+                    }
+                }
+                catch (Exception ex)
+                {
+                    _log.LogError(ex, "An error occurred while registering steps/custom APIs after package upload.");
+                    return PluginRegistrationResult.Failure("Plugin registration failed during follow-up registration of steps/custom APIs. Please check the Output window for more details.");
+                }
+            }
+
+            _log.LogInformation("Plugin assembly '{AssemblyName}' registered successfully.", model.Name);
+            return PluginRegistrationResult.Success();
+        }
+        finally
+        {
+            // A package upload can commit even when its subsequent steps/API batch fails.
+            if (registrationChanged)
+                NotifyRegistrationChanged(environment!.BaseServiceUrl!, model.Package?.Id ?? existingAssembly?.Package?.Id, model.Id);
+        }
     }
 
     private async Task<Dictionary<string, SdkMessage>> FetchSdkMessagesAsync(PluginAssemblyConfig config, CancellationToken cancellationToken)

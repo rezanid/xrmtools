@@ -39,13 +39,11 @@ internal sealed class UnregisterExplorerCommandProvider : IExplorerCommandProvid
             _ => null,
         };
         if (reference == null) yield break;
-        var root = node;
-        while (root.Parent != null) root = root.Parent;
         yield return new ExplorerMenuItem
         {
             Header = "Unregister from Dataverse",
             Command = _command,
-            CommandParameter = new UnregisterExplorerTarget(reference, node.DisplayName, root.SessionToken, root.RefreshExplorerAsync),
+            CommandParameter = new UnregisterExplorerTarget(reference, node.DisplayName, node.SessionToken),
         };
     }
 
@@ -54,9 +52,7 @@ internal sealed class UnregisterExplorerCommandProvider : IExplorerCommandProvid
         if (target == null || target.CancellationToken.IsCancellationRequested) return;
         try
         {
-            if (await UnregisterCommand.ExecuteTargetAsync(target.Reference, target.DisplayName, _service, _logger, target.CancellationToken)
-                && !target.CancellationToken.IsCancellationRequested && target.RefreshAsync != null)
-                await target.RefreshAsync();
+            await UnregisterCommand.ExecuteTargetAsync(target.Reference, target.DisplayName, _service, _logger, target.CancellationToken);
         }
         catch (OperationCanceledException) { }
         catch (Exception ex)
@@ -66,10 +62,9 @@ internal sealed class UnregisterExplorerCommandProvider : IExplorerCommandProvid
     }
 }
 
-internal sealed class UnregisterExplorerTarget(EntityReference reference, string displayName, CancellationToken cancellationToken, Func<Task>? refreshAsync)
+internal sealed class UnregisterExplorerTarget(EntityReference reference, string displayName, CancellationToken cancellationToken)
 {
     public EntityReference Reference { get; } = reference;
     public string DisplayName { get; } = displayName;
     public CancellationToken CancellationToken { get; } = cancellationToken;
-    public Func<Task>? RefreshAsync { get; } = refreshAsync;
 }

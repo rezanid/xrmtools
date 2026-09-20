@@ -45,7 +45,7 @@ public sealed class UnregisterExplorerTests
     {
         using var session = new CancellationTokenSource();
         var root = new CategoryNode { SessionToken = session.Token };
-        var package = new PackageNode { PackageId = Guid.NewGuid(), Parent = root };
+        var package = new PackageNode { PackageId = Guid.NewGuid(), Parent = root, SessionToken = session.Token };
         var provider = new UnregisterExplorerCommandProvider(Mock.Of<IPluginRegistrationService>(), Mock.Of<ILogger<UnregisterCommand>>());
         var menu = Assert.Single(provider.GetCommands(package));
         Assert.True(menu.Command!.CanExecute(menu.CommandParameter));

@@ -16,6 +16,7 @@ using XrmTools.Logging.Compatibility;
 using XrmTools.CodeGen.CustomApi;
 using XrmTools.WebApi;
 using XrmTools.WebApi.Entities;
+using XrmTools.Services;
 
 public sealed class ExplorerTests
 {
@@ -180,6 +181,240 @@ public sealed class ExplorerTests
         Assert.Contains("_packageid_value eq null", requests[2]);
         Assert.All(requests, request => Assert.DoesNotContain("content", request));
     });
+    [Fact]
+    public void RefreshMenuIsLimitedToUsefulNodes() => OnSta(() =>
+    {
+        var root = new CategoryNode();
+        root.SetArtifactCategory("Assemblies");
+        var package = new PackageNode();
+        var provider = new RefreshExplorerCommandProvider();
+        foreach (var node in new ExplorerNodeBase[] { root, package, new TableNode(), new AssemblyNode { Parent = root } })
+        {
+            node.ReloadAsync = _ => Task.FromResult<ExplorerNodeBase?>(node);
+            node.RefreshAsync = () => Task.CompletedTask;
+            Assert.Equal("Refresh", Assert.Single(provider.GetCommands(node)).Header);
+        }
+        foreach (var node in new ExplorerNodeBase[] { new PluginTypeNode(), new CustomApiNode(), new TableColumnNode(), new AssemblyNode { Parent = package }, new CategoryNode { Parent = package } })
+        {
+            node.ReloadAsync = _ => Task.FromResult<ExplorerNodeBase?>(node);
+            node.RefreshAsync = () => Task.CompletedTask;
+            Assert.Empty(provider.GetCommands(node));
+        }
+    });
+
+    [Fact]
+    public void BranchRefreshPreservesSearchExpansionAndSelectionWithoutChangingSiblings() => OnSta(() =>
+    {
+        var root = new CategoryNode();
+        var old = LoadedAssembly("target", "Old name");
+        var sibling = LoadedAssembly("other", "Other");
+        root.Children.Add(old);
+        root.Children.Add(sibling);
+        var replacement = LoadedAssembly("target", "New name");
+        old.ReloadAsync = _ => Task.FromResult<ExplorerNodeBase?>(replacement);
+        using var vm = Create(root);
+        vm.RefreshAsync().GetAwaiter().GetResult();
+        old.IsExpanded = true;
+        vm.SelectedNode = old.Children[0];
+        vm.ApplySearchAsync("Needle", false, false).GetAwaiter().GetResult();
+        var oldToken = old.Children[0].SessionToken;
+        vm.RefreshNodeAsync(old).GetAwaiter().GetResult();
+        Assert.Same(replacement, root.Children[0]);
+        Assert.Same(sibling, root.Children[1]);
+        Assert.True(replacement.IsExpanded);
+        Assert.Same(replacement.Children[0], vm.SelectedNode);
+        Assert.Equal("Needle", vm.SearchText);
+        Assert.True(oldToken.IsCancellationRequested);
+        Assert.False(sibling.SessionToken.IsCancellationRequested);
+        Assert.Same(root, replacement.Parent);
+    });
+
+    [Fact]
+    public void FailedRefreshKeepsExistingBranchAndCanRetry() => OnSta(() =>
+    {
+        var root = new CategoryNode();
+        var old = LoadedAssembly("target", "Old");
+        root.Children.Add(old);
+        var attempts = 0;
+        old.ReloadAsync = _ => ++attempts == 1
+            ? Task.FromException<ExplorerNodeBase?>(new InvalidOperationException("offline"))
+            : Task.FromResult<ExplorerNodeBase?>(LoadedAssembly("target", "New"));
+        using var vm = Create(root);
+        vm.RefreshAsync().GetAwaiter().GetResult();
+        vm.SelectedNode = old.Children[0];
+        vm.RefreshNodeAsync(old).GetAwaiter().GetResult();
+        Assert.Same(old, root.Children[0]);
+        Assert.NotNull(old.LoadError);
+        Assert.False(old.SessionToken.IsCancellationRequested);
+        Assert.Same(old.Children[0], vm.SelectedNode);
+        vm.RefreshNodeAsync(old).GetAwaiter().GetResult();
+        Assert.Equal("New", root.Children[0].DisplayName);
+        Assert.Null(root.Children[0].LoadError);
+    });
+
+    [Fact]
+    public void DeletedNodeIsRemovedAndOldMenusAndExpansionAreIgnored() => OnSta(() =>
+    {
+        var root = new CategoryNode();
+        var old = new PackageNode { Id = "deleted", ReloadAsync = _ => Task.FromResult<ExplorerNodeBase?>(null) };
+        root.Children.Add(old);
+        using var vm = Create(root);
+        vm.RefreshAsync().GetAwaiter().GetResult();
+        vm.SelectedNode = old;
+        var menu = Assert.Single(new RefreshExplorerCommandProvider().GetCommands(old));
+        vm.RefreshNodeAsync(old).GetAwaiter().GetResult();
+        Assert.Empty(root.Children);
+        Assert.Null(vm.SelectedNode);
+        Assert.False(menu.Command!.CanExecute(null));
+        old.LoadChildrenAsync = _ => throw new InvalidOperationException("Detached load must not run");
+        vm.LoadNodeAsync(old).GetAwaiter().GetResult();
+        Assert.Null(old.LoadError);
+    });
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void RegistrationRefreshChangesOnlyAffectedBranchAndHandlesRemoval(bool removed) => OnSta(() =>
+    {
+        var environment = new Uri("https://example.crm.dynamics.com/api/data/v9.2/");
+        var id = Guid.NewGuid();
+        var calls = 0;
+        var provider = new Provider(() =>
+        {
+            var root = new CategoryNode { Id = "Assemblies" };
+            root.SetArtifactCategory("Assemblies");
+            root.LoadChildrenAsync = _ =>
+            {
+                calls++;
+                if (!removed || calls == 1) root.Children.Add(LoadedAssembly(id.ToString(), "Version " + calls));
+                root.Children.Add(LoadedAssembly("unrelated", "Unrelated"));
+                return Task.CompletedTask;
+            };
+            return root;
+        });
+        using var vm = new DataverseExplorerViewModel([provider], Mock.Of<ILogger>(), getEnvironmentUrl: () => Task.FromResult<Uri?>(environment));
+        vm.RefreshAsync().GetAwaiter().GetResult();
+        var original = vm.RootNodes[0];
+        var unrelated = original.Children[1];
+        vm.SelectedNode = original.Children[0].Children[0];
+        vm.RefreshRegistrationAsync(new(new Uri("https://other.crm.dynamics.com/api/data/v9.2/"), null, id)).GetAwaiter().GetResult();
+        Assert.Equal(1, calls);
+        vm.RefreshRegistrationAsync(new(environment, null, id)).GetAwaiter().GetResult();
+        Assert.Equal(2, calls);
+        Assert.Same(unrelated, vm.RootNodes[0].Children.Last());
+        Assert.False(unrelated.SessionToken.IsCancellationRequested);
+        if (removed) Assert.Null(vm.SelectedNode);
+        else
+        {
+            Assert.Equal("Version 2", vm.RootNodes[0].Children[0].DisplayName);
+            Assert.Same(vm.RootNodes[0].Children[0].Children[0], vm.SelectedNode);
+        }
+    });
+
+    [Fact]
+    public void InFlightRefreshCannotPublishAfterFullRefresh() => OnSta(() =>
+    {
+        var pending = new TaskCompletionSource<ExplorerNodeBase?>();
+        var old = new PackageNode { Id = "old", ReloadAsync = _ => pending.Task };
+        var root = new CategoryNode();
+        root.Children.Add(old);
+        var latest = new CategoryNode();
+        var calls = 0;
+        using var vm = new DataverseExplorerViewModel([new Provider(() => ++calls == 1 ? root : latest)], Mock.Of<ILogger>());
+        vm.RefreshAsync().GetAwaiter().GetResult();
+        var refresh = vm.RefreshNodeAsync(old);
+        vm.RefreshAsync().GetAwaiter().GetResult();
+        pending.SetResult(new PackageNode { Id = "stale" });
+        refresh.GetAwaiter().GetResult();
+        Assert.Same(latest, vm.RootNodes.Single());
+        Assert.Same(old, root.Children.Single());
+        Assert.True(old.SessionToken.IsCancellationRequested);
+    });
+
+    private static AssemblyNode LoadedAssembly(string id, string name)
+    {
+        var node = new AssemblyNode { Id = id, DisplayName = name, AreChildrenLoaded = true };
+        node.Children.Add(new PluginTypeNode { Id = "plugin", DisplayName = "Needle", Parent = node, AreChildrenLoaded = true });
+        return node;
+    }
+
+    [Fact]
+    public void PackageRefreshReloadsPreviouslyLoadedAssembliesAndLeavesUnopenedOnesLazy() => OnSta(() =>
+    {
+        var root = new CategoryNode();
+        var old = new PackageNode { Id = "package", AreChildrenLoaded = true };
+        var loaded = LoadedAssembly("loaded", "Loaded");
+        loaded.IsExpanded = true;
+        old.Children.Add(loaded);
+        old.Children.Add(new AssemblyNode { Id = "lazy" });
+        root.Children.Add(old);
+        var replacement = new PackageNode { Id = "package" };
+        var loadedCalls = 0;
+        replacement.LoadChildrenAsync = _ =>
+        {
+            var assembly = new AssemblyNode { Id = "loaded" };
+            assembly.LoadChildrenAsync = _ =>
+            {
+                loadedCalls++;
+                assembly.Children.Add(new PluginTypeNode { Id = "plugin", DisplayName = "Updated plugin" });
+                return Task.CompletedTask;
+            };
+            replacement.Children.Add(assembly);
+            replacement.Children.Add(new AssemblyNode { Id = "lazy", LoadChildrenAsync = _ => throw new InvalidOperationException("Must remain lazy") });
+            return Task.CompletedTask;
+        };
+        old.ReloadAsync = _ => Task.FromResult<ExplorerNodeBase?>(replacement);
+        using var vm = Create(root);
+        vm.RefreshAsync().GetAwaiter().GetResult();
+        vm.SelectedNode = loaded.Children[0];
+        vm.RefreshNodeAsync(old).GetAwaiter().GetResult();
+        Assert.Equal(1, loadedCalls);
+        Assert.Equal("Updated plugin", vm.SelectedNode!.DisplayName);
+        Assert.True(replacement.Children[0].IsExpanded);
+        Assert.True(replacement.Children[1].CanLoadChildren);
+        Assert.Same(replacement.Children[0], vm.SelectedNode.Parent);
+    });
+
+    [Fact]
+    public void RegistrationRefreshDiscoversNewPackagesWithoutLoadingTheirAssemblies() => OnSta(() =>
+    {
+        var environment = new Uri("https://example.crm.dynamics.com/api/data/v9.2/");
+        var id = Guid.NewGuid();
+        var calls = 0;
+        var provider = new Provider(() =>
+        {
+            var root = new CategoryNode { Id = "Packages" };
+            root.SetArtifactCategory("Packages");
+            root.LoadChildrenAsync = _ =>
+            {
+                if (++calls > 1) root.Children.Add(new PackageNode
+                {
+                    Id = id.ToString(), PackageId = id,
+                    LoadChildrenAsync = _ => throw new InvalidOperationException("New packages should remain lazy"),
+                });
+                return Task.CompletedTask;
+            };
+            return root;
+        });
+        using var vm = new DataverseExplorerViewModel([provider], Mock.Of<ILogger>(), getEnvironmentUrl: () => Task.FromResult<Uri?>(environment));
+        vm.RefreshAsync().GetAwaiter().GetResult();
+        Assert.Empty(vm.RootNodes[0].Children);
+        vm.RefreshRegistrationAsync(new(environment, id, null)).GetAwaiter().GetResult();
+        var package = Assert.IsType<PackageNode>(Assert.Single(vm.RootNodes[0].Children));
+        Assert.Equal(id, package.PackageId);
+        Assert.True(package.CanLoadChildren);
+    });
+
+    [Fact]
+    public void DisposalUnsubscribesAndQueuedNotificationsAreIgnored() => OnSta(() =>
+    {
+        var registration = new Mock<IPluginRegistrationService>();
+        var vm = new DataverseExplorerViewModel([], Mock.Of<ILogger>(), registration.Object);
+        vm.Dispose();
+        registration.VerifyRemove(service => service.RegistrationChanged -= It.IsAny<EventHandler<PluginRegistrationChangedEventArgs>>(), Times.Once);
+        vm.RefreshRegistrationAsync(new(new Uri("https://example.crm.dynamics.com/api/data/v9.2/"), null, Guid.NewGuid())).GetAwaiter().GetResult();
+    });
+
     private sealed class Provider(Func<CategoryNode> create) : IExplorerCategoryProvider
     {
         public int Order => 0;

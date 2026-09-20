@@ -61,7 +61,8 @@ public abstract class ExplorerNodeBase : ViewModelBase
     internal Func<CancellationToken, Task>? LoadChildrenAsync { get; set; }
     // Root-owned command context: invalidated when this tree is refreshed or its environment changes.
     internal CancellationToken SessionToken { get; set; }
-    internal Func<Task>? RefreshExplorerAsync { get; set; }
+    internal Func<CancellationToken, Task<ExplorerNodeBase?>>? ReloadAsync { get; set; }
+    internal Func<Task>? RefreshAsync { get; set; }
     [Browsable(false)]
     public ExplorerNodeBase? Parent { get; set; }
     [Browsable(false)]

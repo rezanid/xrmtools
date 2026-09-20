@@ -20,12 +20,15 @@ using XrmTools.DataverseExplorer.ViewModels;
 using XrmTools.Helpers;
 using XrmTools.Logging.Compatibility;
 using XrmTools.Options;
+using XrmTools.Services;
 
 internal class DataverseExplorerSource
 {
     public required ILogger Logger { get; init; }
     public required IEnumerable<IExplorerCategoryProvider> Categories { get; init; }
     public required IEnumerable<IExplorerCommandProvider> Commands { get; init; }
+    public required IPluginRegistrationService Registration { get; init; }
+    public required Func<Task<Uri?>> GetEnvironmentUrl { get; init; }
 
 }
 
@@ -58,7 +61,7 @@ internal class DataverseExplorerWindow : ToolWindowPane // BaseToolWindow<Datave
         Logger = source.Logger;
 
         var control = new DataverseExplorerWindowControl();
-        _viewModel = new DataverseExplorerViewModel(source.Categories, Logger);
+        _viewModel = new DataverseExplorerViewModel(source.Categories, Logger, source.Registration, source.GetEnvironmentUrl);
         _viewModel.SelectedNodeChanged += OnSelectedNodeChanged;
         control.CommandProviders = source.Commands;
         control.DataContext = _viewModel;
