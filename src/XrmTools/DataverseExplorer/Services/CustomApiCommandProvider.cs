@@ -7,8 +7,6 @@ using Microsoft.VisualStudio.Shell;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel.Composition;
-using System.IO;
-using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using XrmTools.CodeGen.CustomApi;
@@ -60,14 +58,18 @@ internal sealed class CustomApiCommandProvider : IExplorerCommandProvider
         try
         {
             var result = await _generator.GenerateAsync(target.ApiId, target.Language, target.CancellationToken);
+            var dte = await VS.GetServiceAsync<EnvDTE.DTE, EnvDTE.DTE>();
             await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync(target.CancellationToken);
-            // Each invocation has its own folder. No project items or existing files are changed.
-            var directory = Path.Combine(Path.GetTempPath(), "XrmTools", "GeneratedClients", Guid.NewGuid().ToString("N"));
-            Directory.CreateDirectory(directory);
-            var path = Path.Combine(directory, result.FileName);
-            File.WriteAllText(path, result.Content, new UTF8Encoding(false));
-            await VS.Documents.OpenAsync(path);
-            await VS.StatusBar.ShowMessageAsync("Generated client opened as a temporary document. Use Save As to keep it.");
+            // A new document retains the suggested filename and prompts for a destination on Save.
+            // Insert into the returned window, since another document may already be active.
+            var window = dte.ItemOperations.NewFile(@"General\Text File", result.FileName, EnvDTE.Constants.vsViewKindTextView);
+            var document = window.Document;
+            if (document.Object("TextDocument") is not EnvDTE.TextDocument textDocument)
+                throw new InvalidOperationException("Visual Studio could not create a text document for the generated client.");
+            textDocument.StartPoint.CreateEditPoint().Insert(result.Content);
+            document.Saved = false;
+            window.Activate();
+            await VS.StatusBar.ShowMessageAsync("Generated client opened as an unsaved document. Save to choose its location.");
         }
         catch (OperationCanceledException) { }
         catch (Exception ex)
