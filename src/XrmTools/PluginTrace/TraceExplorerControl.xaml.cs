@@ -118,7 +118,7 @@ public partial class TraceExplorerControl : UserControl, IDisposable
             CloseDetails();
             UpdatesButton.Visibility = BackButton.Visibility = Visibility.Collapsed;
             EmptyState.Visibility = Visibility.Visible;
-            EmptyState.Text = "Environment changed. Apply a filter to load its traces.";
+            EmptyStateMessage.Text = "Environment changed. Apply a filter to load its traces.";
             EnvironmentLabel.Text = value.Name + " · " + value.Url;
             Status.Text = "Environment changed. Apply to load traces.";
             if (value.IsValid) _ = LoadTraceLoggingAsync(value);
@@ -152,9 +152,9 @@ public partial class TraceExplorerControl : UserControl, IDisposable
         ModifiedLabel.Text = SavedViews.SelectedItem is TraceFilter selected && filter with { Name = selected.Name } != selected ? "Modified" : "";
         try { Preview.Text = filter.Build(DateTimeOffset.UtcNow); }
         catch (FormatException ex) { Preview.Text = ex.Message; }
+        UpdateQueryAction();
     }
 
-    private async void ApplyClick(object sender, RoutedEventArgs e) => await ApplyAsync();
     private async Task ApplyAsync()
     {
         try
@@ -166,23 +166,49 @@ public partial class TraceExplorerControl : UserControl, IDisposable
         catch (Exception ex) { Status.Text = ex.Message; }
     }
 
-    private async void RefreshOrCancelClick(object sender, RoutedEventArgs e)
+    private async void UseLast24HoursClick(object sender, RoutedEventArgs e)
+    {
+        initializing = true;
+        Duration.SelectedItem = Duration.Items.Cast<ComboBoxItem>().FirstOrDefault(i => (string)i.Tag == "1440") ?? Duration.Items[2];
+        FullControl.IsChecked = false;
+        initializing = false;
+        UpdateFilterPreview();
+        await ApplyAsync();
+    }
+
+    private async void ClearFiltersClick(object sender, RoutedEventArgs e)
+    {
+        initializing = true;
+        ViewName.Text = "";
+        TypeName.Text = "";
+        ErrorsOnly.IsChecked = false;
+        FullControl.IsChecked = false;
+        Expression.Text = "";
+        initializing = false;
+        RefreshSavedViews();
+        UpdateFilterPreview();
+        await ApplyAsync();
+    }
+
+    private async void RunOrCancelClick(object sender, RoutedEventArgs e)
     {
         if (queryCancellation != null)
         {
             CancelActiveRefresh();
             return;
         }
-        if (applied == null) await ApplyAsync();
-        else await QueryAsync(applied, true, false);
+        if (HasUnappliedFilterChanges()) await ApplyAsync();
+        else if (applied != null) await QueryAsync(applied, true, false);
     }
+
+    private bool HasUnappliedFilterChanges() => applied == null || ReadFilter() != applied;
 
     private void CancelActiveRefresh()
     {
         revision++;
         queryCancellation?.Cancel();
         queryCancellation = null;
-        SetRefreshAction(false);
+        UpdateQueryAction();
         Status.Text = "Request cancelled. Existing results preserved.";
     }
 
@@ -198,13 +224,23 @@ public partial class TraceExplorerControl : UserControl, IDisposable
         traceLoggingLoadCancellation = null;
         loggingCancellation?.Cancel();
         loggingCancellation = null;
-        SetRefreshAction(false);
+        UpdateQueryAction();
     }
 
-    private void SetRefreshAction(bool refreshing)
+    private void UpdateQueryAction()
     {
-        RefreshButton.Content = refreshing ? "Cancel" : "Refresh";
-        RefreshButton.ToolTip = refreshing ? "Cancel refresh" : "Refresh traces";
+        if (queryCancellation != null) return;
+        bool apply = HasUnappliedFilterChanges();
+        QueryButton.Content = apply ? "Apply" : "Refresh";
+        QueryButton.ToolTip = apply ? "Apply filter (Ctrl+Enter)" : "Refresh the applied filter (Ctrl+Enter)";
+        QueryButton.Kind = XrmTools.Shell.Styles.ButtonKind.Accent;
+    }
+
+    private void SetQueryActionBusy()
+    {
+        QueryButton.Content = "Cancel";
+        QueryButton.ToolTip = "Cancel request";
+        QueryButton.Kind = XrmTools.Shell.Styles.ButtonKind.Standard;
     }
 
     private async Task LoadTraceLoggingAsync(DataverseEnvironment selectedEnvironment)
@@ -286,7 +322,7 @@ public partial class TraceExplorerControl : UserControl, IDisposable
         var cancellation = new CancellationTokenSource();
         queryCancellation = cancellation;
         int generation = ++revision;
-        SetRefreshAction(true);
+        SetQueryActionBusy();
         if (interactive) Status.Text = "Loading traces…";
         try
         {
@@ -312,6 +348,7 @@ public partial class TraceExplorerControl : UserControl, IDisposable
             if (replace)
             {
                 applied = filter with { };
+                UpdateQueryAction();
                 back = null;
                 BackButton.Visibility = Visibility.Collapsed;
                 CloseDetails();
@@ -351,7 +388,7 @@ public partial class TraceExplorerControl : UserControl, IDisposable
             if (ReferenceEquals(queryCancellation, cancellation))
             {
                 queryCancellation = null;
-                SetRefreshAction(false);
+                UpdateQueryAction();
             }
             cancellation.Dispose();
         }
@@ -375,7 +412,7 @@ public partial class TraceExplorerControl : UserControl, IDisposable
         Logs.SelectedItem = selected;
         changingSelection = false;
         EmptyState.Visibility = displayed.Count == 0 ? Visibility.Visible : Visibility.Collapsed;
-        EmptyState.Text = "No matching traces. Try a longer time window or a broader filter. Tracing must be enabled in Dataverse.";
+        EmptyStateMessage.Text = "No traces match the current filters.";
         if (anchor != null)
         {
             int index = Logs.Items.Cast<TraceRecord>().ToList().FindIndex(r => r.Id == anchor);
@@ -635,7 +672,12 @@ public partial class TraceExplorerControl : UserControl, IDisposable
         else if (e.Key == Key.Escape && Details.Visibility == Visibility.Visible) { CloseDetails(); e.Handled = true; }
         else if (e.Key == Key.Enter && FindText.IsKeyboardFocusWithin) { FindNextClick(sender, e); e.Handled = true; }
         else if (e.Key == Key.Enter && (Keyboard.Modifiers == ModifierKeys.Control || QuickFilters.IsKeyboardFocusWithin || CustomRange.IsKeyboardFocusWithin))
-        { e.Handled = true; await ApplyAsync(); }
+        {
+            e.Handled = true;
+            if (queryCancellation != null) CancelActiveRefresh();
+            else if (HasUnappliedFilterChanges()) await ApplyAsync();
+            else if (applied != null) await QueryAsync(applied, true, false);
+        }
     }
 
     private async void GoToDefinitionClick(object sender, RoutedEventArgs e)

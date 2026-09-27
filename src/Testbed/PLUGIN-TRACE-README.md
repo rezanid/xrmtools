@@ -1,12 +1,12 @@
 # Plugin Trace Explorer
 
-Open **View > Other Windows > Plugin Trace Explorer** in Visual Studio with Xrm Tools installed. It uses the currently selected Dataverse environment and reads `plugintracelogs`; it does not enable tracing or modify/delete logs.
+Open **View > Other Windows > Plugin Trace Explorer** in Visual Studio with Xrm Tools installed. It uses the currently selected Dataverse environment and reads `plugintracelogs`. It never deletes logs; **Trace logging** can change the environment setting when your account has permission.
 
 ## Filters
 
-- Choose a relative duration or a custom local start/end time, enter a full or partial type name, and optionally select **Errors only**. Apply with the button or Enter in the quick filters.
+- Choose a relative duration or a custom local start/end time, enter a full or partial type name, and optionally select **Errors only**. The primary action is **Apply** while edits are pending and **Refresh** once they are applied; it becomes **Cancel** during a request. Ctrl+Enter runs the same context-aware action.
 - **Advanced OData filter** normally adds a parenthesized condition to the quick filters. **Edit entire $filter** replaces them completely. The effective filter preview shows how conditions combine. Ctrl+Enter applies from the editor.
-- Filter edits are drafts until Apply. Invalid server expressions leave the previous results visible. Refresh uses the last successfully applied filter.
+- Filter edits are drafts until Apply. Invalid server expressions leave the previous results visible. The empty state offers quick paths to **Last 24 hours** and **Clear filters**; clearing preserves the selected time window.
 - Open **Saved views** to select, save, rename, or delete a filter without leaving the filter bar. Save overwrites the selected view when its name is unchanged; changing the name creates the renamed view. Selecting a view applies it immediately. Views persist in your Visual Studio user settings; relative durations remain relative.
 - Results arrive newest first by creation time, with the record ID as a deterministic tie-breaker. Every column is sortable; the selected column and direction remain in effect as results refresh. Displayed timestamps are local; API filtering uses UTC.
 
@@ -15,8 +15,8 @@ Open **View > Other Windows > Plugin Trace Explorer** in Visual Studio with Xrm 
 - Details are closed initially. Select a row to open its exception, trace message, and full record. **Close details** or Escape restores the full-width list. The same row can be opened again with one click.
 - Right-click a trace and choose **Go To Definition**, or press F12 with a row selected, to open the exact plugin type declaration in the current solution. Assembly-qualified names select the matching project. Missing or ambiguous types produce a status message; no unrelated class is opened.
 - The selected detail is a snapshot. Auto-refresh never replaces its text, selected text, tab, or scroll position.
-- Polling defaults to every 10 seconds and can be switched off or changed. The Refresh button becomes Cancel while a refresh is active. Polling is noninteractive, skips hidden windows, and does not overlap requests.
-- After the initial query, **Trace logging** shows the environment's current setting and can change it to Off, Exceptions, or All. The selector is disabled if the setting cannot be read or updated, leaving the displayed traces unchanged.
+- Polling defaults to every 10 seconds and can be switched off or changed. Polling is noninteractive, skips hidden windows, and does not overlap requests.
+- On opening and whenever the environment changes, **Trace logging** reads the environment's current setting and can change it to Off, Exceptions, or All. The selector is disabled if the setting cannot be read or updated, leaving the displayed traces unchanged.
 - Changed results appear behind **Show updates**. Applying those updates preserves the selected record and list scroll anchor. A selected record outside the new result window remains available until selection is cleared.
 - If the selected trace changes, **Load updated trace** explicitly replaces its snapshot.
 - **Show related execution** queries the correlation ID across the time window. **Back to results** restores the previous results, filter draft, and selected trace.

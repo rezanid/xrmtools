@@ -57,13 +57,12 @@
     <c:ComboBox x:Name="TraceLogging" Width="105" SelectedIndex="0" IsEnabled="False" ToolTip="Dataverse plug-in trace logging level" SelectionChanged="TraceLoggingChanged"><c:ComboBoxItem Content="Off" Tag="0"/><c:ComboBoxItem Content="Exceptions" Tag="1"/><c:ComboBoxItem Content="All" Tag="2"/></c:ComboBox>
     <c:CheckBox x:Name="AutoRefresh" Content="Auto-refresh" IsChecked="True"/>
     <c:ComboBox x:Name="Interval" SelectedIndex="1" Width="84" ToolTip="Refresh interval"><c:ComboBoxItem Content="5 sec" Tag="5"/><c:ComboBoxItem Content="10 sec" Tag="10"/><c:ComboBoxItem Content="30 sec" Tag="30"/><c:ComboBoxItem Content="60 sec" Tag="60"/></c:ComboBox>
-    <c:Button x:Name="RefreshButton" Content="Refresh" Click="RefreshOrCancelClick" ToolTip="Refresh traces"/>
    </WrapPanel>
    <TextBlock x:Name="EnvironmentLabel" Text="Plugin Trace Explorer" TextTrimming="CharacterEllipsis" Foreground="{DynamicResource {x:Static s:ShellColors.TextFillSecondaryBrushKey}}" ToolTip="{Binding Text, RelativeSource={RelativeSource Self}}"/>
   </DockPanel>
   <StackPanel Grid.Row="1">
    <WrapPanel>
-    <c:DropDownButton x:Name="SavedViewsButton" Content="Saved views" ToolTip="Select, save, or delete a saved filter">
+    <c:DropDownButton x:Name="SavedViewsButton" Content="Saved views" Margin="0,0,8,0" ToolTip="Select, save, or delete a saved filter">
      <c:DropDownButton.DropDown>
       <c:Popup x:Name="SavedViewsPopup" Placement="Bottom" FocusOnOpen="True">
        <Border Padding="4" MinWidth="260" Background="{DynamicResource {x:Static s:ShellColors.ControlFillDefaultBrushKey}}" BorderBrush="{DynamicResource {x:Static s:ShellColors.ControlStrokeDefaultBrushKey}}" BorderThickness="1">
@@ -88,10 +87,10 @@
      <c:ComboBoxItem Content="Last 5 minutes" Tag="5"/><c:ComboBoxItem Content="Last 15 minutes" Tag="15"/><c:ComboBoxItem Content="Last 30 minutes" Tag="30"/><c:ComboBoxItem Content="Last hour" Tag="60"/><c:ComboBoxItem Content="Last 24 hours" Tag="1440"/><c:ComboBoxItem Content="Custom range" Tag="0"/>
     </c:ComboBox>
     <TextBlock Text="Type contains"/>
-    <c:ComboBox x:Name="TypeName" IsEditable="True" IsTextSearchEnabled="False" Width="240" ToolTip="Full or partial plugin type name; suggestions come from loaded traces"/>
+    <c:ComboBox x:Name="TypeName" IsEditable="True" IsTextSearchEnabled="False" Width="240" ToolTip="Plugin type name. Enter all or part of the name; suggestions come from loaded traces."/>
     <c:CheckBox x:Name="ErrorsOnly" Content="Errors only" Click="FilterChanged"/>
+    <c:Button x:Name="QueryButton" Content="Apply" Kind="Accent" Click="RunOrCancelClick" ToolTip="Apply filter (Ctrl+Enter)"/>
    </WrapPanel>
-    <c:Button x:Name="ApplyButton" Content="Apply" Click="ApplyClick" ToolTip="Apply filter (Ctrl+Enter)"/>
     <TextBlock x:Name="ModifiedLabel" Margin="6,0" Foreground="{DynamicResource {x:Static s:ShellColors.TextFillSecondaryBrushKey}}"/>
    </WrapPanel>
    <WrapPanel x:Name="CustomRange" Visibility="Collapsed" Margin="0,4">
@@ -101,9 +100,9 @@
    <c:Expander Header="Advanced OData filter" Margin="0,0,0,2">
     <StackPanel Margin="20,4,0,4">
      <c:CheckBox x:Name="FullControl" Content="Edit entire $filter — replaces time, type, and error filters" Click="FilterChanged"/>
-     <c:TextBox x:Name="Expression" MinHeight="64" MaxHeight="160" AcceptsReturn="True" FontFamily="Consolas" TextWrapping="Wrap" VerticalScrollBarVisibility="Auto" HintText="Additional OData condition, e.g. performanceexecutionduration gt 1000"/>
-     <TextBlock Text="Effective $filter (relative time is recalculated on each refresh)" Margin="2,6"/>
-     <c:TextBox x:Name="Preview" IsReadOnly="True" TextWrapping="Wrap" MaxHeight="85" VerticalScrollBarVisibility="Auto" FontFamily="Consolas"/>
+     <c:TextBox x:Name="Expression" MinHeight="42" MaxHeight="110" AcceptsReturn="True" FontFamily="Consolas" TextWrapping="Wrap" VerticalScrollBarVisibility="Auto" HintText="Additional OData condition, e.g. performanceexecutionduration gt 1000"/>
+     <TextBlock Text="Effective filter" ToolTip="Relative time is recalculated on each refresh." Margin="2,6,2,2"/>
+     <c:TextBox x:Name="Preview" IsReadOnly="True" TextWrapping="NoWrap" MaxHeight="42" VerticalScrollBarVisibility="Disabled" HorizontalScrollBarVisibility="Auto" FontFamily="Consolas"/>
     </StackPanel>
    </c:Expander>
   </StackPanel>
@@ -125,18 +124,22 @@
       </Style>
      </c:DataGrid.RowStyle>
      <c:DataGrid.Columns>
-      <c:DataGridTextColumn Header="Status" Binding="{Binding Status}" SortMemberPath="Status" Width="75"/>
-      <c:DataGridTextColumn Header="Created (local)" Binding="{Binding Time}" SortMemberPath="CreatedOn" Width="175"/>
-      <c:DataGridTextColumn Header="Type name" Binding="{Binding ShortTypeName}" SortMemberPath="TypeName" Width="2*" MinWidth="150">
+      <c:DataGridTextColumn Header="Status" Binding="{Binding Status}" SortMemberPath="Status" Width="95"/>
+      <c:DataGridTextColumn Header="Created (local)" Binding="{Binding Time}" SortMemberPath="CreatedOn" Width="180"/>
+      <c:DataGridTextColumn Header="Type name" Binding="{Binding ShortTypeName}" SortMemberPath="TypeName" Width="2*" MinWidth="180">
        <c:DataGridTextColumn.ElementStyle><Style TargetType="TextBlock"><Setter Property="ToolTip" Value="{Binding TypeName}"/><Setter Property="TextTrimming" Value="CharacterEllipsis"/><Setter Property="VerticalAlignment" Value="Center"/></Style></c:DataGridTextColumn.ElementStyle>
       </c:DataGridTextColumn>
-      <c:DataGridTextColumn Header="Message" Binding="{Binding MessageName}" SortMemberPath="MessageName" Width="85"/>
-      <c:DataGridTextColumn Header="Entity" Binding="{Binding Entity}" SortMemberPath="Entity" Width="85"/>
-      <c:DataGridTextColumn Header="Duration (ms)" Binding="{Binding Duration}" SortMemberPath="Duration" Width="85"/>
-      <c:DataGridTextColumn Header="Depth" Binding="{Binding Depth}" SortMemberPath="Depth" Width="50"/>
+      <c:DataGridTextColumn Header="Message" Binding="{Binding MessageName}" SortMemberPath="MessageName" Width="120"/>
+      <c:DataGridTextColumn Header="Entity" Binding="{Binding Entity}" SortMemberPath="Entity" Width="110"/>
+      <c:DataGridTextColumn Header="Duration (ms)" Binding="{Binding Duration}" SortMemberPath="Duration" Width="110"/>
+      <c:DataGridTextColumn Header="Depth" Binding="{Binding Depth}" SortMemberPath="Depth" Width="70"/>
      </c:DataGrid.Columns>
     </c:DataGrid>
-    <TextBlock x:Name="EmptyState" Text="Apply a filter to load plugin traces." HorizontalAlignment="Center" VerticalAlignment="Center" IsHitTestVisible="False" TextWrapping="Wrap" Margin="20"/>
+    <StackPanel x:Name="EmptyState" HorizontalAlignment="Center" VerticalAlignment="Center" Margin="20" MaxWidth="600">
+     <TextBlock x:Name="EmptyStateMessage" Text="Apply a filter to load plugin traces." HorizontalAlignment="Center" TextAlignment="Center" TextWrapping="Wrap"/>
+     <TextBlock Text="Try a longer time window, clear filters, or refresh." HorizontalAlignment="Center" TextAlignment="Center" TextWrapping="Wrap" Margin="0,4" Foreground="{DynamicResource {x:Static s:ShellColors.TextFillSecondaryBrushKey}}"/>
+     <WrapPanel HorizontalAlignment="Center"><c:Button Content="Last 24 hours" Click="UseLast24HoursClick"/><c:Button Content="Clear filters" Click="ClearFiltersClick"/></WrapPanel>
+    </StackPanel>
    </Grid>
    <GridSplitter x:Name="DetailSplitter" Grid.Column="1" Width="5" HorizontalAlignment="Stretch" ResizeBehavior="PreviousAndNext" Visibility="Collapsed" Background="{DynamicResource {x:Static s:ShellColors.ControlStrokeDefaultBrushKey}}"/>
    <Grid x:Name="Details" Grid.Column="2" Visibility="Collapsed" Margin="6,0,0,0">

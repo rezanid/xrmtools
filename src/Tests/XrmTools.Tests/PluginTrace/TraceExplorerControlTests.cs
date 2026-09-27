@@ -52,6 +52,7 @@ public class TraceExplorerControlTests
         Assert.Equal(Visibility.Collapsed, control.Details.Visibility);
         Assert.Equal(0, control.DetailColumn.Width.Value);
         Assert.True(control.Logs.CanUserSortColumns);
+        Assert.Equal("Apply", control.QueryButton.Content);
 
         using var json = JsonDocument.Parse("{\"plugintracelogid\":\"00000001-0000-0000-0000-000000000000\",\"createdon\":\"2026-09-22T12:00:00Z\",\"messageblock\":\"hello\"}");
         var record = new TraceRecord(json.RootElement);
