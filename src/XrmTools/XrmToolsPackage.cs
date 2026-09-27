@@ -126,6 +126,7 @@ using Task = System.Threading.Tasks.Task;
 [ProvideOptionPage(typeof(OptionsProvider.GeneralOptions), Vsix.Name, "General", 0, 0, true, SupportsProfiles = true)]
 [ProvideOptionPage(typeof(OptionsProvider.FetchXmlOptions), Vsix.Name, "FetchXML", 0, 0, true, SupportsProfiles = true)]
 [ProvideToolWindow(typeof(DataverseExplorer.Views.DataverseExplorerWindow), Window = "DocumentWell", Style = VsDockStyle.Tabbed, DockedWidth = 300, Orientation = ToolWindowOrientation.Left)]
+[ProvideToolWindow(typeof(PluginTrace.TraceExplorerWindow), Window = "DocumentWell", Style = VsDockStyle.Tabbed)]
 [ProvideBindingPath]
 public sealed partial class XrmToolsPackage : ToolkitPackage
 {
@@ -235,6 +236,7 @@ public sealed partial class XrmToolsPackage : ToolkitPackage
         await ManageEnvironmentsGetListCommand.InitializeAsync(this);
         await NewFetchXmlFileCommand.InitializeAsync(this);
         await ShowDataverseExplorerCommand.InitializeAsync(this);
+        await ShowPluginTraceExplorerCommand.InitializeAsync(this);
         await RefreshDataverseExplorerCommand.InitializeAsync(this);
 
         VS.Events.SolutionEvents.OnAfterOpenSolution += (solution) => OnAfterOpenSolution(solution, cancellationToken);
@@ -259,16 +261,25 @@ public sealed partial class XrmToolsPackage : ToolkitPackage
 
     public override IVsAsyncToolWindowFactory GetAsyncToolWindowFactory(Guid toolWindowType)
     {
-        return toolWindowType.Equals(Guid.Parse(DataverseExplorer.Views.DataverseExplorerWindow.WindowGuidString)) ? this : null!;
+        return toolWindowType.Equals(Guid.Parse(DataverseExplorer.Views.DataverseExplorerWindow.WindowGuidString))
+            || toolWindowType.Equals(Guid.Parse(PluginTrace.TraceExplorerWindow.WindowGuidString)) ? this : null!;
     }
 
     protected override string GetToolWindowTitle(Type toolWindowType, int id)
     {
+        if (toolWindowType == typeof(PluginTrace.TraceExplorerWindow)) return "Plugin Trace Explorer";
         return toolWindowType == typeof(DataverseExplorer.Views.DataverseExplorerWindow) ? DataverseExplorer.Views.DataverseExplorerWindow.WindowCaption : base.GetToolWindowTitle(toolWindowType, id);
     }
 
     protected override async Task<object> InitializeToolWindowAsync(Type toolWindowType, int id, CancellationToken cancellationToken)
     {
+        if (toolWindowType == typeof(PluginTrace.TraceExplorerWindow))
+        {
+            var componentModel = await GetServiceAsync(typeof(SComponentModel)) as IComponentModel
+                ?? throw new InvalidOperationException("Visual Studio's component service is unavailable.");
+            return componentModel.GetService<PluginTrace.TraceExplorerService>()
+                ?? throw new InvalidOperationException("The Plugin Trace Explorer service could not be loaded.");
+        }
         if (toolWindowType == typeof(DataverseExplorer.Views.DataverseExplorerWindow))
         {
             return new DataverseExplorer.Views.DataverseExplorerSource

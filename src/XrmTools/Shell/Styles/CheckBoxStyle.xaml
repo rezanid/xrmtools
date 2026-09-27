@@ -1,0 +1,169 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:ctrls="clr-namespace:XrmTools.Shell.Controls"
+                    xmlns:styles="clr-namespace:XrmTools.Shell.Styles">
+  <Style TargetType="{x:Type ctrls:CheckBox}">
+    <Setter Property="Control.Background"
+            Value="{DynamicResource {x:Static styles:ShellColors.ControlAltFillSecondaryBrushKey}}"/>
+    <Setter Property="Control.BorderBrush"
+            Value="{DynamicResource {x:Static styles:ShellColors.ControlStrongStrokeDefaultBrushKey}}"/>
+    <Setter Property="Control.BorderThickness" Value="{x:Static styles:StrokeWidths.Thin}"/>
+    <Setter Property="FrameworkElement.FocusVisualStyle" Value="{x:Static styles:ShellStyles.FocusVisual}"/>
+    <Setter Property="Control.Foreground"
+            Value="{DynamicResource {x:Static styles:ShellColors.TextFillPrimaryBrushKey}}"/>
+    <Setter Property="FrameworkElement.MinHeight" Value="{x:Static styles:Sizes.ControlMinHeight}"/>
+    <Setter Property="FrameworkElement.MinWidth" Value="{x:Static styles:Sizes.ControlMinWidth}"/>
+    <Setter Property="Control.Padding" Value="{x:Static styles:Spacings.XXS}"/>
+    <Setter Property="UIElement.SnapsToDevicePixels" Value="True"/>
+    <Setter Property="FrameworkElement.UseLayoutRounding" Value="True"/>
+    <Setter Property="Control.Template">
+      <Setter.Value>
+        <ControlTemplate TargetType="{x:Type ctrls:CheckBox}">
+          <Border Background="{DynamicResource {x:Static styles:ShellColors.ControlFillTransparentBrushKey}}"
+                  Padding="{TemplateBinding Control.Padding}">
+            <Grid>
+              <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="*"/>
+              </Grid.ColumnDefinitions>
+              <Border Grid.Column="0" Background="{TemplateBinding Control.Background}"
+                      BorderBrush="{TemplateBinding Control.BorderBrush}"
+                      BorderThickness="{TemplateBinding Control.BorderThickness}"
+                      CornerRadius="{x:Static styles:CornerRadii.M}" Height="{x:Static styles:Sizes.ToggleSwitchSize}"
+                      VerticalAlignment="Center" Width="{x:Static styles:Sizes.ToggleSwitchSize}">
+                <Path x:Name="BoxGlyph"
+                      Fill="{DynamicResource {x:Static styles:ShellColors.TextOnAccentFillPrimaryBrushKey}}"
+                      Height="{x:Static styles:Sizes.IconS}" HorizontalAlignment="Center" VerticalAlignment="Center"
+                      Visibility="Hidden" Width="{x:Static styles:Sizes.IconS}"/>
+              </Border>
+              <ContentPresenter x:Name="Content" Grid.Column="1" Content="{TemplateBinding ContentControl.Content}"
+                                ContentTemplate="{TemplateBinding ContentControl.ContentTemplate}"
+                                Margin="{x:Static styles:Spacings.LeftS}" MinHeight="{x:Static styles:Sizes.ContentMinHeight}"
+                                RecognizesAccessKey="True" VerticalAlignment="Center"/>
+            </Grid>
+          </Border>
+          <ControlTemplate.Triggers>
+            <Trigger Value="{x:Null}" Property="ContentControl.Content">
+              <Setter TargetName="Content" Property="UIElement.Visibility" Value="Collapsed"/>
+            </Trigger>
+            <Trigger Property="UIElement.IsEnabled" Value="False">
+              <Setter TargetName="BoxGlyph"
+                      Value="{DynamicResource {x:Static styles:ShellColors.TextOnAccentFillDisabledBrushKey}}"
+                      Property="Shape.Fill"/>
+            </Trigger>
+            <Trigger Property="ToggleButton.IsChecked" Value="True">
+              <Setter TargetName="BoxGlyph" Value="{x:Static styles:Geometries.CheckBoxCheckmark}" Property="Path.Data"/>
+              <Setter TargetName="BoxGlyph"
+                      Value="{DynamicResource {x:Static styles:ShellColors.TextOnAccentFillPrimaryBrushKey}}"
+                      Property="Shape.Fill"/>
+              <Setter TargetName="BoxGlyph" Property="UIElement.Visibility" Value="Visible"/>
+            </Trigger>
+            <Trigger Value="{x:Null}" Property="ToggleButton.IsChecked">
+              <Setter TargetName="BoxGlyph" Value="{x:Static styles:Geometries.CheckBoxIndeterminate}"
+                      Property="Path.Data"/>
+              <Setter TargetName="BoxGlyph"
+                      Value="{DynamicResource {x:Static styles:ShellColors.TextOnAccentFillPrimaryBrushKey}}"
+                      Property="Shape.Fill"/>
+              <Setter TargetName="BoxGlyph" Property="UIElement.Visibility" Value="Visible"/>
+            </Trigger>
+            <Trigger Property="ButtonBase.IsPressed" Value="True">
+              <Setter TargetName="BoxGlyph"
+                      Value="{DynamicResource {x:Static styles:ShellColors.TextOnAccentFillSecondaryBrushKey}}"
+                      Property="Shape.Fill"/>
+            </Trigger>
+          </ControlTemplate.Triggers>
+        </ControlTemplate>
+      </Setter.Value>
+    </Setter>
+    <Style.Triggers>
+      <Trigger Property="UIElement.IsEnabled" Value="False">
+        <Setter Property="Control.Background"
+                Value="{DynamicResource {x:Static styles:ShellColors.ControlAltFillDisabledBrushKey}}"/>
+        <Setter Property="Control.BorderBrush"
+                Value="{DynamicResource {x:Static styles:ShellColors.ControlStrongStrokeDisabledBrushKey}}"/>
+        <Setter Property="Control.Foreground"
+                Value="{DynamicResource {x:Static styles:ShellColors.TextFillDisabledBrushKey}}"/>
+      </Trigger>
+      <Trigger Property="ToggleButton.IsChecked" Value="True">
+        <Setter Property="Control.Background"
+                Value="{DynamicResource {x:Static styles:ShellColors.AccentFillDefaultBrushKey}}"/>
+        <Setter Property="Control.BorderBrush"
+                Value="{DynamicResource {x:Static styles:ShellColors.AccentFillDefaultBrushKey}}"/>
+      </Trigger>
+      <Trigger Property="ToggleButton.IsChecked" Value="{x:Null}">
+        <Setter Property="Control.Background"
+                Value="{DynamicResource {x:Static styles:ShellColors.AccentFillDefaultBrushKey}}"/>
+        <Setter Property="Control.BorderBrush"
+                Value="{DynamicResource {x:Static styles:ShellColors.AccentFillDefaultBrushKey}}"/>
+      </Trigger>
+      <Trigger Property="UIElement.IsMouseOver" Value="True">
+        <Setter Property="Control.Background"
+                Value="{DynamicResource {x:Static styles:ShellColors.SubtleFillSecondaryBrushKey}}"/>
+      </Trigger>
+      <MultiTrigger>
+        <MultiTrigger.Conditions>
+          <Condition Property="UIElement.IsEnabled" Value="False"/>
+          <Condition Property="ToggleButton.IsChecked" Value="True"/>
+        </MultiTrigger.Conditions>
+        <Setter Property="Control.Background"
+                Value="{DynamicResource {x:Static styles:ShellColors.AccentFillDisabledBrushKey}}"/>
+        <Setter Property="Control.BorderBrush"
+                Value="{DynamicResource {x:Static styles:ShellColors.AccentFillDisabledBrushKey}}"/>
+      </MultiTrigger>
+      <MultiTrigger>
+        <MultiTrigger.Conditions>
+          <Condition Property="UIElement.IsEnabled" Value="False"/>
+          <Condition Property="ToggleButton.IsChecked" Value="{x:Null}"/>
+        </MultiTrigger.Conditions>
+        <Setter Property="Control.Background"
+                Value="{DynamicResource {x:Static styles:ShellColors.AccentFillDisabledBrushKey}}"/>
+        <Setter Property="Control.BorderBrush"
+                Value="{DynamicResource {x:Static styles:ShellColors.AccentFillDisabledBrushKey}}"/>
+      </MultiTrigger>
+      <MultiTrigger>
+        <MultiTrigger.Conditions>
+          <Condition Property="ToggleButton.IsChecked" Value="True"/>
+          <Condition Property="UIElement.IsMouseOver" Value="True"/>
+        </MultiTrigger.Conditions>
+        <Setter Property="Control.Background"
+                Value="{DynamicResource {x:Static styles:ShellColors.AccentFillSecondaryBrushKey}}"/>
+        <Setter Property="Control.BorderBrush"
+                Value="{DynamicResource {x:Static styles:ShellColors.AccentFillSecondaryBrushKey}}"/>
+      </MultiTrigger>
+      <MultiTrigger>
+        <MultiTrigger.Conditions>
+          <Condition Property="ToggleButton.IsChecked" Value="{x:Null}"/>
+          <Condition Property="UIElement.IsMouseOver" Value="True"/>
+        </MultiTrigger.Conditions>
+        <Setter Property="Control.Background"
+                Value="{DynamicResource {x:Static styles:ShellColors.AccentFillSecondaryBrushKey}}"/>
+        <Setter Property="Control.BorderBrush"
+                Value="{DynamicResource {x:Static styles:ShellColors.AccentFillSecondaryBrushKey}}"/>
+      </MultiTrigger>
+      <Trigger Property="ButtonBase.IsPressed" Value="True">
+        <Setter Property="Control.Background"
+                Value="{DynamicResource {x:Static styles:ShellColors.ControlAltFillQuaternaryBrushKey}}"/>
+      </Trigger>
+      <MultiTrigger>
+        <MultiTrigger.Conditions>
+          <Condition Property="ToggleButton.IsChecked" Value="True"/>
+          <Condition Property="ButtonBase.IsPressed" Value="True"/>
+        </MultiTrigger.Conditions>
+        <Setter Property="Control.Background"
+                Value="{DynamicResource {x:Static styles:ShellColors.AccentFillTertiaryBrushKey}}"/>
+        <Setter Property="Control.BorderBrush"
+                Value="{DynamicResource {x:Static styles:ShellColors.AccentFillTertiaryBrushKey}}"/>
+      </MultiTrigger>
+      <MultiTrigger>
+        <MultiTrigger.Conditions>
+          <Condition Property="ToggleButton.IsChecked" Value="{x:Null}"/>
+          <Condition Property="ButtonBase.IsPressed" Value="True"/>
+        </MultiTrigger.Conditions>
+        <Setter Property="Control.Background"
+                Value="{DynamicResource {x:Static styles:ShellColors.AccentFillTertiaryBrushKey}}"/>
+        <Setter Property="Control.BorderBrush"
+                Value="{DynamicResource {x:Static styles:ShellColors.AccentFillTertiaryBrushKey}}"/>
+      </MultiTrigger>
+    </Style.Triggers>
+  </Style>
+</ResourceDictionary>

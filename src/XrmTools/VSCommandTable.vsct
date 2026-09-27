@@ -333,6 +333,15 @@
         </Strings>
       </Button>-->
 
+      <Button guid="XrmToolsCmdSetId" id="ShowPluginTraceExplorerCmdId" priority="0x0110" type="Button">
+        <Parent guid="guidSHLMainMenu" id="IDG_VS_WNDO_OTRWNDWS1"/>
+        <Icon guid="ImageCatalogGuid" id="Search" />
+        <CommandFlag>IconIsMoniker</CommandFlag>
+        <Strings>
+          <ButtonText>Plugin Trace Explorer</ButtonText>
+          <CanonicalName>.XrmTools.ShowPluginTraceExplorer</CanonicalName>
+        </Strings>
+      </Button>
       <Button guid="XrmToolsCmdSetId" id="ShowDataverseExplorerCmdId" priority="0x0100" type="Button">
         <Parent guid="guidSHLMainMenu" id="IDG_VS_WNDO_OTRWNDWS1"/>
 		<Icon guid="AssetsGuid" id="Dataverse" />
@@ -447,6 +456,7 @@
       <IDSymbol name="XrmToolsContextSubMenu" value="0x1000"/>
       <IDSymbol name="XrmToolsContextSubMenuGroup" value="0x1010"/>
       <IDSymbol name="ShowDataverseExplorerCmdId" value="0x2001"/>
+      <IDSymbol name="ShowPluginTraceExplorerCmdId" value="0x2003"/>
       <IDSymbol name="RefreshDataverseExplorerCmdId" value="0x2002"/>
       <IDSymbol name="DataverseExplorerToolbar" value="0x2020"/>
       <IDSymbol name="DataverseExplorerToolbarGroup" value="0x2021"/>
