@@ -68,10 +68,12 @@ public class TraceExplorerTests
         var updated = Row(1, Now, "changed by server");
         var newer = Row(2, Now.AddSeconds(1), "new trace");
         var merged = TraceSnapshots.PreserveSelection(new[] { updated, newer }, selected);
-        Assert.Same(selected, merged[0]);
-        Assert.Equal("reading this", merged[0].Message);
+        Assert.Equal(new[] { newer.Id, selected.Id }, merged.Select(r => r.Id));
+        Assert.Same(selected, merged[1]);
+        Assert.Equal("reading this", merged[1].Message);
         var expired = TraceSnapshots.PreserveSelection(new[] { newer }, selected);
-        Assert.Same(selected, expired[0]);
+        Assert.Equal(new[] { newer.Id, selected.Id }, expired.Select(r => r.Id));
+        Assert.Same(selected, expired[1]);
         Assert.True(TraceSnapshots.Changed(new[] { selected }, new[] { updated }));
         Assert.False(TraceSnapshots.Changed(new[] { selected }, new[] { Row(1, Now, "reading this") }));
     }

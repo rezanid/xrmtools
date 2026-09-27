@@ -9,6 +9,7 @@ using Microsoft.VisualStudio.Utilities;
 using Microsoft.Win32;
 using System;
 using System.ComponentModel;
+using System.IO;
 using System.Windows;
 using System.Windows.Media;
 using System.Windows.Threading;
@@ -17,7 +18,7 @@ public class VisualOptions : ObservableObject, IVsShellPropertyEvents
 {
     private const string AccessibilityRoot = "Control Panel\\Accessibility";
     private const string DynamicScrollBarsName = "DynamicScrollbars";
-    private static readonly UIContext FeedbackEnabledContext = UIContext.FromUIContextGuid(new Guid("FC108F5B-6AB6-422E-BA84-2A33EFA464F3"));
+    private static readonly Lazy<UIContext?> feedbackEnabledContext = new(CreateFeedbackEnabledContext);
     private static VisualOptions? instance;
     private Lazy<bool> areDynamicScrollBarsEnabled = new Lazy<bool>(GetDynamicScrollBars); private bool gradientsAllowed;
     private bool isFeedbackDisabledByPolicy;
@@ -145,7 +146,17 @@ public class VisualOptions : ObservableObject, IVsShellPropertyEvents
     private void HookFeedbackUIContext()
     {
         Dispatcher.CurrentDispatcher.VerifyAccess();
-        this.IsFeedbackDisabledByPolicy = !VisualOptions.FeedbackEnabledContext.IsActive;
-        VisualOptions.FeedbackEnabledContext.UIContextChanged += (EventHandler<UIContextChangedEventArgs>)((s, e) => this.IsFeedbackDisabledByPolicy = !e.Activated);
+        var context = VisualOptions.feedbackEnabledContext.Value;
+        if (context == null)
+            return;
+        this.IsFeedbackDisabledByPolicy = !context.IsActive;
+        context.UIContextChanged += (EventHandler<UIContextChangedEventArgs>)((s, e) => this.IsFeedbackDisabledByPolicy = !e.Activated);
+    }
+
+    private static UIContext? CreateFeedbackEnabledContext()
+    {
+        try { return UIContext.FromUIContextGuid(new Guid("FC108F5B-6AB6-422E-BA84-2A33EFA464F3")); }
+        catch (FileNotFoundException) { return null; }
+        catch (TypeInitializationException) { return null; }
     }
 }
