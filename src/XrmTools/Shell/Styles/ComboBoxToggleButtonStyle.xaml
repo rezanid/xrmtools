@@ -1,0 +1,41 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:ctrls="clr-namespace:XrmTools.Shell.Controls"
+                    xmlns:cvrts="clr-namespace:XrmTools.Shell.Converters"
+                    xmlns:styles="clr-namespace:XrmTools.Shell.Styles">
+  <Style x:Key="ComboBoxToggleButtonStyle" TargetType="{x:Type ToggleButton}">
+    <Setter Property="ButtonBase.ClickMode" Value="Press"/>
+    <Setter Property="UIElement.Focusable" Value="False"/>
+    <Setter Property="Control.Foreground"
+            Value="{Binding Foreground, RelativeSource={RelativeSource TemplatedParent}}"/>
+    <Setter Property="ToggleButton.IsChecked"
+            Value="{Binding IsDropDownOpen, RelativeSource={RelativeSource TemplatedParent}}"/>
+    <Setter Property="Control.IsTabStop" Value="False"/>
+    <Setter Property="Control.Padding" Value="{x:Static styles:Spacings.HorizontalXS}"/>
+    <Setter Property="Control.Template">
+      <Setter.Value>
+        <ControlTemplate TargetType="{x:Type ToggleButton}">
+          <Border Background="Transparent" Padding="{TemplateBinding Control.Padding}">
+            <Path x:Name="Arrow" Data="{x:Static styles:Geometries.ChevronDownSmall}"
+                  Fill="{TemplateBinding Control.Foreground}" Height="{x:Static styles:Sizes.IconS}"
+                  HorizontalAlignment="Right" VerticalAlignment="Center" Width="{x:Static styles:Sizes.IconS}"/>
+          </Border>
+          <ControlTemplate.Triggers>
+            <DataTrigger Value="Bottom" Binding="{Binding}">
+              <Setter TargetName="Arrow" Value="{x:Static styles:Geometries.ChevronDownSmall}" Property="Path.Data"/>
+            </DataTrigger>
+            <DataTrigger Value="Left" Binding="{Binding}">
+              <Setter TargetName="Arrow" Value="{x:Static styles:Geometries.ChevronLeftSmall}" Property="Path.Data"/>
+            </DataTrigger>
+            <DataTrigger Value="Right" Binding="{Binding}">
+              <Setter TargetName="Arrow" Value="{x:Static styles:Geometries.ChevronRightSmall}" Property="Path.Data"/>
+            </DataTrigger>
+            <DataTrigger Value="Top" Binding="{Binding}">
+              <Setter TargetName="Arrow" Value="{x:Static styles:Geometries.ChevronUpSmall}" Property="Path.Data"/>
+            </DataTrigger>
+          </ControlTemplate.Triggers>
+        </ControlTemplate>
+      </Setter.Value>
+    </Setter>
+  </Style>
+</ResourceDictionary>

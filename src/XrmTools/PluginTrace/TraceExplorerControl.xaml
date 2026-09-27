@@ -1,0 +1,173 @@
+<UserControl x:Class="XrmTools.PluginTrace.TraceExplorerControl"
+ xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+ xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+ xmlns:vs="clr-namespace:Microsoft.VisualStudio.PlatformUI;assembly=Microsoft.VisualStudio.Shell.15.0"
+ xmlns:c="clr-namespace:XrmTools.Shell.Controls"
+ xmlns:s="clr-namespace:XrmTools.Shell.Styles"
+ FontFamily="{DynamicResource VsFont.EnvironmentFontFamily}"
+ FontSize="{DynamicResource VsFont.EnvironmentFontSize}"
+ UseLayoutRounding="True"
+ Background="{DynamicResource {x:Static vs:EnvironmentColors.ToolWindowBackgroundBrushKey}}"
+ Foreground="{DynamicResource {x:Static vs:EnvironmentColors.ToolWindowTextBrushKey}}">
+ <UserControl.Resources>
+  <!-- Same square underline, spacing and theme keys as OData's ViewTabStyle, with native TabItem keyboard semantics. -->
+  <Style x:Key="DetailTabStyle" TargetType="c:TabItem">
+   <Setter Property="Background" Value="Transparent"/><Setter Property="BorderBrush" Value="Transparent"/>
+   <Setter Property="Foreground" Value="{DynamicResource {x:Static vs:EnvironmentColors.ToolWindowTextBrushKey}}"/>
+   <Setter Property="Padding" Value="12,6"/><Setter Property="Margin" Value="0,0,4,0"/>
+   <Setter Property="Cursor" Value="Hand"/><Setter Property="FocusVisualStyle" Value="{x:Null}"/>
+   <Setter Property="Template">
+    <Setter.Value>
+     <ControlTemplate TargetType="c:TabItem">
+      <Border x:Name="TabBorder" Background="{TemplateBinding Background}" Padding="{TemplateBinding Padding}" BorderThickness="0,0,0,2" BorderBrush="Transparent">
+       <ContentPresenter ContentSource="Header" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+      </Border>
+      <ControlTemplate.Triggers>
+       <Trigger Property="IsSelected" Value="True">
+        <Setter TargetName="TabBorder" Property="BorderBrush" Value="{DynamicResource {x:Static vs:EnvironmentColors.FileTabSelectedBorderBrushKey}}"/>
+        <Setter Property="FontWeight" Value="SemiBold"/>
+       </Trigger>
+       <Trigger Property="IsMouseOver" Value="True"><Setter TargetName="TabBorder" Property="Background" Value="{DynamicResource {x:Static vs:EnvironmentColors.CommandBarMouseOverBackgroundGradientBrushKey}}"/></Trigger>
+       <Trigger Property="IsKeyboardFocused" Value="True">
+        <Setter TargetName="TabBorder" Property="BorderBrush" Value="{DynamicResource {x:Static vs:EnvironmentColors.SystemHighlightBrushKey}}"/>
+        <Setter TargetName="TabBorder" Property="Background" Value="{DynamicResource {x:Static vs:EnvironmentColors.CommandBarMouseOverBackgroundGradientBrushKey}}"/>
+       </Trigger>
+      </ControlTemplate.Triggers>
+     </ControlTemplate>
+    </Setter.Value>
+   </Setter>
+  </Style>
+  <Style TargetType="TextBlock"><Setter Property="VerticalAlignment" Value="Center"/></Style>
+  <Style TargetType="c:Button"><Setter Property="Margin" Value="2,0"/><Setter Property="Padding" Value="8,2"/><Setter Property="VerticalAlignment" Value="Center"/></Style>
+  <Style TargetType="c:ComboBox"><Setter Property="Margin" Value="4,2,8,2"/><Setter Property="VerticalContentAlignment" Value="Center"/></Style>
+  <Style TargetType="c:CheckBox"><Setter Property="Margin" Value="4,0"/><Setter Property="VerticalAlignment" Value="Center"/></Style>
+  <Style x:Key="DetailText" TargetType="c:TextBox">
+   <Setter Property="IsReadOnly" Value="True"/><Setter Property="AcceptsReturn" Value="True"/>
+   <Setter Property="FontFamily" Value="Consolas"/><Setter Property="TextWrapping" Value="Wrap"/>
+   <Setter Property="VerticalScrollBarVisibility" Value="Auto"/><Setter Property="HorizontalScrollBarVisibility" Value="Auto"/>
+   <Setter Property="Background" Value="{DynamicResource {x:Static vs:EnvironmentColors.ToolWindowBackgroundBrushKey}}"/>
+   <Setter Property="BorderThickness" Value="0"/><Setter Property="CornerRadius" Value="0"/><Setter Property="Padding" Value="6"/>
+  </Style>
+ </UserControl.Resources>
+ <Grid Margin="6">
+  <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="*"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
+  <DockPanel Grid.Row="0" Margin="2,0,2,4">
+   <WrapPanel DockPanel.Dock="Right">
+    <TextBlock Text="Trace logging"/>
+    <c:ComboBox x:Name="TraceLogging" Width="105" SelectedIndex="0" IsEnabled="False" ToolTip="Dataverse plug-in trace logging level" SelectionChanged="TraceLoggingChanged"><c:ComboBoxItem Content="Off" Tag="0"/><c:ComboBoxItem Content="Exceptions" Tag="1"/><c:ComboBoxItem Content="All" Tag="2"/></c:ComboBox>
+    <c:CheckBox x:Name="AutoRefresh" Content="Auto-refresh" IsChecked="True"/>
+    <c:ComboBox x:Name="Interval" SelectedIndex="1" Width="84" ToolTip="Refresh interval"><c:ComboBoxItem Content="5 sec" Tag="5"/><c:ComboBoxItem Content="10 sec" Tag="10"/><c:ComboBoxItem Content="30 sec" Tag="30"/><c:ComboBoxItem Content="60 sec" Tag="60"/></c:ComboBox>
+    <c:Button x:Name="RefreshButton" Content="Refresh" Click="RefreshOrCancelClick" ToolTip="Refresh traces"/>
+   </WrapPanel>
+   <TextBlock x:Name="EnvironmentLabel" Text="Plugin Trace Explorer" TextTrimming="CharacterEllipsis" Foreground="{DynamicResource {x:Static s:ShellColors.TextFillSecondaryBrushKey}}" ToolTip="{Binding Text, RelativeSource={RelativeSource Self}}"/>
+  </DockPanel>
+  <StackPanel Grid.Row="1">
+   <WrapPanel>
+    <c:DropDownButton x:Name="SavedViewsButton" Content="Saved views" ToolTip="Select, save, or delete a saved filter">
+     <c:DropDownButton.DropDown>
+      <c:Popup x:Name="SavedViewsPopup" Placement="Bottom" FocusOnOpen="True">
+       <Border Padding="4" MinWidth="260" Background="{DynamicResource {x:Static s:ShellColors.ControlFillDefaultBrushKey}}" BorderBrush="{DynamicResource {x:Static s:ShellColors.ControlStrokeDefaultBrushKey}}" BorderThickness="1">
+        <Grid>
+         <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="150"/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
+         <TextBlock Text="Saved views" Margin="4,2" Foreground="{DynamicResource {x:Static s:ShellColors.TextFillSecondaryBrushKey}}"/>
+         <c:ListBox x:Name="SavedViews" Grid.Row="1" DisplayMemberPath="Name" SelectionChanged="SavedViewChanged"/>
+         <Separator Grid.Row="2" Margin="4"/>
+         <WrapPanel Grid.Row="3" Margin="2">
+          <c:TextBox x:Name="ViewName" Width="145" Margin="0,0,4,0" HintText="View name" ToolTip="Change the name to create a renamed view"/>
+          <c:Button Content="Save" Click="SaveClick" ToolTip="Save the selected view, or use a new name to create a view"/>
+          <c:Button Content="Delete" Click="DeleteViewClick" ToolTip="Delete the selected view"/>
+         </WrapPanel>
+        </Grid>
+       </Border>
+      </c:Popup>
+     </c:DropDownButton.DropDown>
+    </c:DropDownButton>
+   <WrapPanel x:Name="QuickFilters">
+    <TextBlock Text="Time"/>
+    <c:ComboBox x:Name="Duration" Width="145" SelectedIndex="2" SelectionChanged="DurationChanged">
+     <c:ComboBoxItem Content="Last 5 minutes" Tag="5"/><c:ComboBoxItem Content="Last 15 minutes" Tag="15"/><c:ComboBoxItem Content="Last 30 minutes" Tag="30"/><c:ComboBoxItem Content="Last hour" Tag="60"/><c:ComboBoxItem Content="Last 24 hours" Tag="1440"/><c:ComboBoxItem Content="Custom range" Tag="0"/>
+    </c:ComboBox>
+    <TextBlock Text="Type contains"/>
+    <c:ComboBox x:Name="TypeName" IsEditable="True" IsTextSearchEnabled="False" Width="240" ToolTip="Full or partial plugin type name; suggestions come from loaded traces"/>
+    <c:CheckBox x:Name="ErrorsOnly" Content="Errors only" Click="FilterChanged"/>
+   </WrapPanel>
+    <c:Button x:Name="ApplyButton" Content="Apply" Click="ApplyClick" ToolTip="Apply filter (Ctrl+Enter)"/>
+    <TextBlock x:Name="ModifiedLabel" Margin="6,0" Foreground="{DynamicResource {x:Static s:ShellColors.TextFillSecondaryBrushKey}}"/>
+   </WrapPanel>
+   <WrapPanel x:Name="CustomRange" Visibility="Collapsed" Margin="0,4">
+    <TextBlock Text="From (local)"/><c:TextBox x:Name="FromTime" Width="175" Margin="4" ToolTip="yyyy-MM-dd HH:mm:ss"/>
+    <TextBlock Text="To (local)"/><c:TextBox x:Name="ToTime" Width="175" Margin="4" ToolTip="yyyy-MM-dd HH:mm:ss"/>
+   </WrapPanel>
+   <c:Expander Header="Advanced OData filter" Margin="0,0,0,2">
+    <StackPanel Margin="20,4,0,4">
+     <c:CheckBox x:Name="FullControl" Content="Edit entire $filter — replaces time, type, and error filters" Click="FilterChanged"/>
+     <c:TextBox x:Name="Expression" MinHeight="64" MaxHeight="160" AcceptsReturn="True" FontFamily="Consolas" TextWrapping="Wrap" VerticalScrollBarVisibility="Auto" HintText="Additional OData condition, e.g. performanceexecutionduration gt 1000"/>
+     <TextBlock Text="Effective $filter (relative time is recalculated on each refresh)" Margin="2,6"/>
+     <c:TextBox x:Name="Preview" IsReadOnly="True" TextWrapping="Wrap" MaxHeight="85" VerticalScrollBarVisibility="Auto" FontFamily="Consolas"/>
+    </StackPanel>
+   </c:Expander>
+  </StackPanel>
+  <DockPanel Grid.Row="2"><c:Button x:Name="BackButton" Content="Back to results" Visibility="Collapsed" Click="BackClick" DockPanel.Dock="Left"/></DockPanel>
+  <c:Button Grid.Row="3" x:Name="UpdatesButton" HorizontalAlignment="Stretch" HorizontalContentAlignment="Left" Visibility="Collapsed" Click="ShowUpdatesClick"/>
+  <Grid Grid.Row="4" Margin="0,4">
+   <Grid.ColumnDefinitions><ColumnDefinition Width="1.4*"/><ColumnDefinition x:Name="SplitterColumn" Width="0"/><ColumnDefinition x:Name="DetailColumn" Width="0"/></Grid.ColumnDefinitions>
+   <Grid>
+    <c:DataGrid x:Name="Logs" AutoGenerateColumns="False" IsReadOnly="True" CanUserAddRows="False" CanUserDeleteRows="False" CanUserSortColumns="True" SelectionMode="Single" SelectionUnit="FullRow" HeadersVisibility="Column" GridLinesVisibility="None" EnableRowVirtualization="True" EnableColumnVirtualization="True" VirtualizingPanel.ScrollUnit="Item" SelectionChanged="LogSelected" Sorting="LogsSorting">
+     <c:DataGrid.RowStyle>
+      <Style TargetType="c:DataGridRow">
+       <Setter Property="ContextMenu">
+        <Setter.Value>
+         <c:ContextMenu DataContext="{Binding PlacementTarget.DataContext, RelativeSource={RelativeSource Self}}">
+          <c:MenuItem Header="Go To Definition" InputGestureText="F12" Click="GoToDefinitionClick"/>
+         </c:ContextMenu>
+        </Setter.Value>
+       </Setter>
+      </Style>
+     </c:DataGrid.RowStyle>
+     <c:DataGrid.Columns>
+      <c:DataGridTextColumn Header="Status" Binding="{Binding Status}" SortMemberPath="Status" Width="75"/>
+      <c:DataGridTextColumn Header="Created (local)" Binding="{Binding Time}" SortMemberPath="CreatedOn" Width="175"/>
+      <c:DataGridTextColumn Header="Type name" Binding="{Binding ShortTypeName}" SortMemberPath="TypeName" Width="2*" MinWidth="150">
+       <c:DataGridTextColumn.ElementStyle><Style TargetType="TextBlock"><Setter Property="ToolTip" Value="{Binding TypeName}"/><Setter Property="TextTrimming" Value="CharacterEllipsis"/><Setter Property="VerticalAlignment" Value="Center"/></Style></c:DataGridTextColumn.ElementStyle>
+      </c:DataGridTextColumn>
+      <c:DataGridTextColumn Header="Message" Binding="{Binding MessageName}" SortMemberPath="MessageName" Width="85"/>
+      <c:DataGridTextColumn Header="Entity" Binding="{Binding Entity}" SortMemberPath="Entity" Width="85"/>
+      <c:DataGridTextColumn Header="Duration (ms)" Binding="{Binding Duration}" SortMemberPath="Duration" Width="85"/>
+      <c:DataGridTextColumn Header="Depth" Binding="{Binding Depth}" SortMemberPath="Depth" Width="50"/>
+     </c:DataGrid.Columns>
+    </c:DataGrid>
+    <TextBlock x:Name="EmptyState" Text="Apply a filter to load plugin traces." HorizontalAlignment="Center" VerticalAlignment="Center" IsHitTestVisible="False" TextWrapping="Wrap" Margin="20"/>
+   </Grid>
+   <GridSplitter x:Name="DetailSplitter" Grid.Column="1" Width="5" HorizontalAlignment="Stretch" ResizeBehavior="PreviousAndNext" Visibility="Collapsed" Background="{DynamicResource {x:Static s:ShellColors.ControlStrokeDefaultBrushKey}}"/>
+   <Grid x:Name="Details" Grid.Column="2" Visibility="Collapsed" Margin="6,0,0,0">
+    <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="*"/></Grid.RowDefinitions>
+    <DockPanel>
+     <c:Button x:Name="CloseDetailsButton" Content="✕" Width="24" Height="24" Padding="0" Kind="Subtle" ToolTip="Close details (Esc)" AutomationProperties.Name="Close details" DockPanel.Dock="Right" Click="CloseDetailsClick"/>
+     <TextBlock x:Name="DetailTitle" FontWeight="SemiBold" TextTrimming="CharacterEllipsis"/>
+    </DockPanel>
+    <StackPanel Grid.Row="1">
+     <TextBlock x:Name="DetailSummary" TextWrapping="Wrap" Margin="3,2,3,4" Foreground="{DynamicResource {x:Static s:ShellColors.TextFillSecondaryBrushKey}}"/>
+     <TextBlock x:Name="DetailNotice" TextWrapping="Wrap" Margin="3,2" Visibility="Collapsed"/>
+     <WrapPanel>
+      <c:Button x:Name="RelatedButton" Content="Show related execution" Click="RelatedClick"/>
+      <c:Button x:Name="UpdateDetailButton" Content="Load updated trace" Visibility="Collapsed" Click="UpdateDetailClick"/>
+     </WrapPanel>
+     <WrapPanel Margin="2,3">
+      <c:TextBox x:Name="FindText" Width="170" HintText="Find in current tab" ToolTip="Search the active detail tab"/>
+      <c:Button Content="Find next" Click="FindNextClick"/>
+      <c:CheckBox x:Name="WrapText" Content="Wrap" IsChecked="True" Click="WrapClick"/>
+      <TextBlock x:Name="FindStatus"/>
+     </WrapPanel>
+    </StackPanel>
+    <c:TabControl x:Name="DetailTabs" Grid.Row="2" ItemContainerStyle="{StaticResource DetailTabStyle}">
+     <c:TabItem x:Name="ExceptionTab" Header="Exception"><c:TextBox x:Name="ExceptionText" Style="{StaticResource DetailText}"/></c:TabItem>
+     <c:TabItem Header="Trace message"><c:TextBox x:Name="MessageText" Style="{StaticResource DetailText}"/></c:TabItem>
+     <c:TabItem Header="Full record"><c:ReadOnlyCodeView x:Name="RawText" ContentType="JSON" TextWrapping="Wrap"/></c:TabItem>
+    </c:TabControl>
+   </Grid>
+  </Grid>
+  <TextBlock Grid.Row="5" x:Name="Status" Text="Ready" TextWrapping="Wrap" Margin="3"/>
+ </Grid>
+</UserControl>
+
+

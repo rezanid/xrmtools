@@ -1,4 +1,4 @@
-﻿namespace XrmTools.Shell.Styles;
+namespace XrmTools.Shell.Styles;
 
 using XrmTools.Shell.Controls;
 using System.Collections.Generic;
@@ -7,6 +7,10 @@ internal static class DefaultStyles
 {
     public static DeferredStyleDictionary Instance { get; } = DeferredStyleDictionary.Create(new Dictionary<object, string>()
     {
+        { typeof(ComboBox), "/XrmTools;component/Shell/Styles/ComboBoxStyle.xaml" },
+        { typeof(ReadOnlyCodeView), "/XrmTools;component/Shell/Styles/ReadOnlyCodeViewStyle.xaml" },
+        { typeof(ComboBoxItem), "/XrmTools;component/Shell/Styles/ComboBoxItemStyle.xaml" },
+        { typeof(CheckBox), "/XrmTools;component/Shell/Styles/CheckBoxStyle.xaml" },
         { typeof(TabControl), "/XrmTools;component/Shell/Styles/TabControlStyle.xaml" },
         { typeof(TabItem), "/XrmTools;component/Shell/Styles/TabItemStyle.xaml" },
         { typeof(Hyperlink), "/XrmTools;component/Shell/Styles/HyperlinkStyle.xaml" },
@@ -27,24 +31,12 @@ internal static class DefaultStyles
         //  "/XrmTools;component/Shell/Styles/CheckableTreeViewItemStyle.xaml"
         //},
         //{
-        //  typeof (CheckBox),
-        //  "/XrmTools;component/Shell/Styles/CheckBoxStyle.xaml"
-        //},
-        //{
         //  typeof (CodeBlock),
         //  "/XrmTools;component/Shell/Styles/MarkdownViewer/CodeBlockStyle.xaml"
         //},
         //{
         //  typeof (CodeInline),
         //  "/XrmTools;component/Shell/Styles/MarkdownViewer/CodeInlineStyle.xaml"
-        //},
-        //{
-        //  typeof (ComboBox),
-        //  "/XrmTools;component/Shell/Styles/ComboBoxStyle.xaml"
-        //},
-        //{
-        //  typeof (ComboBoxItem),
-        //  "/XrmTools;component/Shell/Styles/ComboBoxItemStyle.xaml"
         //},
         {
           typeof (ContextMenu),

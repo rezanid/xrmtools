@@ -1,0 +1,187 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:ctrls="clr-namespace:XrmTools.Shell.Controls"
+                    xmlns:cvrts="clr-namespace:XrmTools.Shell.Converters"
+                    xmlns:styles="clr-namespace:XrmTools.Shell.Styles">
+  <Style x:Key="ComboBoxEditableTextBoxStyle" TargetType="{x:Type ctrls:TextBox}">
+    <Setter Property="UIElement.AllowDrop" Value="True"/>
+    <Setter Property="Control.BorderThickness" Value="{x:Static styles:StrokeWidths.None}"/>
+    <Setter Property="TextBoxBase.CaretBrush"
+            Value="{Binding Foreground, RelativeSource={RelativeSource Self}}"/>
+    <Setter Property="Control.Foreground"
+            Value="{Binding Foreground, RelativeSource={RelativeSource TemplatedParent}}"/>
+    <Setter Property="Control.HorizontalContentAlignment"
+            Value="{Binding HorizontalContentAlignment, RelativeSource={RelativeSource TemplatedParent}}"/>
+    <Setter Property="TextBoxBase.IsReadOnly"
+            Value="{Binding IsReadOnly, RelativeSource={RelativeSource TemplatedParent}}"/>
+    <Setter Property="FrameworkElement.Margin" Value="{x:Static styles:Spacings.BottomXXXS}"/>
+    <Setter Property="FrameworkElement.MinHeight" Value="{x:Static styles:Sizes.ContentMinHeight}"/>
+    <Setter Property="FrameworkElement.MinWidth" Value="{x:Static styles:Sizes.ContentMinWidth}"/>
+    <Setter Property="Control.Padding" Value="{x:Static styles:Spacings.LeftXS}"/>
+    <Setter Property="TextBoxBase.SelectionBrush"
+            Value="{DynamicResource {x:Static styles:ShellColors.AccentFillSelectedTextBackgroundBrushKey}}"/>
+    <Setter Property="FrameworkElement.VerticalAlignment" Value="Center"/>
+    <Setter Property="Control.VerticalContentAlignment"
+            Value="{Binding VerticalContentAlignment, RelativeSource={RelativeSource TemplatedParent}}"/>
+    <Setter Property="Control.Template">
+      <Setter.Value>
+        <ControlTemplate TargetType="{x:Type TextBox}">
+          <ctrls:ScrollViewer x:Name="PART_ContentHost" Padding="{TemplateBinding Control.Padding}"/>
+        </ControlTemplate>
+      </Setter.Value>
+    </Setter>
+  </Style>
+  <Style TargetType="{x:Type ctrls:ComboBox}">
+    <Setter Property="Control.Background"
+            Value="{DynamicResource {x:Static styles:ShellColors.ControlFillDefaultBrushKey}}"/>
+    <Setter Property="Control.BorderBrush"
+            Value="{DynamicResource {x:Static styles:ShellColors.ControlStrokeDefaultBrushKey}}"/>
+    <Setter Property="Control.BorderThickness" Value="{x:Static styles:StrokeWidths.Thin}"/>
+    <Setter Property="ctrls:ComboBox.CornerRadius" Value="{x:Static styles:CornerRadii.M}"/>
+    <Setter Property="FrameworkElement.FocusVisualStyle" Value="{x:Static styles:ShellStyles.FocusVisual}"/>
+    <Setter Property="Control.Foreground"
+            Value="{DynamicResource {x:Static styles:ShellColors.TextFillPrimaryBrushKey}}"/>
+    <Setter Property="ComboBox.MaxDropDownHeight" Value="{x:Static ctrls:ComboBox.PopupMaxHeight}"/>
+    <Setter Property="FrameworkElement.MinHeight" Value="{x:Static styles:Sizes.ControlMinHeight}"/>
+    <Setter Property="FrameworkElement.MinWidth" Value="{x:Static ctrls:ComboBox.ControlMinWidth}"/>
+    <Setter Property="Control.Padding" Value="{x:Static styles:Spacings.LeftSNudge}"/>
+    <Setter Property="ScrollViewer.CanContentScroll" Value="True"/>
+    <Setter Property="UIElement.SnapsToDevicePixels" Value="True"/>
+    <Setter Property="FrameworkElement.UseLayoutRounding" Value="True"/>
+    <Setter Property="FrameworkElement.VerticalAlignment" Value="Center"/>
+    <Setter Property="Control.VerticalContentAlignment" Value="Center"/>
+    <Setter Property="VirtualizingPanel.IsVirtualizing" Value="True"/>
+    <Setter Property="VirtualizingPanel.ScrollUnit" Value="Pixel"/>
+    <Setter Property="VirtualizingPanel.VirtualizationMode" Value="Standard"/>
+    <Setter Property="ItemsControl.ItemsPanel">
+      <Setter.Value>
+        <ItemsPanelTemplate>
+          <VirtualizingStackPanel IsVirtualizing="{TemplateBinding VirtualizingPanel.IsVirtualizing}"
+                                  VirtualizationMode="{TemplateBinding VirtualizingPanel.VirtualizationMode}"/>
+        </ItemsPanelTemplate>
+      </Setter.Value>
+    </Setter>
+    <Setter Property="Control.Template">
+      <Setter.Value>
+        <ControlTemplate TargetType="{x:Type ctrls:ComboBox}">
+          <Grid x:Name="ControlGrid">
+            <UIElement.Clip>
+              <MultiBinding Converter="{x:Static cvrts:Converters.ClipConverter}">
+                <Binding Path="ActualWidth" RelativeSource="{RelativeSource Self}"/>
+                <Binding Path="ActualHeight" RelativeSource="{RelativeSource Self}"/>
+                <Binding Path="CornerRadius" RelativeSource="{RelativeSource TemplatedParent}"/>
+              </MultiBinding>
+            </UIElement.Clip>
+            <Border Background="{TemplateBinding Control.Background}"
+                    BorderBrush="{TemplateBinding Control.BorderBrush}"
+                    BorderThickness="{TemplateBinding Control.BorderThickness}"
+                    CornerRadius="{TemplateBinding ctrls:ComboBox.CornerRadius}">
+              <Grid>
+                <Grid.ColumnDefinitions>
+                  <ColumnDefinition Width="*"/>
+                  <ColumnDefinition MinWidth="{x:Static styles:Sizes.ControlMinWidth}" Width="Auto"/>
+                </Grid.ColumnDefinitions>
+                <ctrls:TextBox x:Name="PART_EditableTextBox" Grid.Column="0" Style="{StaticResource ComboBoxEditableTextBoxStyle}"
+                               ToolTip="{TemplateBinding FrameworkElement.ToolTip}"
+                               ToolTipService.VerticalOffset="{x:Static ctrls:TextBox.ToolTipOffset}" Visibility="Collapsed"/>
+                <ContentPresenter x:Name="DisplayedItem" Grid.Column="0" Content="{TemplateBinding ComboBox.SelectionBoxItem}"
+                                  ContentTemplate="{TemplateBinding ComboBox.SelectionBoxItemTemplate}"
+                                  ContentTemplateSelector="{TemplateBinding ItemsControl.ItemTemplateSelector}"
+                                  IsHitTestVisible="False" Margin="{TemplateBinding Control.Padding}"
+                                  MinHeight="{x:Static styles:Sizes.ContentMinHeight}"
+                                  SnapsToDevicePixels="{TemplateBinding UIElement.SnapsToDevicePixels}" VerticalAlignment="Center"/>
+                <ToggleButton x:Name="ToggleButton" Grid.Column="0" Grid.ColumnSpan="2"
+                              DataContext="{TemplateBinding ctrls:ComboBox.Placement}"
+                              Style="{x:Static styles:ShellInternalStyles.ComboBoxToggleButton}"/>
+              </Grid>
+            </Border>
+            <Rectangle x:Name="TypingIndicator"
+                       Fill="{DynamicResource {x:Static styles:ShellColors.AccentFillDefaultBrushKey}}"
+                       Height="{x:Static ctrls:TextBox.TypingIndicatorHeightTyping}" Stretch="Fill"
+                       VerticalAlignment="Bottom" Visibility="Hidden"/>
+            <ctrls:Popup x:Name="PART_Popup" EnableMenuMode="True" MaxHeight="{TemplateBinding ComboBox.MaxDropDownHeight}"
+                         IsOpen="{Binding IsDropDownOpen, RelativeSource={RelativeSource TemplatedParent}}"
+                         MinWidth="{Binding ActualWidth, ElementName=ControlGrid}"
+                         PlacementTarget="{Binding ElementName=ControlGrid}">
+              <ctrls:ScrollViewer>
+                <ItemsPresenter KeyboardNavigation.DirectionalNavigation="Contained" Margin="{x:Static styles:Spacings.XSNudge}"
+                                SnapsToDevicePixels="{TemplateBinding UIElement.SnapsToDevicePixels}"/>
+              </ctrls:ScrollViewer>
+            </ctrls:Popup>
+          </Grid>
+          <ControlTemplate.Triggers>
+            <Trigger Property="ItemsControl.HasItems" Value="False">
+              <Setter TargetName="PART_Popup" Value="{x:Static ctrls:ComboBox.PopupMinHeight}"
+                      Property="FrameworkElement.MinHeight"/>
+            </Trigger>
+            <Trigger Property="ComboBox.IsEditable" Value="True">
+              <Setter TargetName="DisplayedItem" Property="UIElement.Visibility" Value="Collapsed"/>
+              <Setter TargetName="PART_EditableTextBox" Property="UIElement.Visibility" Value="Visible"/>
+              <Setter TargetName="ToggleButton" Property="Grid.Column" Value="1"/>
+              <Setter TargetName="ToggleButton" Property="Grid.ColumnSpan" Value="1"/>
+            </Trigger>
+            <MultiTrigger>
+              <MultiTrigger.Conditions>
+                <Condition Property="ComboBox.IsEditable" Value="True"/>
+                <Condition Property="UIElement.IsKeyboardFocusWithin" Value="True"/>
+              </MultiTrigger.Conditions>
+              <Setter TargetName="TypingIndicator" Property="UIElement.Visibility" Value="Visible"/>
+            </MultiTrigger>
+            <MultiTrigger>
+              <MultiTrigger.Conditions>
+                <Condition Property="ComboBox.IsEditable" Value="True"/>
+                <Condition Property="Validation.HasError" Value="True"/>
+              </MultiTrigger.Conditions>
+              <Setter TargetName="TypingIndicator" Property="UIElement.Visibility" Value="Hidden"/>
+            </MultiTrigger>
+          </ControlTemplate.Triggers>
+        </ControlTemplate>
+      </Setter.Value>
+    </Setter>
+    <Setter Property="Validation.ErrorTemplate">
+      <Setter.Value>
+        <ControlTemplate/>
+      </Setter.Value>
+    </Setter>
+    <Style.Triggers>
+      <Trigger Property="ComboBox.IsDropDownOpen" Value="True">
+        <Setter Property="Control.Background"
+                Value="{DynamicResource {x:Static styles:ShellColors.ControlFillTertiaryBrushKey}}"/>
+      </Trigger>
+      <Trigger Property="ComboBox.IsEditable" Value="True">
+        <Setter Property="Control.Foreground"
+                Value="{DynamicResource {x:Static styles:ShellColors.TextFillPrimaryBrushKey}}"/>
+        <Setter Property="Control.IsTabStop" Value="False"/>
+      </Trigger>
+      <Trigger Property="UIElement.IsEnabled" Value="False">
+        <Setter Property="Control.Foreground"
+                Value="{DynamicResource {x:Static styles:ShellColors.TextFillDisabledBrushKey}}"/>
+      </Trigger>
+      <Trigger Property="ItemsControl.IsGrouping" Value="True">
+        <Setter Property="ScrollViewer.CanContentScroll" Value="False"/>
+      </Trigger>
+      <Trigger Property="UIElement.IsMouseOver" Value="True">
+        <Setter Property="Control.Background"
+                Value="{DynamicResource {x:Static styles:ShellColors.ControlFillSecondaryBrushKey}}"/>
+        <Setter Property="Control.BorderBrush"
+                Value="{DynamicResource {x:Static styles:ShellColors.ControlStrokeSecondaryBrushKey}}"/>
+      </Trigger>
+      <MultiTrigger>
+        <MultiTrigger.Conditions>
+          <Condition Property="ComboBox.IsEditable" Value="True"/>
+          <Condition Property="UIElement.IsKeyboardFocusWithin" Value="True"/>
+        </MultiTrigger.Conditions>
+        <Setter Property="Control.Background"
+                Value="{DynamicResource {x:Static styles:ShellColors.ControlFillActiveInputBrushKey}}"/>
+      </MultiTrigger>
+      <MultiTrigger>
+        <MultiTrigger.Conditions>
+          <Condition Property="ComboBox.IsEditable" Value="True"/>
+          <Condition Property="Validation.HasError" Value="True"/>
+        </MultiTrigger.Conditions>
+        <Setter Property="Control.BorderBrush"
+                Value="{DynamicResource {x:Static styles:ShellColors.SystemFillCriticalBrushKey}}"/>
+      </MultiTrigger>
+    </Style.Triggers>
+  </Style>
+</ResourceDictionary>

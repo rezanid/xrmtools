@@ -63,6 +63,14 @@
 	<PackageReference Include="System.Text.Json" Version="9.0.0" NoWarn="NU1605" />
   </ItemGroup>
   <ItemGroup>
+    <Reference Include="PresentationFramework" />
+    <Reference Include="PresentationCore" />
+    <Reference Include="WindowsBase" />
+    <Reference Include="System.Xaml" />
+    <Reference Include="Microsoft.Internal.VisualStudio.Interop" Condition="Exists('$(MSBuildBinPath)\..\..\..\Common7\IDE\PrivateAssemblies\Microsoft.Internal.VisualStudio.Interop.dll')">
+      <HintPath>$(MSBuildBinPath)\..\..\..\Common7\IDE\PrivateAssemblies\Microsoft.Internal.VisualStudio.Interop.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
     <ProjectReference Include="..\..\XrmTools.Core\XrmTools.Core.csproj">
       <Project>{4e3f79aa-5694-4dd6-933d-aee2132486a5}</Project>
       <Name>XrmTools.Core</Name>

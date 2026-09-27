@@ -5,6 +5,7 @@ using System.Windows;
 
 public static class ShellInternalStyles
 {
+    public static Style ComboBoxToggleButton { get; } = ShellStyles.LoadStyle("ComboBoxToggleButtonStyle.xaml");
     public static Style Button { get; } = (Style)DefaultStyles.Instance[typeof(Button)];
 
     public static Style HeaderFocusVisual { get; } = ShellStyles.LoadStyle("HeaderFocusVisualStyle.xaml");
