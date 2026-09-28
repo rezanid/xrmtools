@@ -12,8 +12,6 @@ using XrmTools.Options;
 [Export(typeof(IAuthenticationService))]
 internal class AuthenticationService : IAuthenticationService
 {
-    bool cleanTokenCache = false;
-
     private readonly ITokenExpanderService tokenExpander;
     private readonly Lazy<IXrmHttpClientFactory> httpClientFactory;
 
@@ -24,10 +22,6 @@ internal class AuthenticationService : IAuthenticationService
     {
         this.tokenExpander = tokenExpander;
         this.httpClientFactory = httpClientFactory;
-        GeneralOptions.Saved += (options) =>
-        {
-            cleanTokenCache = true;
-        };
     }
 
     public IAuthenticator Authenticator { get; set; } = new ClientAppAuthenticator
@@ -58,10 +52,9 @@ internal class AuthenticationService : IAuthenticationService
         var options = await GeneralOptions.GetLiveInstanceAsync();
         if (allowInteraction && options?.UseWindowsAccountManager == true && wamAuthenticator.CanAuthenticate(authParams))
         {
-            var wamResult = await wamAuthenticator.AuthenticateAsync(authParams, cleanTokenCache, onMessageForUser, cancellationToken).ConfigureAwait(false);
+            var wamResult = await wamAuthenticator.AuthenticateAsync(authParams, false, onMessageForUser, cancellationToken).ConfigureAwait(false);
             if (wamResult != null)
             {
-                cleanTokenCache = false;
                 return wamResult;
             }
         }
@@ -73,10 +66,12 @@ internal class AuthenticationService : IAuthenticationService
             throw new InvalidOperationException("Unable to detect required authentication flow. Please check the input parameters and try again.");
         }
 
-        var result = await current?.AuthenticateAsync(authParams, cleanTokenCache, onMessageForUser, cancellationToken);
+        if (!allowInteraction && current.RequiresUserInteraction)
+        {
+            var silentResult = await current.AuthenticateSilentlyAsync(authParams, false, cancellationToken).ConfigureAwait(false);
+            return silentResult;
+        }
 
-        cleanTokenCache = false;
-
-        return result;
+        return await current.AuthenticateAsync(authParams, false, onMessageForUser, cancellationToken);
     }
 }

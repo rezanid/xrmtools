@@ -9,6 +9,8 @@ using System.Threading.Tasks;
 
 internal class IntegratedAuthenticator : DelegatingAuthenticator
 {
+    public override bool RequiresUserInteraction => true;
+
     public override async Task<AuthenticationResult> AuthenticateAsync(
         AuthenticationParameters parameters,
         bool clearTokenCache,

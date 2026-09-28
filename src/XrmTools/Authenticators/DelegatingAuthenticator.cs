@@ -19,6 +19,31 @@ internal abstract class DelegatingAuthenticator : IAuthenticator
 
     public IAuthenticator NextAuthenticator { get; set; }
 
+    public virtual bool RequiresUserInteraction => false;
+
+    public virtual async Task<AuthenticationResult> AuthenticateSilentlyAsync(
+        AuthenticationParameters parameters,
+        bool clearTokenCache,
+        CancellationToken cancellationToken = default)
+    {
+        var app = await CreateClientAppAsync(parameters, cancellationToken).ConfigureAwait(false);
+        if (clearTokenCache) await ClearTokenCacheAsync(app).ConfigureAwait(false);
+
+        var accounts = await app.GetAccountsAsync().ConfigureAwait(false);
+        var account = accounts.FirstOrDefault(candidate => candidate.HomeAccountId?.TenantId == parameters.Tenant)
+            ?? accounts.FirstOrDefault();
+        try
+        {
+            return await app.AcquireTokenSilent(parameters.Scopes, account)
+                .ExecuteAsync(cancellationToken)
+                .ConfigureAwait(false);
+        }
+        catch (MsalUiRequiredException)
+        {
+            return null;
+        }
+    }
+
     public virtual async Task<AuthenticationResult> AuthenticateAsync(
         AuthenticationParameters parameters, bool clearTokenCache, Action<string> onMessageForUser = default, CancellationToken cancellationToken = default)
     {

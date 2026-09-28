@@ -13,6 +13,11 @@ internal interface IAuthenticator
 
     bool CanAuthenticate(AuthenticationParameters parameters);
 
+    bool RequiresUserInteraction { get; }
+
+    Task<AuthenticationResult> AuthenticateSilentlyAsync(
+        AuthenticationParameters parameters, bool clearTokenCache, CancellationToken cancellationToken = default);
+
     Task<AuthenticationResult> TryAuthenticateAsync(
         AuthenticationParameters parameters, bool clearTokenCache, Action<string> onMessageForUser = default, CancellationToken cancellationToken = default);
 }
