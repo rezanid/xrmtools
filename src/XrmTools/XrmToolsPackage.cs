@@ -211,6 +211,8 @@ public sealed partial class XrmToolsPackage : ToolkitPackage
         Assumes.Present(Dte);
 
         await InitializeMefServicesAsync();
+        var traceService = (await GetServiceAsync(typeof(SComponentModel)) as IComponentModel)?.GetService<PluginTrace.TraceExplorerService>();
+        if (traceService != null) await traceService.InitializeTraceLoggingLeasesAsync();
 
         //await NewPluginDefinitionFileCommand.InitializeAsync(this);
         await SetPluginGeneratorTemplateInProjectCommand.InitializeAsync(this);

@@ -54,7 +54,8 @@
   <DockPanel Grid.Row="0" Margin="2,0,2,4">
    <WrapPanel DockPanel.Dock="Right">
     <TextBlock Text="Trace logging"/>
-    <c:ComboBox x:Name="TraceLogging" Width="105" SelectedIndex="0" IsEnabled="False" ToolTip="Dataverse plug-in trace logging level" SelectionChanged="TraceLoggingChanged"><c:ComboBoxItem Content="Off" Tag="0"/><c:ComboBoxItem Content="Exceptions" Tag="1"/><c:ComboBoxItem Content="All" Tag="2"/></c:ComboBox>
+    <c:ComboBox x:Name="TraceLogging" Width="130" SelectedIndex="0" IsEnabled="False" ToolTip="Dataverse plug-in trace logging level" SelectionChanged="TraceLoggingChanged"><c:ComboBoxItem Content="Off" Tag="0"/><c:ComboBoxItem Content="Exceptions" Tag="1"/><c:ComboBoxItem Content="All" Tag="2"/><c:ComboBoxItem Content="All for 1 hour" Tag="timed"/></c:ComboBox>
+    <TextBlock x:Name="TraceLoggingTimer" Visibility="Collapsed" Margin="0,0,6,0" Foreground="{DynamicResource {x:Static s:ShellColors.TextFillSecondaryBrushKey}}" ToolTip="Refresh extends timed trace logging by one hour."/>
     <c:CheckBox x:Name="AutoRefresh" Content="Auto-refresh" IsChecked="True"/>
     <c:ComboBox x:Name="Interval" SelectedIndex="1" Width="84" ToolTip="Refresh interval"><c:ComboBoxItem Content="5 sec" Tag="5"/><c:ComboBoxItem Content="10 sec" Tag="10"/><c:ComboBoxItem Content="30 sec" Tag="30"/><c:ComboBoxItem Content="60 sec" Tag="60"/></c:ComboBox>
    </WrapPanel>

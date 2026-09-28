@@ -18,6 +18,7 @@ internal sealed class TraceExplorerService
     private readonly IEnvironmentSelection environments;
     private readonly IXrmHttpClientFactory authentication;
     private readonly IODataTransport transport;
+    private readonly TraceLoggingLeaseManager traceLoggingLeases;
     internal const int MaximumRecords = 2000;
 
     [ImportingConstructor]
@@ -26,23 +27,24 @@ internal sealed class TraceExplorerService
         this.environments = environments;
         this.authentication = authentication;
         this.transport = transport;
+        traceLoggingLeases = new TraceLoggingLeaseManager(this);
     }
 
     public Task<DataverseEnvironment?> GetEnvironmentAsync() => environments.GetSelectedEnvironmentAsync();
 
-    private async Task<ODataResponse> SendAsync(DataverseEnvironment environment, ODataRequest request, bool interactive, CancellationToken cancellation)
+    private async Task<ODataResponse> SendAsync(DataverseEnvironment environment, ODataRequest request, bool interactive, CancellationToken cancellation, bool verifySelectedEnvironment = true)
     {
         cancellation.ThrowIfCancellationRequested();
-        await VerifyEnvironmentAsync(environment, cancellation);
+        if (verifySelectedEnvironment) await VerifyEnvironmentAsync(environment, cancellation);
         using var validation = ODataRequestBuilder.Build(request, environment.BaseServiceUrl!, "validation");
         var token = await authentication.PreAuthenticateAsync(environment, interactive, cancellation);
         if (token == null || string.IsNullOrEmpty(token.AccessToken) || token.ExpiresOn <= DateTimeOffset.UtcNow)
             throw new InvalidOperationException("Sign in using Apply or Refresh to continue.");
         cancellation.ThrowIfCancellationRequested();
-        await VerifyEnvironmentAsync(environment, cancellation);
+        if (verifySelectedEnvironment) await VerifyEnvironmentAsync(environment, cancellation);
         using var message = ODataRequestBuilder.Build(request, environment.BaseServiceUrl!, token.AccessToken);
         var response = await transport.SendAsync(message, cancellation).ConfigureAwait(false);
-        await VerifyEnvironmentAsync(environment, cancellation).ConfigureAwait(false);
+        if (verifySelectedEnvironment) await VerifyEnvironmentAsync(environment, cancellation).ConfigureAwait(false);
         if (response.StatusCode < 200 || response.StatusCode >= 300)
         {
             var error = response.Status;
@@ -59,11 +61,11 @@ internal sealed class TraceExplorerService
         return response;
     }
 
-    private async Task<string> GetAsync(DataverseEnvironment environment, string target, bool interactive, CancellationToken cancellation)
+    private async Task<string> GetAsync(DataverseEnvironment environment, string target, bool interactive, CancellationToken cancellation, bool verifySelectedEnvironment = true)
     {
         var request = new ODataRequest { Target = target };
         request.Headers.Add(new KeyValuePair<string, string>("Prefer", "odata.maxpagesize=250"));
-        return (await SendAsync(environment, request, interactive, cancellation).ConfigureAwait(false)).Body;
+        return (await SendAsync(environment, request, interactive, cancellation, verifySelectedEnvironment).ConfigureAwait(false)).Body;
     }
 
     private async Task VerifyEnvironmentAsync(DataverseEnvironment environment, CancellationToken cancellation)
@@ -97,9 +99,9 @@ internal sealed class TraceExplorerService
         return JsonSerializer.Serialize(json.RootElement, new JsonSerializerOptions { WriteIndented = true });
     }
 
-    public async Task<TraceLoggingConfiguration> GetTraceLoggingAsync(DataverseEnvironment environment, CancellationToken cancellation)
+    public async Task<TraceLoggingConfiguration> GetTraceLoggingAsync(DataverseEnvironment environment, CancellationToken cancellation, bool interactive = true, bool verifySelectedEnvironment = true)
     {
-        using var json = JsonDocument.Parse(await GetAsync(environment, "organizations?$select=organizationid,plugintracelogsetting&$top=1", true, cancellation).ConfigureAwait(false));
+        using var json = JsonDocument.Parse(await GetAsync(environment, "organizations?$select=organizationid,plugintracelogsetting&$top=1", interactive, cancellation, verifySelectedEnvironment).ConfigureAwait(false));
         var organization = json.RootElement.GetProperty("value").EnumerateArray().FirstOrDefault();
         if (organization.ValueKind != JsonValueKind.Object || !organization.TryGetProperty("organizationid", out var idValue) || !Guid.TryParse(idValue.GetString(), out var id))
             throw new InvalidOperationException("The selected environment did not return its organization settings.");
@@ -108,12 +110,19 @@ internal sealed class TraceExplorerService
         return new TraceLoggingConfiguration(id, (TraceLoggingMode)value);
     }
 
-    public async Task SetTraceLoggingAsync(DataverseEnvironment environment, Guid organizationId, TraceLoggingMode mode, CancellationToken cancellation)
+    public async Task SetTraceLoggingAsync(DataverseEnvironment environment, Guid organizationId, TraceLoggingMode mode, CancellationToken cancellation, bool interactive = true, bool verifySelectedEnvironment = true)
     {
         var request = new ODataRequest { Method = "PATCH", Target = $"organizations({organizationId:D})", Body = $"{{\"plugintracelogsetting\":{(int)mode}}}" };
         request.Headers.Add(new KeyValuePair<string, string>("If-Match", "*"));
-        await SendAsync(environment, request, true, cancellation).ConfigureAwait(false);
+        await SendAsync(environment, request, interactive, cancellation, verifySelectedEnvironment).ConfigureAwait(false);
     }
+
+    public Task InitializeTraceLoggingLeasesAsync() => traceLoggingLeases.InitializeAsync();
+    public TraceLoggingLease? CurrentTraceLoggingLease => traceLoggingLeases.Current;
+    public Task StartTimedTraceLoggingAsync(DataverseEnvironment environment, Guid organizationId, TraceLoggingMode restoreMode, CancellationToken cancellation) => traceLoggingLeases.StartAsync(environment, organizationId, restoreMode, cancellation);
+    public Task ExtendTimedTraceLoggingAsync(DataverseEnvironment environment, Guid organizationId) => traceLoggingLeases.ExtendAsync(environment, organizationId);
+    public Task CancelTimedTraceLoggingAsync(DataverseEnvironment environment, Guid organizationId) => traceLoggingLeases.CancelAsync(environment, organizationId);
+    public event Action<TraceLoggingLease?> TraceLoggingLeaseChanged { add => traceLoggingLeases.Changed += value; remove => traceLoggingLeases.Changed -= value; }
 }
 
 internal sealed record TraceQueryResult(IReadOnlyList<TraceRecord> Records, bool Truncated);

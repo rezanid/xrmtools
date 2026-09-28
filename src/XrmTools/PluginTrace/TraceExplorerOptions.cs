@@ -6,4 +6,5 @@ internal sealed class TraceExplorerOptions : BaseOptionModel<TraceExplorerOption
 {
     // Stored in the user's VS settings, independently of source-controlled project settings.
     public string SavedViewsJson { get; set; } = "[]";
+    public string TimedTraceLoggingLeaseJson { get; set; } = "";
 }
