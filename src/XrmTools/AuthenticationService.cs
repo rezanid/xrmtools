@@ -38,6 +38,8 @@ internal class AuthenticationService : IAuthenticationService
         }
     };
 
+    private readonly IAuthenticator wamAuthenticator = new WamAuthenticator();
+
     public async Task<AuthenticationResult> AuthenticateAsync(
         DataverseEnvironment environment,
         bool allowInteraction,
@@ -48,16 +50,24 @@ internal class AuthenticationService : IAuthenticationService
         { 
             throw new InvalidOperationException("Authentication failed. The current environment is not valid. Please make sure the environment configuration is correct in Tools > Options > Xrm Tools."); 
         }
-        var current = Authenticator;
         var connectionString = tokenExpander.ExpandTokens(environment.ConnectionString);
         var authParams = await AuthenticationParameterResolver.EnsureTenantAsync(
             AuthenticationParameters.Parse(connectionString),
             httpClientFactory.Value,
             cancellationToken).ConfigureAwait(false);
-        while (current != null && !current.CanAuthenticate(authParams))
+        var options = await GeneralOptions.GetLiveInstanceAsync();
+        if (allowInteraction && options?.UseWindowsAccountManager == true && wamAuthenticator.CanAuthenticate(authParams))
         {
-            current = current.NextAuthenticator;
+            var wamResult = await wamAuthenticator.AuthenticateAsync(authParams, cleanTokenCache, onMessageForUser, cancellationToken).ConfigureAwait(false);
+            if (wamResult != null)
+            {
+                cleanTokenCache = false;
+                return wamResult;
+            }
         }
+
+        var current = Authenticator;
+        while (current != null && !current.CanAuthenticate(authParams)) current = current.NextAuthenticator;
         if (current == null)
         {
             throw new InvalidOperationException("Unable to detect required authentication flow. Please check the input parameters and try again.");

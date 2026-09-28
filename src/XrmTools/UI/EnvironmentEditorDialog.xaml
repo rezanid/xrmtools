@@ -105,7 +105,10 @@
                     <p:WatermarkedTextBox Grid.Column="0" Margin="0 1 5 1"
                      Text="{Binding SelectedEnvironment.ConnectionString, UpdateSourceTrigger=PropertyChanged}"
                      Watermark="Connection String" />
-                    <Button Content="Test" Grid.Column="1" Command="{Binding TestConnectionCommand}" Margin="5,5,5,5" MinWidth="42"/>
+                    <StackPanel Grid.Column="1" Orientation="Horizontal" Margin="5,5,5,5">
+                        <Button Content="Test" Command="{Binding TestConnectionCommand}" Margin="0,0,5,0" MinWidth="42"/>
+                        <Button Content="Disconnect" Command="{Binding ResetSignInCommand}" ToolTip="Clears this environment's cached token. Your Windows account remains signed in."/>
+                    </StackPanel>
                 </Grid>
 
                 <TextBlock Grid.Column="0" Grid.Row="4" Text="or" HorizontalAlignment="Center" Margin="0,5,0,5"/>
@@ -125,10 +128,11 @@
                 <p:WatermarkedTextBox Grid.Column="1" Grid.Row="7" Margin="0,0,0,1"
                      Text="{Binding SelectedEnvironment.TenantId, UpdateSourceTrigger=PropertyChanged}"
                      Watermark="Leave empty to use auto-discovery"/>
-                <Label Content="Client ID:" Grid.Row="8" Grid.Column="0" Margin="0,5,5,5"/>
+                <Label Content="Application (client) ID:" Grid.Row="8" Grid.Column="0" Margin="0,5,5,5"
+                       ToolTip="Optional Microsoft Entra application ID used when signing in to this environment."/>
                 <p:WatermarkedTextBox Grid.Column="1" Grid.Row="8" Margin="0,0,0,1"
                      Text="{Binding SelectedEnvironment.ClientId, UpdateSourceTrigger=PropertyChanged}"
-                     Watermark="Leave empty to use default client ID"/>
+                     Watermark="Optional: leave empty to use the XrmTools application"/>
                 <Label Content="Client Secret:" Grid.Row="9" Grid.Column="0" Margin="0,5,5,5"
                    Visibility="{Binding SelectedEnvironment.IsClientAuth, Converter={StaticResource BooleanToVisibilityConverter}}"/>
                 <p:WatermarkedTextBox Grid.Column="1" Grid.Row="9" Margin="0,0,0,1"
@@ -141,6 +145,10 @@
                      Text="{Binding SelectedEnvironment.CertificateThumbprint, UpdateSourceTrigger=PropertyChanged}"
                      Watermark="Certificate Thumbprint"
                      Visibility="{Binding SelectedEnvironment.IsCertificateAuth, Converter={StaticResource BooleanToVisibilityConverter}}"/>
+
+                <TextBlock Grid.Row="11" Grid.ColumnSpan="2" Margin="0,8,0,0" TextWrapping="Wrap" Opacity="0.75"
+                           Foreground="{DynamicResource {x:Static p:EnvironmentColors.ToolWindowTextBrushKey}}"
+                           Text="Use an organization-owned Microsoft Entra application here to override XrmTools' sign-in application. Windows Account Manager requires its broker redirect URI to be registered for that application."/>
 
                 <StackPanel Grid.Row="12" Grid.ColumnSpan="2" Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Center">
                     <TextBlock Text="{Binding TestResult}" VerticalAlignment="Center" Foreground="Green" Margin="0,0,10,0"/>

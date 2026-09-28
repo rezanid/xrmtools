@@ -46,6 +46,11 @@ internal class GeneralOptions : BaseOptionModel<GeneralOptions>
     [Editor(typeof(CurrentEnvironmentEditor), typeof(UITypeEditor))]
     public DataverseEnvironment CurrentEnvironment { get; set; } = DataverseEnvironment.Empty;
 
+    [Category("Authentication")]
+    [DisplayName("Use Windows Account Manager (preview)")]
+    [Description("Uses the Windows account picker for interactive sign-in when the selected application's registration supports Windows Account Manager. XrmTools automatically falls back to the browser if it cannot be used.")]
+    public bool UseWindowsAccountManager { get; set; }
+
     [Category("Dataverse Solution Projects")]
     [DisplayName("Project SDK")]
     [Description("Selects the project format used when creating Dataverse solution projects.")]

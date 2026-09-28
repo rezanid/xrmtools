@@ -40,6 +40,7 @@ internal class EnvironmentEditorViewModel : ViewModelBase
             SetProperty(ref _selectedEnvironment, value);
             ((RelayCommand)RemoveEnvironmentCommand).NotifyCanExecuteChanged();
             ((AsyncRelayCommand)TestConnectionCommand).NotifyCanExecuteChanged();
+            ((AsyncRelayCommand)ResetSignInCommand).NotifyCanExecuteChanged();
         }
     }
 
@@ -55,6 +56,7 @@ internal class EnvironmentEditorViewModel : ViewModelBase
     public ICommand AddEnvironmentCommand { get; }
     public ICommand RemoveEnvironmentCommand { get; }
     public ICommand TestConnectionCommand { get; }
+    public ICommand ResetSignInCommand { get; }
     public ICommand SaveCommand { get; }
     public ICommand CancelCommand { get; }
     public ICommand SetActiveEnvironmentCommand { get; }
@@ -79,6 +81,7 @@ internal class EnvironmentEditorViewModel : ViewModelBase
         AddEnvironmentCommand = new RelayCommand(AddEnvironment);
         RemoveEnvironmentCommand = new RelayCommand(RemoveEnvironment, () => SelectedEnvironment != null);
         TestConnectionCommand = new AsyncRelayCommand(TestConnectionAsync, () => SelectedEnvironment != null);
+        ResetSignInCommand = new AsyncRelayCommand(ResetSignInAsync, () => SelectedEnvironment != null);
         SetActiveEnvironmentCommand = new RelayCommand<EnvironmentModel>(SetActiveEnvironment);
         SaveCommand = new AsyncRelayCommand<Window>(SaveAsync);
         CancelCommand = new RelayCommand<Window>(Cancel);
@@ -202,6 +205,34 @@ internal class EnvironmentEditorViewModel : ViewModelBase
         TestResult = response is not null ?
             string.Format(Strings.EnvironmentConnectionSuccess, SelectedEnvironment.Name) :
             string.Format("WhoAmI request failed.", SelectedEnvironment.Name);
+    }
+
+    private async Task ResetSignInAsync()
+    {
+        if (SelectedEnvironment == null || !IsValidEnvironment(SelectedEnvironment))
+        {
+            TestResult = "Select a valid environment before resetting its sign-in.";
+            return;
+        }
+
+        var environment = new DataverseEnvironment
+        {
+            Name = SelectedEnvironment.Name,
+            ConnectionString = SelectedEnvironment.ConnectionString
+        };
+
+        try
+        {
+            _httpClientFactory.InvalidateAuthenticationCache(environment);
+            await _authenticationCacheService.ClearEnvironmentTokenCacheAsync(environment);
+            TestResult = $"Sign-in reset for {environment.Name}.";
+        }
+        catch (Exception ex)
+        {
+            await VS.MessageBox.ShowErrorAsync(
+                "Reset sign-in",
+                $"Failed to reset the cached sign-in for environment \"{environment.Name}\". {ex.Message}");
+        }
     }
 
     private bool IsValidEnvironment(EnvironmentModel? environment)

@@ -20,6 +20,9 @@
     <ItemGroup>
       <PackagesToInclude Include="System.Text.Json" />
       <PackagesToInclude Include="Microsoft.Bcl.AsyncInterfaces" />
+      <PackagesToInclude Include="Microsoft.Identity.Client" />
+      <PackagesToInclude Include="Microsoft.Identity.Client.Broker" />
+      <PackagesToInclude Include="Microsoft.Identity.Client.NativeInterop" />
     </ItemGroup>
 
     <!-- Add the filtered DLLs to the VSIX -->

@@ -380,6 +380,7 @@
     <Compile Include="Authenticators\DelegatingAuthenticator.cs" />
     <Compile Include="Authenticators\DeviceCodeAuthenticator.cs" />
     <Compile Include="Authenticators\IntegratedAuthenticator.cs" />
+    <Compile Include="Authenticators\WamAuthenticator.cs" />
     <Compile Include="Classifiers\XrmStringClassifierProvider.cs" />
     <Compile Include="CodeCompletion\XrmCSharpCompletionProvider.cs" />
     <Compile Include="CodeCompletion\XrmCSharpCompletionSource.cs" />
@@ -529,6 +530,18 @@
     </Content>
     <Content Include="Microsoft.Extensions.Caching.Abstractions\Microsoft.Extensions.Caching.Abstractions.dll">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <IncludeInVSIX>true</IncludeInVSIX>
+    </Content>
+    <Content Include="$(NuGetPackageRoot)microsoft.identity.client.nativeinterop\0.20.6\runtimes\win-x64\native\msalruntime.dll">
+      <Link>runtimes\win-x64\native\msalruntime.dll</Link>
+      <IncludeInVSIX>true</IncludeInVSIX>
+    </Content>
+    <Content Include="$(NuGetPackageRoot)microsoft.identity.client.nativeinterop\0.20.6\runtimes\win-arm64\native\msalruntime_arm64.dll">
+      <Link>runtimes\win-arm64\native\msalruntime_arm64.dll</Link>
+      <IncludeInVSIX>true</IncludeInVSIX>
+    </Content>
+    <Content Include="$(NuGetPackageRoot)microsoft.identity.client.nativeinterop\0.20.6\runtimes\win-x86\native\msalruntime_x86.dll">
+      <Link>runtimes\win-x86\native\msalruntime_x86.dll</Link>
       <IncludeInVSIX>true</IncludeInVSIX>
     </Content>
     <Content Include="CustomMonikers.imagemanifest">
