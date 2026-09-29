@@ -6,6 +6,7 @@ using System.ComponentModel.Composition;
 using System.Threading;
 using System.Threading.Tasks;
 using XrmTools.Http;
+using XrmTools.Options;
 using XrmTools.Tokens;
 
 [Export(typeof(IAuthenticationCacheService))]
@@ -43,11 +44,20 @@ internal class AuthenticationCacheService : IAuthenticationCacheService
         }
 
         authParams = await AuthenticationParameterResolver.EnsureTenantAsync(authParams, httpClientFactory.Value, cancellationToken).ConfigureAwait(false);
-        var app = await DelegatingAuthenticator.CreatePublicClientAsync(
-            authParams.Authority,
-            authParams.ClientId,
-            authParams.RedirectUri,
-            authParams.Tenant).ConfigureAwait(false);
+        IPublicClientApplication app;
+        var options = await GeneralOptions.GetLiveInstanceAsync();
+        if (options?.UseWindowsAccountManager == true && WamAuthenticator.CanUseWam(authParams))
+        {
+            app = await WamAuthenticator.CreateWamPublicClientAsync(authParams, cancellationToken).ConfigureAwait(false);
+        }
+        else
+        {
+            app = await DelegatingAuthenticator.CreatePublicClientAsync(
+                authParams.Authority,
+                authParams.ClientId,
+                authParams.RedirectUri,
+                authParams.Tenant).ConfigureAwait(false);
+        }
 
         await DelegatingAuthenticator.RemoveAccountsAsync(
             app,

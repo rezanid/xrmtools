@@ -153,12 +153,13 @@ internal class EnvironmentModel : ViewModelBase
                 };
                 EnvironmentUrl = authParams.Resource ?? EnvironmentUrl;
                 TenantId = authParams.Tenant ?? TenantId;
-                // Only set ClientId if it's not the default
+                // Do not display XrmTools' default ID as an override. Clear an existing override
+                // when the connection string switches back to the default application.
                 ClientId = (authParams.ClientId != null && !string.Equals(authParams.ClientId, AuthenticationParameters.DefaultClientId, StringComparison.OrdinalIgnoreCase))
                     ? authParams.ClientId
-                    : ClientId;
-                ClientSecret = authParams.ClientSecret ?? ClientSecret;
-                CertificateThumbprint = authParams.CertificateThumbprint ?? CertificateThumbprint;
+                    : null;
+                ClientSecret = authParams.ClientSecret;
+                CertificateThumbprint = authParams.CertificateThumbprint;
             }
         }
         finally

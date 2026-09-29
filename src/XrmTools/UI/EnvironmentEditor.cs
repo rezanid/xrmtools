@@ -36,11 +36,13 @@ internal class EnvironmentEditor : IEnvironmentEditor
         var viewModel = new EnvironmentEditorViewModel(EnvironmentProvider, HttpClientFactory, AuthenticationCacheService);
         await viewModel.InitializeAsync(newEnvironment);
 
+        await Microsoft.VisualStudio.Shell.ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync();
+
         var dialog = new EnvironmentEditorDialog
         {
             DataContext = viewModel
         };
-        var result = dialog.ShowDialog();
+        var result = dialog.ShowModal();
         if (result == true)
         {
             EnvironmentsChanged?.Invoke(this, EventArgs.Empty);

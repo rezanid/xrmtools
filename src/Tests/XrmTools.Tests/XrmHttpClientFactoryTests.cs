@@ -247,6 +247,94 @@ public class XrmHttpClientFactoryTests
         _authenticationServiceMock.Verify(x => x.AuthenticateAsync(It.IsAny<DataverseEnvironment>(), true, It.IsAny<Action<string>>(), It.IsAny<CancellationToken>()), Times.Once);
     }
 
+    [Fact]
+    public async Task Disconnect_ThenSilentProbe_ThenInteractiveConnection_Reauthenticates()
+    {
+        var environment = CreateFakeEnvironment();
+        var firstToken = CreateFakeAuthenticationResult(name: "BeforeDisconnect");
+        var newToken = CreateFakeAuthenticationResult(name: "AfterDisconnect");
+        _authenticationServiceMock.SetupSequence(x => x.AuthenticateAsync(environment, true, It.IsAny<Action<string>>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(firstToken).ReturnsAsync(newToken);
+        _authenticationServiceMock.Setup(x => x.AuthenticateAsync(environment, false, It.IsAny<Action<string>>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync((AuthenticationResult)null);
+
+        await _factory.PreAuthenticateAsync(environment, true);
+        _factory.InvalidateAuthenticationCache(environment);
+        environment.IsAutehnticated.Should().BeFalse();
+
+        (await _factory.PreAuthenticateAsync(environment, false)).Should().BeNull();
+        (await _factory.PreAuthenticateAsync(environment, false)).Should().BeNull();
+        environment.IsAutehnticated.Should().BeFalse();
+
+        using var client = await _factory.CreateClientAsync(environment);
+        client.DefaultRequestHeaders.Authorization.Parameter.Should().Be("AfterDisconnect");
+        environment.IsAutehnticated.Should().BeTrue();
+        _authenticationServiceMock.Verify(x => x.AuthenticateAsync(environment, true, It.IsAny<Action<string>>(), It.IsAny<CancellationToken>()), Times.Exactly(2));
+    }
+
+    [Fact]
+    public async Task PreAuthenticateAsync_ExistingNullCacheEntry_IsTreatedAsCacheMiss()
+    {
+        var environment = CreateFakeEnvironment();
+        typeof(XrmHttpClientFactory).GetField("_tokenCache", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance)
+            .SetValue(_factory, new ConcurrentDictionary<string, AuthenticationResult> { [environment.ConnectionString] = null });
+        var token = CreateFakeAuthenticationResult();
+        _authenticationServiceMock.Setup(x => x.AuthenticateAsync(environment, true, It.IsAny<Action<string>>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(token);
+
+        (await _factory.PreAuthenticateAsync(environment, true)).Should().BeSameAs(token);
+    }
+
+    [Fact]
+    public async Task InteractiveConnection_DoesNotJoinSilentProbeInProgress()
+    {
+        var environment = CreateFakeEnvironment();
+        var silentCompletion = new TaskCompletionSource<AuthenticationResult>(TaskCreationOptions.RunContinuationsAsynchronously);
+        _authenticationServiceMock.Setup(x => x.AuthenticateAsync(environment, false, It.IsAny<Action<string>>(), It.IsAny<CancellationToken>()))
+            .Returns(silentCompletion.Task);
+        var token = CreateFakeAuthenticationResult();
+        _authenticationServiceMock.Setup(x => x.AuthenticateAsync(environment, true, It.IsAny<Action<string>>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(token);
+
+        var probe = _factory.PreAuthenticateAsync(environment, false);
+        var interactive = _factory.PreAuthenticateAsync(environment, true);
+        // Complete the probe before awaiting so a regression fails rather than hanging the test.
+        silentCompletion.SetResult(null);
+        (await probe).Should().BeNull();
+        (await interactive).Should().BeSameAs(token);
+        _authenticationServiceMock.Verify(x => x.AuthenticateAsync(environment, true, It.IsAny<Action<string>>(), It.IsAny<CancellationToken>()), Times.Once);
+    }
+
+    [Fact]
+    public async Task CreateClientAsync_NoInteractiveToken_ReportsSignInFailureInsteadOfCreatingAnonymousClient()
+    {
+        var environment = CreateFakeEnvironment();
+        _authenticationServiceMock.Setup(x => x.AuthenticateAsync(environment, true, It.IsAny<Action<string>>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync((AuthenticationResult)null);
+
+        Func<Task> create = async () => await _factory.CreateClientAsync(environment);
+        await create.Should().ThrowAsync<InvalidOperationException>().WithMessage("*did not return an access token*");
+        environment.IsAutehnticated.Should().BeFalse();
+    }
+
+    [Fact]
+    public async Task CancelledWaiter_DoesNotRemovePendingAuthenticationForLaterCaller()
+    {
+        var environment = CreateFakeEnvironment();
+        var completion = new TaskCompletionSource<AuthenticationResult>(TaskCreationOptions.RunContinuationsAsynchronously);
+        _authenticationServiceMock.Setup(x => x.AuthenticateAsync(environment, true, It.IsAny<Action<string>>(), It.IsAny<CancellationToken>()))
+            .Returns(completion.Task);
+        using var cancellation = new CancellationTokenSource();
+        var first = _factory.PreAuthenticateAsync(environment, true, cancellation.Token);
+        cancellation.Cancel();
+        await FluentActions.Invoking(async () => await first).Should().ThrowAsync<OperationCanceledException>();
+
+        var later = _factory.PreAuthenticateAsync(environment, true);
+        completion.SetResult(CreateFakeAuthenticationResult());
+        (await later).Should().NotBeNull();
+        _authenticationServiceMock.Verify(x => x.AuthenticateAsync(environment, true, It.IsAny<Action<string>>(), It.IsAny<CancellationToken>()), Times.Once);
+    }
+
     private AuthenticationResult CreateFakeAuthenticationResult(bool isValid = true, string name = "FakeToken")
         => new (
             name, 

@@ -1,0 +1,15 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:ctrls="clr-namespace:XrmTools.Shell.Controls"
+                    xmlns:styles="clr-namespace:XrmTools.Shell.Styles">
+    <Style TargetType="{x:Type ctrls:NonClientButton}" BasedOn="{x:Static styles:ShellInternalStyles.PathButton}">
+        <Setter Property="Kind" Value="Subtle"/>
+        <Setter Property="CornerRadius" Value="0"/>
+        <Setter Property="Focusable" Value="False"/>
+        <Setter Property="Height" Value="{x:Static styles:Sizes.NonClientControlHeight}"/>
+        <Setter Property="Width" Value="{x:Static styles:Sizes.NonClientControlWidth}"/>
+        <Setter Property="MinWidth" Value="0"/>
+        <Setter Property="VerticalAlignment" Value="Top"/>
+        <Setter Property="AutomationProperties.Name" Value="{Binding ToolTip, RelativeSource={RelativeSource Self}}"/>
+    </Style>
+</ResourceDictionary>

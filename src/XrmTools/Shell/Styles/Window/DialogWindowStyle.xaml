@@ -1,0 +1,12 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:ctrls="clr-namespace:XrmTools.Shell.Controls"
+                    xmlns:styles="clr-namespace:XrmTools.Shell.Styles">
+    <Style TargetType="{x:Type ctrls:DialogWindow}" BasedOn="{x:Static styles:ShellInternalStyles.Window}">
+        <Setter Property="ShowInTaskbar" Value="False"/>
+        <Setter Property="ShowMinimizeButton" Value="False"/>
+        <Setter Property="ResizeMode" Value="NoResize"/>
+        <Setter Property="SizeToContent" Value="WidthAndHeight"/>
+        <Setter Property="CloseOnEsc" Value="True"/>
+    </Style>
+</ResourceDictionary>

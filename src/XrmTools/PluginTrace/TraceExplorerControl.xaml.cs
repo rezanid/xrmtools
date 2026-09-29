@@ -49,6 +49,7 @@ public partial class TraceExplorerControl : UserControl, IDisposable
         TypeName.AddHandler(TextBox.TextChangedEvent, new TextChangedEventHandler(FilterChanged));
         Interval.SelectionChanged += (_, _) => SetTimerInterval();
         timer.Tick += TimerTick;
+        service.TraceLoggingLeaseChanged += TraceLoggingLeaseChanged;
         SetTimerInterval();
         Loaded += OnLoaded;
         Unloaded += OnUnloaded;
@@ -63,6 +64,7 @@ public partial class TraceExplorerControl : UserControl, IDisposable
         if (loaded || disposed) return;
         loaded = true;
         DataverseEnvironmentProvider.EnvironmentChanged += EnvironmentChanged;
+        await service.InitializeTraceLoggingLeasesAsync();
         try
         {
             var options = await TraceExplorerOptions.GetLiveInstanceAsync();
@@ -95,8 +97,32 @@ public partial class TraceExplorerControl : UserControl, IDisposable
 
     private async void TimerTick(object? sender, EventArgs e)
     {
+        UpdateTraceLoggingTimer();
         if (AutoRefresh.IsChecked == true && applied != null && queryCancellation == null && IsVisible)
             await QueryAsync(applied, false, false);
+    }
+
+    private void TraceLoggingLeaseChanged(TraceLoggingLease? ignored) => _ = Dispatcher.BeginInvoke(new Action(UpdateTraceLoggingTimer));
+
+    private void UpdateTraceLoggingTimer()
+    {
+        var lease = service.CurrentTraceLoggingLease;
+        if (lease == null || environment == null || lease.OrganizationId != organizationId || !string.Equals(lease.EnvironmentUrl.TrimEnd('/'), environment.Url?.TrimEnd('/'), StringComparison.OrdinalIgnoreCase))
+        {
+            TraceLoggingTimer.Visibility = Visibility.Collapsed;
+            return;
+        }
+        var remaining = lease.ExpiresAtUtc - DateTimeOffset.UtcNow;
+        if (remaining <= TimeSpan.Zero)
+        {
+            TraceLoggingTimer.Text = "Restore pending";
+            TraceLoggingTimer.ToolTip = "Timed tracing expired. XrmTools will restore the previous setting silently when it can access this environment.";
+            TraceLoggingTimer.Visibility = Visibility.Visible;
+            return;
+        }
+        TraceLoggingTimer.Text = $"{Math.Ceiling(remaining.TotalMinutes):0}m left";
+        TraceLoggingTimer.ToolTip = $"Tracing returns to {lease.RestoreMode} at {lease.ExpiresAtUtc.ToLocalTime():t}. Refresh extends it by one hour.";
+        TraceLoggingTimer.Visibility = Visibility.Visible;
     }
 
     private void EnvironmentChanged(DataverseEnvironment value)
@@ -109,6 +135,7 @@ public partial class TraceExplorerControl : UserControl, IDisposable
             applied = null;
             environment = value with { };
             organizationId = Guid.Empty;
+            TraceLoggingTimer.Visibility = Visibility.Collapsed;
             TraceLogging.IsEnabled = false;
             SetTraceLogging(TraceLoggingMode.Off);
             latest = null;
@@ -197,6 +224,8 @@ public partial class TraceExplorerControl : UserControl, IDisposable
             CancelActiveRefresh();
             return;
         }
+        if (environment != null && organizationId != Guid.Empty)
+            await service.ExtendTimedTraceLoggingAsync(environment, organizationId);
         if (HasUnappliedFilterChanges()) await ApplyAsync();
         else if (applied != null) await QueryAsync(applied, true, false);
     }
@@ -255,6 +284,7 @@ public partial class TraceExplorerControl : UserControl, IDisposable
             if (cancellation.IsCancellationRequested || disposed || !loaded || environment?.ConnectionString != selectedEnvironment.ConnectionString) return;
             organizationId = configuration.OrganizationId;
             SetTraceLogging(configuration.Mode);
+            UpdateTraceLoggingTimer();
             TraceLogging.IsEnabled = true;
         }
         catch (OperationCanceledException) { }
@@ -273,23 +303,34 @@ public partial class TraceExplorerControl : UserControl, IDisposable
     {
         changingTraceLogging = true;
         traceLoggingMode = mode;
-        TraceLogging.SelectedItem = TraceLogging.Items.Cast<ComboBoxItem>().First(i => (string)i.Tag == ((int)mode).ToString(CultureInfo.InvariantCulture));
+        bool timed = mode == TraceLoggingMode.All && service.CurrentTraceLoggingLease is { } lease && lease.OrganizationId == organizationId && environment != null && string.Equals(lease.EnvironmentUrl.TrimEnd('/'), environment.Url?.TrimEnd('/'), StringComparison.OrdinalIgnoreCase);
+        TraceLogging.SelectedItem = TraceLogging.Items.Cast<ComboBoxItem>().First(i => (string)i.Tag == (timed ? "timed" : ((int)mode).ToString(CultureInfo.InvariantCulture)));
         changingTraceLogging = false;
     }
 
     private async void TraceLoggingChanged(object sender, SelectionChangedEventArgs e)
     {
         if (initializing || changingTraceLogging || !loaded || environment == null || organizationId == Guid.Empty || TraceLogging.SelectedItem is not ComboBoxItem item) return;
-        var requested = (TraceLoggingMode)int.Parse((string)item.Tag, CultureInfo.InvariantCulture);
-        if (requested == traceLoggingMode) return;
+        bool timed = (string)item.Tag == "timed";
+        var requested = timed ? TraceLoggingMode.All : (TraceLoggingMode)int.Parse((string)item.Tag, CultureInfo.InvariantCulture);
+        if (!timed && requested == traceLoggingMode)
+        {
+            await service.CancelTimedTraceLoggingAsync(environment, organizationId);
+            return;
+        }
         loggingCancellation?.Cancel();
         var cancellation = new CancellationTokenSource();
         loggingCancellation = cancellation;
         TraceLogging.IsEnabled = false;
         try
         {
-            await service.SetTraceLoggingAsync(environment, organizationId, requested, cancellation.Token);
-            if (!cancellation.IsCancellationRequested) { traceLoggingMode = requested; Status.Text = "Trace logging set to " + item.Content + "."; }
+            if (timed) await service.StartTimedTraceLoggingAsync(environment, organizationId, traceLoggingMode, cancellation.Token);
+            else
+            {
+                await service.SetTraceLoggingAsync(environment, organizationId, requested, cancellation.Token);
+                await service.CancelTimedTraceLoggingAsync(environment, organizationId);
+            }
+            if (!cancellation.IsCancellationRequested) { traceLoggingMode = requested; UpdateTraceLoggingTimer(); Status.Text = "Trace logging set to " + item.Content + "."; }
         }
         catch (OperationCanceledException) { }
         catch (Exception ex)
@@ -675,8 +716,13 @@ public partial class TraceExplorerControl : UserControl, IDisposable
         {
             e.Handled = true;
             if (queryCancellation != null) CancelActiveRefresh();
-            else if (HasUnappliedFilterChanges()) await ApplyAsync();
-            else if (applied != null) await QueryAsync(applied, true, false);
+            else
+            {
+                if (environment != null && organizationId != Guid.Empty)
+                    await service.ExtendTimedTraceLoggingAsync(environment, organizationId);
+                if (HasUnappliedFilterChanges()) await ApplyAsync();
+                else if (applied != null) await QueryAsync(applied, true, false);
+            }
         }
     }
 
@@ -724,6 +770,7 @@ public partial class TraceExplorerControl : UserControl, IDisposable
         RawText.Dispose();
         timer.Stop();
         DataverseEnvironmentProvider.EnvironmentChanged -= EnvironmentChanged;
+        service.TraceLoggingLeaseChanged -= TraceLoggingLeaseChanged;
         CancelRequests();
     }
 
