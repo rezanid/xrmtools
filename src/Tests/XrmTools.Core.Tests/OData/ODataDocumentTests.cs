@@ -22,6 +22,8 @@ public class ODataDocumentTests
     [InlineData("@a = {{b}}\n@b = {{a}}\nGET /{{a}}")]
     [InlineData("@bad name = value\nGET /WhoAmI")]
     [InlineData("GET /WhoAmI HTTP/2")]
+    [InlineData("GET /accounts?$filter=name eq 'Test' HTTP/3")]
+    [InlineData("GET /WhoAmI HTTP/1.0")]
     [InlineData("GET /WhoAmI\nGET /accounts")]
     [InlineData("TRACE /WhoAmI")]
     public void RejectsInvalidOrUnsupportedRequests(string text)
@@ -83,6 +85,38 @@ public class ODataDocumentTests
     }
 
     private static readonly Uri Root = new("https://contoso.crm.dynamics.com/api/data/v9.2/");
+
+    [Theory]
+    [InlineData("")]
+    [InlineData(" HTTP/1.1")]
+    public void EncodesReadableFiltersAfterVariableExpansion(string version)
+    {
+        var document = ODataDocument.Parse("@name = Café & Sons + #1\nGET /accounts?$filter=name eq '{{ name }}'&$top=5" + version);
+        using var message = ODataRequestBuilder.Build(document.Resolve(document.Requests[0]), Root, "token");
+        Assert.Equal(Root.AbsoluteUri + "accounts?$filter=name%20eq%20'Caf%C3%A9%20%26%20Sons%20%2B%20%231'&$top=5", message.RequestUri.AbsoluteUri);
+    }
+
+    [Theory]
+    [InlineData("accounts?$filter=name eq 'O''Brien & Sons'", "accounts?$filter=name%20eq%20'O''Brien%20%26%20Sons'")]
+    [InlineData("accounts?$filter=name%20eq%20%27A%26B%27&$top=1", "accounts?$filter=name%20eq%20%27A%26B%27&$top=1")]
+    [InlineData("accounts?$filter=name eq '100% done 😀'", "accounts?$filter=name%20eq%20'100%25%20done%20%F0%9F%98%80'")]
+    [InlineData("accounts?$search=\"A & B\"&$top=1", "accounts?$search=%22A%20%26%20B%22&$top=1")]
+    [InlineData("accounts?$filter=createdon ge 2026-01-01T00:00:00+01:00", "accounts?$filter=createdon%20ge%202026-01-01T00:00:00%2B01:00")]
+    [InlineData("accounts(name='A B')", "accounts(name='A%20B')")]
+    public void EncodesQueryDataWithoutDoubleEncodingOrLosingSeparators(string target, string expected)
+    {
+        foreach (var prefix in new[] { "", "/", "/api/data/v9.2/", Root.AbsoluteUri })
+        {
+            using var message = ODataRequestBuilder.Build(new ODataRequest { Target = prefix + target }, Root, "token");
+            Assert.Equal(Root.AbsoluteUri + expected, message.RequestUri.AbsoluteUri);
+        }
+    }
+
+    [Theory]
+    [InlineData("/accounts?x=a\r\nb")]
+    [InlineData("/accounts?x=a\tb")]
+    public void RejectsControlCharactersInUrls(string target)
+        => Assert.Throws<FormatException>(() => ODataRequestBuilder.Build(new ODataRequest { Target = target }, Root, "token"));
 
     [Fact]
     public void CaretOnSectionHeadingSelectsThatRequestNotThePreviousOne()

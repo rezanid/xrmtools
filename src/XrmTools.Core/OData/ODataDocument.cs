@@ -22,7 +22,7 @@ internal sealed class ODataRequest
 /// <summary>A deliberately bounded HTTP-like format. Parsing never authenticates or executes requests.</summary>
 internal sealed class ODataDocument
 {
-    private static readonly Regex RequestLine = new(@"^(GET|POST|PUT|PATCH|DELETE|HEAD|OPTIONS)\s+(\S+)(?:\s+HTTP/(1\.1|2|3))?$", RegexOptions.Compiled);
+    private static readonly Regex RequestLine = new(@"^(GET|POST|PUT|PATCH|DELETE|HEAD|OPTIONS)\s+(\S.*?)(?:\s+HTTP/(\d+(?:\.\d+)?))?$", RegexOptions.Compiled);
     private static readonly Regex Variable = new(@"\{\{\s*([^{}]+?)\s*\}\}", RegexOptions.Compiled);
     public List<ODataRequest> Requests { get; } = [];
     public Dictionary<string, string> Variables { get; } = new(StringComparer.Ordinal);
@@ -113,7 +113,6 @@ internal sealed class ODataDocument
         if (source.Error != null) throw new FormatException(source.Error);
         var result = new ODataRequest { Line = source.Line, Name = source.Name, Method = source.Method, Target = Expand(source.Target), Body = Expand(source.Body) };
         foreach (var header in source.Headers) result.Headers.Add(new(header.Key, Expand(header.Value)));
-        if (result.Target.Any(char.IsWhiteSpace)) throw new FormatException("URL variables must be URL-encoded; whitespace is not allowed in the request URL.");
         if (result.Body.TrimStart().StartsWith("< ") || result.Body.TrimStart().StartsWith("> {%"))
             throw new FormatException("File includes and response scripts are not supported.");
         return result;
