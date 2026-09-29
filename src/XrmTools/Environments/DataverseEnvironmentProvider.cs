@@ -128,7 +128,8 @@ public class DataverseEnvironmentProvider : IEnvironmentProvider, IEnvironmentSe
         bool allowInteraction)
     {
         if (environment?.IsValid != true) return;
-        if (environment.IsAutehnticated) return;
+        // The factory owns token freshness. This flag can outlive Disconnect or token expiry,
+        // especially when the editor operates on a separate instance of the environment.
 
         try
         {

@@ -1,11 +1,12 @@
-﻿namespace XrmTools.Authentication;
+﻿#nullable enable
+namespace XrmTools.Authentication;
+
 using Microsoft.Identity.Client;
 using System;
 using System.Threading;
 using System.Threading.Tasks;
 using XrmTools.Http;
 using XrmTools.Tokens;
-using System.Net.Http;
 using System.ComponentModel.Composition;
 using XrmTools.Options;
 
@@ -34,10 +35,10 @@ internal class AuthenticationService : IAuthenticationService
 
     private readonly IAuthenticator wamAuthenticator = new WamAuthenticator();
 
-    public async Task<AuthenticationResult> AuthenticateAsync(
+    public async Task<AuthenticationResult?> AuthenticateAsync(
         DataverseEnvironment environment,
         bool allowInteraction,
-        Action<string> onMessageForUser = default, CancellationToken cancellationToken = default)
+        Action<string>? onMessageForUser = default, CancellationToken cancellationToken = default)
     {
         if (environment == null) { throw new ArgumentNullException(nameof(environment)); }
         if (!environment.IsValid) 
@@ -75,3 +76,4 @@ internal class AuthenticationService : IAuthenticationService
         return await current.AuthenticateAsync(authParams, false, onMessageForUser, cancellationToken);
     }
 }
+#nullable restore

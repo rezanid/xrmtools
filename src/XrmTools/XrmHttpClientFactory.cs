@@ -7,6 +7,7 @@ using Polly;
 using Polly.Timeout;
 using System;
 using System.Collections.Concurrent;
+using System.Collections.Generic;
 using System.ComponentModel.Composition;
 using System.Net;
 using System.Net.Http;
@@ -28,8 +29,8 @@ internal class XrmHttpClientFactory : IXrmHttpClientFactory, System.IAsyncDispos
     private readonly AsyncTimer timer;
     private readonly ConcurrentDictionary<DataverseEnvironment, Lazy<HttpMessageHandlerEntry>> _handlerPool = new();
     private readonly ConcurrentDictionary<string, AuthenticationResult> _tokenCache = new();
-    // Ensures only one authentication flow runs per environment/connection string at a time
-    private readonly ConcurrentDictionary<string, AsyncLazy<AuthenticationResult>> _inflightAuth = new();
+    // Silent probes must not satisfy interactive requests with a missing token (or prompt a silent caller).
+    private readonly ConcurrentDictionary<(string ConnectionString, bool AllowInteraction), AsyncLazy<AuthenticationResult?>> _inflightAuth = new();
     private bool disposedValue;
 
     internal TimeProvider TimeProvider { get; set; } = TimeProvider.System;
@@ -67,10 +68,11 @@ internal class XrmHttpClientFactory : IXrmHttpClientFactory, System.IAsyncDispos
 
         // Authenticate with a timeout to avoid waiting indefinitely, and deduplicate concurrent requests per environment
         AuthenticationResult? authResult = null;
-        if (environment != DataverseEnvironment.Empty && (!_tokenCache.TryGetValue(environment.ConnectionString!, out authResult) || authResult.ExpiresOn <= TimeProvider.GetUtcNow().Add(TokenExpirySkew)))
+        if (environment != DataverseEnvironment.Empty && (!_tokenCache.TryGetValue(environment.ConnectionString!, out authResult) || authResult is null || authResult.ExpiresOn <= TimeProvider.GetUtcNow().Add(TokenExpirySkew)))
         {
             var key = environment.ConnectionString!;
-            var lazy = _inflightAuth.GetOrAdd(key, _ => new AsyncLazy<AuthenticationResult>(async () =>
+            var flightKey = (key, allowInteraction);
+            var lazy = _inflightAuth.GetOrAdd(flightKey, _ => new AsyncLazy<AuthenticationResult?>(async () =>
             {
                 var authTimeout = TimeSpan.FromSeconds(60);
                 using var timeoutCts = new CancellationTokenSource(authTimeout);
@@ -79,8 +81,9 @@ internal class XrmHttpClientFactory : IXrmHttpClientFactory, System.IAsyncDispos
                 {
                     // Use only the timeout CTS for the shared single-flight to avoid one caller cancelling others
                     var result = await AuthenticationService.AuthenticateAsync(environment, allowInteraction, msg => Logger.LogInformation(msg), timeoutCts.Token).ConfigureAwait(false);
-                    environment.IsAutehnticated = true;
-                    _tokenCache[key] = result;
+                    // A silent probe after Disconnect can legitimately return no token.
+                    if (result != null)
+                        _tokenCache[key] = result;
                     return result;
                 }
                 catch (OperationCanceledException) when (timeoutCts.IsCancellationRequested)
@@ -94,31 +97,30 @@ internal class XrmHttpClientFactory : IXrmHttpClientFactory, System.IAsyncDispos
                 }
             }, null));
 
-            try
+            // Cancel the caller's wait, not the shared authentication operation.
+            var sharedAuthTask = lazy.GetValueAsync();
+            // Clean up on completion, not waiter cancellation. Never remove a replacement flight.
+            _ = sharedAuthTask.ContinueWith(_ =>
+                ((ICollection<KeyValuePair<(string ConnectionString, bool AllowInteraction), AsyncLazy<AuthenticationResult?>>>)_inflightAuth)
+                    .Remove(new(flightKey, lazy)),
+                CancellationToken.None, TaskContinuationOptions.ExecuteSynchronously, TaskScheduler.Default);
+            if (cancellationToken.CanBeCanceled)
             {
-                // Allow the current caller to cancel waiting without cancelling the shared authentication operation.
-                var sharedAuthTask = lazy.GetValueAsync();
-                if (cancellationToken.CanBeCanceled)
+                var cancelTcs = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+                using (cancellationToken.Register(() => cancelTcs.TrySetResult(true)))
                 {
-                    var cancelTcs = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
-                    using (cancellationToken.Register(() => cancelTcs.TrySetResult(true)))
+                    var completed = await Task.WhenAny(sharedAuthTask, cancelTcs.Task).ConfigureAwait(false);
+                    if (completed != sharedAuthTask)
                     {
-                        var completed = await Task.WhenAny(sharedAuthTask, cancelTcs.Task).ConfigureAwait(false);
-                        if (completed != sharedAuthTask)
-                        {
-                            throw new OperationCanceledException(cancellationToken);
-                        }
+                        throw new OperationCanceledException(cancellationToken);
                     }
                 }
-                authResult = await sharedAuthTask.ConfigureAwait(false);
             }
-            finally
-            {
-                // Ensure future calls can trigger a new auth when needed (e.g., after expiry or on failure)
-                _inflightAuth.TryRemove(key, out _);
-            }
+            authResult = await sharedAuthTask.ConfigureAwait(false);
         }
 
+        if (environment != DataverseEnvironment.Empty)
+            environment.IsAutehnticated = authResult != null;
         return authResult;
     }
 
@@ -132,6 +134,9 @@ internal class XrmHttpClientFactory : IXrmHttpClientFactory, System.IAsyncDispos
         }
 
         AuthenticationResult? authResult = await PreAuthenticateAsync(environment, true, cancellationToken).ConfigureAwait(false);
+
+        if (environment != DataverseEnvironment.Empty && authResult == null)
+            throw new InvalidOperationException($"Sign-in for environment '{environment.Name}' did not return an access token. Please sign in and try again.");
 
         var handlerEntry = _handlerPool.GetOrAdd(environment, _ => new Lazy<HttpMessageHandlerEntry>(() => CreateHandlerEntry(environment))).Value;
 
@@ -150,8 +155,10 @@ internal class XrmHttpClientFactory : IXrmHttpClientFactory, System.IAsyncDispos
         }
 
         var key = environment.ConnectionString;
+        environment.IsAutehnticated = false;
         _tokenCache.TryRemove(key, out _);
-        _inflightAuth.TryRemove(key, out _);
+        _inflightAuth.TryRemove((key, false), out _);
+        _inflightAuth.TryRemove((key, true), out _);
     }
 
     private void ConfigureClient(XrmHttpClient client, DataverseEnvironment environment, string? accessToken)
