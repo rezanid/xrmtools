@@ -15,9 +15,10 @@ internal static class ODataRequestBuilder
         Uri target;
         if (request.Target.StartsWith("//", StringComparison.Ordinal) || request.Target.Contains("\\"))
             throw new FormatException("Network-path URLs and backslashes are not supported.");
-        if (request.Target.StartsWith("/api/", StringComparison.OrdinalIgnoreCase)) target = new Uri(new Uri(serviceRoot.GetLeftPart(UriPartial.Authority)), request.Target);
-        else if (request.Target.StartsWith("/", StringComparison.Ordinal)) target = new Uri(serviceRoot, request.Target.TrimStart('/'));
-        else if (!Uri.TryCreate(request.Target, UriKind.Absolute, out target!)) target = new Uri(serviceRoot, request.Target);
+        var encodedTarget = EncodeQuery(request.Target);
+        if (encodedTarget.StartsWith("/api/", StringComparison.OrdinalIgnoreCase)) target = new Uri(new Uri(serviceRoot.GetLeftPart(UriPartial.Authority)), encodedTarget);
+        else if (encodedTarget.StartsWith("/", StringComparison.Ordinal)) target = new Uri(serviceRoot, encodedTarget.TrimStart('/'));
+        else if (!Uri.TryCreate(encodedTarget, UriKind.Absolute, out target!)) target = new Uri(serviceRoot, encodedTarget);
         if (!string.Equals(target.Scheme, serviceRoot.Scheme, StringComparison.OrdinalIgnoreCase) ||
             !string.Equals(target.Host, serviceRoot.Host, StringComparison.OrdinalIgnoreCase) || target.Port != serviceRoot.Port ||
             target.UserInfo.Length != 0 || target.Fragment.Length != 0 ||
@@ -50,5 +51,44 @@ internal static class ODataRequestBuilder
             return message;
         }
         catch { message.Dispose(); throw; }
+    }
+
+    // Uri escapes spaces and Unicode in paths, but leaves query characters such as +
+    // untouched and interprets # as a fragment. Encode query data before constructing it.
+    private static string EncodeQuery(string target)
+    {
+        if (target.IndexOfAny(['\r', '\n', '\t']) >= 0)
+            throw new FormatException("Request URLs cannot contain tabs or newlines.");
+        int query = target.IndexOf('?');
+        if (query < 0) return target;
+        var result = new StringBuilder(target.Substring(0, query + 1));
+        char quote = '\0';
+        for (int i = query + 1; i < target.Length; i++)
+        {
+            char c = target[i];
+            // Already encoded input must retain its meaning, including encoded delimiters.
+            if (c == '%' && i + 2 < target.Length && Uri.IsHexDigit(target[i + 1]) && Uri.IsHexDigit(target[i + 2]))
+            {
+                result.Append(target, i, 3);
+                i += 2;
+                continue;
+            }
+            bool quoted = quote != '\0';
+            if (c == quote) quote = '\0';
+            else if (!quoted && (c == '\'' || c == '"')) quote = c;
+            // Keep OData syntax readable. Ampersands inside string literals are data;
+            // outside literals they separate query options. Doubled OData quotes work
+            // naturally because closing and reopening leaves the same quoting state.
+            if ((c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || (c >= '0' && c <= '9') ||
+                "-._~$=(),;/:?@'!".IndexOf(c) >= 0 || (c == '&' && !quoted))
+                result.Append(c);
+            else
+            {
+                int length = char.IsHighSurrogate(c) && i + 1 < target.Length && char.IsLowSurrogate(target[i + 1]) ? 2 : 1;
+                result.Append(Uri.EscapeDataString(target.Substring(i, length)));
+                i += length - 1;
+            }
+        }
+        return result.ToString();
     }
 }
