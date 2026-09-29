@@ -1,0 +1,99 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:ctrls="clr-namespace:XrmTools.Shell.Controls"
+                    xmlns:styles="clr-namespace:XrmTools.Shell.Styles"
+                    xmlns:vs="clr-namespace:Microsoft.VisualStudio.PlatformUI;assembly=Microsoft.VisualStudio.Shell.15.0">
+    <Style TargetType="{x:Type ctrls:Window}">
+        <!-- Public VS theme keys keep the window frame compatible with VS 2022 and VS 2026. -->
+        <Setter Property="Background" Value="{DynamicResource {x:Static vs:EnvironmentColors.ToolWindowBackgroundBrushKey}}"/>
+        <Setter Property="Foreground" Value="{DynamicResource {x:Static vs:EnvironmentColors.ToolWindowTextBrushKey}}"/>
+        <Setter Property="BorderBrush" Value="{DynamicResource {x:Static vs:EnvironmentColors.ToolWindowBorderBrushKey}}"/>
+        <Setter Property="BorderColor" Value="{DynamicResource {x:Static vs:EnvironmentColors.ToolWindowBorderColorKey}}"/>
+        <Setter Property="BorderThickness" Value="1"/>
+        <Setter Property="FontFamily" Value="{Binding ShellFontFamily, Source={x:Static styles:Typography.Instance}}"/>
+        <Setter Property="FontSize" Value="{Binding ShellFontSize, Source={x:Static styles:Typography.Instance}}"/>
+        <Setter Property="MinWidth" Value="320"/>
+        <Setter Property="MinHeight" Value="200"/>
+        <Setter Property="Padding" Value="20"/>
+        <Setter Property="UseLayoutRounding" Value="True"/>
+        <Setter Property="SnapsToDevicePixels" Value="True"/>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="{x:Type ctrls:Window}">
+                    <AdornerDecorator>
+                        <Border Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}"
+                                BorderThickness="{TemplateBinding BorderThickness}">
+                            <Grid>
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="*"/>
+                                    <RowDefinition Height="Auto"/>
+                                </Grid.RowDefinitions>
+                                <Grid Margin="0,6,0,0">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                    </Grid.ColumnDefinitions>
+                                    <Border x:Name="PART_TitleBorder" Background="Transparent" MinHeight="{x:Static styles:Sizes.NonClientControlHeight}">
+                                        <TextBlock x:Name="Caption" Text="{TemplateBinding Title}" Margin="16,0,12,0"
+                                                   VerticalAlignment="Center" TextTrimming="CharacterEllipsis" IsHitTestVisible="False"/>
+                                    </Border>
+                                    <StackPanel Grid.Column="1" Orientation="Horizontal" Margin="0,0,6,0">
+                                        <ctrls:NonClientButton x:Name="MinimizeButton" Data="{x:Static styles:Geometries.ChromeMinimize}"
+                                            ToolTip="Minimize" Command="{x:Static SystemCommands.MinimizeWindowCommand}"
+                                            CommandTarget="{Binding RelativeSource={RelativeSource TemplatedParent}}"/>
+                                        <ctrls:NonClientButton x:Name="MaximizeButton" Data="{x:Static styles:Geometries.ChromeMaximize}"
+                                            ToolTip="Maximize" Command="{x:Static SystemCommands.MaximizeWindowCommand}"
+                                            CommandTarget="{Binding RelativeSource={RelativeSource TemplatedParent}}"/>
+                                        <ctrls:NonClientButton Data="{x:Static styles:Geometries.Dismiss}" ToolTip="Close"
+                                            Command="{x:Static SystemCommands.CloseWindowCommand}"
+                                            CommandTarget="{Binding RelativeSource={RelativeSource TemplatedParent}}"/>
+                                    </StackPanel>
+                                </Grid>
+                                <ContentPresenter Grid.Row="1" ContentSource="Content" Margin="{TemplateBinding Padding}"/>
+                                <Border x:Name="Footer" Grid.Row="2" BorderThickness="0,1,0,0" BorderBrush="{DynamicResource {x:Static vs:EnvironmentColors.ToolWindowBorderBrushKey}}"
+                                        Padding="{TemplateBinding Padding}">
+                                    <ContentPresenter Content="{TemplateBinding FooterContent}"/>
+                                </Border>
+                            </Grid>
+                        </Border>
+                    </AdornerDecorator>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="FooterContent" Value="{x:Null}">
+                            <Setter TargetName="Footer" Property="Visibility" Value="Collapsed"/>
+                        </Trigger>
+                        <Trigger Property="ShowMinimizeButton" Value="False">
+                            <Setter TargetName="MinimizeButton" Property="Visibility" Value="Collapsed"/>
+                        </Trigger>
+                        <Trigger Property="ShowMaximizeButton" Value="False">
+                            <Setter TargetName="MaximizeButton" Property="Visibility" Value="Collapsed"/>
+                        </Trigger>
+                        <Trigger Property="ResizeMode" Value="NoResize">
+                            <Setter TargetName="MinimizeButton" Property="Visibility" Value="Collapsed"/>
+                            <Setter TargetName="MaximizeButton" Property="Visibility" Value="Collapsed"/>
+                        </Trigger>
+                        <Trigger Property="ResizeMode" Value="CanMinimize">
+                            <Setter TargetName="MaximizeButton" Property="Visibility" Value="Collapsed"/>
+                        </Trigger>
+                        <Trigger Property="WindowState" Value="Maximized">
+                            <Setter TargetName="MaximizeButton" Property="Data" Value="{x:Static styles:Geometries.ChromeRestore}"/>
+                            <Setter TargetName="MaximizeButton" Property="ToolTip" Value="Restore down"/>
+                            <Setter TargetName="MaximizeButton" Property="Command" Value="{x:Static SystemCommands.RestoreWindowCommand}"/>
+                        </Trigger>
+                        <Trigger Property="IsActive" Value="False">
+                            <Setter TargetName="Caption" Property="Opacity" Value="0.7"/>
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+        <Style.Triggers>
+            <Trigger Property="UseDwmBorder" Value="True">
+                <Setter Property="BorderThickness" Value="0"/>
+            </Trigger>
+            <Trigger Property="WindowState" Value="Maximized">
+                <Setter Property="BorderThickness" Value="0"/>
+            </Trigger>
+        </Style.Triggers>
+    </Style>
+</ResourceDictionary>

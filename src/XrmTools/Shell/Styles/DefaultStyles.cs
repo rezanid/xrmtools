@@ -7,6 +7,11 @@ internal static class DefaultStyles
 {
     public static DeferredStyleDictionary Instance { get; } = DeferredStyleDictionary.Create(new Dictionary<object, string>()
     {
+        { typeof(Window), "/XrmTools;component/Shell/Styles/Window/WindowStyle.xaml" },
+        { typeof(DialogWindow), "/XrmTools;component/Shell/Styles/Window/DialogWindowStyle.xaml" },
+        { typeof(PathButton), "/XrmTools;component/Shell/Styles/PathButtonStyle.xaml" },
+        { typeof(NonClientButton), "/XrmTools;component/Shell/Styles/Window/NonClientButtonStyle.xaml" },
+        { typeof(DialogButton), "/XrmTools;component/Shell/Styles/Window/DialogButtonStyle.xaml" },
         { typeof(ComboBox), "/XrmTools;component/Shell/Styles/ComboBoxStyle.xaml" },
         { typeof(ReadOnlyCodeView), "/XrmTools;component/Shell/Styles/ReadOnlyCodeViewStyle.xaml" },
         { typeof(ComboBoxItem), "/XrmTools;component/Shell/Styles/ComboBoxItemStyle.xaml" },
