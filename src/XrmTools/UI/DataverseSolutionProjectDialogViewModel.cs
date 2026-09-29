@@ -5,6 +5,9 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.IO;
 using System.Linq;
+using System;
+using System.Threading;
+using System.Threading.Tasks;
 using XrmTools.DataverseSolutions;
 using XrmTools.WebApi.Entities;
 
@@ -17,6 +20,50 @@ internal sealed class DataverseSolutionProjectDialogViewModel : ViewModelBase
     private string _publisherPrefix = string.Empty;
     private Solution? _selectedSolution;
     private string? _solutionLoadError;
+    private bool _isBusy;
+    private string? _creationStatus;
+
+    public bool IsBusy
+    {
+        get => _isBusy;
+        private set
+        {
+            if (SetProperty(ref _isBusy, value)) OnPropertyChanged(nameof(IsIdle));
+        }
+    }
+
+    public bool IsIdle => !IsBusy;
+    public string? CreationStatus { get => _creationStatus; private set => SetProperty(ref _creationStatus, value); }
+
+    public async Task<string?> CreateAsync(Func<DataverseSolutionProjectCreationRequest, CancellationToken, Task<string>> create, CancellationToken cancellationToken)
+    {
+        if (IsBusy) return null;
+        if (!TryCreateRequest(out var request, out var error))
+        {
+            CreationStatus = error;
+            return null;
+        }
+        IsBusy = true;
+        CreationStatus = "Creating project…";
+        try
+        {
+            return await create(request!, cancellationToken);
+        }
+        catch (OperationCanceledException)
+        {
+            CreationStatus = "Project creation was canceled.";
+            return null;
+        }
+        catch (Exception ex)
+        {
+            CreationStatus = ex.Message;
+            return null;
+        }
+        finally
+        {
+            IsBusy = false;
+        }
+    }
 
     public DataverseSolutionProjectDialogViewModel(string parentDirectory)
     {

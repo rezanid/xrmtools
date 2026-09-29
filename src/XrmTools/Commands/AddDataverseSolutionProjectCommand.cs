@@ -65,16 +65,24 @@ internal sealed class AddDataverseSolutionProjectCommand : BaseCommand<AddDatave
                 }
             }
 
-            var request = await DataverseSolutionProjectDialog.ShowDialogAsync(
+            var projectFilePath = await DataverseSolutionProjectDialog.ShowDialogAsync(
                 solutionDir,
                 RepositoryFactory,
+                async (request, token) =>
+                {
+                    try { return await ProjectCreationService.CreateAsync(request, token).ConfigureAwait(false); }
+                    catch (Exception ex)
+                    {
+                        Logger.LogError(ex, "Could not create a Dataverse solution project.");
+                        throw;
+                    }
+                },
                 Package.DisposalToken).ConfigureAwait(false);
-            if (request is null)
+            if (projectFilePath is null)
             {
                 return;
             }
 
-            var projectFilePath = await ProjectCreationService.CreateAsync(request, Package.DisposalToken).ConfigureAwait(false);
             await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync(Package.DisposalToken);
 
             if (!string.IsNullOrEmpty(selectedSolutionFolderUniqueName))
@@ -100,6 +108,13 @@ internal sealed class AddDataverseSolutionProjectCommand : BaseCommand<AddDatave
         {
             Logger.LogError(ex, "Could not create a Dataverse solution project.");
             await VS.MessageBox.ShowErrorAsync(Vsix.Name, ex.Message);
+        }
+        finally
+        {
+            await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync();
+            Command.Enabled = !ProjectCreationService.IsBusy;
+            if (await Package.GetServiceAsync(typeof(SVsUIShell)) is IVsUIShell shell)
+                shell.UpdateCommandUI(0);
         }
     }
 }

@@ -4,6 +4,8 @@ namespace XrmTools.Tests.UI;
 using FluentAssertions;
 using System;
 using System.IO;
+using System.Threading;
+using System.Threading.Tasks;
 using Xunit;
 using XrmTools.DataverseSolutions;
 using XrmTools.UI;
@@ -11,6 +13,65 @@ using XrmTools.WebApi.Entities;
 
 public sealed class DataverseSolutionProjectDialogViewModelTests
 {
+    [Fact]
+    public async Task CreationService_SetupFailureReleasesBusyState()
+    {
+        // A malformed path fails before any VS services or PAC operations are started.
+        var service = new DataverseSolutionProjectCreationService(null!, null!, null!, null!, null!);
+        var request = new DataverseSolutionProjectCreationRequest { ParentDirectory = null!, ProjectName = "Project" };
+        await Assert.ThrowsAsync<ArgumentNullException>(() => service.CreateAsync(request, CancellationToken.None));
+        service.IsBusy.Should().BeFalse();
+        await Assert.ThrowsAsync<ArgumentNullException>(() => service.CreateAsync(request, CancellationToken.None));
+        service.IsBusy.Should().BeFalse();
+    }
+
+    [Fact]
+    public async Task CreateAsync_FailurePreservesInputsAndAllowsRetry()
+    {
+        var parent = CreateTemporaryDirectory();
+        try
+        {
+            var vm = new DataverseSolutionProjectDialogViewModel(parent)
+            {
+                CreateEmptyProject = true, ProjectName = "NewSolution",
+                PublisherName = "Invalid publisher", PublisherPrefix = "test"
+            };
+            var pending = new TaskCompletionSource<string>();
+            var first = vm.CreateAsync((_, _) => pending.Task, CancellationToken.None);
+            vm.IsBusy.Should().BeTrue();
+            var calledTwice = false;
+            await vm.CreateAsync((_, _) => { calledTwice = true; return Task.FromResult("unused"); }, CancellationToken.None);
+            calledTwice.Should().BeFalse();
+            pending.SetException(new InvalidOperationException("PAC rejected the publisher name."));
+            (await first).Should().BeNull();
+            vm.IsIdle.Should().BeTrue();
+            vm.CreationStatus.Should().Be("PAC rejected the publisher name.");
+            vm.PublisherName.Should().Be("Invalid publisher");
+            vm.ProjectName.Should().Be("NewSolution");
+            vm.PublisherName = "ValidPublisher";
+            (await vm.CreateAsync((request, _) => Task.FromResult(request.ProjectName + ".cdsproj"), CancellationToken.None))
+                .Should().Be("NewSolution.cdsproj");
+            vm.IsIdle.Should().BeTrue();
+        }
+        finally { Directory.Delete(parent, true); }
+    }
+
+    [Fact]
+    public async Task CreateAsync_CancellationAllowsRetry()
+    {
+        var parent = CreateTemporaryDirectory();
+        try
+        {
+            var vm = new DataverseSolutionProjectDialogViewModel(parent)
+            {
+                CreateEmptyProject = true, ProjectName = "NewSolution", PublisherName = "Publisher", PublisherPrefix = "test"
+            };
+            (await vm.CreateAsync((_, _) => throw new OperationCanceledException(), CancellationToken.None)).Should().BeNull();
+            vm.IsIdle.Should().BeTrue();
+            (await vm.CreateAsync((_, _) => Task.FromResult("created.cdsproj"), CancellationToken.None)).Should().Be("created.cdsproj");
+        }
+        finally { Directory.Delete(parent, true); }
+    }
     [Fact]
     public void TryCreateRequest_CloneMode_UsesSelectedSolutionUniqueName()
     {

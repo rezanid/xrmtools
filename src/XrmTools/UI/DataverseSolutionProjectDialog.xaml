@@ -1,117 +1,90 @@
-<p:DialogWindow xmlns:p="clr-namespace:Microsoft.VisualStudio.PlatformUI;assembly=Microsoft.VisualStudio.Shell.15.0"
-                xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
-                xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-                xmlns:toolkit="clr-namespace:Community.VisualStudio.Toolkit;assembly=Community.VisualStudio.Toolkit"
-                xmlns:ctrls="clr-namespace:XrmTools.Shell.Controls"
-                x:Class="XrmTools.UI.DataverseSolutionProjectDialog"
-                x:ClassModifier="internal"
-                Title="Add Dataverse Solution Project"
-                ShowInTaskbar="False"
-                toolkit:Themes.UseVsTheme="True"
-                Width="640" Height="440" MinWidth="600" MinHeight="500">
-    <Grid Margin="16">
-        <Grid.RowDefinitions>
-            <RowDefinition Height="Auto"/>
-            <RowDefinition Height="Auto"/>
-            <RowDefinition Height="*"/>
-            <RowDefinition Height="Auto"/>
-        </Grid.RowDefinitions>
-
-        <Grid>
-            <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="Auto"/>
-                <ColumnDefinition Width="*"/>
-            </Grid.ColumnDefinitions>
-            <Grid.RowDefinitions>
-                <RowDefinition Height="Auto"/>
-            </Grid.RowDefinitions>
-            <Label Content="Location:" Margin="0,0,8,8"/>
-            <Grid Grid.Column="1" Margin="0,0,0,8">
+<ctrls:DialogWindow xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:ctrls="clr-namespace:XrmTools.Shell.Controls"
+    xmlns:p="clr-namespace:Microsoft.VisualStudio.PlatformUI;assembly=Microsoft.VisualStudio.Shell.15.0"
+    x:Class="XrmTools.UI.DataverseSolutionProjectDialog" x:ClassModifier="internal"
+    Title="Add Dataverse solution project"
+    Width="680" Height="640" MinWidth="560" MinHeight="480"
+    ResizeMode="CanResize" SizeToContent="Manual" Padding="24,16,24,20"
+    IsCloseButtonEnabled="{Binding IsIdle}"
+    p:FocusHelper.FocusTarget="{Binding ElementName=LocationTextBox}">
+    <ctrls:DialogWindow.Resources>
+        <Style x:Key="FieldLabel" TargetType="Label">
+            <Setter Property="Foreground" Value="{DynamicResource {x:Static p:EnvironmentColors.ToolWindowTextBrushKey}}"/>
+            <Setter Property="Padding" Value="0"/>
+            <Setter Property="Margin" Value="0,0,0,6"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+        </Style>
+    </ctrls:DialogWindow.Resources>
+    <ctrls:DialogWindow.FooterContent>
+        <StackPanel>
+            <ScrollViewer MaxHeight="100" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+                <ctrls:TextBlock Text="{Binding CreationStatus}" TextWrapping="Wrap" AutomationProperties.LiveSetting="Polite"/>
+            </ScrollViewer>
+        <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,8,0,0" IsEnabled="{Binding IsIdle}">
+            <ctrls:Button x:Name="CreateButton" Content="_Create" MinWidth="100" Kind="Accent"
+                          IsDefault="True" Click="OnCreateClick"/>
+            <ctrls:Button Content="Cancel" MinWidth="100" IsCancel="True" Margin="8,0,0,0"/>
+        </StackPanel>
+        </StackPanel>
+    </ctrls:DialogWindow.FooterContent>
+    <ScrollViewer x:Name="BodyScrollViewer" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+        <StackPanel Margin="0,0,4,0" IsEnabled="{Binding IsIdle}">
+            <Label Content="_Location" Target="{Binding ElementName=LocationTextBox}" Style="{StaticResource FieldLabel}"/>
+            <Grid Margin="0,0,0,20">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="*"/>
                     <ColumnDefinition Width="Auto"/>
                 </Grid.ColumnDefinitions>
-                <ctrls:TextBox HintText="Parent folder" Text="{Binding ParentDirectory, UpdateSourceTrigger=PropertyChanged}"/>
-                <ctrls:Button Grid.Column="1" Content="Browse..." Margin="8,0,0,0" MinWidth="80" Click="OnBrowseClick"/>
+                <ctrls:TextBox x:Name="LocationTextBox" HintText="Parent folder"
+                    Text="{Binding ParentDirectory, UpdateSourceTrigger=PropertyChanged}"/>
+                <ctrls:Button Grid.Column="1" Content="_Browse…" Margin="8,0,0,0" Click="OnBrowseClick"/>
             </Grid>
-        </Grid>
+            <ctrls:TextBlock Text="Project contents" FontWeight="SemiBold" Margin="0,0,0,8"/>
+            <ctrls:RadioButton Content="Clone an _unmanaged solution" GroupName="ProjectContents"
+                IsChecked="{Binding CloneExistingSolution}" Margin="0,0,0,8"/>
+            <ctrls:RadioButton Content="Create an _empty solution project" GroupName="ProjectContents"
+                IsChecked="{Binding CreateEmptyProject}" Margin="0,0,0,20"/>
 
-        <StackPanel Grid.Row="1" Margin="0,8,0,12">
-            <ctrls:TextBlock Text="Project contents" FontWeight="SemiBold" Margin="0,0,0,6"/>
-            <ctrls:RadioButton Content="Clone an unmanaged solution from the active Dataverse environment"
-                         IsChecked="{Binding CloneExistingSolution}" Margin="0,0,0,6"/>
-            <ctrls:RadioButton Content="Create an empty Dataverse solution project"
-                         IsChecked="{Binding CreateEmptyProject}"/>
+            <StackPanel x:Name="CloneFields" Visibility="{Binding CloneProjectVisibility}">
+                <Label Content="_Solution" Target="{Binding ElementName=SolutionsList}" Style="{StaticResource FieldLabel}"/>
+                <ctrls:TextBlock Text="Choose a solution from the active Dataverse environment."
+                                TextWrapping="Wrap" Margin="0,0,0,8"/>
+                <ctrls:ListBox x:Name="SolutionsList" Height="180"
+                    ItemsSource="{Binding Solutions}" SelectedItem="{Binding SelectedSolution}"
+                    AutomationProperties.Name="Unmanaged solutions"
+                    ScrollViewer.HorizontalScrollBarVisibility="Disabled">
+                    <ctrls:ListBox.ItemTemplate>
+                        <DataTemplate>
+                            <StackPanel Margin="2">
+                                <ctrls:TextBlock Text="{Binding FriendlyName}" FontWeight="SemiBold"
+                                                TextTrimming="CharacterEllipsis" ToolTip="{Binding FriendlyName}"/>
+                                <ctrls:TextBlock Text="{Binding UniqueName}" Opacity="0.75"
+                                                TextTrimming="CharacterEllipsis" ToolTip="{Binding UniqueName}"/>
+                            </StackPanel>
+                        </DataTemplate>
+                    </ctrls:ListBox.ItemTemplate>
+                </ctrls:ListBox>
+                <ctrls:TextBlock Text="{Binding SolutionLoadError}" TextWrapping="Wrap" Margin="0,8,0,0"
+                                AutomationProperties.LiveSetting="Polite"/>
+                <ctrls:TextBlock Text="Project folder" FontWeight="SemiBold" Margin="0,16,0,6"/>
+                <ctrls:TextBlock Text="{Binding CloneDestinationPath}" TextWrapping="Wrap"/>
+            </StackPanel>
+
+            <StackPanel x:Name="EmptyFields" Visibility="{Binding EmptyProjectVisibility}">
+                <Label Content="Project _name" Target="{Binding ElementName=ProjectNameTextBox}" Style="{StaticResource FieldLabel}"/>
+                <ctrls:TextBox x:Name="ProjectNameTextBox" Margin="0,0,0,16"
+                    HintText="Dataverse solution project name"
+                    Text="{Binding ProjectName, UpdateSourceTrigger=PropertyChanged}"/>
+                <Label Content="_Publisher name" Target="{Binding ElementName=PublisherNameTextBox}" Style="{StaticResource FieldLabel}"/>
+                <ctrls:TextBox x:Name="PublisherNameTextBox" Margin="0,0,0,16" HintText="Publisher name"
+                    Text="{Binding PublisherName, UpdateSourceTrigger=PropertyChanged}"/>
+                <Label Content="Publisher prefi_x" Target="{Binding ElementName=PublisherPrefixTextBox}" Style="{StaticResource FieldLabel}"/>
+                <ctrls:TextBox x:Name="PublisherPrefixTextBox" HintText="Customization prefix"
+                    Text="{Binding PublisherPrefix, UpdateSourceTrigger=PropertyChanged}"/>
+                <ctrls:TextBlock Text="The publisher identifies the owner of your customizations. Its prefix is added to the names of new components."
+                                TextWrapping="Wrap" Margin="0,8,0,0"/>
+            </StackPanel>
         </StackPanel>
-
-        <Border Grid.Row="2" BorderBrush="{DynamicResource {x:Static p:ThemedDialogColors.WindowPanelBrushKey}}"
-                BorderThickness="1" Padding="4">
-            <Grid>
-                <Grid Visibility="{Binding CloneProjectVisibility}">
-                    <Grid.RowDefinitions>
-                        <RowDefinition Height="Auto"/>
-                        <RowDefinition Height="Auto"/>
-                        <RowDefinition Height="*"/>
-                        <RowDefinition Height="Auto"/>
-                        <RowDefinition Height="Auto"/>
-                    </Grid.RowDefinitions>
-                    <ctrls:TextBlock Grid.Row="1" Text="Unmanaged solution:" FontWeight="SemiBold" Margin="0,0,0,6"/>
-                    <ctrls:ListBox Grid.Row="2" ItemsSource="{Binding Solutions}" SelectedItem="{Binding SelectedSolution}">
-                        <ctrls:ListBox.ItemTemplate>
-                            <DataTemplate>
-                                <StackPanel Margin="2">
-                                    <ctrls:TextBlock Text="{Binding FriendlyName}" FontWeight="SemiBold"/>
-                                    <ctrls:TextBlock Text="{Binding UniqueName}" Opacity="0.75"/>
-                                </StackPanel>
-                            </DataTemplate>
-                        </ctrls:ListBox.ItemTemplate>
-                    </ctrls:ListBox>
-                    <StackPanel Grid.Row="3" Margin="0,12,0,0">
-                        <ctrls:TextBlock Text="Project folder:" FontWeight="SemiBold"/>
-                        <ctrls:TextBlock Text="{Binding CloneDestinationPath}" TextWrapping="Wrap"/>
-                    </StackPanel>
-                    <ctrls:TextBlock Grid.Row="4" Text="{Binding SolutionLoadError}" Foreground="IndianRed"
-                               TextWrapping="Wrap" Margin="0,6,0,0"/>
-                </Grid>
-
-                <Grid Visibility="{Binding EmptyProjectVisibility}">
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="Auto"/>
-                        <ColumnDefinition Width="*"/>
-                    </Grid.ColumnDefinitions>
-                    <Grid.RowDefinitions>
-                        <RowDefinition Height="Auto"/>
-                        <RowDefinition Height="Auto"/>
-                        <RowDefinition Height="Auto"/>
-                        <RowDefinition Height="*"/>
-                    </Grid.RowDefinitions>
-                    <Label Content="Project name:" Margin="0,8,8,8" Visibility="{Binding EmptyProjectVisibility}"/>
-                    <ctrls:TextBox Grid.Column="1" Margin="0,8,0,8"
-                                              HintText="Dataverse solution project name"
-                                              Text="{Binding ProjectName, UpdateSourceTrigger=PropertyChanged}"
-                                              Visibility="{Binding EmptyProjectVisibility}"/>
-                    <Label Grid.Row="1" Content="Publisher name:" Margin="0,0,8,8"/>
-                    <ctrls:TextBox Grid.Row="1" Grid.Column="1" Margin="0,0,0,8"
-                                          HintText="Publisher name"
-                                          Text="{Binding PublisherName, UpdateSourceTrigger=PropertyChanged}"/>
-                    <Label Grid.Row="2" Content="Publisher prefix:" Margin="0,0,8,8"/>
-                    <ctrls:TextBox Grid.Row="2" Grid.Column="1" Margin="0,0,0,8"
-                                          HintText="Customization prefix"
-                                          Text="{Binding PublisherPrefix, UpdateSourceTrigger=PropertyChanged}"/>
-                    <ctrls:TextBlock Grid.Row="3" Grid.ColumnSpan="2" TextWrapping="Wrap"
-                               Text="PAC CLI uses these values to initialize the solution project."/>
-                </Grid>
-            </Grid>
-        </Border>
-
-        <Grid Grid.Row="3" Margin="0,12,0,0">
-            <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="*"/>
-                <ColumnDefinition Width="Auto"/>
-                <ColumnDefinition Width="Auto"/>
-            </Grid.ColumnDefinitions>
-            <ctrls:Button Grid.Column="1" Content="Create" MinWidth="120" Click="OnCreateClick" Kind="Accent" IsDefault="True" Margin="8,0,0,0"/>
-            <ctrls:Button Grid.Column="2" Content="Cancel" MinWidth="120" IsCancel="True" Margin="8,0,0,0"/>
-        </Grid>
-    </Grid>
-</p:DialogWindow>
+    </ScrollViewer>
+</ctrls:DialogWindow>

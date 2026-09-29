@@ -43,86 +43,91 @@ internal sealed class DataverseSolutionProjectCreationService(
             throw new InvalidOperationException("A Dataverse solution project is already being created.");
         }
 
-        var projectDirectory = Path.Combine(request.ParentDirectory, request.ProjectName);
-        var cloneOutputDirectory = request.Mode == DataverseSolutionProjectCreationMode.Clone
-            ? Path.Combine(request.ParentDirectory, ".xpc-" + Guid.NewGuid().ToString("N").Substring(0, 12))
-            : null;
-        if (Directory.Exists(projectDirectory) || File.Exists(projectDirectory))
-        {
-            Interlocked.Exchange(ref _isBusy, 0);
-            throw new InvalidOperationException($"The project path '{projectDirectory}' already exists.");
-        }
-
-        await _output.ShowPaneAsync().ConfigureAwait(false);
-        await VS.StatusBar.StartAnimationAsync(StatusAnimation.General).ConfigureAwait(false);
         try
         {
-            var projectSdk = (await GeneralOptions.GetLiveInstanceAsync().ConfigureAwait(false)).DataverseSolutionProjectSdk;
-            var project = new CdsProjectInfo
+            var projectDirectory = Path.Combine(request.ParentDirectory, request.ProjectName);
+            var cloneOutputDirectory = request.Mode == DataverseSolutionProjectCreationMode.Clone
+                ? Path.Combine(request.ParentDirectory, ".xpc-" + Guid.NewGuid().ToString("N").Substring(0, 12))
+                : null;
+            if (Directory.Exists(projectDirectory) || File.Exists(projectDirectory))
             {
-                ProjectName = request.ProjectName,
-                ProjectDirectory = projectDirectory,
-                ProjectFilePath = Path.Combine(projectDirectory, request.ProjectName + ".cdsproj")
-            };
-
-            ProcessCommandResult result;
-            if (request.Mode == DataverseSolutionProjectCreationMode.Empty)
-            {
-                _output.WriteHeader(project, environmentUrl: null, "pac solution init");
-                result = await _pacCli.InitializeSolutionAsync(
-                    new PacSolutionInitRequest
-                    {
-                        OutputDirectory = projectDirectory,
-                        PublisherName = request.PublisherName!,
-                        PublisherPrefix = request.PublisherPrefix!
-                    },
-                    _output.CreateProgress(),
-                    cancellationToken).ConfigureAwait(false);
-            }
-            else
-            {
-                var environment = await EnsureEnvironmentAsync().ConfigureAwait(false);
-                await _pacAuthBridge.EnsurePacProfileForCurrentEnvironmentAsync(cancellationToken).ConfigureAwait(false);
-                _output.WriteHeader(project, environment.Url, $"pac solution clone --name {request.SolutionUniqueName}");
-                result = await _pacCli.CloneSolutionAsync(
-                    new PacSolutionCloneRequest
-                    {
-                        OutputDirectory = cloneOutputDirectory!,
-                        SolutionUniqueName = request.SolutionUniqueName!,
-                        EnvironmentUrl = environment.Url
-                    },
-                    _output.CreateProgress(),
-                    cancellationToken).ConfigureAwait(false);
+                throw new InvalidOperationException($"The project path '{projectDirectory}' already exists.");
             }
 
-            if (!result.Succeeded)
+            await _output.ShowPaneAsync().ConfigureAwait(false);
+            await VS.StatusBar.StartAnimationAsync(StatusAnimation.General).ConfigureAwait(false);
+            try
             {
-                throw new InvalidOperationException($"PAC CLI failed with exit code {result.ExitCode}.");
-            }
+                var projectSdk = (await GeneralOptions.GetLiveInstanceAsync().ConfigureAwait(false)).DataverseSolutionProjectSdk;
+                var project = new CdsProjectInfo
+                {
+                    ProjectName = request.ProjectName,
+                    ProjectDirectory = projectDirectory,
+                    ProjectFilePath = Path.Combine(projectDirectory, request.ProjectName + ".cdsproj")
+                };
 
-            if (cloneOutputDirectory is not null)
+                ProcessCommandResult result;
+                if (request.Mode == DataverseSolutionProjectCreationMode.Empty)
+                {
+                    _output.WriteHeader(project, environmentUrl: null, "pac solution init");
+                    result = await _pacCli.InitializeSolutionAsync(
+                        new PacSolutionInitRequest
+                        {
+                            OutputDirectory = projectDirectory,
+                            PublisherName = request.PublisherName!,
+                            PublisherPrefix = request.PublisherPrefix!
+                        },
+                        _output.CreateProgress(),
+                        cancellationToken).ConfigureAwait(false);
+                }
+                else
+                {
+                    var environment = await EnsureEnvironmentAsync().ConfigureAwait(false);
+                    await _pacAuthBridge.EnsurePacProfileForCurrentEnvironmentAsync(cancellationToken).ConfigureAwait(false);
+                    _output.WriteHeader(project, environment.Url, $"pac solution clone --name {request.SolutionUniqueName}");
+                    result = await _pacCli.CloneSolutionAsync(
+                        new PacSolutionCloneRequest
+                        {
+                            OutputDirectory = cloneOutputDirectory!,
+                            SolutionUniqueName = request.SolutionUniqueName!,
+                            EnvironmentUrl = environment.Url
+                        },
+                        _output.CreateProgress(),
+                        cancellationToken).ConfigureAwait(false);
+                }
+
+                if (!result.Succeeded)
+                {
+                    throw new InvalidOperationException($"PAC CLI failed with exit code {result.ExitCode}.");
+                }
+
+                if (cloneOutputDirectory is not null)
+                {
+                    _projectFileService.CopyGeneratedProjectDirectory(cloneOutputDirectory, projectDirectory);
+                    TryCleanupDirectory(cloneOutputDirectory);
+                }
+
+                var projectFilePath = _projectFileService.FinalizeProjectFile(projectDirectory, request.ProjectName, projectSdk);
+                _output.WriteCompleted();
+                _output.WriteBlankLine();
+                await VS.StatusBar.ShowMessageAsync($"Created {request.ProjectName}.").ConfigureAwait(false);
+                return projectFilePath;
+            }
+            catch
             {
-                _projectFileService.CopyGeneratedProjectDirectory(cloneOutputDirectory, projectDirectory);
+                TryCleanupDirectory(projectDirectory);
                 TryCleanupDirectory(cloneOutputDirectory);
+
+                throw;
             }
-
-            var projectFilePath = _projectFileService.FinalizeProjectFile(projectDirectory, request.ProjectName, projectSdk);
-            _output.WriteCompleted();
-            _output.WriteBlankLine();
-            await VS.StatusBar.ShowMessageAsync($"Created {request.ProjectName}.").ConfigureAwait(false);
-            return projectFilePath;
-        }
-        catch
-        {
-            TryCleanupDirectory(projectDirectory);
-            TryCleanupDirectory(cloneOutputDirectory);
-
-            throw;
+            finally
+            {
+                await VS.StatusBar.EndAnimationAsync(StatusAnimation.General).ConfigureAwait(false);
+            }
         }
         finally
         {
             Interlocked.Exchange(ref _isBusy, 0);
-            await VS.StatusBar.EndAnimationAsync(StatusAnimation.General).ConfigureAwait(false);
         }
     }
 
