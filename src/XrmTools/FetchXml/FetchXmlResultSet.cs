@@ -72,7 +72,9 @@ internal sealed class FetchXmlResultSet
                 _ => scalar.Value?.ToString() ?? string.Empty,
             };
         }
-        return value.ToString(Formatting.None);
+        // Older versions of Newtonsoft.Json (used in VS2022) don't support Formatting.None for JToken.ToString(),
+        // so we just use the default ToString() here.
+        return value.ToString();
     }
 }
 
