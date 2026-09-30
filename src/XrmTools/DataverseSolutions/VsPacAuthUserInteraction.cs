@@ -18,5 +18,16 @@ internal sealed class VsPacAuthUserInteraction : IPacAuthUserInteraction
         var message = $"XrmTools is connected to {environmentUrl}.\r\n\r\nPAC needs a matching auth profile. XrmTools can create/select a PAC profile so PAC commands target the current environment.\r\n\r\n{browserLine}";
         return VS.MessageBox.ShowConfirmAsync(Vsix.Name, message);
     }
+
+    public Task<bool> ConfirmProfileReauthenticationAsync(string environmentUrl, bool browserSignInMayBeRequired)
+    {
+        var browserLine = browserSignInMayBeRequired
+            ? "PAC may open a browser for sign-in."
+            : "PAC will use the configured non-interactive credentials."
+            ;
+
+        var message = $"PAC authentication for {environmentUrl} has expired or was revoked. XrmTools can replace the selected PAC auth profile and retry the command.\r\n\r\n{browserLine}";
+        return VS.MessageBox.ShowConfirmAsync(Vsix.Name, message);
+    }
 }
 #nullable restore

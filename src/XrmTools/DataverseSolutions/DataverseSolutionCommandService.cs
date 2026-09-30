@@ -123,15 +123,18 @@ internal sealed class DataverseSolutionCommandService(
         try
         {
             _output.WriteHeader(project, environment.Url, $"pac solution clone --name {solutionUniqueName}");
-            var result = await _pacCli.CloneSolutionAsync(
-                new PacSolutionCloneRequest
-                {
-                    SolutionUniqueName = solutionUniqueName,
-                    OutputDirectory = temporaryDirectory,
-                    EnvironmentUrl = environment.Url,
-                    MapFilePath = project.SolutionPackageMapFilePath
-                },
-                _output.CreateProgress(),
+            var cloneRequest = new PacSolutionCloneRequest
+            {
+                SolutionUniqueName = solutionUniqueName,
+                OutputDirectory = temporaryDirectory,
+                EnvironmentUrl = environment.Url,
+                MapFilePath = project.SolutionPackageMapFilePath
+            };
+            var result = await RunPacWithReauthenticationRetryAsync(
+                () => _pacCli.CloneSolutionAsync(
+                    cloneRequest,
+                    _output.CreateProgress(),
+                    cancellationToken),
                 cancellationToken).ConfigureAwait(false);
 
             if (!result.Succeeded)
@@ -340,7 +343,11 @@ internal sealed class DataverseSolutionCommandService(
         }
 
         await VS.StatusBar.ShowMessageAsync($"Running {commandName(arguments)} for {project.ProjectName}...").ConfigureAwait(false);
-        var result = await _pacCli.RunSolutionCommandAsync(project, arguments, _output.CreateProgress(), cancellationToken).ConfigureAwait(false);
+        var result = await RunPacWithReauthenticationRetryAsync(
+            () => _pacCli.RunSolutionCommandAsync(project, arguments, _output.CreateProgress(), cancellationToken),
+            cancellationToken,
+            $"Retrying {commandName(arguments)} for {project.ProjectName}...").ConfigureAwait(false);
+
         if (!result.Succeeded)
         {
             _logger.LogError("PAC solution command failed.");
@@ -349,6 +356,28 @@ internal sealed class DataverseSolutionCommandService(
 
         _output.WriteCompleted();
         _output.WriteBlankLine();
+    }
+
+    private async Task<ProcessCommandResult> RunPacWithReauthenticationRetryAsync(
+        Func<Task<ProcessCommandResult>> pacCommand,
+        CancellationToken cancellationToken,
+        string? retryStatusMessage = null)
+    {
+        try
+        {
+            return await pacCommand().ConfigureAwait(false);
+        }
+        catch (PacCommandFailedException ex) when (PacAuthenticationFailure.RequiresReauthentication(ex))
+        {
+            _output.WriteWarning("PAC authentication has expired or was revoked. Reauthentication is required before retrying the command.");
+            await _pacAuthBridge.ReauthenticatePacProfileForCurrentEnvironmentAsync(cancellationToken).ConfigureAwait(false);
+            if (!string.IsNullOrWhiteSpace(retryStatusMessage))
+            {
+                await VS.StatusBar.ShowMessageAsync(retryStatusMessage).ConfigureAwait(false);
+            }
+
+            return await pacCommand().ConfigureAwait(false);
+        }
     }
 
     private static void AddMapArgument(List<string> arguments, CdsProjectInfo project)
