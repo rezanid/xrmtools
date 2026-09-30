@@ -85,14 +85,17 @@ internal sealed class DataverseSolutionProjectCreationService(
                     var environment = await EnsureEnvironmentAsync().ConfigureAwait(false);
                     await _pacAuthBridge.EnsurePacProfileForCurrentEnvironmentAsync(cancellationToken).ConfigureAwait(false);
                     _output.WriteHeader(project, environment.Url, $"pac solution clone --name {request.SolutionUniqueName}");
-                    result = await _pacCli.CloneSolutionAsync(
-                        new PacSolutionCloneRequest
-                        {
-                            OutputDirectory = cloneOutputDirectory!,
-                            SolutionUniqueName = request.SolutionUniqueName!,
-                            EnvironmentUrl = environment.Url
-                        },
-                        _output.CreateProgress(),
+                    var cloneRequest = new PacSolutionCloneRequest
+                    {
+                        OutputDirectory = cloneOutputDirectory!,
+                        SolutionUniqueName = request.SolutionUniqueName!,
+                        EnvironmentUrl = environment.Url
+                    };
+                    result = await RunPacWithReauthenticationRetryAsync(
+                        () => _pacCli.CloneSolutionAsync(
+                            cloneRequest,
+                            _output.CreateProgress(),
+                            cancellationToken),
                         cancellationToken).ConfigureAwait(false);
                 }
 
@@ -140,6 +143,22 @@ internal sealed class DataverseSolutionProjectCreationService(
         }
 
         return environment;
+    }
+
+    private async Task<ProcessCommandResult> RunPacWithReauthenticationRetryAsync(
+        Func<Task<ProcessCommandResult>> pacCommand,
+        CancellationToken cancellationToken)
+    {
+        try
+        {
+            return await pacCommand().ConfigureAwait(false);
+        }
+        catch (PacCommandFailedException ex) when (PacAuthenticationFailure.RequiresReauthentication(ex))
+        {
+            _output.WriteWarning("PAC authentication has expired or was revoked. Reauthentication is required before retrying the command.");
+            await _pacAuthBridge.ReauthenticatePacProfileForCurrentEnvironmentAsync(cancellationToken).ConfigureAwait(false);
+            return await pacCommand().ConfigureAwait(false);
+        }
     }
 
     private void TryCleanupDirectory(string? directoryPath)

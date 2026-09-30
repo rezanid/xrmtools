@@ -65,6 +65,8 @@ public interface IPacCli
 
     Task SelectAuthProfileAsync(PacAuthProfile profile, CancellationToken cancellationToken);
 
+    Task DeleteAuthProfileAsync(PacAuthProfile profile, CancellationToken cancellationToken);
+
     Task CreateAuthProfileAsync(PacAuthCreateRequest request, CancellationToken cancellationToken);
 
     Task<ProcessCommandResult> InitializeSolutionAsync(
@@ -82,6 +84,40 @@ public interface IPacCli
         IReadOnlyList<string> arguments,
         IProgress<ProcessOutputLine> output,
         CancellationToken cancellationToken);
+}
+
+internal sealed class PacCommandFailedException : InvalidOperationException
+{
+    public PacCommandFailedException(string message, ProcessCommandResult result)
+        : base(message)
+    {
+        Result = result ?? throw new ArgumentNullException(nameof(result));
+    }
+
+    public ProcessCommandResult Result { get; }
+}
+
+internal static class PacAuthenticationFailure
+{
+    public static bool RequiresReauthentication(PacCommandFailedException exception)
+    {
+        if (exception is null) throw new ArgumentNullException(nameof(exception));
+
+        foreach (var outputLine in exception.Result.Output)
+        {
+            var text = outputLine.Text;
+            if (text.IndexOf("AADSTS50173", StringComparison.OrdinalIgnoreCase) >= 0
+                || text.IndexOf("AADSTS700082", StringComparison.OrdinalIgnoreCase) >= 0
+                || text.IndexOf("AADSTS700084", StringComparison.OrdinalIgnoreCase) >= 0
+                || (text.IndexOf("provided grant has expired", StringComparison.OrdinalIgnoreCase) >= 0
+                    && text.IndexOf("fresh auth token", StringComparison.OrdinalIgnoreCase) >= 0))
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
 }
 
 internal sealed class PacCliNotFoundException : InvalidOperationException

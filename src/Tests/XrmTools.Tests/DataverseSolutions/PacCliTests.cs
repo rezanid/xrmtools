@@ -110,6 +110,7 @@ public class PacCliTests
             ExitCode = 1,
             Output =
             [
+                null!,
                 new ProcessOutputLine(ProcessOutputSource.StandardError, "Error: An error occurred while exporting a solution."),
                 new ProcessOutputLine(ProcessOutputSource.StandardError, "Managed solutions cannot be exported.")
             ]
@@ -143,6 +144,94 @@ public class PacCliTests
         }
     }
 
+    [Fact]
+    public async Task ListAuthProfilesAsync_IgnoresNullOutputLines()
+    {
+        var runner = new CapturingProcessCommandRunner(new ProcessCommandResult
+        {
+            Output = [null!]
+        });
+        var pacCli = new PacCli(runner);
+        var tempDirectoryPath = Path.Combine(Path.GetTempPath(), "xrmtools-paccli-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(tempDirectoryPath);
+        File.WriteAllText(Path.Combine(tempDirectoryPath, "pac.cmd"), "@echo off");
+        var originalPath = Environment.GetEnvironmentVariable("PATH");
+
+        try
+        {
+            Environment.SetEnvironmentVariable("PATH", tempDirectoryPath);
+
+            var profiles = await pacCli.ListAuthProfilesAsync(CancellationToken.None);
+
+            profiles.Should().BeEmpty();
+        }
+        finally
+        {
+            Environment.SetEnvironmentVariable("PATH", originalPath);
+            Directory.Delete(tempDirectoryPath, recursive: true);
+        }
+    }
+
+    [Fact]
+    public async Task RunSolutionCommandAsync_ExposesOutputForExpiredAuthenticationFailures()
+    {
+        var runner = new CapturingProcessCommandRunner(new ProcessCommandResult
+        {
+            ExitCode = 1,
+            Output =
+            [
+                new ProcessOutputLine(ProcessOutputSource.StandardError, "AADSTS50173: The provided grant has expired; a fresh auth token is needed.")
+            ]
+        });
+        var pacCli = new PacCli(runner);
+        var tempDirectoryPath = Path.Combine(Path.GetTempPath(), "xrmtools-paccli-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(tempDirectoryPath);
+        File.WriteAllText(Path.Combine(tempDirectoryPath, "pac.cmd"), "@echo off");
+        var originalPath = Environment.GetEnvironmentVariable("PATH");
+
+        try
+        {
+            Environment.SetEnvironmentVariable("PATH", tempDirectoryPath);
+            var action = async () => await pacCli.RunSolutionCommandAsync(
+                new CdsProjectInfo { ProjectDirectory = tempDirectoryPath },
+                ["solution", "sync"],
+                new Progress<ProcessOutputLine>(),
+                CancellationToken.None);
+
+            var exception = await action.Should().ThrowAsync<PacCommandFailedException>();
+            PacAuthenticationFailure.RequiresReauthentication(exception.Which).Should().BeTrue();
+        }
+        finally
+        {
+            Environment.SetEnvironmentVariable("PATH", originalPath);
+            Directory.Delete(tempDirectoryPath, recursive: true);
+        }
+    }
+
+    [Fact]
+    public async Task DeleteAuthProfileAsync_UsesProfileIndex()
+    {
+        var runner = new CapturingProcessCommandRunner();
+        var pacCli = new PacCli(runner);
+        var tempDirectoryPath = Path.Combine(Path.GetTempPath(), "xrmtools-paccli-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(tempDirectoryPath);
+        File.WriteAllText(Path.Combine(tempDirectoryPath, "pac.cmd"), "@echo off");
+        var originalPath = Environment.GetEnvironmentVariable("PATH");
+
+        try
+        {
+            Environment.SetEnvironmentVariable("PATH", tempDirectoryPath);
+            await pacCli.DeleteAuthProfileAsync(new PacAuthProfile { Index = 7 }, CancellationToken.None);
+
+            runner.LastRequest!.Arguments.Should().ContainInOrder("auth", "delete", "--index", "7");
+        }
+        finally
+        {
+            Environment.SetEnvironmentVariable("PATH", originalPath);
+            Directory.Delete(tempDirectoryPath, recursive: true);
+        }
+    }
+
     private sealed class CapturingProcessCommandRunner : IProcessCommandRunner
     {
         private readonly ProcessCommandResult _result;
@@ -157,6 +246,11 @@ public class PacCliTests
         public Task<ProcessCommandResult> RunAsync(ProcessCommandRequest request, IProgress<ProcessOutputLine> output, CancellationToken cancellationToken)
         {
             LastRequest = request;
+            foreach (var line in _result.Output)
+            {
+                output.Report(line);
+            }
+
             return Task.FromResult(_result);
         }
     }

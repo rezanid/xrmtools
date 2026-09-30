@@ -16,11 +16,15 @@ using XrmTools.Tokens;
 public interface IPacAuthBridge
 {
     Task EnsurePacProfileForCurrentEnvironmentAsync(CancellationToken cancellationToken);
+
+    Task ReauthenticatePacProfileForCurrentEnvironmentAsync(CancellationToken cancellationToken);
 }
 
 internal interface IPacAuthUserInteraction
 {
     Task<bool> ConfirmProfileCreationAsync(string environmentUrl, bool browserSignInMayBeRequired);
+
+    Task<bool> ConfirmProfileReauthenticationAsync(string environmentUrl, bool browserSignInMayBeRequired);
 }
 
 [Export(typeof(IPacAuthBridge))]
@@ -80,6 +84,48 @@ internal sealed class PacAuthBridge(
 
         profiles = await _pacCli.ListAuthProfilesAsync(cancellationToken).ConfigureAwait(false);
         matchingProfiles = FindMatchingProfiles(profiles, normalizedEnvironmentUrl);
+        if (matchingProfiles.Count == 0)
+        {
+            throw new InvalidOperationException($"PAC did not create a usable auth profile for {normalizedEnvironmentUrl}.");
+        }
+
+        await _pacCli.SelectAuthProfileAsync(matchingProfiles[0], cancellationToken).ConfigureAwait(false);
+    }
+
+    public async Task ReauthenticatePacProfileForCurrentEnvironmentAsync(CancellationToken cancellationToken)
+    {
+        var environment = await _environmentProvider.GetActiveEnvironmentAsync(true).ConfigureAwait(false)
+            ?? throw new InvalidOperationException("No active environment selected. Select a Dataverse environment and try again.");
+
+        if (string.IsNullOrWhiteSpace(environment.Url))
+        {
+            throw new InvalidOperationException("The current environment does not have a valid URL.");
+        }
+
+        var authParameters = await ResolveAuthenticationParametersAsync(environment, cancellationToken).ConfigureAwait(false);
+        var createRequest = CreateProfileRequest(environment, authParameters);
+        var confirmed = await _pacAuthUserInteraction
+            .ConfirmProfileReauthenticationAsync(environment.Url, browserSignInMayBeRequired: string.IsNullOrWhiteSpace(createRequest.ClientSecret))
+            .ConfigureAwait(false);
+        if (!confirmed)
+        {
+            throw new OperationCanceledException("PAC authentication profile reauthentication was canceled by the user.", cancellationToken);
+        }
+
+        var normalizedEnvironmentUrl = DataverseEnvironmentUrl.Normalize(environment.Url);
+        var matchingProfiles = FindMatchingProfiles(
+            await _pacCli.ListAuthProfilesAsync(cancellationToken).ConfigureAwait(false),
+            normalizedEnvironmentUrl);
+        if (matchingProfiles.Count > 0)
+        {
+            await _pacCli.DeleteAuthProfileAsync(matchingProfiles[0], cancellationToken).ConfigureAwait(false);
+        }
+
+        await _pacCli.CreateAuthProfileAsync(createRequest, cancellationToken).ConfigureAwait(false);
+
+        matchingProfiles = FindMatchingProfiles(
+            await _pacCli.ListAuthProfilesAsync(cancellationToken).ConfigureAwait(false),
+            normalizedEnvironmentUrl);
         if (matchingProfiles.Count == 0)
         {
             throw new InvalidOperationException($"PAC did not create a usable auth profile for {normalizedEnvironmentUrl}.");

@@ -21,9 +21,9 @@ internal sealed class PacCli(IProcessCommandRunner processCommandRunner) : IPacC
         var output = new List<ProcessOutputLine>();
         await RunPacAsync(["help"], null, null, output, cancellationToken).ConfigureAwait(false);
 
-        var rawText = string.Join(Environment.NewLine, output.Select(line => line.Text));
-        var version = output
-            .Select(line => line.Text)
+        var outputText = GetOutputText(output);
+        var rawText = string.Join(Environment.NewLine, outputText);
+        var version = outputText
             .FirstOrDefault(line => line.StartsWith("Version:", StringComparison.OrdinalIgnoreCase))?
             .Split([':'], 2)[1]
             .Trim();
@@ -39,7 +39,7 @@ internal sealed class PacCli(IProcessCommandRunner processCommandRunner) : IPacC
     {
         var output = new List<ProcessOutputLine>();
         await RunPacAsync(["auth", "list"], null, null, output, cancellationToken).ConfigureAwait(false);
-        return PacAuthListParser.Parse(string.Join(Environment.NewLine, output.Select(line => line.Text)));
+        return PacAuthListParser.Parse(string.Join(Environment.NewLine, GetOutputText(output)));
     }
 
     public async Task SelectAuthProfileAsync(PacAuthProfile profile, CancellationToken cancellationToken)
@@ -48,6 +48,18 @@ internal sealed class PacCli(IProcessCommandRunner processCommandRunner) : IPacC
 
         await RunPacAsync(
             ["auth", "select", "--index", profile.Index.ToString(CultureInfo.InvariantCulture)],
+            null,
+            null,
+            (IProgress<ProcessOutputLine>?)null,
+            cancellationToken).ConfigureAwait(false);
+    }
+
+    public async Task DeleteAuthProfileAsync(PacAuthProfile profile, CancellationToken cancellationToken)
+    {
+        if (profile is null) throw new ArgumentNullException(nameof(profile));
+
+        await RunPacAsync(
+            ["auth", "delete", "--index", profile.Index.ToString(CultureInfo.InvariantCulture)],
             null,
             null,
             (IProgress<ProcessOutputLine>?)null,
@@ -179,7 +191,7 @@ internal sealed class PacCli(IProcessCommandRunner processCommandRunner) : IPacC
         IList<ProcessOutputLine>? capturedOutput,
         CancellationToken cancellationToken)
     {
-        var progress = new Progress<ProcessOutputLine>(line => capturedOutput?.Add(line));
+        var progress = new SynchronousProgress<ProcessOutputLine>(line => capturedOutput?.Add(line));
         return await RunPacAsync(arguments, workingDirectory, sensitiveValues, progress, cancellationToken).ConfigureAwait(false);
     }
 
@@ -216,7 +228,7 @@ internal sealed class PacCli(IProcessCommandRunner processCommandRunner) : IPacC
                     message += $"{Environment.NewLine}{diagnostic}";
                 }
 
-                throw new InvalidOperationException(message);
+                throw new PacCommandFailedException(message, result);
             }
 
             return result;
@@ -230,8 +242,10 @@ internal sealed class PacCli(IProcessCommandRunner processCommandRunner) : IPacC
     private static string? GetFailureDiagnostic(IReadOnlyList<ProcessOutputLine> output)
     {
         var errorLines = output
-            .Where(line => line.Source == ProcessOutputSource.StandardError && !string.IsNullOrWhiteSpace(line.Text))
-            .Select(line => line.Text)
+            .Where(line => line is not null
+                && line.Source == ProcessOutputSource.StandardError
+                && !string.IsNullOrWhiteSpace(line.Text))
+            .Select(line => line!.Text)
             .ToArray();
         if (errorLines.Length > 0)
         {
@@ -239,11 +253,17 @@ internal sealed class PacCli(IProcessCommandRunner processCommandRunner) : IPacC
         }
 
         return output
-            .Where(line => !string.IsNullOrWhiteSpace(line.Text)
+            .Where(line => line is not null
+                && !string.IsNullOrWhiteSpace(line.Text)
                 && line.Text.IndexOf("error", StringComparison.OrdinalIgnoreCase) >= 0)
-            .Select(line => line.Text)
+            .Select(line => line!.Text)
             .LastOrDefault();
     }
+
+    private static IEnumerable<string> GetOutputText(IEnumerable<ProcessOutputLine> output)
+        => output
+            .Where(line => line is not null)
+            .Select(line => line!.Text ?? string.Empty);
 
     private static void AddOptionalArgument(List<string> arguments, string name, string? value)
     {
@@ -277,6 +297,13 @@ internal sealed class PacCli(IProcessCommandRunner processCommandRunner) : IPacC
         {
             throw new ArgumentException("A value is required.", parameterName);
         }
+    }
+
+    private sealed class SynchronousProgress<T>(Action<T> report) : IProgress<T>
+    {
+        private readonly Action<T> _report = report ?? throw new ArgumentNullException(nameof(report));
+
+        public void Report(T value) => _report(value);
     }
 
     private static string FindPacExecutablePath()
