@@ -143,7 +143,7 @@ public partial class TraceExplorerControl : UserControl, IDisposable
             displayed = Array.Empty<TraceRecord>();
             Logs.ItemsSource = displayed;
             CloseDetails();
-            UpdatesButton.Visibility = BackButton.Visibility = Visibility.Collapsed;
+            BackButton.Visibility = Visibility.Collapsed;
             EmptyState.Visibility = Visibility.Visible;
             EmptyStateMessage.Text = "Environment changed. Apply a filter to load its traces.";
             EnvironmentLabel.Text = value.Name + " · " + value.Url;
@@ -394,17 +394,13 @@ public partial class TraceExplorerControl : UserControl, IDisposable
                 BackButton.Visibility = Visibility.Collapsed;
                 CloseDetails();
                 Display(result.Records, false);
-                UpdatesButton.Visibility = Visibility.Collapsed;
             }
-            else if (TraceSnapshots.Changed(displayed, result.Records))
+            else
             {
-                var existingIds = new HashSet<Guid>(displayed.Select(r => r.Id));
-                int added = result.Records.Count(r => !existingIds.Contains(r.Id));
-                UpdatesButton.Content = added > 0 ? $"{added} new traces · Show updates" : "Results changed · Show updates";
-                UpdatesButton.Visibility = Visibility.Visible;
+                // Keep the selected trace's immutable snapshot and the user's viewport stable while showing the current result set.
+                Display(result.Records, true);
                 UpdateDetailNotice();
             }
-            else UpdatesButton.Visibility = Visibility.Collapsed;
             if (!TypeName.IsKeyboardFocusWithin && !TypeName.IsDropDownOpen)
             {
                 var suggestions = displayed.Concat(result.Records).Select(r => r.TypeName).Distinct().OrderBy(n => n).ToArray();
@@ -484,16 +480,6 @@ public partial class TraceExplorerControl : UserControl, IDisposable
             var sort = sortDescriptions.FirstOrDefault(s => string.Equals(s.PropertyName, column.SortMemberPath, StringComparison.Ordinal));
             column.SortDirection = string.IsNullOrEmpty(sort.PropertyName) ? null : sort.Direction;
         }
-    }
-
-    private void ShowUpdatesClick(object sender, RoutedEventArgs e)
-    {
-        if (latest == null) return;
-        Display(latest.Records, true);
-        UpdatesButton.Visibility = Visibility.Collapsed;
-        UpdateDetailNotice();
-        Status.Text = $"{displayed.Count} displayed · Updates shown {DateTime.Now:HH:mm:ss}"
-            + (latest.Truncated ? $" · Results capped at {TraceExplorerService.MaximumRecords}; narrow the filter to see older traces." : "");
     }
 
     private async void LogSelected(object sender, SelectionChangedEventArgs e)
@@ -702,7 +688,7 @@ public partial class TraceExplorerControl : UserControl, IDisposable
         detailCancellation?.Cancel();
         RawText.Text = previous.Raw;
         FindScroll(Logs)?.ScrollToVerticalOffset(previous.Offset);
-        BackButton.Visibility = UpdatesButton.Visibility = Visibility.Collapsed;
+        BackButton.Visibility = Visibility.Collapsed;
         Status.Text = "Returned to previous results.";
     }
 

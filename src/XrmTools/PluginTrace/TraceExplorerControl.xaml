@@ -50,13 +50,13 @@
   </Style>
  </UserControl.Resources>
  <Grid Margin="6">
-  <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="*"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
+   <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="*"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
   <DockPanel Grid.Row="0" Margin="2,0,2,4">
    <WrapPanel DockPanel.Dock="Right">
     <TextBlock Text="Trace logging"/>
     <c:ComboBox x:Name="TraceLogging" Width="130" SelectedIndex="0" IsEnabled="False" ToolTip="Dataverse plug-in trace logging level" SelectionChanged="TraceLoggingChanged"><c:ComboBoxItem Content="Off" Tag="0"/><c:ComboBoxItem Content="Exceptions" Tag="1"/><c:ComboBoxItem Content="All" Tag="2"/><c:ComboBoxItem Content="All for 1 hour" Tag="timed"/></c:ComboBox>
     <TextBlock x:Name="TraceLoggingTimer" Visibility="Collapsed" Margin="0,0,6,0" Foreground="{DynamicResource {x:Static s:ShellColors.TextFillSecondaryBrushKey}}" ToolTip="Refresh extends timed trace logging by one hour."/>
-    <c:CheckBox x:Name="AutoRefresh" Content="Auto-refresh" IsChecked="True"/>
+    <c:CheckBox x:Name="AutoRefresh" Content="Auto-refresh" IsChecked="True" ToolTip="Automatically refresh the displayed results"/>
     <c:ComboBox x:Name="Interval" SelectedIndex="1" Width="84" ToolTip="Refresh interval"><c:ComboBoxItem Content="5 sec" Tag="5"/><c:ComboBoxItem Content="10 sec" Tag="10"/><c:ComboBoxItem Content="30 sec" Tag="30"/><c:ComboBoxItem Content="60 sec" Tag="60"/></c:ComboBox>
    </WrapPanel>
    <TextBlock x:Name="EnvironmentLabel" Text="Plugin Trace Explorer" TextTrimming="CharacterEllipsis" Foreground="{DynamicResource {x:Static s:ShellColors.TextFillSecondaryBrushKey}}" ToolTip="{Binding Text, RelativeSource={RelativeSource Self}}"/>
@@ -108,8 +108,7 @@
    </c:Expander>
   </StackPanel>
   <DockPanel Grid.Row="2"><c:Button x:Name="BackButton" Content="Back to results" Visibility="Collapsed" Click="BackClick" DockPanel.Dock="Left"/></DockPanel>
-  <c:Button Grid.Row="3" x:Name="UpdatesButton" HorizontalAlignment="Stretch" HorizontalContentAlignment="Left" Visibility="Collapsed" Click="ShowUpdatesClick"/>
-  <Grid Grid.Row="4" Margin="0,4">
+   <Grid Grid.Row="3" Margin="0,4">
    <Grid.ColumnDefinitions><ColumnDefinition Width="1.4*"/><ColumnDefinition x:Name="SplitterColumn" Width="0"/><ColumnDefinition x:Name="DetailColumn" Width="0"/></Grid.ColumnDefinitions>
    <Grid>
     <c:DataGrid x:Name="Logs" AutoGenerateColumns="False" IsReadOnly="True" CanUserAddRows="False" CanUserDeleteRows="False" CanUserSortColumns="True" SelectionMode="Single" SelectionUnit="FullRow" HeadersVisibility="Column" GridLinesVisibility="None" EnableRowVirtualization="True" EnableColumnVirtualization="True" VirtualizingPanel.ScrollUnit="Item" SelectionChanged="LogSelected" Sorting="LogsSorting">
@@ -170,7 +169,7 @@
     </c:TabControl>
    </Grid>
   </Grid>
-  <TextBlock Grid.Row="5" x:Name="Status" Text="Ready" TextWrapping="Wrap" Margin="3"/>
+   <TextBlock Grid.Row="4" x:Name="Status" Text="Ready" TextWrapping="Wrap" Margin="3"/>
  </Grid>
 </UserControl>
 
