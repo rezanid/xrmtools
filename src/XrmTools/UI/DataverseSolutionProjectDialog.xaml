@@ -4,8 +4,8 @@
     xmlns:p="clr-namespace:Microsoft.VisualStudio.PlatformUI;assembly=Microsoft.VisualStudio.Shell.15.0"
     x:Class="XrmTools.UI.DataverseSolutionProjectDialog" x:ClassModifier="internal"
     Title="Add Dataverse solution project"
-    Width="680" Height="640" MinWidth="560" MinHeight="480"
-    ResizeMode="CanResize" SizeToContent="Manual" Padding="24,16,24,20"
+    Width="680" Height="640" MinWidth="560" MinHeight="600"
+    ResizeMode="CanResize" SizeToContent="Manual" Padding="24,12"
     IsCloseButtonEnabled="{Binding IsIdle}"
     p:FocusHelper.FocusTarget="{Binding ElementName=LocationTextBox}">
     <ctrls:DialogWindow.Resources>
@@ -17,42 +17,56 @@
         </Style>
     </ctrls:DialogWindow.Resources>
     <ctrls:DialogWindow.FooterContent>
-        <StackPanel>
-            <ScrollViewer MaxHeight="100" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
-                <ctrls:TextBlock Text="{Binding CreationStatus}" TextWrapping="Wrap" AutomationProperties.LiveSetting="Polite"/>
-            </ScrollViewer>
-        <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,8,0,0" IsEnabled="{Binding IsIdle}">
+        <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" IsEnabled="{Binding IsIdle}">
             <ctrls:Button x:Name="CreateButton" Content="_Create" MinWidth="100" Kind="Accent"
                           IsDefault="True" Click="OnCreateClick"/>
             <ctrls:Button Content="Cancel" MinWidth="100" IsCancel="True" Margin="8,0,0,0"/>
         </StackPanel>
-        </StackPanel>
     </ctrls:DialogWindow.FooterContent>
-    <ScrollViewer x:Name="BodyScrollViewer" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
-        <StackPanel Margin="0,0,4,0" IsEnabled="{Binding IsIdle}">
-            <Label Content="_Location" Target="{Binding ElementName=LocationTextBox}" Style="{StaticResource FieldLabel}"/>
-            <Grid Margin="0,0,0,20">
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="*"/>
-                    <ColumnDefinition Width="Auto"/>
-                </Grid.ColumnDefinitions>
-                <ctrls:TextBox x:Name="LocationTextBox" HintText="Parent folder"
-                    Text="{Binding ParentDirectory, UpdateSourceTrigger=PropertyChanged}"/>
-                <ctrls:Button Grid.Column="1" Content="_Browse…" Margin="8,0,0,0" Click="OnBrowseClick"/>
-            </Grid>
-            <ctrls:TextBlock Text="Project contents" FontWeight="SemiBold" Margin="0,0,0,8"/>
-            <ctrls:RadioButton Content="Clone an _unmanaged solution" GroupName="ProjectContents"
-                IsChecked="{Binding CloneExistingSolution}" Margin="0,0,0,8"/>
-            <ctrls:RadioButton Content="Create an _empty solution project" GroupName="ProjectContents"
-                IsChecked="{Binding CreateEmptyProject}" Margin="0,0,0,20"/>
+    <Grid Margin="0,4,0,8">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+        <Grid IsEnabled="{Binding IsIdle}">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="*"/>
+            </Grid.RowDefinitions>
+            <StackPanel>
+                <Label Content="_Location" Target="{Binding ElementName=LocationTextBox}" Style="{StaticResource FieldLabel}"/>
+                <Grid Margin="0,0,0,20">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+                    <ctrls:TextBox x:Name="LocationTextBox" HintText="Parent folder"
+                        Text="{Binding ParentDirectory, UpdateSourceTrigger=PropertyChanged}"/>
+                    <ctrls:Button Grid.Column="1" Content="_Browse…" Margin="8,0,0,0" Click="OnBrowseClick"/>
+                </Grid>
+                <ctrls:TextBlock Text="Project contents" FontWeight="SemiBold" Margin="0,0,0,8"/>
+                <ctrls:RadioButton Content="Clone an _unmanaged solution" GroupName="ProjectContents"
+                    IsChecked="{Binding CloneExistingSolution}" Margin="0,0,0,8"/>
+                <ctrls:RadioButton Content="Create an _empty solution project" GroupName="ProjectContents"
+                    IsChecked="{Binding CreateEmptyProject}" Margin="0,0,0,20"/>
+            </StackPanel>
 
-            <StackPanel x:Name="CloneFields" Visibility="{Binding CloneProjectVisibility}">
+            <Grid x:Name="CloneFields" Grid.Row="1" Visibility="{Binding CloneProjectVisibility}">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="*"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                </Grid.RowDefinitions>
                 <Label Content="_Solution" Target="{Binding ElementName=SolutionsList}" Style="{StaticResource FieldLabel}"/>
-                <ctrls:TextBlock Text="Choose a solution from the active Dataverse environment."
+                <ctrls:TextBlock Grid.Row="1" Text="Choose a solution from the active Dataverse environment."
                                 TextWrapping="Wrap" Margin="0,0,0,8"/>
-                <ctrls:ListBox x:Name="SolutionsList" Height="180"
+                <ctrls:ListBox x:Name="SolutionsList" Grid.Row="2"
                     ItemsSource="{Binding Solutions}" SelectedItem="{Binding SelectedSolution}"
                     AutomationProperties.Name="Unmanaged solutions"
+                    ScrollViewer.VerticalScrollBarVisibility="Auto"
                     ScrollViewer.HorizontalScrollBarVisibility="Disabled">
                     <ctrls:ListBox.ItemTemplate>
                         <DataTemplate>
@@ -65,13 +79,17 @@
                         </DataTemplate>
                     </ctrls:ListBox.ItemTemplate>
                 </ctrls:ListBox>
-                <ctrls:TextBlock Text="{Binding SolutionLoadError}" TextWrapping="Wrap" Margin="0,8,0,0"
-                                AutomationProperties.LiveSetting="Polite"/>
-                <ctrls:TextBlock Text="Project folder" FontWeight="SemiBold" Margin="0,16,0,6"/>
-                <ctrls:TextBlock Text="{Binding CloneDestinationPath}" TextWrapping="Wrap"/>
-            </StackPanel>
+                <ScrollViewer Grid.Row="3" MaxHeight="60" Margin="0,8,0,0"
+                              VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+                    <ctrls:TextBlock Text="{Binding SolutionLoadError}" TextWrapping="Wrap"
+                                    AutomationProperties.LiveSetting="Polite"/>
+                </ScrollViewer>
+                <ctrls:TextBlock Grid.Row="4" Text="Project folder" FontWeight="SemiBold" Margin="0,16,0,6"/>
+                <ctrls:TextBlock Grid.Row="5" Text="{Binding CloneDestinationPath}" TextTrimming="CharacterEllipsis"
+                                ToolTip="{Binding CloneDestinationPath}"/>
+            </Grid>
 
-            <StackPanel x:Name="EmptyFields" Visibility="{Binding EmptyProjectVisibility}">
+            <StackPanel x:Name="EmptyFields" Grid.Row="1" Visibility="{Binding EmptyProjectVisibility}">
                 <Label Content="Project _name" Target="{Binding ElementName=ProjectNameTextBox}" Style="{StaticResource FieldLabel}"/>
                 <ctrls:TextBox x:Name="ProjectNameTextBox" Margin="0,0,0,16"
                     HintText="Dataverse solution project name"
@@ -85,6 +103,22 @@
                 <ctrls:TextBlock Text="The publisher identifies the owner of your customizations. Its prefix is added to the names of new components."
                                 TextWrapping="Wrap" Margin="0,8,0,0"/>
             </StackPanel>
-        </StackPanel>
-    </ScrollViewer>
+        </Grid>
+        <ScrollViewer Grid.Row="1" MaxHeight="60" Margin="0,16,0,0"
+                      VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+            <ScrollViewer.Style>
+                <Style TargetType="ScrollViewer">
+                    <Style.Triggers>
+                        <DataTrigger Binding="{Binding CreationStatus}" Value="{x:Null}">
+                            <Setter Property="Visibility" Value="Collapsed"/>
+                        </DataTrigger>
+                        <DataTrigger Binding="{Binding CreationStatus}" Value="">
+                            <Setter Property="Visibility" Value="Collapsed"/>
+                        </DataTrigger>
+                    </Style.Triggers>
+                </Style>
+            </ScrollViewer.Style>
+            <ctrls:TextBlock Text="{Binding CreationStatus}" TextWrapping="Wrap" AutomationProperties.LiveSetting="Polite"/>
+        </ScrollViewer>
+    </Grid>
 </ctrls:DialogWindow>
