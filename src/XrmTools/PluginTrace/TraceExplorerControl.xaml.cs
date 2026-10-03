@@ -1,764 +1,218 @@
 #nullable enable
 namespace XrmTools.PluginTrace;
 
-using Microsoft.VisualStudio.Shell;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
-using System.Globalization;
 using System.Linq;
-using System.Text.Json;
-using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Controls.Primitives;
 using System.Windows.Data;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Threading;
 
+/// <summary>View-only behavior: viewport, focus, editor selection and visual lifetime.</summary>
 public partial class TraceExplorerControl : UserControl, IDisposable
 {
-    private readonly TraceExplorerService service;
+    private readonly TraceExplorerViewModel viewModel;
     private readonly DispatcherTimer timer = new();
-    private readonly List<TraceFilter> saved = new();
     private readonly List<SortDescription> sortDescriptions = [new(nameof(TraceRecord.CreatedOn), ListSortDirection.Descending)];
-    private IReadOnlyList<TraceRecord> displayed = Array.Empty<TraceRecord>();
-    private TraceQueryResult? latest;
-    private TraceFilter? applied;
-    private DataverseEnvironment? environment;
-    private CancellationTokenSource? queryCancellation;
-    private CancellationTokenSource? detailCancellation;
-    private CancellationTokenSource? navigationCancellation;
-    private CancellationTokenSource? traceLoggingLoadCancellation;
-    private CancellationTokenSource? loggingCancellation;
-    private Guid organizationId;
-    private TraceLoggingMode traceLoggingMode;
-    private bool initializing = true, changingSelection, changingTraceLogging, loaded, disposed;
-    private int revision;
+    private bool changingSelection, disposed;
     private GridLength detailWidth = new(1, GridUnitType.Star);
-    private Investigation? back;
+    private Viewport viewport = new(0, 0, null), investigationViewport = new(0, 0, null);
 
     internal TraceExplorerControl(TraceExplorerService service)
+        : this(new TraceExplorerViewModel(service, new TraceViewStore(), new TraceNavigator(), new TraceDispatcher(Dispatcher.CurrentDispatcher))) { }
+
+    internal TraceExplorerControl(TraceExplorerViewModel viewModel)
     {
-        this.service = service;
+        this.viewModel = viewModel;
         InitializeComponent();
-        FromTime.Text = DateTime.Now.AddHours(-1).ToString("yyyy-MM-dd HH:mm:ss");
-        ToTime.Text = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss");
-        foreach (var text in new[] { Expression, FromTime, ToTime }) text.TextChanged += FilterChanged;
-        TypeName.AddHandler(TextBox.TextChangedEvent, new TextChangedEventHandler(FilterChanged));
-        Interval.SelectionChanged += (_, _) => SetTimerInterval();
+        DataContext = viewModel;
+        // Popup content is hosted outside the view's visual tree.
+        SavedViewsPopup.DataContext = viewModel;
         timer.Tick += TimerTick;
-        service.TraceLoggingLeaseChanged += TraceLoggingLeaseChanged;
-        SetTimerInterval();
+        viewModel.PropertyChanged += ViewModelChanged;
+        viewModel.Detail.PropertyChanged += DetailChanged;
+        viewModel.RecordsChanging += RecordsChanging;
+        viewModel.RecordsChanged += RecordsChanged;
+        viewModel.InvestigationRestored += RestoreInvestigationViewport;
         Loaded += OnLoaded;
         Unloaded += OnUnloaded;
         KeyDown += OnKeyDown;
+        SetTimerInterval();
+        UpdateTypeSuggestions();
         UpdateSortIndicators();
-        initializing = false;
-        UpdateFilterPreview();
     }
 
     private async void OnLoaded(object sender, RoutedEventArgs e)
     {
-        if (loaded || disposed) return;
-        loaded = true;
-        DataverseEnvironmentProvider.EnvironmentChanged += EnvironmentChanged;
-        await service.InitializeTraceLoggingLeasesAsync();
-        try
+        await viewModel.ActivateAsync();
+        if (!disposed && IsLoaded) timer.Start();
+    }
+    private void OnUnloaded(object sender, RoutedEventArgs e) { timer.Stop(); viewModel.Deactivate(); }
+    private async void TimerTick(object? sender, EventArgs e) => await viewModel.TickAsync(IsVisible);
+    private void SetTimerInterval() => timer.Interval = TimeSpan.FromSeconds(viewModel.IntervalSeconds);
+    private void ViewModelChanged(object? sender, PropertyChangedEventArgs e)
+    {
+        if (e.PropertyName == nameof(TraceExplorerViewModel.IntervalSeconds)) SetTimerInterval();
+        if (e.PropertyName == nameof(TraceExplorerViewModel.SelectedRecord)) SyncSelection();
+        if (e.PropertyName == nameof(TraceExplorerViewModel.SelectedView)) SavedViewsPopup.IsOpen = false;
+        if (e.PropertyName == nameof(TraceExplorerViewModel.TypeSuggestions)) UpdateTypeSuggestions();
+    }
+    private void DetailChanged(object? sender, PropertyChangedEventArgs e)
+    {
+        if (e.PropertyName == nameof(TraceDetailViewModel.IsOpen))
         {
-            var options = await TraceExplorerOptions.GetLiveInstanceAsync();
-            saved.Clear();
-            saved.AddRange(JsonSerializer.Deserialize<List<TraceFilter>>(options.SavedViewsJson) ?? new());
-            RefreshSavedViews();
+            if (!viewModel.Detail.IsOpen && DetailColumn.Width.Value > 0) detailWidth = DetailColumn.Width;
+            DetailColumn.Width = viewModel.Detail.IsOpen ? detailWidth : new GridLength(0);
+            SplitterColumn.Width = new GridLength(viewModel.Detail.IsOpen ? 5 : 0);
         }
-        catch (Exception ex) { Status.Text = "Could not load saved views: " + ex.Message; }
-        if (!loaded || disposed) return;
-        var selectedEnvironment = await service.GetEnvironmentAsync();
-        if (selectedEnvironment?.IsValid == true)
-        {
-            environment = selectedEnvironment with { };
-            EnvironmentLabel.Text = (selectedEnvironment.Name ?? "Dataverse") + " · " + selectedEnvironment.Url;
-            await LoadTraceLoggingAsync(selectedEnvironment);
-        }
-        timer.Start();
-        if (applied == null) await ApplyAsync();
+        if (e.PropertyName == nameof(TraceDetailViewModel.Record)) FindStatus.Text = "";
     }
-
-    private void OnUnloaded(object sender, RoutedEventArgs e)
+    private void LogSelected(object sender, SelectionChangedEventArgs e)
     {
-        loaded = false;
-        timer.Stop();
-        DataverseEnvironmentProvider.EnvironmentChanged -= EnvironmentChanged;
-        CancelRequests();
+        if (!changingSelection) viewModel.SelectedRecord = Logs.SelectedItem as TraceRecord;
     }
-
-    private void SetTimerInterval() => timer.Interval = TimeSpan.FromSeconds(int.Parse((string)((ComboBoxItem)Interval.SelectedItem).Tag, CultureInfo.InvariantCulture));
-
-    private async void TimerTick(object? sender, EventArgs e)
+    private void SyncSelection()
     {
-        UpdateTraceLoggingTimer();
-        if (AutoRefresh.IsChecked == true && applied != null && queryCancellation == null && IsVisible)
-            await QueryAsync(applied, false, false);
+        var previous = changingSelection; changingSelection = true;
+        Logs.SelectedItem = viewModel.SelectedRecord;
+        changingSelection = previous;
     }
-
-    private void TraceLoggingLeaseChanged(TraceLoggingLease? ignored) => _ = Dispatcher.BeginInvoke(new Action(UpdateTraceLoggingTimer));
-
-    private void UpdateTraceLoggingTimer()
+    private Viewport CaptureViewport()
     {
-        var lease = service.CurrentTraceLoggingLease;
-        if (lease == null || environment == null || lease.OrganizationId != organizationId || !string.Equals(lease.EnvironmentUrl.TrimEnd('/'), environment.Url?.TrimEnd('/'), StringComparison.OrdinalIgnoreCase))
-        {
-            TraceLoggingTimer.Visibility = Visibility.Collapsed;
-            return;
-        }
-        var remaining = lease.ExpiresAtUtc - DateTimeOffset.UtcNow;
-        if (remaining <= TimeSpan.Zero)
-        {
-            TraceLoggingTimer.Text = "Restore pending";
-            TraceLoggingTimer.ToolTip = "Timed tracing expired. XrmTools will restore the previous setting silently when it can access this environment.";
-            TraceLoggingTimer.Visibility = Visibility.Visible;
-            return;
-        }
-        TraceLoggingTimer.Text = $"{Math.Ceiling(remaining.TotalMinutes):0}m left";
-        TraceLoggingTimer.ToolTip = $"Tracing returns to {lease.RestoreMode} at {lease.ExpiresAtUtc.ToLocalTime():t}. Refresh extends it by one hour.";
-        TraceLoggingTimer.Visibility = Visibility.Visible;
+        var scroll = FindScroll(Logs); var offset = scroll?.VerticalOffset ?? 0;
+        var anchor = offset < Logs.Items.Count ? (Logs.Items[(int)offset] as TraceRecord)?.Id : null;
+        return new Viewport(offset, scroll?.HorizontalOffset ?? 0, anchor);
     }
-
-    private void EnvironmentChanged(DataverseEnvironment value)
+    private void RecordsChanging(bool preserve)
     {
-        // The provider may raise this event off the UI thread.
-        _ = Dispatcher.BeginInvoke(new Action(() =>
-        {
-            if (!loaded || disposed) return;
-            CancelRequests();
-            applied = null;
-            environment = value with { };
-            organizationId = Guid.Empty;
-            TraceLoggingTimer.Visibility = Visibility.Collapsed;
-            TraceLogging.IsEnabled = false;
-            SetTraceLogging(TraceLoggingMode.Off);
-            latest = null;
-            back = null;
-            displayed = Array.Empty<TraceRecord>();
-            Logs.ItemsSource = displayed;
-            CloseDetails();
-            BackButton.Visibility = Visibility.Collapsed;
-            EmptyState.Visibility = Visibility.Visible;
-            EmptyStateMessage.Text = "Environment changed. Apply a filter to load its traces.";
-            EnvironmentLabel.Text = value.Name + " · " + value.Url;
-            Status.Text = "Environment changed. Apply to load traces.";
-            if (value.IsValid) _ = LoadTraceLoggingAsync(value);
-        }));
-    }
-
-    private TraceFilter ReadFilter() => new()
-    {
-        Name = ViewName.Text.Trim(),
-        Minutes = int.Parse((string)((ComboBoxItem)Duration.SelectedItem).Tag, CultureInfo.InvariantCulture),
-        From = DateTimeOffset.TryParse(FromTime.Text, CultureInfo.CurrentCulture, DateTimeStyles.AssumeLocal, out var from) ? from : null,
-        To = DateTimeOffset.TryParse(ToTime.Text, CultureInfo.CurrentCulture, DateTimeStyles.AssumeLocal, out var to) ? to : null,
-        TypeName = TypeName.Text,
-        ErrorsOnly = ErrorsOnly.IsChecked == true,
-        FullControl = FullControl.IsChecked == true,
-        Expression = Expression.Text
-    };
-
-    private void DurationChanged(object sender, SelectionChangedEventArgs e) => FilterChanged(sender, e);
-
-    private void FilterChanged(object sender, RoutedEventArgs e)
-    {
-        if (!initializing) UpdateFilterPreview();
-    }
-
-    private void UpdateFilterPreview()
-    {
-        var filter = ReadFilter();
-        QuickFilters.IsEnabled = !filter.FullControl;
-        CustomRange.Visibility = filter.Minutes == 0 && !filter.FullControl ? Visibility.Visible : Visibility.Collapsed;
-        ModifiedLabel.Text = SavedViews.SelectedItem is TraceFilter selected && filter with { Name = selected.Name } != selected ? "Modified" : "";
-        try { Preview.Text = filter.Build(DateTimeOffset.UtcNow); }
-        catch (FormatException ex) { Preview.Text = ex.Message; }
-        UpdateQueryAction();
-    }
-
-    private async Task ApplyAsync()
-    {
-        try
-        {
-            var filter = ReadFilter();
-            filter.Build(DateTimeOffset.UtcNow);
-            await QueryAsync(filter, true, true);
-        }
-        catch (Exception ex) { Status.Text = ex.Message; }
-    }
-
-    private async void UseLast24HoursClick(object sender, RoutedEventArgs e)
-    {
-        initializing = true;
-        Duration.SelectedItem = Duration.Items.Cast<ComboBoxItem>().FirstOrDefault(i => (string)i.Tag == "1440") ?? Duration.Items[2];
-        FullControl.IsChecked = false;
-        initializing = false;
-        UpdateFilterPreview();
-        await ApplyAsync();
-    }
-
-    private async void ClearFiltersClick(object sender, RoutedEventArgs e)
-    {
-        initializing = true;
-        ViewName.Text = "";
-        TypeName.Text = "";
-        ErrorsOnly.IsChecked = false;
-        FullControl.IsChecked = false;
-        Expression.Text = "";
-        initializing = false;
-        RefreshSavedViews();
-        UpdateFilterPreview();
-        await ApplyAsync();
-    }
-
-    private async void RunOrCancelClick(object sender, RoutedEventArgs e)
-    {
-        if (queryCancellation != null)
-        {
-            CancelActiveRefresh();
-            return;
-        }
-        if (environment != null && organizationId != Guid.Empty)
-            await service.ExtendTimedTraceLoggingAsync(environment, organizationId);
-        if (HasUnappliedFilterChanges()) await ApplyAsync();
-        else if (applied != null) await QueryAsync(applied, true, false);
-    }
-
-    private bool HasUnappliedFilterChanges() => applied == null || ReadFilter() != applied;
-
-    private void CancelActiveRefresh()
-    {
-        revision++;
-        queryCancellation?.Cancel();
-        queryCancellation = null;
-        UpdateQueryAction();
-        Status.Text = "Request cancelled. Existing results preserved.";
-    }
-
-    private void CancelRequests()
-    {
-        navigationCancellation?.Cancel();
-        revision++;
-        queryCancellation?.Cancel();
-        queryCancellation = null;
-        detailCancellation?.Cancel();
-        detailCancellation = null;
-        traceLoggingLoadCancellation?.Cancel();
-        traceLoggingLoadCancellation = null;
-        loggingCancellation?.Cancel();
-        loggingCancellation = null;
-        UpdateQueryAction();
-    }
-
-    private void UpdateQueryAction()
-    {
-        if (queryCancellation != null) return;
-        bool apply = HasUnappliedFilterChanges();
-        QueryButton.Content = apply ? "Apply" : "Refresh";
-        QueryButton.ToolTip = apply ? "Apply filter (Ctrl+Enter)" : "Refresh the applied filter (Ctrl+Enter)";
-        QueryButton.Kind = XrmTools.Shell.Styles.ButtonKind.Accent;
-    }
-
-    private void SetQueryActionBusy()
-    {
-        QueryButton.Content = "Cancel";
-        QueryButton.ToolTip = "Cancel request";
-        QueryButton.Kind = XrmTools.Shell.Styles.ButtonKind.Standard;
-    }
-
-    private async Task LoadTraceLoggingAsync(DataverseEnvironment selectedEnvironment)
-    {
-        traceLoggingLoadCancellation?.Cancel();
-        var cancellation = new CancellationTokenSource();
-        traceLoggingLoadCancellation = cancellation;
-        TraceLogging.IsEnabled = false;
-        try
-        {
-            var configuration = await service.GetTraceLoggingAsync(selectedEnvironment, cancellation.Token);
-            if (cancellation.IsCancellationRequested || disposed || !loaded || environment?.ConnectionString != selectedEnvironment.ConnectionString) return;
-            organizationId = configuration.OrganizationId;
-            SetTraceLogging(configuration.Mode);
-            UpdateTraceLoggingTimer();
-            TraceLogging.IsEnabled = true;
-        }
-        catch (OperationCanceledException) { }
-        catch (Exception ex)
-        {
-            if (!cancellation.IsCancellationRequested) Status.Text = "Could not read trace logging: " + ex.Message;
-        }
-        finally
-        {
-            if (ReferenceEquals(traceLoggingLoadCancellation, cancellation)) traceLoggingLoadCancellation = null;
-            cancellation.Dispose();
-        }
-    }
-
-    private void SetTraceLogging(TraceLoggingMode mode)
-    {
-        changingTraceLogging = true;
-        traceLoggingMode = mode;
-        bool timed = mode == TraceLoggingMode.All && service.CurrentTraceLoggingLease is { } lease && lease.OrganizationId == organizationId && environment != null && string.Equals(lease.EnvironmentUrl.TrimEnd('/'), environment.Url?.TrimEnd('/'), StringComparison.OrdinalIgnoreCase);
-        TraceLogging.SelectedItem = TraceLogging.Items.Cast<ComboBoxItem>().First(i => (string)i.Tag == (timed ? "timed" : ((int)mode).ToString(CultureInfo.InvariantCulture)));
-        changingTraceLogging = false;
-    }
-
-    private async void TraceLoggingChanged(object sender, SelectionChangedEventArgs e)
-    {
-        if (initializing || changingTraceLogging || !loaded || environment == null || organizationId == Guid.Empty || TraceLogging.SelectedItem is not ComboBoxItem item) return;
-        bool timed = (string)item.Tag == "timed";
-        var requested = timed ? TraceLoggingMode.All : (TraceLoggingMode)int.Parse((string)item.Tag, CultureInfo.InvariantCulture);
-        if (!timed && requested == traceLoggingMode)
-        {
-            await service.CancelTimedTraceLoggingAsync(environment, organizationId);
-            return;
-        }
-        loggingCancellation?.Cancel();
-        var cancellation = new CancellationTokenSource();
-        loggingCancellation = cancellation;
-        TraceLogging.IsEnabled = false;
-        try
-        {
-            if (timed) await service.StartTimedTraceLoggingAsync(environment, organizationId, traceLoggingMode, cancellation.Token);
-            else
-            {
-                await service.SetTraceLoggingAsync(environment, organizationId, requested, cancellation.Token);
-                await service.CancelTimedTraceLoggingAsync(environment, organizationId);
-            }
-            if (!cancellation.IsCancellationRequested) { traceLoggingMode = requested; UpdateTraceLoggingTimer(); Status.Text = "Trace logging set to " + item.Content + "."; }
-        }
-        catch (OperationCanceledException) { }
-        catch (Exception ex)
-        {
-            if (!cancellation.IsCancellationRequested)
-            {
-                SetTraceLogging(traceLoggingMode);
-                Status.Text = "Could not change trace logging: " + ex.Message;
-            }
-        }
-        finally
-        {
-            if (ReferenceEquals(loggingCancellation, cancellation))
-            {
-                loggingCancellation = null;
-                if (!disposed && loaded) TraceLogging.IsEnabled = true;
-            }
-            cancellation.Dispose();
-        }
-    }
-
-    private async Task QueryAsync(TraceFilter filter, bool interactive, bool replace)
-    {
-        if (!loaded || disposed) return;
-        if (queryCancellation != null)
-        {
-            if (!replace) return;
-            queryCancellation.Cancel();
-        }
-        var cancellation = new CancellationTokenSource();
-        queryCancellation = cancellation;
-        int generation = ++revision;
-        SetQueryActionBusy();
-        if (interactive) Status.Text = "Loading traces…";
-        try
-        {
-            var selectedEnvironment = await service.GetEnvironmentAsync();
-            if (selectedEnvironment?.IsValid != true) throw new InvalidOperationException("Select a Dataverse environment first.");
-            var captured = selectedEnvironment with { };
-            // Never keep displaying one environment's rows under another environment's label.
-            if (environment != null && captured.ConnectionString != environment.ConnectionString)
-            {
-                EnvironmentChanged(captured);
-                return;
-            }
-            var result = await service.QueryAsync(captured, filter, interactive, cancellation.Token);
-            cancellation.Token.ThrowIfCancellationRequested();
-            if (generation != revision || !loaded) return;
-            if ((await service.GetEnvironmentAsync())?.ConnectionString != captured.ConnectionString)
-                throw new InvalidOperationException("Environment changed. Apply the filter again.");
-            cancellation.Token.ThrowIfCancellationRequested();
-            if (generation != revision || !loaded) return;
-            environment = captured;
-            EnvironmentLabel.Text = (captured.Name ?? "Dataverse") + " · " + captured.Url;
-            latest = result;
-            if (replace)
-            {
-                applied = filter with { };
-                UpdateQueryAction();
-                back = null;
-                BackButton.Visibility = Visibility.Collapsed;
-                CloseDetails();
-                Display(result.Records, false);
-            }
-            else
-            {
-                // Keep the selected trace's immutable snapshot and the user's viewport stable while showing the current result set.
-                Display(result.Records, true);
-                UpdateDetailNotice();
-            }
-            if (!TypeName.IsKeyboardFocusWithin && !TypeName.IsDropDownOpen)
-            {
-                var suggestions = displayed.Concat(result.Records).Select(r => r.TypeName).Distinct().OrderBy(n => n).ToArray();
-                if (!(TypeName.ItemsSource is string[] existing) || !existing.SequenceEqual(suggestions))
-                {
-                    var typeText = TypeName.Text;
-                    TypeName.ItemsSource = suggestions;
-                    TypeName.Text = typeText;
-                }
-            }
-            Status.Text = $"{displayed.Count} displayed · Last checked {DateTime.Now:HH:mm:ss}"
-                + (result.Truncated ? $" · Showing the newest {TraceExplorerService.MaximumRecords} matches; narrow the filter to see older traces." : "");
-            if (replace) await LoadTraceLoggingAsync(captured);
-        }
-        catch (OperationCanceledException) { }
-        catch (Exception ex)
-        {
-            if (generation == revision) Status.Text = "Could not load traces: " + ex.Message + " Existing results preserved.";
-        }
-        finally
-        {
-            if (ReferenceEquals(queryCancellation, cancellation))
-            {
-                queryCancellation = null;
-                UpdateQueryAction();
-            }
-            cancellation.Dispose();
-        }
-    }
-
-    private void Display(IReadOnlyList<TraceRecord> rows, bool preserve)
-    {
-        var selected = preserve ? Logs.SelectedItem as TraceRecord : null;
-        var scroll = FindScroll(Logs);
-        var offset = preserve ? scroll?.VerticalOffset ?? 0 : 0;
-        var horizontal = preserve ? scroll?.HorizontalOffset ?? 0 : 0;
-        // Take the anchor from the currently sorted view, then restore it in the new sorted view.
-        // This keeps the viewport steady even when the user has sorted by a column other than Created.
-        var anchor = preserve && offset < Logs.Items.Count ? (Logs.Items[(int)offset] as TraceRecord)?.Id : null;
-        displayed = TraceSnapshots.PreserveSelection(rows, selected);
-        var view = new ListCollectionView(displayed.ToList());
-        foreach (var sort in sortDescriptions) view.SortDescriptions.Add(sort);
-        UpdateSortIndicators();
+        if (preserve) viewport = CaptureViewport();
         changingSelection = true;
-        Logs.ItemsSource = view;
-        Logs.SelectedItem = selected;
-        changingSelection = false;
-        EmptyState.Visibility = displayed.Count == 0 ? Visibility.Visible : Visibility.Collapsed;
-        EmptyStateMessage.Text = "No traces match the current filters.";
-        if (anchor != null)
+    }
+    private void RecordsChanged(bool preserve)
+    {
+        var view = CollectionViewSource.GetDefaultView(Logs.ItemsSource);
+        if (view?.CanSort == true)
         {
-            int index = Logs.Items.Cast<TraceRecord>().ToList().FindIndex(r => r.Id == anchor);
+            using (view.DeferRefresh())
+            {
+                view.SortDescriptions.Clear();
+                foreach (var sort in sortDescriptions) view.SortDescriptions.Add(sort);
+            }
+        }
+        SyncSelection(); UpdateSortIndicators();
+        changingSelection = false;
+        RestoreViewport(preserve ? viewport : new Viewport(0, 0, null));
+    }
+    private void RestoreViewport(Viewport state)
+    {
+        var offset = state.Offset;
+        if (state.Anchor != null)
+        {
+            int index = Logs.Items.Cast<TraceRecord>().ToList().FindIndex(r => r.Id == state.Anchor);
             if (index >= 0) offset = index;
         }
-        Logs.UpdateLayout();
-        scroll = FindScroll(Logs);
-        scroll?.ScrollToVerticalOffset(offset);
-        scroll?.ScrollToHorizontalOffset(horizontal);
+        Logs.UpdateLayout(); var scroll = FindScroll(Logs);
+        scroll?.ScrollToVerticalOffset(offset); scroll?.ScrollToHorizontalOffset(state.HorizontalOffset);
     }
-
     private void LogsSorting(object sender, DataGridSortingEventArgs e)
     {
         e.Handled = true;
-        var direction = e.Column.SortDirection == ListSortDirection.Ascending
-            ? ListSortDirection.Descending
-            : ListSortDirection.Ascending;
-        sortDescriptions.Clear();
-        sortDescriptions.Add(new SortDescription(e.Column.SortMemberPath, direction));
-        // Apply the new view without changing the selected trace or its detail snapshot.
-        Display(displayed, true);
+        var direction = e.Column.SortDirection == ListSortDirection.Ascending ? ListSortDirection.Descending : ListSortDirection.Ascending;
+        sortDescriptions.Clear(); sortDescriptions.Add(new SortDescription(e.Column.SortMemberPath, direction));
+        RecordsChanging(true); RecordsChanged(true);
     }
-
     private void UpdateSortIndicators()
     {
         foreach (var column in Logs.Columns)
         {
-            var sort = sortDescriptions.FirstOrDefault(s => string.Equals(s.PropertyName, column.SortMemberPath, StringComparison.Ordinal));
+            var sort = sortDescriptions.FirstOrDefault(s => s.PropertyName == column.SortMemberPath);
             column.SortDirection = string.IsNullOrEmpty(sort.PropertyName) ? null : sort.Direction;
         }
     }
-
-    private async void LogSelected(object sender, SelectionChangedEventArgs e)
+    private void RelatedClick(object sender, RoutedEventArgs e)
     {
-        if (changingSelection || Logs.SelectedItem is not TraceRecord record) return;
-        Details.Visibility = DetailSplitter.Visibility = Visibility.Visible;
-        SplitterColumn.Width = new GridLength(5);
-        DetailColumn.Width = detailWidth;
-        DetailTitle.Text = record.ShortTypeName;
-        DetailTitle.ToolTip = record.TypeName;
-        FindStatus.Text = "";
-        DetailSummary.Text = $"{record.Time} · {record.MessageName} · {record.Entity}\n{record.Duration} ms · Depth {record.Depth} · {record.Status}";
-        ExceptionText.Text = string.IsNullOrWhiteSpace(record.Exception) ? "No exception recorded." : record.Exception;
-        MessageText.Text = string.IsNullOrEmpty(record.Message) ? "No trace message recorded." : record.Message;
-        ExceptionTab.Visibility = string.IsNullOrWhiteSpace(record.Exception) ? Visibility.Collapsed : Visibility.Visible;
-        DetailTabs.SelectedIndex = string.IsNullOrWhiteSpace(record.Exception) ? 1 : 0;
-        RelatedButton.IsEnabled = record.CorrelationId.HasValue && record.CorrelationId != Guid.Empty;
-        UpdateDetailNotice();
-        detailCancellation?.Cancel();
-        var cancellation = new CancellationTokenSource();
-        detailCancellation = cancellation;
-        RawText.Text = "Loading full record…";
-        try
+        if (!viewModel.CanGoBack) investigationViewport = CaptureViewport();
+        if (viewModel.RelatedCommand.CanExecute(null)) viewModel.RelatedCommand.Execute(null);
+    }
+    private void RestoreInvestigationViewport() => RestoreViewport(investigationViewport);
+    private void SavedViewChanged(object sender, SelectionChangedEventArgs e)
+    {
+        // Replacing ItemsSource temporarily clears selection. Do not write that visual reset into the model.
+        if (SavedViews.SelectedItem is TraceFilter filter)
         {
-            if (environment == null) return;
-            var raw = await service.DetailAsync(environment with { }, record.Id, cancellation.Token);
-            if (!cancellation.IsCancellationRequested && ReferenceEquals(Logs.SelectedItem, record) && loaded)
-                RawText.Text = raw;
-        }
-        catch (OperationCanceledException) { }
-        catch (Exception ex)
-        {
-            if (!cancellation.IsCancellationRequested) RawText.Text = "Could not load the full record: " + ex.Message + "\n\nLoaded fields:\n" + record.Raw;
-        }
-        finally
-        {
-            if (ReferenceEquals(detailCancellation, cancellation)) detailCancellation = null;
-            cancellation.Dispose();
+            viewModel.SelectedView = filter;
+            SavedViewsPopup.IsOpen = false;
         }
     }
-
-    private void UpdateDetailNotice()
+    private void SavedViewsSourceUpdated(object sender, DataTransferEventArgs e)
     {
-        var record = Logs.SelectedItem as TraceRecord;
-        var updated = latest?.Records.FirstOrDefault(r => r.Id == record?.Id);
-        DetailNotice.Text = record == null ? "" : updated == null ? "Outside the current results. This trace remains open for inspection." : updated.Raw != record.Raw ? "An updated version is available. Your current view is preserved." : "";
-        DetailNotice.Visibility = string.IsNullOrEmpty(DetailNotice.Text) ? Visibility.Collapsed : Visibility.Visible;
-        UpdateDetailButton.Visibility = updated != null && updated.Raw != record?.Raw ? Visibility.Visible : Visibility.Collapsed;
+        if (e.Property == ItemsControl.ItemsSourceProperty)
+            SavedViews.SetCurrentValue(Selector.SelectedItemProperty, viewModel.SelectedView);
     }
-
-    private void UpdateDetailClick(object sender, RoutedEventArgs e)
+    private void SavedViewActionClick(object sender, RoutedEventArgs e) => SavedViewsPopup.IsOpen = false;
+    private void TypeSuggestionsFocusChanged(object sender, KeyboardFocusChangedEventArgs e) => UpdateTypeSuggestions();
+    private void TypeSuggestionsDropDownClosed(object sender, EventArgs e) => UpdateTypeSuggestions();
+    private void UpdateTypeSuggestions()
     {
-        var id = (Logs.SelectedItem as TraceRecord)?.Id;
-        if (latest == null || id == null) return;
-        var replacement = latest.Records.FirstOrDefault(r => r.Id == id);
-        if (replacement == null) return;
-        CloseDetails();
-        Display(latest.Records, true);
-        Logs.SelectedItem = replacement;
+        // Updating an editable ComboBox's list while typing/open can reset its text and caret.
+        if (TypeName.IsKeyboardFocusWithin || TypeName.IsDropDownOpen) return;
+        if (TypeName.ItemsSource is IReadOnlyList<string> previous && previous.SequenceEqual(viewModel.TypeSuggestions)) return;
+        var text = viewModel.Filter.TypeName;
+        TypeName.ItemsSource = viewModel.TypeSuggestions;
+        TypeName.SetCurrentValue(ComboBox.TextProperty, text);
     }
-
-    private void CloseDetailsClick(object sender, RoutedEventArgs e) => CloseDetails();
-    private void CloseDetails()
-    {
-        detailCancellation?.Cancel();
-        if (Details.Visibility == Visibility.Visible) detailWidth = DetailColumn.Width;
-        Details.Visibility = DetailSplitter.Visibility = Visibility.Collapsed;
-        DetailColumn.Width = SplitterColumn.Width = new GridLength(0);
-        changingSelection = true;
-        Logs.SelectedItem = null;
-        changingSelection = false;
-        // Clearing selection allows the same row to be opened again with one click.
-    }
-
     private void WrapClick(object sender, RoutedEventArgs e)
     {
         var wrap = WrapText.IsChecked == true ? TextWrapping.Wrap : TextWrapping.NoWrap;
         ExceptionText.TextWrapping = MessageText.TextWrapping = RawText.TextWrapping = wrap;
     }
-
     private void FindNextClick(object sender, RoutedEventArgs e)
     {
         if (string.IsNullOrEmpty(FindText.Text)) return;
-        if (DetailTabs.SelectedIndex == 2)
-        {
-            FindStatus.Text = RawText.FindNext(FindText.Text) ? "" : "No match";
-            return;
-        }
+        if (DetailTabs.SelectedIndex == 2) { FindStatus.Text = RawText.FindNext(FindText.Text) ? "" : "No match"; return; }
         var text = DetailTabs.SelectedIndex == 0 ? ExceptionText : MessageText;
         int start = Math.Min(text.Text.Length, text.SelectionStart + text.SelectionLength);
         int index = text.Text.IndexOf(FindText.Text, start, StringComparison.OrdinalIgnoreCase);
         if (index < 0) index = text.Text.IndexOf(FindText.Text, StringComparison.OrdinalIgnoreCase);
         FindStatus.Text = index < 0 ? "No match" : "";
         if (index < 0) return;
-        text.Focus();
-        text.Select(index, FindText.Text.Length);
-        text.ScrollToLine(text.GetLineIndexFromCharacterIndex(index));
+        text.Focus(); text.Select(index, FindText.Text.Length); text.ScrollToLine(text.GetLineIndexFromCharacterIndex(index));
     }
-
-    private async void SavedViewChanged(object sender, SelectionChangedEventArgs e)
+    private void GoToDefinitionClick(object sender, RoutedEventArgs e)
     {
-        if (initializing || SavedViews.SelectedItem is not TraceFilter filter) return;
-        SetFilter(filter);
-        SavedViewsButton.Content = filter.Name;
-        SavedViewsPopup.IsOpen = false;
-        await ApplyAsync();
+        if (sender is FrameworkElement { DataContext: TraceRecord record }) viewModel.NavigateCommand.Execute(record);
     }
-
-    private void SetFilter(TraceFilter filter)
+    private void OnKeyDown(object sender, KeyEventArgs e)
     {
-        initializing = true;
-        ViewName.Text = filter.Name;
-        Duration.SelectedItem = Duration.Items.Cast<ComboBoxItem>().FirstOrDefault(i => (string)i.Tag == filter.Minutes.ToString(CultureInfo.InvariantCulture)) ?? Duration.Items[2];
-        TypeName.Text = filter.TypeName;
-        ErrorsOnly.IsChecked = filter.ErrorsOnly;
-        FullControl.IsChecked = filter.FullControl;
-        Expression.Text = filter.Expression;
-        FromTime.Text = filter.From?.ToLocalTime().ToString("yyyy-MM-dd HH:mm:ss") ?? "";
-        ToTime.Text = filter.To?.ToLocalTime().ToString("yyyy-MM-dd HH:mm:ss") ?? "";
-        initializing = false;
-        UpdateFilterPreview();
-    }
-
-    private void RefreshSavedViews(TraceFilter? selected = null)
-    {
-        initializing = true;
-        SavedViews.ItemsSource = null;
-        SavedViews.ItemsSource = saved.OrderBy(s => s.Name).ToList();
-        SavedViews.SelectedItem = selected;
-        SavedViewsButton.Content = selected?.Name ?? "Saved views";
-        initializing = false;
-    }
-
-    private async void SaveClick(object sender, RoutedEventArgs e) => await SaveAsync();
-    private async Task SaveAsync()
-    {
-        try
-        {
-            var filter = ReadFilter();
-            filter.Build(DateTimeOffset.UtcNow);
-            var previous = SavedViews.SelectedItem as TraceFilter;
-            if (string.IsNullOrWhiteSpace(filter.Name)) throw new FormatException("Enter a view name first.");
-            if (saved.Any(s => !ReferenceEquals(s, previous) && string.Equals(s.Name, filter.Name, StringComparison.OrdinalIgnoreCase)))
-                throw new FormatException("A saved view already has that name. Select it to overwrite it.");
-            var updated = saved.Where(s => !ReferenceEquals(s, previous)).Concat(new[] { filter }).ToList();
-            await PersistViewsAsync(updated);
-            saved.Clear();
-            saved.AddRange(updated);
-            RefreshSavedViews(filter);
-            ViewName.Text = filter.Name;
-            SavedViewsPopup.IsOpen = false;
-            UpdateFilterPreview();
-            Status.Text = "Saved view: " + filter.Name;
-        }
-        catch (Exception ex) { Status.Text = "Could not save view: " + ex.Message; }
-    }
-
-    private async void DeleteViewClick(object sender, RoutedEventArgs e)
-    {
-        if (SavedViews.SelectedItem is not TraceFilter selected) return;
-        try
-        {
-            var updated = saved.Where(s => !ReferenceEquals(s, selected)).ToList();
-            await PersistViewsAsync(updated);
-            saved.Clear();
-            saved.AddRange(updated);
-            RefreshSavedViews();
-            SavedViewsPopup.IsOpen = false;
-            ModifiedLabel.Text = "";
-            Status.Text = "Deleted saved view: " + selected.Name;
-        }
-        catch (Exception ex) { Status.Text = "Could not delete view: " + ex.Message; }
-    }
-
-    private static async Task PersistViewsAsync(List<TraceFilter> views)
-    {
-        var options = await TraceExplorerOptions.GetLiveInstanceAsync();
-        options.SavedViewsJson = JsonSerializer.Serialize(views);
-        await options.SaveAsync();
-    }
-
-    private async void RelatedClick(object sender, RoutedEventArgs e)
-    {
-        if (Logs.SelectedItem is not TraceRecord record || record.CorrelationId == null || applied == null) return;
-        var previous = back ?? new Investigation(applied, ReadFilter(), displayed, record, FindScroll(Logs)?.VerticalOffset ?? 0, RawText.Text);
-        var related = new TraceFilter { FullControl = true, Expression = $"correlationid eq {record.CorrelationId:D}" };
-        await QueryAsync(related, true, true);
-        if (applied != related) return;
-        back = previous;
-        SetFilter(related);
-        BackButton.Visibility = Visibility.Visible;
-    }
-
-    private void BackClick(object sender, RoutedEventArgs e)
-    {
-        if (back == null) return;
-        var previous = back;
-        CancelRequests();
-        back = null;
-        applied = previous.Filter;
-        SetFilter(previous.Draft);
-        latest = new TraceQueryResult(previous.Records, false);
-        CloseDetails();
-        Display(previous.Records, false);
-        Logs.SelectedItem = previous.Selected;
-        detailCancellation?.Cancel();
-        RawText.Text = previous.Raw;
-        FindScroll(Logs)?.ScrollToVerticalOffset(previous.Offset);
-        BackButton.Visibility = Visibility.Collapsed;
-        Status.Text = "Returned to previous results.";
-    }
-
-    private async void OnKeyDown(object sender, KeyEventArgs e)
-    {
-        if (e.Key == Key.F12 && Keyboard.Modifiers == ModifierKeys.None && Logs.IsKeyboardFocusWithin && Logs.SelectedItem is TraceRecord record)
-        { e.Handled = true; await GoToDefinitionAsync(record); }
-        else if (e.Key == Key.Escape && Details.Visibility == Visibility.Visible) { CloseDetails(); e.Handled = true; }
+        if (e.Key == Key.F12 && Keyboard.Modifiers == ModifierKeys.None && Logs.IsKeyboardFocusWithin && viewModel.SelectedRecord is { } record)
+        { e.Handled = true; viewModel.NavigateCommand.Execute(record); }
+        else if (e.Key == Key.Escape && viewModel.Detail.IsOpen) { viewModel.CloseDetailCommand.Execute(null); e.Handled = true; }
         else if (e.Key == Key.Enter && FindText.IsKeyboardFocusWithin) { FindNextClick(sender, e); e.Handled = true; }
         else if (e.Key == Key.Enter && (Keyboard.Modifiers == ModifierKeys.Control || QuickFilters.IsKeyboardFocusWithin || CustomRange.IsKeyboardFocusWithin))
-        {
-            e.Handled = true;
-            if (queryCancellation != null) CancelActiveRefresh();
-            else
-            {
-                if (environment != null && organizationId != Guid.Empty)
-                    await service.ExtendTimedTraceLoggingAsync(environment, organizationId);
-                if (HasUnappliedFilterChanges()) await ApplyAsync();
-                else if (applied != null) await QueryAsync(applied, true, false);
-            }
-        }
+        { e.Handled = true; viewModel.RunCommand.Execute(null); }
     }
-
-    private async void GoToDefinitionClick(object sender, RoutedEventArgs e)
-    {
-        if (sender is FrameworkElement { DataContext: TraceRecord record }) await GoToDefinitionAsync(record);
-    }
-
-    private async Task GoToDefinitionAsync(TraceRecord record)
-    {
-        navigationCancellation?.Cancel();
-        using var cancellation = new CancellationTokenSource();
-        navigationCancellation = cancellation;
-        Status.Text = "Finding type definition in the current solution…";
-        try
-        {
-            var result = await TraceDefinitionNavigator.NavigateAsync(record.TypeName, cancellation.Token);
-            if (!disposed && !cancellation.IsCancellationRequested) Status.Text = result;
-        }
-        catch (OperationCanceledException) { }
-        catch (Exception ex)
-        {
-            if (!disposed && !cancellation.IsCancellationRequested) Status.Text = "Could not navigate to the type: " + ex.Message;
-        }
-        finally
-        {
-            if (ReferenceEquals(navigationCancellation, cancellation)) navigationCancellation = null;
-        }
-    }
-
     private static ScrollViewer? FindScroll(DependencyObject parent)
     {
         if (parent is ScrollViewer viewer) return viewer;
         for (int i = 0; i < VisualTreeHelper.GetChildrenCount(parent); i++)
         {
-            var found = FindScroll(VisualTreeHelper.GetChild(parent, i));
-            if (found != null) return found;
+            var found = FindScroll(VisualTreeHelper.GetChild(parent, i)); if (found != null) return found;
         }
         return null;
     }
-
     public void Dispose()
     {
-        disposed = true;
-        RawText.Dispose();
-        timer.Stop();
-        DataverseEnvironmentProvider.EnvironmentChanged -= EnvironmentChanged;
-        service.TraceLoggingLeaseChanged -= TraceLoggingLeaseChanged;
-        CancelRequests();
+        if (disposed) return; disposed = true; timer.Stop(); timer.Tick -= TimerTick;
+        viewModel.PropertyChanged -= ViewModelChanged; viewModel.Detail.PropertyChanged -= DetailChanged;
+        viewModel.RecordsChanging -= RecordsChanging; viewModel.RecordsChanged -= RecordsChanged;
+        viewModel.InvestigationRestored -= RestoreInvestigationViewport;
+        viewModel.Dispose(); RawText.Dispose();
     }
-
-    private sealed record Investigation(TraceFilter Filter, TraceFilter Draft, IReadOnlyList<TraceRecord> Records, TraceRecord Selected, double Offset, string Raw);
+    private sealed record Viewport(double Offset, double HorizontalOffset, Guid? Anchor);
 }

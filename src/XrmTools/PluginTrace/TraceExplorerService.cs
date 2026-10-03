@@ -13,13 +13,19 @@ using XrmTools.Http;
 using XrmTools.OData;
 
 [Export]
-internal sealed class TraceExplorerService
+internal sealed class TraceExplorerService : ITraceExplorerService
 {
     private readonly IEnvironmentSelection environments;
     private readonly IXrmHttpClientFactory authentication;
     private readonly IODataTransport transport;
     private readonly TraceLoggingLeaseManager traceLoggingLeases;
     internal const int MaximumRecords = 2000;
+    public event Action<DataverseEnvironment, TraceLoggingConfiguration>? TraceLoggingConfigurationChanged;
+    public event Action<DataverseEnvironment> EnvironmentChanged
+    {
+        add => DataverseEnvironmentProvider.EnvironmentChanged += value;
+        remove => DataverseEnvironmentProvider.EnvironmentChanged -= value;
+    }
 
     [ImportingConstructor]
     public TraceExplorerService(IEnvironmentSelection environments, IXrmHttpClientFactory authentication, IODataTransport transport)
@@ -107,7 +113,9 @@ internal sealed class TraceExplorerService
             throw new InvalidOperationException("The selected environment did not return its organization settings.");
         var value = organization.TryGetProperty("plugintracelogsetting", out var setting) ? setting.GetInt32() : 0;
         if (value is < 0 or > 2) throw new InvalidOperationException("The environment returned an unknown plug-in trace logging setting.");
-        return new TraceLoggingConfiguration(id, (TraceLoggingMode)value);
+        var configuration = new TraceLoggingConfiguration(id, (TraceLoggingMode)value);
+        TraceLoggingConfigurationChanged?.Invoke(environment, configuration);
+        return configuration;
     }
 
     public async Task SetTraceLoggingAsync(DataverseEnvironment environment, Guid organizationId, TraceLoggingMode mode, CancellationToken cancellation, bool interactive = true, bool verifySelectedEnvironment = true)
@@ -115,6 +123,7 @@ internal sealed class TraceExplorerService
         var request = new ODataRequest { Method = "PATCH", Target = $"organizations({organizationId:D})", Body = $"{{\"plugintracelogsetting\":{(int)mode}}}" };
         request.Headers.Add(new KeyValuePair<string, string>("If-Match", "*"));
         await SendAsync(environment, request, interactive, cancellation, verifySelectedEnvironment).ConfigureAwait(false);
+        TraceLoggingConfigurationChanged?.Invoke(environment, new TraceLoggingConfiguration(organizationId, mode));
     }
 
     public Task InitializeTraceLoggingLeasesAsync() => traceLoggingLeases.InitializeAsync();
