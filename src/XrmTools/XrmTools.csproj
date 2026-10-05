@@ -73,6 +73,14 @@
     <Compile Include="PluginTrace\TraceDefinitionNavigator.cs" />
     <Compile Include="PluginTrace\TraceExplorerOptions.cs" />
     <Compile Include="PluginTrace\TraceLoggingLeaseManager.cs" />
+    <Compile Include="PluginTrace\TraceLoggingRecoveryAdapters.cs" />
+    <Compile Include="PluginTrace\TraceLoggingPolicy.cs" />
+    <Compile Include="PluginTrace\ITraceExplorerService.cs" />
+    <Compile Include="PluginTrace\TraceExplorerAdapters.cs" />
+    <Compile Include="PluginTrace\TraceFilterViewModel.cs" />
+    <Compile Include="PluginTrace\TraceDetailViewModel.cs" />
+    <Compile Include="PluginTrace\TraceLoggingViewModel.cs" />
+    <Compile Include="PluginTrace\TraceExplorerViewModel.cs" />
     <Compile Include="PluginTrace\TraceExplorerWindow.cs" />
     <Compile Include="PluginTrace\TraceExplorerControl.xaml.cs">
       <DependentUpon>TraceExplorerControl.xaml</DependentUpon>

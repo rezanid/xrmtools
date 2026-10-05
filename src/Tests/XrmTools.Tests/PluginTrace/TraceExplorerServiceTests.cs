@@ -98,6 +98,12 @@ public class TraceExplorerServiceTests
     public async Task ReadsAndUpdatesTheOrganizationTraceLoggingSetting()
     {
         var organizationId = Guid.NewGuid();
+        var changes = new List<TraceLoggingConfiguration>();
+        service.TraceLoggingConfigurationChanged += (target, configuration) =>
+        {
+            Assert.Equal(environment, target);
+            changes.Add(configuration);
+        };
         var requests = new List<(HttpMethod Method, string Url, string? IfMatch, string Body)>();
         transport.Setup(t => t.SendAsync(It.IsAny<HttpRequestMessage>(), It.IsAny<CancellationToken>()))
             .Callback<HttpRequestMessage, CancellationToken>((request, _) => requests.Add((request.Method, request.RequestUri.AbsoluteUri,
@@ -116,6 +122,19 @@ public class TraceExplorerServiceTests
         Assert.Contains($"organizations({organizationId:D})", update.Url);
         Assert.Equal("*", update.IfMatch);
         Assert.Equal("{\"plugintracelogsetting\":2}", update.Body);
+        Assert.Equal(new[] { TraceLoggingMode.Exceptions, TraceLoggingMode.All }, changes.Select(c => c.Mode));
+        Assert.All(changes, c => Assert.Equal(organizationId, c.OrganizationId));
+    }
+
+    [Fact]
+    public async Task FailedLoggingUpdateDoesNotPublishAConfigurationChange()
+    {
+        var changed = false;
+        service.TraceLoggingConfigurationChanged += (_, _) => changed = true;
+        transport.Setup(t => t.SendAsync(It.IsAny<HttpRequestMessage>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new ODataResponse { StatusCode = 403, Status = "Forbidden", Body = "{}" });
+        await Assert.ThrowsAsync<InvalidOperationException>(() => service.SetTraceLoggingAsync(environment, Guid.NewGuid(), TraceLoggingMode.Off, TestContext.Current.CancellationToken));
+        Assert.False(changed);
     }
 
     private static ODataResponse Page(int second, string next = null)
