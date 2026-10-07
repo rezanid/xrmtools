@@ -17,7 +17,7 @@ public sealed class DataverseSolutionProjectDialogViewModelTests
     public async Task CreationService_SetupFailureReleasesBusyState()
     {
         // A malformed path fails before any VS services or PAC operations are started.
-        var service = new DataverseSolutionProjectCreationService(null!, null!, null!, null!, null!);
+        var service = new DataverseSolutionProjectCreationService(null!, null!, null!, null!, null!, new DataverseSolutionOperationState());
         var request = new DataverseSolutionProjectCreationRequest { ParentDirectory = null!, ProjectName = "Project" };
         await Assert.ThrowsAsync<ArgumentNullException>(() => service.CreateAsync(request, CancellationToken.None));
         service.IsBusy.Should().BeFalse();
