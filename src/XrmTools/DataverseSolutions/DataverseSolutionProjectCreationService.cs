@@ -24,23 +24,24 @@ internal sealed class DataverseSolutionProjectCreationService(
     IPacAuthBridge pacAuthBridge,
     IEnvironmentProvider environmentProvider,
     IDataverseSolutionProjectFileService projectFileService,
-    DataverseSolutionOutput output) : IDataverseSolutionProjectCreationService
+    DataverseSolutionOutput output,
+    DataverseSolutionOperationState operationState) : IDataverseSolutionProjectCreationService
 {
     private readonly IPacCli _pacCli = pacCli;
     private readonly IPacAuthBridge _pacAuthBridge = pacAuthBridge;
     private readonly IEnvironmentProvider _environmentProvider = environmentProvider;
     private readonly IDataverseSolutionProjectFileService _projectFileService = projectFileService;
     private readonly DataverseSolutionOutput _output = output;
-    private int _isBusy;
+    private readonly DataverseSolutionOperationState _operationState = operationState;
 
-    public bool IsBusy => Volatile.Read(ref _isBusy) == 1;
+    public bool IsBusy => _operationState.IsBusy;
 
     public async Task<string> CreateAsync(DataverseSolutionProjectCreationRequest request, CancellationToken cancellationToken)
     {
         if (request is null) throw new ArgumentNullException(nameof(request));
-        if (Interlocked.CompareExchange(ref _isBusy, 1, 0) != 0)
+        if (!_operationState.TryEnter())
         {
-            throw new InvalidOperationException("A Dataverse solution project is already being created.");
+            throw new InvalidOperationException("A Dataverse solution command is already running.");
         }
 
         try
@@ -130,7 +131,7 @@ internal sealed class DataverseSolutionProjectCreationService(
         }
         finally
         {
-            Interlocked.Exchange(ref _isBusy, 0);
+            _operationState.Exit();
         }
     }
 

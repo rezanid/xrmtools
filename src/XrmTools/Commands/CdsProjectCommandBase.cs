@@ -4,6 +4,7 @@ namespace XrmTools.Commands;
 using Community.VisualStudio.Toolkit;
 using Microsoft.VisualStudio.ComponentModelHost;
 using Microsoft.VisualStudio.Shell;
+using Microsoft.VisualStudio.Shell.Interop;
 using System;
 using System.ComponentModel.Composition;
 using System.Threading.Tasks;
@@ -47,11 +48,19 @@ internal abstract class CdsProjectCommandBase<TCommand> : BaseCommand<TCommand>
             Logger.LogError(ex, "Dataverse solution command failed.");
             await VS.MessageBox.ShowErrorAsync(Vsix.Name, ex.Message);
         }
+        finally
+        {
+            await SetVisibilityAsync();
+            await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync();
+            if (await Package.GetServiceAsync(typeof(SVsUIShell)) is IVsUIShell shell)
+                shell.UpdateCommandUI(0);
+        }
     }
 
     private async Task SetVisibilityAsync()
     {
         var isVisible = await CdsProjectResolver.IsSelectedItemCdsProjectAsync().ConfigureAwait(false);
+        await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync();
         Command.Visible = isVisible;
         Command.Enabled = isVisible && !CommandService.IsBusy;
     }

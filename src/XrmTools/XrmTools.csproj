@@ -180,6 +180,7 @@
     <Compile Include="DataverseSolutions\DataverseSolutionProjectFileService.cs" />
     <Compile Include="DataverseSolutions\DataverseSolutionCommandKind.cs" />
     <Compile Include="DataverseSolutions\DataverseSolutionCommandService.cs" />
+    <Compile Include="DataverseSolutions\DataverseSolutionOperationState.cs" />
     <Compile Include="DataverseSolutions\DataverseSolutionOutput.cs" />
     <Compile Include="DataverseSolutions\MsBuildProjectPropertyEvaluator.cs" />
     <Compile Include="DataverseSolutions\PacAuthBridge.cs" />
