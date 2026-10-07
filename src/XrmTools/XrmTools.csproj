@@ -57,10 +57,18 @@
     <Compile Include="Shell\Controls\PathButton.cs" />
     <Compile Include="Shell\Controls\NonClientButton.cs" />
     <Compile Include="Shell\Helpers\WindowInterop.cs" />
-    <Page Include="Shell\Styles\PathButtonStyle.xaml"><Generator>MSBuild:Compile</Generator></Page>
-    <Page Include="Shell\Styles\Window\WindowStyle.xaml"><Generator>MSBuild:Compile</Generator></Page>
-    <Page Include="Shell\Styles\Window\DialogWindowStyle.xaml"><Generator>MSBuild:Compile</Generator></Page>
-    <Page Include="Shell\Styles\Window\NonClientButtonStyle.xaml"><Generator>MSBuild:Compile</Generator></Page>
+    <Page Include="Shell\Styles\PathButtonStyle.xaml">
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="Shell\Styles\Window\WindowStyle.xaml">
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="Shell\Styles\Window\DialogWindowStyle.xaml">
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="Shell\Styles\Window\NonClientButtonStyle.xaml">
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
     <Compile Include="Analyzers\CSharpDependencyAnalyzer.cs" />
     <Compile Include="Analyzers\DependencyPreparation.cs" />
     <Compile Include="Analyzers\PluginAssemblyInfo.cs" />
@@ -678,6 +686,9 @@
     <Content Include="CdsProject.pkgdef">
       <IncludeInVSIX>true</IncludeInVSIX>
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="CodeGenTemplates\PartyList.sbncs">
+      <IncludeInVSIX>true</IncludeInVSIX>
     </Content>
     <None Include="IncludeNuGetResolvedAssets.targets" />
     <None Include="PrepareImageManifest.targets" />
