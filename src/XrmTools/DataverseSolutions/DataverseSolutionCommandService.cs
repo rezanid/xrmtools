@@ -29,9 +29,10 @@ internal sealed class DataverseSolutionCommandService(
     IDataverseSolutionProjectFileService projectFileService,
     IEnvironmentProvider environmentProvider,
     DataverseSolutionOutput output,
+    DataverseSolutionOperationState operationState,
     ILogger<DataverseSolutionCommandService> logger) : IDataverseSolutionCommandService
 {
-    private int _isBusy;
+    private readonly DataverseSolutionOperationState _operationState = operationState;
     private readonly ICdsProjectResolver _cdsProjectResolver = cdsProjectResolver;
     private readonly IProcessCommandRunner _processCommandRunner = processCommandRunner;
     private readonly IPacCli _pacCli = pacCli;
@@ -41,21 +42,21 @@ internal sealed class DataverseSolutionCommandService(
     private readonly DataverseSolutionOutput _output = output;
     private readonly ILogger<DataverseSolutionCommandService> _logger = logger;
 
-    public bool IsBusy => Volatile.Read(ref _isBusy) == 1;
+    public bool IsBusy => _operationState.IsBusy;
 
     public async Task ExecuteAsync(DataverseSolutionCommandKind commandKind, CancellationToken cancellationToken)
     {
-        if (Interlocked.CompareExchange(ref _isBusy, 1, 0) != 0)
+        if (!_operationState.TryEnter())
         {
             await VS.StatusBar.ShowMessageAsync("A Dataverse solution command is already running.");
             return;
         }
 
-        await _output.ShowPaneAsync().ConfigureAwait(false);
-        await VS.StatusBar.StartAnimationAsync(StatusAnimation.General).ConfigureAwait(false);
         string? projectName = null;
         try
         {
+            await _output.ShowPaneAsync().ConfigureAwait(false);
+            await VS.StatusBar.StartAnimationAsync(StatusAnimation.General).ConfigureAwait(false);
             var project = await _cdsProjectResolver.TryResolveSelectedProjectAsync(cancellationToken).ConfigureAwait(false)
                 ?? throw new InvalidOperationException("The selected item is not a .cdsproj project.");
             projectName = project.ProjectName;
@@ -100,8 +101,14 @@ internal sealed class DataverseSolutionCommandService(
         }
         finally
         {
-            Interlocked.Exchange(ref _isBusy, 0);
-            await VS.StatusBar.EndAnimationAsync(StatusAnimation.General).ConfigureAwait(false);
+            try
+            {
+                await VS.StatusBar.EndAnimationAsync(StatusAnimation.General).ConfigureAwait(false);
+            }
+            finally
+            {
+                _operationState.Exit();
+            }
         }
     }
 
