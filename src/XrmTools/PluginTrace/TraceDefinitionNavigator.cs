@@ -11,6 +11,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using XrmTools.Helpers;
 
 internal static class TraceDefinitionNavigator
 {
@@ -46,12 +47,10 @@ internal static class TraceDefinitionNavigator
         var assembly = parts.Length > 1 ? parts[1].Trim() : null;
         var targets = new List<TraceDefinition>();
         if (name.Length == 0) return targets;
-        foreach (var project in solution.Projects.Where(p => assembly == null || string.Equals(p.AssemblyName, assembly, StringComparison.OrdinalIgnoreCase)))
+        foreach (var match in await SourceTypeResolver.FindAsync(solution, name, assembly, cancellation).ConfigureAwait(false))
         {
             cancellation.ThrowIfCancellationRequested();
-            var compilation = await project.GetCompilationAsync(cancellation).ConfigureAwait(false);
-            var symbol = compilation?.Assembly.GetTypeByMetadataName(name);
-            if (symbol == null) continue;
+            var symbol = match.Symbol;
             // Partial declarations belong to one definition; choose the first source location deterministically.
             var location = symbol.Locations.Where(l => l.IsInSource && !string.IsNullOrEmpty(l.SourceTree?.FilePath))
                 .OrderBy(l => l.SourceTree!.FilePath, StringComparer.OrdinalIgnoreCase).ThenBy(l => l.SourceSpan.Start).FirstOrDefault();
