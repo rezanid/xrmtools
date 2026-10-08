@@ -14,7 +14,7 @@ using Api = XrmTools.WebApi.Entities.CustomApi;
 /// <summary>Pure metadata-to-OpenAPI conversion. No network, workspace or UI dependencies.</summary>
 internal static class CustomApiOpenApiWriter
 {
-    public static string Write(Api api, Uri serviceUrl, IReadOnlyDictionary<string, EntityMetadata> tables, CustomApiSourceSchemas? source = null)
+    public static string Write(Api api, Uri? serviceUrl, IReadOnlyDictionary<string, EntityMetadata> tables, CustomApiSourceSchemas? source = null)
     {
         if (api.IsFunction) throw new InvalidOperationException("OpenAPI generation for functions is not available yet. Currently, only Custom API actions are supported.");
         var name = RequireName(api.UniqueName);
@@ -80,7 +80,11 @@ internal static class CustomApiOpenApiWriter
         {
             ["openapi"] = "3.0.4",
             ["info"] = new JObject { ["title"] = api.DisplayName ?? name, ["version"] = "1.0.0" },
-            ["servers"] = new JArray(new JObject { ["url"] = serviceUrl.AbsoluteUri.TrimEnd('/') }),
+            ["servers"] = serviceUrl != null
+                ? new JArray(new JObject { ["url"] = serviceUrl.AbsoluteUri.TrimEnd('/') })
+                : new JArray(new JObject { ["url"] = "https://{organization}.crm.dynamics.com/api/data/v9.2",
+                    ["description"] = "Replace the organization variable with your Dataverse organization, or edit this URL for your region.",
+                    ["variables"] = new JObject { ["organization"] = new JObject { ["default"] = "YOUR-ORGANIZATION" } } }),
             ["paths"] = new JObject { [path] = new JObject { ["post"] = operation } },
             ["components"] = new JObject
             {

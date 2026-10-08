@@ -152,6 +152,8 @@
     <Compile Include="CodeGen\CustomApi\CustomApiClientGenerator.cs" />
     <Compile Include="CodeGen\CustomApi\CustomApiOpenApiGenerator.cs" />
     <Compile Include="CodeGen\CustomApi\CustomApiSourceReader.cs" />
+    <Compile Include="CodeGen\CustomApi\CustomApiSourceGenerator.cs" />
+    <Compile Include="CodeRefactoringProviders\CustomApiOpenApiRefactoringProvider.cs" />
     <Compile Include="Helpers\SourceTypeResolver.cs" />
     <Compile Include="CodeGen\CustomApi\CustomApiOpenApiWriter.cs" />
     <Compile Include="DataverseExplorer\Services\CustomApiOpenApiCommandProvider.cs" />

@@ -3,6 +3,16 @@ namespace XrmTools.Tests.CodeGen.CustomApi;
 
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
+using Microsoft.CodeAnalysis.CSharp.Syntax;
+using Microsoft.CodeAnalysis.CodeActions;
+using Microsoft.CodeAnalysis.CodeRefactorings;
+using Microsoft.CodeAnalysis.Text;
+using Moq;
+using System.Threading.Tasks;
+using System.Windows.Threading;
+using XrmTools.CodeRefactoringProviders;
+using XrmTools.Environments;
+using XrmTools.WebApi;
 using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.Generic;
@@ -111,6 +121,94 @@ public sealed class CustomApiSourceTests
         Assert.Null(inputs["Items"]!["items"]!["allOf"]);
         Assert.Equal(reference, (string?)doc["components"]!["schemas"]![rich.Components.Properties().Single().Name]!["properties"]!["next"]!["$ref"]);
         Assert.DoesNotContain(doc.Descendants().OfType<JProperty>(), p => p.Name == "allOf" && p.Value is JArray a && a.Count < 2);
+    }
+
+    [Fact]
+    public async Task PresentationIsDeferredOutsideTheCodeActionExecutionContext()
+    {
+        var completion = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+        var thread = new Thread(() =>
+        {
+            try
+            {
+                var dispatcher = Dispatcher.CurrentDispatcher;
+                var ambient = new AsyncLocal<string?> { Value = "code-action-scope" };
+                var called = false;
+                var frame = new DispatcherFrame();
+                CustomApiOpenApiRefactoringProvider.QueueAfterApply(dispatcher, () =>
+                {
+                    try { Assert.Null(ambient.Value); called = true; }
+                    catch (Exception ex) { completion.TrySetException(ex); }
+                    finally { frame.Continue = false; }
+                });
+                Assert.False(called);
+                ambient.Value = null;
+                Dispatcher.PushFrame(frame);
+                Assert.True(called);
+                completion.TrySetResult(true);
+            }
+            catch (Exception ex) { completion.TrySetException(ex); }
+        });
+        thread.SetApartmentState(ApartmentState.STA);
+        thread.Start();
+        await completion.Task;
+    }
+
+    [Fact]
+    public async Task SourceActionIsAvailableOnClassAndApiAttributeWithoutPreviewSideEffects()
+    {
+        using var workspace = new AdhocWorkspace();
+        var project = workspace.AddProject("Plugins", LanguageNames.CSharp)
+            .AddMetadataReference(MetadataReference.CreateFromFile(typeof(object).Assembly.Location));
+        var document = project.AddDocument("Api.cs", SourceText.From(Source));
+        foreach (var position in new[] { Source.IndexOf("class Plugin {", StringComparison.Ordinal) + 6, Source.IndexOf("CustomApi(\"new_Test\")", StringComparison.Ordinal) })
+        {
+            var actions = new List<CodeAction>();
+            await new CustomApiOpenApiRefactoringProvider().ComputeRefactoringsAsync(new CodeRefactoringContext(document,
+                new TextSpan(position, 0), actions.Add, TestContext.Current.CancellationToken));
+            var action = Assert.Single(actions);
+            Assert.Equal("Generate OpenAPI specification from source", action.Title);
+            Assert.Empty(await action.GetPreviewOperationsAsync(TestContext.Current.CancellationToken));
+            var operation = Assert.Single(await action.GetOperationsAsync(TestContext.Current.CancellationToken));
+            Assert.IsNotType<ApplyChangesOperation>(operation);
+        }
+        var unrelated = new List<CodeAction>();
+        await new CustomApiOpenApiRefactoringProvider().ComputeRefactoringsAsync(new CodeRefactoringContext(document,
+            new TextSpan(Source.IndexOf("class Child", StringComparison.Ordinal) + 6, 0), unrelated.Add, TestContext.Current.CancellationToken));
+        Assert.Empty(unrelated);
+    }
+
+    [Fact]
+    public async Task UndeployedGlobalApiGeneratesOfflineWithoutNetworkOrEnvironmentPrompts()
+    {
+        using var workspace = new AdhocWorkspace();
+        var document = workspace.AddProject("Plugins", LanguageNames.CSharp)
+            .AddMetadataReference(MetadataReference.CreateFromFile(typeof(object).Assembly.Location))
+            .AddDocument("Api.cs", SourceText.From(Source));
+        var root = await document.GetSyntaxRootAsync(TestContext.Current.CancellationToken);
+        var declaration = root!.DescendantNodes().OfType<ClassDeclarationSyntax>().Single(c => c.Identifier.ValueText == "Plugin");
+        var environments = new Mock<IEnvironmentSelection>(MockBehavior.Strict);
+        environments.Setup(e => e.GetSelectedEnvironmentAsync()).ReturnsAsync((DataverseEnvironment?)null);
+        var webApi = new Mock<IWebApiService>(MockBehavior.Strict);
+        var generator = new CustomApiSourceGenerator(new CSharpXrmMetaParser(new CSharpDependencyAnalyzer(), new DependencyPreparation()), environments.Object, webApi.Object);
+        var result = await generator.GenerateAsync(document, declaration.Span, TestContext.Current.CancellationToken);
+        var spec = JObject.Parse(result.Content);
+        Assert.Equal("new_Test.openapi.json", result.FileName);
+        var properties = spec["paths"]!["/new_Test"]!["post"]!["requestBody"]!["content"]!["application/json"]!["schema"]!["properties"]!;
+        Assert.NotNull(properties["Undeployed"]);
+        Assert.NotNull(properties["Payload"]);
+        Assert.Equal("YOUR-ORGANIZATION", (string?)spec["servers"]![0]!["variables"]!["organization"]!["default"]);
+        Assert.Empty(webApi.Invocations);
+        environments.Verify(e => e.GetSelectedEnvironmentAsync(), Times.Once);
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(() => generator.GenerateAsync(document, declaration.Span, new CancellationToken(true)));
+        var boundApi = new Api { UniqueName = "new_Test", BindingType = Api.BindingTypes.Entity, BoundEntityLogicalName = "account" };
+        var boundParser = new Mock<ICSharpXrmMetaParser>(MockBehavior.Strict);
+        boundParser.Setup(p => p.ParsePluginConfig(It.IsAny<INamedTypeSymbol>(), It.IsAny<Compilation>()))
+            .Returns(new XrmTools.Meta.Model.Configuration.PluginTypeConfig { CustomApi = boundApi });
+        var boundGenerator = new CustomApiSourceGenerator(boundParser.Object, environments.Object, webApi.Object);
+        var error = await Assert.ThrowsAsync<InvalidOperationException>(() => boundGenerator.GenerateAsync(document, declaration.Span, TestContext.Current.CancellationToken));
+        Assert.Contains("entity set name", error.Message);
+        Assert.Empty(webApi.Invocations);
     }
 
     [Fact]
