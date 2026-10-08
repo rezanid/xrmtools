@@ -15,8 +15,11 @@ using Api = XrmTools.WebApi.Entities.CustomApi;
 internal static class CustomApiOpenApiWriter
 {
     public static string Write(Api api, Uri? serviceUrl, IReadOnlyDictionary<string, EntityMetadata> tables, CustomApiSourceSchemas? source = null)
+        => Build(api, serviceUrl, tables, source).ToString(Formatting.Indented);
+
+    internal static JObject Build(Api api, Uri? serviceUrl, IReadOnlyDictionary<string, EntityMetadata> tables, CustomApiSourceSchemas? source = null)
     {
-        if (api.IsFunction) throw new InvalidOperationException("OpenAPI generation for functions is not available yet. Currently, only Custom API actions are supported.");
+        ODataFunctionParameters.Validate(api);
         var name = RequireName(api.UniqueName);
         if (!Enum.IsDefined(typeof(Api.BindingTypes), api.BindingType)) throw new InvalidOperationException("Unsupported Custom API binding type.");
         var path = "/" + name;
@@ -37,6 +40,7 @@ internal static class CustomApiOpenApiWriter
 
         var inputs = new JObject();
         var required = new JArray();
+        var aliases = new List<string>();
         foreach (var field in api.RequestParameters.OrderBy(p => p.UniqueName, StringComparer.Ordinal))
         {
             var fieldName = RequireName(field.UniqueName);
@@ -47,13 +51,19 @@ internal static class CustomApiOpenApiWriter
             }
             AddField(inputs, fieldName, Describe(EnrichSchema(Schema(field.Type, field.LogicalEntityName, tables), source?.Inputs, fieldName), field.DisplayName, field.Description));
             if (!field.IsOptional) required.Add(fieldName);
+            if (api.IsFunction)
+            {
+                aliases.Add(fieldName + "=@" + fieldName);
+                parameters.Add(ODataFunctionParameters.Parameter(field, (JObject)inputs[fieldName]!, tables));
+            }
         }
+        if (api.IsFunction) path += "(" + string.Join(",", aliases) + ")";
         var operation = new JObject { ["operationId"] = name, ["summary"] = string.IsNullOrWhiteSpace(api.DisplayName) ? name : api.DisplayName,
             ["x-dataverse-is-private"] = api.IsPrivate };
         if (!string.IsNullOrWhiteSpace(api.Description)) operation["description"] = api.Description;
         if (!string.IsNullOrWhiteSpace(api.ExecutePrivilegeName)) operation["x-dataverse-execute-privilege"] = api.ExecutePrivilegeName;
         if (parameters.Count > 0) operation["parameters"] = parameters;
-        if (inputs.Count > 0)
+        if (inputs.Count > 0 && !api.IsFunction)
         {
             var schema = ObjectSchema(inputs);
             if (required.Count > 0) schema["required"] = required;
@@ -71,7 +81,15 @@ internal static class CustomApiOpenApiWriter
         else response = ObjectSchema(outputProperties);
         operation["responses"] = outputs.Length == 0
             ? new JObject { ["204"] = new JObject { ["description"] = "Action completed successfully." } }
-            : new JObject { ["200"] = new JObject { ["description"] = "Action response.", ["content"] = Content(response) } };
+            : new JObject { ["200"] = new JObject { ["description"] = api.IsFunction ? "Function response." : "Action response.", ["content"] = Content(response) } };
+        if (api.IsFunction)
+        {
+            var query = string.Join("&", parameters.OfType<JObject>().Where(p => (string?)p["in"] == "query")
+                .Select(p => (string?)p["name"] + "=" + Uri.EscapeDataString((string)p["example"]!)));
+            var url = (serviceUrl?.AbsoluteUri.TrimEnd('/') ?? "https://YOUR-ORGANIZATION.crm.dynamics.com/api/data/v9.2") + path + (query.Length > 0 ? "?" + query : "");
+            operation["x-codeSamples"] = new JArray(new JObject { ["lang"] = "HTTP", ["label"] = "OData function request", ["source"] =
+                "GET " + url + "\nAuthorization: Bearer REPLACE_WITH_ACCESS_TOKEN\nAccept: application/json\nOData-Version: 4.0\nOData-MaxVersion: 4.0" });
+        }
         operation["responses"]!["4XX"] = ErrorResponse("Dataverse rejected the request.");
         operation["responses"]!["5XX"] = ErrorResponse("A server or plugin execution error occurred.");
         var schemas = source == null ? new JObject() : (JObject)source.Components.DeepClone();
@@ -85,7 +103,7 @@ internal static class CustomApiOpenApiWriter
                 : new JArray(new JObject { ["url"] = "https://{organization}.crm.dynamics.com/api/data/v9.2",
                     ["description"] = "Replace the organization variable with your Dataverse organization, or edit this URL for your region.",
                     ["variables"] = new JObject { ["organization"] = new JObject { ["default"] = "YOUR-ORGANIZATION" } } }),
-            ["paths"] = new JObject { [path] = new JObject { ["post"] = operation } },
+            ["paths"] = new JObject { [path] = new JObject { [api.IsFunction ? "get" : "post"] = operation } },
             ["components"] = new JObject
             {
                 ["securitySchemes"] = new JObject { ["bearerAuth"] = new JObject { ["type"] = "http", ["scheme"] = "bearer" } },
@@ -95,7 +113,7 @@ internal static class CustomApiOpenApiWriter
         };
         if (source?.Diagnostics.Count > 0) document["x-xrmtools-diagnostics"] = new JArray(source.Diagnostics.Distinct(StringComparer.Ordinal));
         NormalizeReferences(document);
-        return document.ToString(Formatting.Indented);
+        return document;
     }
 
     // OpenAPI 3.0 ignores Reference Object siblings. Keep local annotations in a

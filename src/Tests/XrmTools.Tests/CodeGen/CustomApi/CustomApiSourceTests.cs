@@ -28,6 +28,12 @@ using Api = XrmTools.WebApi.Entities.CustomApi;
 
 public sealed class CustomApiSourceTests
 {
+    private static IOpenApiOutputSettings OutputSettings(OpenApiOutputFormat format = OpenApiOutputFormat.Json)
+    {
+        var settings = new Mock<IOpenApiOutputSettings>();
+        settings.Setup(s => s.GetFormatAsync()).ReturnsAsync(format);
+        return settings.Object;
+    }
     private const string Source = """
         using System;
         using System.Collections.Generic;
@@ -35,7 +41,7 @@ public sealed class CustomApiSourceTests
         using XrmTools.Meta.Attributes;
         namespace XrmTools.Meta.Attributes {
           public class PluginAttribute : Attribute {}
-          public class CustomApiAttribute(string uniqueName) : Attribute {}
+          public class CustomApiAttribute(string uniqueName) : Attribute { public bool IsFunction { get;set; } }
           public class CustomApiRequestAttribute : Attribute {}
           public class CustomApiResponseAttribute : Attribute {}
           public class CustomApiRequestParameterAttribute : Attribute { public string UniqueName {get;set;} public string Description {get;set;} }
@@ -88,6 +94,33 @@ public sealed class CustomApiSourceTests
         api.RequestParameters.Add(new CustomApiRequestParameter { UniqueName = "Choice", Type = CustomApiFieldType.Picklist, IsOptional = true });
         api.ResponseProperties.Add(new CustomApiResponseProperty { UniqueName = "Result", Type = CustomApiFieldType.Entity });
         return (api, compilation.GetTypeByMetadataName("Plugin")!, compilation);
+    }
+
+    [Fact]
+    public void EntityAccessorsInReferencedProjectsUseTheirOwningCompilation()
+    {
+        var (_, _, shared) = Fixture();
+        var consumerTree = CSharpSyntaxTree.ParseText("""
+            using XrmTools.Meta.Attributes;
+            [Plugin, CustomApi("new_Consumer", IsFunction=true)]
+            public class Consumer {
+                [CustomApiResponse] public class Response { public Child Result {get;set;} }
+            }
+            """);
+        var consumer = CSharpCompilation.Create("Consumer", [consumerTree],
+            [MetadataReference.CreateFromFile(typeof(object).Assembly.Location), shared.ToMetadataReference()],
+            new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary));
+        Assert.Empty(consumer.GetDiagnostics().Where(d => d.Severity == DiagnosticSeverity.Error));
+        Assert.False(consumer.ContainsSyntaxTree(shared.SyntaxTrees.Single()));
+        var api = new Api { UniqueName = "new_Consumer", IsFunction = true,
+            ResponseProperties = [new CustomApiResponseProperty { UniqueName = "Result", Type = CustomApiFieldType.Entity }] };
+        var rich = CustomApiSourceReader.Enrich(api, api, consumer.GetTypeByMetadataName("Consumer")!, consumer, TestContext.Current.CancellationToken);
+        var schema = rich.Components.Properties().Single().Value;
+        Assert.NotNull(schema["properties"]!["custom_field"]);
+        Assert.NotNull(schema["properties"]!["inherited"]);
+        Assert.DoesNotContain(rich.Diagnostics, d => d.Contains("CustomField"));
+        var spec = JObject.Parse(CustomApiOpenApiWriter.Write(api, null, new Dictionary<string, EntityMetadata>(), rich));
+        Assert.NotNull(spec["paths"]!["/new_Consumer()"]!["get"]);
     }
 
     [Fact]
@@ -178,6 +211,37 @@ public sealed class CustomApiSourceTests
         Assert.Empty(unrelated);
     }
 
+    [Theory]
+    [InlineData(OpenApiOutputFormat.Json)]
+    [InlineData(OpenApiOutputFormat.Yaml)]
+    public async Task UndeployedFunctionGeneratesFromSourceWithoutNetwork(OpenApiOutputFormat format)
+    {
+        var source = Source.Replace("CustomApi(\"new_Test\")", "CustomApi(\"new_Test\", IsFunction=true)")
+            .Replace("public Child Data", "public string Data")
+            .Replace("public IEnumerable<Child> Items", "public string[] Items");
+        using var workspace = new AdhocWorkspace();
+        var document = workspace.AddProject("Plugins", LanguageNames.CSharp)
+            .AddMetadataReference(MetadataReference.CreateFromFile(typeof(object).Assembly.Location))
+            .AddDocument("Api.cs", SourceText.From(source));
+        var root = await document.GetSyntaxRootAsync(TestContext.Current.CancellationToken);
+        var declaration = root!.DescendantNodes().OfType<ClassDeclarationSyntax>().Single(c => c.Identifier.ValueText == "Plugin");
+        var environments = new Mock<IEnvironmentSelection>(MockBehavior.Strict);
+        environments.Setup(e => e.GetSelectedEnvironmentAsync()).ReturnsAsync((DataverseEnvironment?)null);
+        var webApi = new Mock<IWebApiService>(MockBehavior.Strict);
+        var generator = new CustomApiSourceGenerator(new CSharpXrmMetaParser(new CSharpDependencyAnalyzer(), new DependencyPreparation()), environments.Object, webApi.Object, OutputSettings(format));
+        var result = await generator.GenerateAsync(document, declaration.Span, TestContext.Current.CancellationToken);
+        Assert.Equal("new_Test.openapi." + (format == OpenApiOutputFormat.Json ? "json" : "yaml"), result.FileName);
+        var spec = format == OpenApiOutputFormat.Json ? JObject.Parse(result.Content)
+            : JObject.FromObject(new YamlDotNet.Serialization.DeserializerBuilder().WithAttemptingUnquotedStringTypeDeserialization().Build().Deserialize<object>(result.Content));
+        var path = ((JObject)spec["paths"]!).Properties().Single();
+        Assert.Equal("/new_Test(Choice=@Choice,Items=@Items,Payload=@Payload,Undeployed=@Undeployed)", path.Name);
+        var operation = path.Value["get"]!;
+        Assert.Null(operation["requestBody"]);
+        Assert.NotNull(operation["responses"]!["200"]);
+        Assert.NotNull(spec["components"]!["schemas"]!["Source_Child"]);
+        Assert.Empty(webApi.Invocations);
+    }
+
     [Fact]
     public async Task UndeployedGlobalApiGeneratesOfflineWithoutNetworkOrEnvironmentPrompts()
     {
@@ -190,7 +254,7 @@ public sealed class CustomApiSourceTests
         var environments = new Mock<IEnvironmentSelection>(MockBehavior.Strict);
         environments.Setup(e => e.GetSelectedEnvironmentAsync()).ReturnsAsync((DataverseEnvironment?)null);
         var webApi = new Mock<IWebApiService>(MockBehavior.Strict);
-        var generator = new CustomApiSourceGenerator(new CSharpXrmMetaParser(new CSharpDependencyAnalyzer(), new DependencyPreparation()), environments.Object, webApi.Object);
+        var generator = new CustomApiSourceGenerator(new CSharpXrmMetaParser(new CSharpDependencyAnalyzer(), new DependencyPreparation()), environments.Object, webApi.Object, OutputSettings());
         var result = await generator.GenerateAsync(document, declaration.Span, TestContext.Current.CancellationToken);
         var spec = JObject.Parse(result.Content);
         Assert.Equal("new_Test.openapi.json", result.FileName);
@@ -205,7 +269,7 @@ public sealed class CustomApiSourceTests
         var boundParser = new Mock<ICSharpXrmMetaParser>(MockBehavior.Strict);
         boundParser.Setup(p => p.ParsePluginConfig(It.IsAny<INamedTypeSymbol>(), It.IsAny<Compilation>()))
             .Returns(new XrmTools.Meta.Model.Configuration.PluginTypeConfig { CustomApi = boundApi });
-        var boundGenerator = new CustomApiSourceGenerator(boundParser.Object, environments.Object, webApi.Object);
+        var boundGenerator = new CustomApiSourceGenerator(boundParser.Object, environments.Object, webApi.Object, OutputSettings());
         var error = await Assert.ThrowsAsync<InvalidOperationException>(() => boundGenerator.GenerateAsync(document, declaration.Span, TestContext.Current.CancellationToken));
         Assert.Contains("entity set name", error.Message);
         Assert.Empty(webApi.Invocations);

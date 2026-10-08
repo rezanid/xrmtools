@@ -136,6 +136,7 @@ internal sealed class CustomApiSourceReader(ICSharpXrmMetaParser parser) : ICust
     {
         private readonly Dictionary<ITypeSymbol, string> names = new(SymbolEqualityComparer.Default);
         private readonly Dictionary<SyntaxTree, SemanticModel> semanticModels = new();
+        private Dictionary<SyntaxTree, Compilation>? treeOwners;
         private int depth;
         public JObject? Schema(ITypeSymbol original)
         {
@@ -244,7 +245,13 @@ internal sealed class CustomApiSourceReader(ICSharpXrmMetaParser parser) : ICust
             {
                 var syntax = reference.GetSyntax(token);
                 if (!semanticModels.TryGetValue(syntax.SyntaxTree, out var model))
-                    semanticModels[syntax.SyntaxTree] = model = compilation.GetSemanticModel(syntax.SyntaxTree);
+                {
+                    var owner = OwningCompilation(syntax.SyntaxTree);
+                    // A symbol may expose source locations from another snapshot.
+                    // Keep the entity open and diagnose this field instead of failing generation.
+                    if (owner == null) continue;
+                    semanticModels[syntax.SyntaxTree] = model = owner.GetSemanticModel(syntax.SyntaxTree);
+                }
                 foreach (var invocation in syntax.DescendantNodes().OfType<InvocationExpressionSyntax>())
                 {
                     var method = model.GetSymbolInfo(invocation, token).Symbol as IMethodSymbol;
@@ -254,6 +261,29 @@ internal sealed class CustomApiSourceReader(ICSharpXrmMetaParser parser) : ICust
                 }
             }
             return found.Count == 1 ? found.Single() : null;
+        }
+
+        private Compilation? OwningCompilation(SyntaxTree tree)
+        {
+            if (compilation.ContainsSyntaxTree(tree)) return compilation;
+            if (treeOwners == null)
+            {
+                // Index only the referenced compilation graph, lazily and once per
+                // generation. Never compile or scan unrelated solution projects.
+                treeOwners = new Dictionary<SyntaxTree, Compilation>();
+                var visited = new HashSet<Compilation>();
+                var pending = new Stack<Compilation>();
+                pending.Push(compilation);
+                while (pending.Count > 0)
+                {
+                    token.ThrowIfCancellationRequested();
+                    var current = pending.Pop();
+                    if (!visited.Add(current)) continue;
+                    foreach (var syntaxTree in current.SyntaxTrees) treeOwners[syntaxTree] = current;
+                    foreach (var reference in current.References.OfType<CompilationReference>()) pending.Push(reference.Compilation);
+                }
+            }
+            return treeOwners.TryGetValue(tree, out var owner) ? owner : null;
         }
     }
 }

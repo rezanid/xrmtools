@@ -19,7 +19,7 @@ internal interface ICustomApiOpenApiGenerator
 
 [Export(typeof(ICustomApiOpenApiGenerator))]
 [method: ImportingConstructor]
-internal sealed class CustomApiOpenApiGenerator(IWebApiService webApi, ICustomApiSourceReader sourceReader) : ICustomApiOpenApiGenerator
+internal sealed class CustomApiOpenApiGenerator(IWebApiService webApi, ICustomApiSourceReader sourceReader, IOpenApiOutputSettings outputSettings) : ICustomApiOpenApiGenerator
 {
     public async Task<GeneratedClient> GenerateAsync(Guid apiId, CancellationToken cancellationToken, string? typeName = null, string? assemblyName = null)
     {
@@ -30,11 +30,11 @@ internal sealed class CustomApiOpenApiGenerator(IWebApiService webApi, ICustomAp
             $"customapis?$filter=customapiid eq {apiId}&$select=customapiid,uniquename,displayname,description,isfunction,bindingtype,boundentitylogicalname,isprivate,executeprivilegename").AbsoluteUri,
             cancellationToken: cancellationToken).ConfigureAwait(false);
         var api = response.Value.SingleOrDefault() ?? throw new InvalidOperationException("The Custom API no longer exists. Refresh Dataverse Explorer.");
-        if (api.IsFunction) throw new InvalidOperationException("OpenAPI generation for functions is not available yet. Currently, only Custom API actions are supported.");
         api.RequestParameters = await LoadAllAsync<CustomApiRequestParameter>(baseUrl,
             $"customapirequestparameters?$filter=_customapiid_value eq {apiId}&$select=uniquename,displayname,description,type,logicalentityname,isoptional", cancellationToken).ConfigureAwait(false);
         api.ResponseProperties = await LoadAllAsync<CustomApiResponseProperty>(baseUrl,
             $"customapiresponseproperties?$filter=_customapiid_value eq {apiId}&$select=uniquename,displayname,description,type,logicalentityname", cancellationToken).ConfigureAwait(false);
+        ODataFunctionParameters.Validate(api);
         var tables = new Dictionary<string, EntityMetadata>(StringComparer.Ordinal);
         var names = api.RequestParameters.Select(p => p.LogicalEntityName).Concat(api.ResponseProperties.Select(p => p.LogicalEntityName))
             .Concat([api.BoundEntityLogicalName]).Where(n => !string.IsNullOrWhiteSpace(n)).Distinct(StringComparer.Ordinal);
@@ -48,8 +48,9 @@ internal sealed class CustomApiOpenApiGenerator(IWebApiService webApi, ICustomAp
         }
         cancellationToken.ThrowIfCancellationRequested();
         var source = await sourceReader.ReadAsync(api, typeName, assemblyName, cancellationToken).ConfigureAwait(false);
-        var content = CustomApiOpenApiWriter.Write(api, baseUrl, tables, source);
-        return new GeneratedClient(api.UniqueName + ".openapi.json", content);
+        var format = await outputSettings.GetFormatAsync().ConfigureAwait(false);
+        cancellationToken.ThrowIfCancellationRequested();
+        return OpenApiDocumentFormatter.Create(api.UniqueName!, CustomApiOpenApiWriter.Build(api, baseUrl, tables, source), format);
     }
 
     private async Task<List<T>> LoadAllAsync<T>(Uri baseUrl, string query, CancellationToken token)

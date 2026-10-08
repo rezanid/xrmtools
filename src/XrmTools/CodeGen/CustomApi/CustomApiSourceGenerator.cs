@@ -23,7 +23,7 @@ internal interface ICustomApiSourceGenerator
 
 [Export(typeof(ICustomApiSourceGenerator))]
 [method: ImportingConstructor]
-internal sealed class CustomApiSourceGenerator(ICSharpXrmMetaParser parser, IEnvironmentSelection environments, IWebApiService webApi) : ICustomApiSourceGenerator
+internal sealed class CustomApiSourceGenerator(ICSharpXrmMetaParser parser, IEnvironmentSelection environments, IWebApiService webApi, IOpenApiOutputSettings outputSettings) : ICustomApiSourceGenerator
 {
     public async Task<GeneratedClient> GenerateAsync(Document document, TextSpan classSpan, CancellationToken token)
     {
@@ -36,23 +36,29 @@ internal sealed class CustomApiSourceGenerator(ICSharpXrmMetaParser parser, IEnv
             throw new InvalidOperationException("The selected class is not an Xrm Tools Custom API.");
         var api = parser.ParsePluginConfig(symbol, model!.Compilation)?.CustomApi
             ?? throw new InvalidOperationException("The Custom API class must also have the Xrm Tools [Plugin] attribute.");
-        if (api.IsFunction) throw new InvalidOperationException("OpenAPI generation for functions is not available yet. Currently, only Custom API actions are supported.");
+        ODataFunctionParameters.Validate(api);
         var schemas = CustomApiSourceReader.Enrich(api, api, symbol, model.Compilation, token);
         if (string.IsNullOrWhiteSpace(api.Description)) api.Description = CustomApiSourceReader.Summary(symbol);
         // Source generation never prompts for an environment or reads deployed API definitions.
         var environment = await environments.GetSelectedEnvironmentAsync().ConfigureAwait(false);
         var baseUrl = environment?.BaseServiceUrl;
         var tables = new Dictionary<string, EntityMetadata>(StringComparer.Ordinal);
-        if (api.BindingType != CustomApi.BindingTypes.Global)
+        if (api.BindingType != CustomApi.BindingTypes.Global && baseUrl == null)
+            throw new InvalidOperationException("Select a Dataverse environment to resolve the bound table's entity set name. The Custom API does not need to be deployed.");
+        var tableNames = (api.BindingType == CustomApi.BindingTypes.Global ? Array.Empty<string?>() : new[] { api.BoundEntityLogicalName })
+            .Concat(api.IsFunction && baseUrl != null ? api.RequestParameters.Select(p => p.LogicalEntityName) : Array.Empty<string?>())
+            .Where(n => !string.IsNullOrWhiteSpace(n)).Distinct(StringComparer.Ordinal);
+        foreach (var logicalName in tableNames)
         {
-            if (baseUrl == null) throw new InvalidOperationException("Select a Dataverse environment to resolve the bound table's entity set name. The Custom API does not need to be deployed.");
-            var name = CustomApiOpenApiWriter.RequireName(api.BoundEntityLogicalName);
-            var metadata = await webApi.RetrieveMultipleAsync<EntityMetadata>(new Uri(baseUrl,
+            var name = CustomApiOpenApiWriter.RequireName(logicalName);
+            var metadata = await webApi.RetrieveMultipleAsync<EntityMetadata>(new Uri(baseUrl!,
                 "EntityDefinitions?$select=LogicalName,EntitySetName,PrimaryIdAttribute&$filter=LogicalName eq '" + name + "'").AbsoluteUri,
                 cancellationToken: token).ConfigureAwait(false);
-            tables[name] = metadata.Value.SingleOrDefault() ?? throw new InvalidOperationException("Bound table metadata not found: " + name);
+            tables[name] = metadata.Value.SingleOrDefault() ?? throw new InvalidOperationException("Table metadata not found: " + name);
         }
         token.ThrowIfCancellationRequested();
-        return new GeneratedClient(api.UniqueName + ".openapi.json", CustomApiOpenApiWriter.Write(api, baseUrl, tables, schemas));
+        var format = await outputSettings.GetFormatAsync().ConfigureAwait(false);
+        token.ThrowIfCancellationRequested();
+        return OpenApiDocumentFormatter.Create(api.UniqueName!, CustomApiOpenApiWriter.Build(api, baseUrl, tables, schemas), format);
     }
 }

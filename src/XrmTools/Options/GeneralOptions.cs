@@ -7,6 +7,7 @@ using System.Drawing.Design;
 using System.Runtime.InteropServices;
 using XrmTools.ComponentModel;
 using XrmTools.Logging.Compatibility;
+using XrmTools.CodeGen.CustomApi;
 
 internal partial class OptionsProvider
 {
@@ -18,6 +19,13 @@ internal partial class OptionsProvider
 internal class GeneralOptions : BaseOptionModel<GeneralOptions>
 {
     private bool _DataverseExplorerSynchronizeWithSolutionExplorer = true;
+
+    [Category("OpenAPI Generation")]
+    [DisplayName("Output Format")]
+    [Description("Format for OpenAPI specifications generated from Dataverse Explorer or Custom API source classes.")]
+    [DefaultValue(OpenApiOutputFormat.Json)]
+    [TypeConverter(typeof(EnumDescriptionConverter))]
+    public OpenApiOutputFormat OpenApiOutputFormat { get; set; } = OpenApiOutputFormat.Json;
 
     [Category("Logging")]
     [DisplayName("Logging Level")]
