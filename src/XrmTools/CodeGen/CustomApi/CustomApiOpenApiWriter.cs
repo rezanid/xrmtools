@@ -14,11 +14,12 @@ using Api = XrmTools.WebApi.Entities.CustomApi;
 /// <summary>Pure metadata-to-OpenAPI conversion. No network, workspace or UI dependencies.</summary>
 internal static class CustomApiOpenApiWriter
 {
-    public static string Write(Api api, Uri? serviceUrl, IReadOnlyDictionary<string, EntityMetadata> tables, CustomApiSourceSchemas? source = null)
-        => Build(api, serviceUrl, tables, source).ToString(Formatting.Indented);
+    public static string Write(Api api, Uri? serviceUrl, IReadOnlyDictionary<string, EntityMetadata> tables, CustomApiSourceSchemas? source = null, OpenApiSpecificationVersion version = OpenApiSpecificationVersion.V3_0)
+        => Build(api, serviceUrl, tables, source, version).ToString(Formatting.Indented);
 
-    internal static JObject Build(Api api, Uri? serviceUrl, IReadOnlyDictionary<string, EntityMetadata> tables, CustomApiSourceSchemas? source = null)
+    internal static JObject Build(Api api, Uri? serviceUrl, IReadOnlyDictionary<string, EntityMetadata> tables, CustomApiSourceSchemas? source = null, OpenApiSpecificationVersion version = OpenApiSpecificationVersion.V3_0)
     {
+        var latest = OpenApiSchemaVersion.IsLatest(version);
         ODataFunctionParameters.Validate(api);
         var name = RequireName(api.UniqueName);
         if (!Enum.IsDefined(typeof(Api.BindingTypes), api.BindingType)) throw new InvalidOperationException("Unsupported Custom API binding type.");
@@ -54,7 +55,7 @@ internal static class CustomApiOpenApiWriter
             if (api.IsFunction)
             {
                 aliases.Add(fieldName + "=@" + fieldName);
-                parameters.Add(ODataFunctionParameters.Parameter(field, (JObject)inputs[fieldName]!, tables));
+                parameters.Add(ODataFunctionParameters.Parameter(field, (JObject)inputs[fieldName]!, tables, version));
             }
         }
         if (api.IsFunction) path += "(" + string.Join(",", aliases) + ")";
@@ -85,7 +86,7 @@ internal static class CustomApiOpenApiWriter
         if (api.IsFunction)
         {
             var query = string.Join("&", parameters.OfType<JObject>().Where(p => (string?)p["in"] == "query")
-                .Select(p => (string?)p["name"] + "=" + Uri.EscapeDataString((string)p["example"]!)));
+                .Select(ODataFunctionParameters.Assignment));
             var url = (serviceUrl?.AbsoluteUri.TrimEnd('/') ?? "https://YOUR-ORGANIZATION.crm.dynamics.com/api/data/v9.2") + path + (query.Length > 0 ? "?" + query : "");
             operation["x-codeSamples"] = new JArray(new JObject { ["lang"] = "HTTP", ["label"] = "OData function request", ["source"] =
                 "GET " + url + "\nAuthorization: Bearer REPLACE_WITH_ACCESS_TOKEN\nAccept: application/json\nOData-Version: 4.0\nOData-MaxVersion: 4.0" });
@@ -96,7 +97,7 @@ internal static class CustomApiOpenApiWriter
         schemas["DataverseError"] = ErrorSchema();
         var document = new JObject
         {
-            ["openapi"] = "3.0.4",
+            ["openapi"] = latest ? "3.2.1" : "3.0.4",
             ["info"] = new JObject { ["title"] = api.DisplayName ?? name, ["version"] = "1.0.0" },
             ["servers"] = serviceUrl != null
                 ? new JArray(new JObject { ["url"] = serviceUrl.AbsoluteUri.TrimEnd('/') })
@@ -112,28 +113,8 @@ internal static class CustomApiOpenApiWriter
             ["security"] = new JArray(new JObject { ["bearerAuth"] = new JArray() }),
         };
         if (source?.Diagnostics.Count > 0) document["x-xrmtools-diagnostics"] = new JArray(source.Diagnostics.Distinct(StringComparer.Ordinal));
-        NormalizeReferences(document);
+        OpenApiSchemaVersion.Apply(document, version);
         return document;
-    }
-
-    // OpenAPI 3.0 ignores Reference Object siblings. Keep local annotations in a
-    // separate schema, but emit a direct reference when there are no annotations.
-    private static void NormalizeReferences(JToken token)
-    {
-        foreach (var child in token.Children().ToArray()) NormalizeReferences(child);
-        if (token is not JObject schema || schema["allOf"] is not JArray composition || composition.Count != 1 ||
-            composition[0] is not JObject reference || reference.Property("$ref") == null) return;
-        var metadata = new JObject(schema.Properties().Where(p => p.Name != "allOf").Select(p => new JProperty(p.Name, p.Value.DeepClone())));
-        if (metadata.Count == 0)
-        {
-            schema.RemoveAll();
-            schema["$ref"] = reference["$ref"]!.DeepClone();
-        }
-        else
-        {
-            schema.RemoveAll();
-            schema["allOf"] = new JArray(reference.DeepClone(), metadata);
-        }
     }
 
     private static JObject EnrichSchema(JObject schema, IReadOnlyDictionary<string, JObject>? source, string name)

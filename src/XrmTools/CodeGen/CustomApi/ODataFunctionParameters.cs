@@ -21,7 +21,7 @@ internal static class ODataFunctionParameters
                 throw new InvalidOperationException("Function input '" + field.UniqueName + "' is an open entity type. Dataverse functions do not support open entity request parameters. Use an action instead.");
     }
 
-    internal static JObject Parameter(CustomApiRequestParameter field, JObject valueSchema, IReadOnlyDictionary<string, EntityMetadata> tables)
+    internal static JObject Parameter(CustomApiRequestParameter field, JObject valueSchema, IReadOnlyDictionary<string, EntityMetadata> tables, OpenApiSpecificationVersion version = OpenApiSpecificationVersion.V3_0)
     {
         var name = CustomApiOpenApiWriter.RequireName(field.UniqueName);
         var schema = new JObject { ["type"] = "string" };
@@ -57,7 +57,7 @@ internal static class ODataFunctionParameters
                 ? "Supply compact JSON as the alias value; do not surround the JSON with single quotes."
                 : "Supply an unquoted OData literal for " + field.Type + ".";
         var optional = field.IsOptional ? " Omitting this alias assignment supplies null; the parameter stays in the function signature. Explicit null is the unquoted literal null." : " This alias assignment is required.";
-        return new JObject
+        var parameter = new JObject
         {
             ["name"] = "@" + name, ["in"] = "query", ["required"] = !field.IsOptional,
             ["style"] = "form", ["explode"] = false, ["allowReserved"] = false,
@@ -65,7 +65,28 @@ internal static class ODataFunctionParameters
             ["schema"] = schema, ["example"] = Example(field, tables, valueSchema),
             ["x-odata-parameter-name"] = name, ["x-odata-value-schema"] = valueSchema.DeepClone(),
         };
+        if (OpenApiSchemaVersion.IsLatest(version))
+        {
+            var examples = new JObject { ["literal"] = SerializedExample(parameter, (string)parameter["example"]!, "OData literal") };
+            if (field.IsOptional) examples["null"] = SerializedExample(parameter, "null", "No value");
+            if (field.Type == CustomApiFieldType.String) examples["emptyString"] = SerializedExample(parameter, "''", "Empty string");
+            parameter.Remove("example");
+            parameter["examples"] = examples;
+        }
+        return parameter;
     }
+
+    private static JObject SerializedExample(JObject parameter, string literal, string summary) => new()
+    {
+        ["summary"] = summary,
+        // The parameter's data type is an OData literal string, not its logical value.
+        ["dataValue"] = literal,
+        ["serializedValue"] = (string)parameter["name"]! + "=" + Uri.EscapeDataString(literal),
+    };
+
+    internal static string Assignment(JObject parameter) =>
+        (string?)parameter["examples"]?["literal"]?["serializedValue"]
+        ?? (string)parameter["name"]! + "=" + Uri.EscapeDataString((string)parameter["example"]!);
 
     internal static string Serialize(CustomApiFieldType type, JToken value)
     {

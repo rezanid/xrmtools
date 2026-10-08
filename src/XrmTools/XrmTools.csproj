@@ -157,6 +157,7 @@
     <Compile Include="Helpers\SourceTypeResolver.cs" />
     <Compile Include="CodeGen\CustomApi\CustomApiOpenApiWriter.cs" />
     <Compile Include="CodeGen\CustomApi\OpenApiDocumentFormatter.cs" />
+    <Compile Include="CodeGen\CustomApi\OpenApiSchemaVersion.cs" />
     <Compile Include="CodeGen\CustomApi\ODataFunctionParameters.cs" />
     <Compile Include="DataverseExplorer\Services\CustomApiOpenApiCommandProvider.cs" />
     <Compile Include="CodeGen\CustomApi\CustomApiClientModel.cs" />

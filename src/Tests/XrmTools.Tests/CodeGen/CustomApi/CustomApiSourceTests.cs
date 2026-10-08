@@ -28,10 +28,11 @@ using Api = XrmTools.WebApi.Entities.CustomApi;
 
 public sealed class CustomApiSourceTests
 {
-    private static IOpenApiOutputSettings OutputSettings(OpenApiOutputFormat format = OpenApiOutputFormat.Json)
+    private static IOpenApiOutputSettings OutputSettings(OpenApiOutputFormat format = OpenApiOutputFormat.Json, OpenApiSpecificationVersion version = OpenApiSpecificationVersion.V3_0)
     {
         var settings = new Mock<IOpenApiOutputSettings>();
         settings.Setup(s => s.GetFormatAsync()).ReturnsAsync(format);
+        settings.Setup(s => s.GetVersionAsync()).ReturnsAsync(version);
         return settings.Object;
     }
     private const string Source = """
@@ -214,7 +215,9 @@ public sealed class CustomApiSourceTests
     [Theory]
     [InlineData(OpenApiOutputFormat.Json)]
     [InlineData(OpenApiOutputFormat.Yaml)]
-    public async Task UndeployedFunctionGeneratesFromSourceWithoutNetwork(OpenApiOutputFormat format)
+    [InlineData(OpenApiOutputFormat.Json, OpenApiSpecificationVersion.V3_2)]
+    [InlineData(OpenApiOutputFormat.Yaml, OpenApiSpecificationVersion.V3_2)]
+    public async Task UndeployedFunctionGeneratesFromSourceWithoutNetwork(OpenApiOutputFormat format, OpenApiSpecificationVersion version = OpenApiSpecificationVersion.V3_0)
     {
         var source = Source.Replace("CustomApi(\"new_Test\")", "CustomApi(\"new_Test\", IsFunction=true)")
             .Replace("public Child Data", "public string Data")
@@ -228,12 +231,13 @@ public sealed class CustomApiSourceTests
         var environments = new Mock<IEnvironmentSelection>(MockBehavior.Strict);
         environments.Setup(e => e.GetSelectedEnvironmentAsync()).ReturnsAsync((DataverseEnvironment?)null);
         var webApi = new Mock<IWebApiService>(MockBehavior.Strict);
-        var generator = new CustomApiSourceGenerator(new CSharpXrmMetaParser(new CSharpDependencyAnalyzer(), new DependencyPreparation()), environments.Object, webApi.Object, OutputSettings(format));
+        var generator = new CustomApiSourceGenerator(new CSharpXrmMetaParser(new CSharpDependencyAnalyzer(), new DependencyPreparation()), environments.Object, webApi.Object, OutputSettings(format, version));
         var result = await generator.GenerateAsync(document, declaration.Span, TestContext.Current.CancellationToken);
         Assert.Equal("new_Test.openapi." + (format == OpenApiOutputFormat.Json ? "json" : "yaml"), result.FileName);
         var spec = format == OpenApiOutputFormat.Json ? JObject.Parse(result.Content)
             : JObject.FromObject(new YamlDotNet.Serialization.DeserializerBuilder().WithAttemptingUnquotedStringTypeDeserialization().Build().Deserialize<object>(result.Content));
         var path = ((JObject)spec["paths"]!).Properties().Single();
+        Assert.Equal(version == OpenApiSpecificationVersion.V3_2 ? "3.2.1" : "3.0.4", (string?)spec["openapi"]);
         Assert.Equal("/new_Test(Choice=@Choice,Items=@Items,Payload=@Payload,Undeployed=@Undeployed)", path.Name);
         var operation = path.Value["get"]!;
         Assert.Null(operation["requestBody"]);

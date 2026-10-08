@@ -58,7 +58,8 @@ internal sealed class CustomApiSourceGenerator(ICSharpXrmMetaParser parser, IEnv
         }
         token.ThrowIfCancellationRequested();
         var format = await outputSettings.GetFormatAsync().ConfigureAwait(false);
+        var version = await outputSettings.GetVersionAsync().ConfigureAwait(false);
         token.ThrowIfCancellationRequested();
-        return OpenApiDocumentFormatter.Create(api.UniqueName!, CustomApiOpenApiWriter.Build(api, baseUrl, tables, schemas), format);
+        return OpenApiDocumentFormatter.Create(api.UniqueName!, CustomApiOpenApiWriter.Build(api, baseUrl, tables, schemas, version), format);
     }
 }

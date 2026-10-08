@@ -27,6 +27,13 @@ internal class GeneralOptions : BaseOptionModel<GeneralOptions>
     [TypeConverter(typeof(EnumDescriptionConverter))]
     public OpenApiOutputFormat OpenApiOutputFormat { get; set; } = OpenApiOutputFormat.Json;
 
+    [Category("OpenAPI Generation")]
+    [DisplayName("Specification Version")]
+    [Description("Use OpenAPI 3.2.1 for modern schema and serialized example support, or 3.0.4 for compatibility with older tools.")]
+    [DefaultValue(OpenApiSpecificationVersion.V3_0)]
+    [TypeConverter(typeof(EnumDescriptionConverter))]
+    public OpenApiSpecificationVersion OpenApiSpecificationVersion { get; set; } = OpenApiSpecificationVersion.V3_0;
+
     [Category("Logging")]
     [DisplayName("Logging Level")]
     [Description("Setting the logging level to Trace will have performance implications.")]

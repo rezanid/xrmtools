@@ -18,9 +18,11 @@ using YamlDotNet.Serialization;
 public sealed class OpenApiDocumentFormatterTests
 {
     [Theory]
-    [InlineData(OpenApiOutputFormat.Json)]
-    [InlineData(OpenApiOutputFormat.Yaml)]
-    public async Task ExplorerGeneratorUsesSelectedOutputFormat(OpenApiOutputFormat format)
+    [InlineData(OpenApiOutputFormat.Json, OpenApiSpecificationVersion.V3_0)]
+    [InlineData(OpenApiOutputFormat.Yaml, OpenApiSpecificationVersion.V3_0)]
+    [InlineData(OpenApiOutputFormat.Json, OpenApiSpecificationVersion.V3_2)]
+    [InlineData(OpenApiOutputFormat.Yaml, OpenApiSpecificationVersion.V3_2)]
+    public async Task ExplorerGeneratorUsesSelectedOutputFormat(OpenApiOutputFormat format, OpenApiSpecificationVersion version)
     {
         var webApi = new Mock<IWebApiService>(MockBehavior.Strict);
         webApi.Setup(w => w.GetBaseUrlAsync()).ReturnsAsync(new Uri("https://example.crm.dynamics.com/api/data/v9.2/"));
@@ -34,23 +36,28 @@ public sealed class OpenApiDocumentFormatterTests
         source.Setup(s => s.ReadAsync(It.IsAny<CustomApi>(), null, null, It.IsAny<CancellationToken>())).ReturnsAsync(new CustomApiSourceSchemas());
         var settings = new Mock<IOpenApiOutputSettings>(MockBehavior.Strict);
         settings.Setup(s => s.GetFormatAsync()).ReturnsAsync(format);
+        settings.Setup(s => s.GetVersionAsync()).ReturnsAsync(version);
         var output = await new CustomApiOpenApiGenerator(webApi.Object, source.Object, settings.Object)
             .GenerateAsync(Guid.NewGuid(), TestContext.Current.CancellationToken);
         Assert.Equal("new_Test.openapi." + (format == OpenApiOutputFormat.Json ? "json" : "yaml"), output.FileName);
         var doc = format == OpenApiOutputFormat.Json ? JObject.Parse(output.Content) : ParseYaml(output.Content);
         Assert.NotNull(doc["paths"]!["/new_Test"]!["post"]);
+        Assert.Equal(version == OpenApiSpecificationVersion.V3_2 ? "3.2.1" : "3.0.4", (string?)doc["openapi"]);
         settings.Verify(s => s.GetFormatAsync(), Times.Once);
+        settings.Verify(s => s.GetVersionAsync(), Times.Once);
     }
 
     [Theory]
-    [InlineData(false)]
-    [InlineData(true)]
-    public void JsonAndYamlDescribeIdenticalActionAndFunctionContracts(bool function)
+    [InlineData(false, OpenApiSpecificationVersion.V3_0)]
+    [InlineData(true, OpenApiSpecificationVersion.V3_0)]
+    [InlineData(false, OpenApiSpecificationVersion.V3_2)]
+    [InlineData(true, OpenApiSpecificationVersion.V3_2)]
+    public void JsonAndYamlDescribeIdenticalActionAndFunctionContracts(bool function, OpenApiSpecificationVersion version)
     {
         var api = new CustomApi { UniqueName = "new_Test", IsFunction = function,
             RequestParameters = [new CustomApiRequestParameter { UniqueName = "Name", Type = CustomApiFieldType.String, IsOptional = true }],
             ResponseProperties = [new CustomApiResponseProperty { UniqueName = "Result", Type = CustomApiFieldType.String }] };
-        var doc = CustomApiOpenApiWriter.Build(api, null, new Dictionary<string, EntityMetadata>());
+        var doc = CustomApiOpenApiWriter.Build(api, null, new Dictionary<string, EntityMetadata>(), version: version);
         var json = OpenApiDocumentFormatter.Create(api.UniqueName, doc, OpenApiOutputFormat.Json);
         var yaml = OpenApiDocumentFormatter.Create(api.UniqueName, doc, OpenApiOutputFormat.Yaml);
         Assert.Equal("new_Test.openapi.json", json.FileName);
@@ -81,6 +88,7 @@ public sealed class OpenApiDocumentFormatterTests
     public void GeneralOptionsDefaultToJsonAndRejectUnknownSerializationFormat()
     {
         Assert.Equal(OpenApiOutputFormat.Json, new GeneralOptions().OpenApiOutputFormat);
+        Assert.Equal(OpenApiSpecificationVersion.V3_0, new GeneralOptions().OpenApiSpecificationVersion);
         Assert.Throws<ArgumentOutOfRangeException>(() => OpenApiDocumentFormatter.Create("new_Test", new JObject(), (OpenApiOutputFormat)999));
     }
 

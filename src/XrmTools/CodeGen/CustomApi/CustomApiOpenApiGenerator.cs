@@ -49,8 +49,9 @@ internal sealed class CustomApiOpenApiGenerator(IWebApiService webApi, ICustomAp
         cancellationToken.ThrowIfCancellationRequested();
         var source = await sourceReader.ReadAsync(api, typeName, assemblyName, cancellationToken).ConfigureAwait(false);
         var format = await outputSettings.GetFormatAsync().ConfigureAwait(false);
+        var version = await outputSettings.GetVersionAsync().ConfigureAwait(false);
         cancellationToken.ThrowIfCancellationRequested();
-        return OpenApiDocumentFormatter.Create(api.UniqueName!, CustomApiOpenApiWriter.Build(api, baseUrl, tables, source), format);
+        return OpenApiDocumentFormatter.Create(api.UniqueName!, CustomApiOpenApiWriter.Build(api, baseUrl, tables, source, version), format);
     }
 
     private async Task<List<T>> LoadAllAsync<T>(Uri baseUrl, string query, CancellationToken token)

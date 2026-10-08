@@ -24,6 +24,7 @@ public enum OpenApiOutputFormat
 internal interface IOpenApiOutputSettings
 {
     Task<OpenApiOutputFormat> GetFormatAsync();
+    Task<OpenApiSpecificationVersion> GetVersionAsync();
 }
 
 [Export(typeof(IOpenApiOutputSettings))]
@@ -31,6 +32,8 @@ internal sealed class OpenApiOutputSettings : IOpenApiOutputSettings
 {
     public async Task<OpenApiOutputFormat> GetFormatAsync()
         => (await GeneralOptions.GetLiveInstanceAsync().ConfigureAwait(false)).OpenApiOutputFormat;
+    public async Task<OpenApiSpecificationVersion> GetVersionAsync()
+        => (await GeneralOptions.GetLiveInstanceAsync().ConfigureAwait(false)).OpenApiSpecificationVersion;
 }
 
 /// <summary>Serializes the same document model for both output formats.</summary>
