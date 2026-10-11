@@ -62,6 +62,7 @@ internal static class GeneratedCustomApiDocument
         var dte = await VS.GetServiceAsync<EnvDTE.DTE, EnvDTE.DTE>()
             ?? throw new InvalidOperationException("Visual Studio's document service is unavailable.");
         await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync(token);
+        token.ThrowIfCancellationRequested();
         var window = dte.ItemOperations.NewFile(@"General\Text File", result.FileName, EnvDTE.Constants.vsViewKindTextView);
         var document = window.Document;
         if (document.Object("TextDocument") is not EnvDTE.TextDocument textDocument)

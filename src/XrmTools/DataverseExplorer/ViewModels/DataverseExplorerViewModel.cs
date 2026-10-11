@@ -35,9 +35,44 @@ internal class DataverseExplorerViewModel : ViewModelBase, IDisposable
     private bool _isLoading;
     private string _searchText = string.Empty;
     private ExplorerNodeBase? _selectedNode;
+    private ExplorerCollectionSession? _collection;
+    private string _workspaceNotice = string.Empty;
+
+    public ExplorerCollectionSession? Collection { get => _collection; private set => SetProperty(ref _collection, value); }
+    public string WorkspaceNotice { get => _workspaceNotice; private set => SetProperty(ref _workspaceNotice, value); }
+
+    internal async Task BeginCollectionAsync(IExplorerCollectionOperation operation, ExplorerNodeBase scope)
+    {
+        if (_disposed || Collection != null || !IsAttached(scope) || !operation.SupportsScope(scope)) return;
+        var token = _session.Token;
+        try
+        {
+            var environment = _getEnvironmentUrl == null ? null : await _getEnvironmentUrl();
+            token.ThrowIfCancellationRequested();
+            if (environment == null) { WorkspaceNotice = "Select a Dataverse environment first."; return; }
+            if (Collection != null) return;
+            WorkspaceNotice = string.Empty;
+            var session = new ExplorerCollectionSession(operation, scope, environment, _logger, () => EndCollection());
+            Collection = session;
+            await session.LoadAsync();
+        }
+        catch (OperationCanceledException) { }
+        catch (Exception ex) { _logger.LogError(ex, "Unable to start collection operation."); WorkspaceNotice = ex.Message; }
+    }
+
+    internal void EndCollection(string notice = "")
+    {
+        Collection?.Dispose(); Collection = null; WorkspaceNotice = notice;
+    }
+
+    internal Task RefreshWorkspaceAsync() => Collection is { } collection
+        ? collection.IsBusy ? Task.CompletedTask : collection.LoadAsync()
+        : RefreshAsync();
 
     public bool IsLoading { get => _isLoading; private set => SetProperty(ref _isLoading, value); }
-    public string SearchText { get => _searchText; private set => SetProperty(ref _searchText, value); }
+    public string SearchText { get => _searchText; set { if (SetProperty(ref _searchText, value)) ApplyFilter(); } }
+    public bool MatchCase { get => _matchCase; set { if (SetProperty(ref _matchCase, value)) ApplyFilter(); } }
+    public bool UpdatedLast3Hours { get => _updatedLast3Hours; set { if (SetProperty(ref _updatedLast3Hours, value)) ApplyFilter(); } }
     public ObservableCollection<ExplorerNodeBase> RootNodes { get; } = [];
     public ICollectionView VisibleRoots { get; }
     public ExplorerNodeBase? SelectedNode
@@ -80,6 +115,11 @@ internal class DataverseExplorerViewModel : ViewModelBase, IDisposable
     internal async Task RefreshRegistrationAsync(PluginRegistrationChangedEventArgs change)
     {
         if (_disposed) return;
+        if (Collection is { } collection && SameEnvironment(_environmentUrl, change.EnvironmentUrl))
+        {
+            if (collection.IsBusy) EndCollection("The collection operation was canceled because registrations changed.");
+            else await collection.LoadAsync();
+        }
         var token = _session.Token;
         var operations = _operations;
         try
@@ -123,6 +163,7 @@ internal class DataverseExplorerViewModel : ViewModelBase, IDisposable
     public async Task RefreshAsync()
     {
         if (_disposed) return;
+        if (Collection != null) EndCollection("The collection operation ended because the Explorer environment or tree changed.");
         _session.Cancel();
         _session.Dispose();
         _session = new CancellationTokenSource();
@@ -374,9 +415,9 @@ internal class DataverseExplorerViewModel : ViewModelBase, IDisposable
 
     public Task<uint> ApplySearchAsync(string searchText, bool matchCase, bool updatedLast3Hours)
     {
-        SearchText = searchText;
-        _matchCase = matchCase;
-        _updatedLast3Hours = updatedLast3Hours;
+        SetProperty(ref _searchText, searchText, nameof(SearchText));
+        SetProperty(ref _matchCase, matchCase, nameof(MatchCase));
+        SetProperty(ref _updatedLast3Hours, updatedLast3Hours, nameof(UpdatedLast3Hours));
         return Task.FromResult(ApplyFilter());
     }
 
@@ -409,6 +450,7 @@ internal class DataverseExplorerViewModel : ViewModelBase, IDisposable
     public void Dispose()
     {
         if (_disposed) return;
+        EndCollection();
         _disposed = true;
         DataverseEnvironmentProvider.EnvironmentChanged -= OnEnvironmentChanged;
         if (_registration != null) _registration.RegistrationChanged -= OnRegistrationChanged;

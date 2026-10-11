@@ -2,12 +2,10 @@
 namespace XrmTools.DataverseExplorer.Views;
 
 using System.ComponentModel.Design;
-using Microsoft.Internal.VisualStudio.PlatformUI;
 using Microsoft.VisualStudio;
 using Microsoft.VisualStudio.ComponentModelHost;
 using Microsoft.VisualStudio.Imaging;
 using Microsoft.VisualStudio.LanguageServices;
-using Microsoft.VisualStudio.PlatformUI;
 using Microsoft.VisualStudio.Shell;
 using Microsoft.VisualStudio.Shell.Interop;
 using System;
@@ -17,9 +15,9 @@ using System.Threading.Tasks;
 using XrmTools.DataverseExplorer.Models;
 using XrmTools.DataverseExplorer.Services;
 using XrmTools.DataverseExplorer.ViewModels;
-using XrmTools.Helpers;
 using XrmTools.Logging.Compatibility;
 using XrmTools.Options;
+using XrmTools.Helpers;
 using XrmTools.Services;
 
 internal class DataverseExplorerSource
@@ -27,6 +25,7 @@ internal class DataverseExplorerSource
     public required ILogger Logger { get; init; }
     public required IEnumerable<IExplorerCategoryProvider> Categories { get; init; }
     public required IEnumerable<IExplorerCommandProvider> Commands { get; init; }
+    public IEnumerable<IExplorerCollectionOperation> CollectionOperations { get; init; } = [];
     public required IPluginRegistrationService Registration { get; init; }
     public required Func<Task<Uri?>> GetEnvironmentUrl { get; init; }
 
@@ -42,10 +41,6 @@ internal class DataverseExplorerWindow : ToolWindowPane // BaseToolWindow<Datave
     private ITrackSelection? _trackSelection;
     private readonly SelectionContainer _selectionContainer = new();
     private readonly VisualStudioWorkspace _workspace;
-    private IVsEnumWindowSearchOptions? _searchOptions;
-    private IVsEnumWindowSearchFilters? _searchFilters;
-    private WindowSearchBooleanOption? _matchCaseOption;
-    
     public ILogger Logger { get; set; }
 
     public DataverseExplorerWindow(DataverseExplorerSource source) : base()
@@ -64,91 +59,17 @@ internal class DataverseExplorerWindow : ToolWindowPane // BaseToolWindow<Datave
         _viewModel = new DataverseExplorerViewModel(source.Categories, Logger, source.Registration, source.GetEnvironmentUrl);
         _viewModel.SelectedNodeChanged += OnSelectedNodeChanged;
         control.CommandProviders = source.Commands;
+        control.CollectionOperations = source.CollectionOperations;
         control.DataContext = _viewModel;
         Content = control;
     }
 
     public Task RefreshAsync()
     {
-        return _viewModel?.RefreshAsync() ?? Task.CompletedTask;
+        return _viewModel?.RefreshWorkspaceAsync() ?? Task.CompletedTask;
     }
 
-    public override bool SearchEnabled => true;
-
-    public WindowSearchBooleanOption MatchCaseOption
-    {
-        get
-        {
-            return _matchCaseOption ??= new WindowSearchBooleanOption("Match case", "Match case", false);
-        }
-    }
-
-    public override IVsEnumWindowSearchOptions SearchOptionsEnum
-    {
-        get
-        {
-            if (_searchOptions == null)
-            {
-                var list = new List<IVsWindowSearchOption> { MatchCaseOption };
-                _searchOptions = new WindowSearchOptionEnumerator(list);
-            }
-
-            return _searchOptions;
-        }
-    }
-
-    public override IVsEnumWindowSearchFilters SearchFiltersEnum
-    {
-        get
-        {
-            if (_searchFilters == null)
-            {
-                var list = new List<IVsWindowSearchFilter>
-                {
-                    new WindowSearchSimpleFilter("Updated in last 3 hours", "Updated in last 3 hours", "updated", "3h")
-                };
-                _searchFilters = new WindowSearchFilterEnumerator(list);
-            }
-
-            return _searchFilters;
-        }
-    }
-
-    public override void ProvideSearchSettings(IVsUIDataSource pSearchSettings)
-    {
-        Utilities.SetValue(
-            pSearchSettings,
-            SearchSettingsDataSource.SearchStartTypeProperty.Name,
-            (uint)VSSEARCHSTARTTYPE.SST_INSTANT);
-        Utilities.SetValue(
-            pSearchSettings,
-            SearchSettingsDataSource.ControlMaxWidthProperty.Name,
-            (uint)10000);
-    }
-
-    public override IVsSearchTask? CreateSearch(uint dwCookie, IVsSearchQuery pSearchQuery, IVsSearchCallback pSearchCallback)
-    {
-        if (_viewModel == null || pSearchQuery == null || pSearchCallback == null)
-        {
-            return null;
-        }
-
-        return new DataverseExplorerSearchTask(dwCookie, pSearchQuery, pSearchCallback, this);
-    }
-
-    public override void ClearSearch()
-    {
-        if (_viewModel == null)
-        {
-            return;
-        }
-
-        ThreadHelper.JoinableTaskFactory.Run(async () =>
-        {
-            await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync();
-            await _viewModel.ClearSearchAsync();
-        });
-    }
+    public override bool SearchEnabled => false;
 
     protected override void OnCreate()
     {
@@ -206,7 +127,7 @@ internal class DataverseExplorerWindow : ToolWindowPane // BaseToolWindow<Datave
 
     private async Task SyncWithProjectSystemAsync(ExplorerNodeBase? node)
     {
-        if (node == null)
+        if (node == null || _viewModel?.Collection != null)
         {
             return;
         }
@@ -258,58 +179,6 @@ internal class DataverseExplorerWindow : ToolWindowPane // BaseToolWindow<Datave
         }
     }
 
-    private async Task<uint> ApplySearchAsync(string searchQuery)
-    {
-        if (_viewModel == null)
-        {
-            return 0;
-        }
-
-        var updatedFilter = "updated:\"3h\"";
-        var filterIndex = searchQuery.IndexOf(updatedFilter, StringComparison.OrdinalIgnoreCase);
-        var updatedLastThreeHours = filterIndex >= 0;
-        var searchText = updatedLastThreeHours
-            ? (searchQuery.Remove(filterIndex, updatedFilter.Length)).Trim()
-            : searchQuery;
-
-        return await _viewModel.ApplySearchAsync(searchText, MatchCaseOption.Value, updatedLastThreeHours);
-    }
-
-    private sealed class DataverseExplorerSearchTask(
-        uint cookie,
-        IVsSearchQuery searchQuery,
-        IVsSearchCallback searchCallback,
-        DataverseExplorerWindow toolWindow)
-        : VsSearchTask(cookie, searchQuery, searchCallback)
-    {
-        protected override void OnStartSearch()
-        {
-            ErrorCode = VSConstants.S_OK;
-            try
-            {
-                var resultCount = ThreadHelper.JoinableTaskFactory.Run(async () =>
-                {
-                    await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync();
-                    return await toolWindow.ApplySearchAsync(SearchQuery.SearchString);
-                });
-                SearchResults = resultCount;
-            }
-            catch
-            {
-                ErrorCode = VSConstants.E_FAIL;
-                SearchResults = 0;
-            }
-            finally
-            {
-                base.OnStartSearch();
-            }
-        }
-
-        protected override void OnStopSearch()
-        {
-            SearchResults = 0;
-        }
-    }
 }
 
 #nullable restore

@@ -12,14 +12,74 @@ using XrmTools.WebApi.Types;
 using Api = XrmTools.WebApi.Entities.CustomApi;
 
 /// <summary>Pure metadata-to-OpenAPI conversion. No network, workspace or UI dependencies.</summary>
+internal sealed record CustomApiOpenApiInput(Api Api, CustomApiSourceSchemas? Source, string? GroupName);
+internal sealed record CustomApiOpenApiOperation(string Path, string Method, JObject Operation);
+
 internal static class CustomApiOpenApiWriter
 {
     public static string Write(Api api, Uri? serviceUrl, IReadOnlyDictionary<string, EntityMetadata> tables, CustomApiSourceSchemas? source = null, OpenApiSpecificationVersion version = OpenApiSpecificationVersion.V3_0)
         => Build(api, serviceUrl, tables, source, version).ToString(Formatting.Indented);
 
     internal static JObject Build(Api api, Uri? serviceUrl, IReadOnlyDictionary<string, EntityMetadata> tables, CustomApiSourceSchemas? source = null, OpenApiSpecificationVersion version = OpenApiSpecificationVersion.V3_0)
+        => BuildDocument([new CustomApiOpenApiInput(api, source, null)], serviceUrl, tables, version, api.DisplayName ?? RequireName(api.UniqueName), false);
+
+    internal static JObject BuildMany(IReadOnlyList<CustomApiOpenApiInput> inputs, Uri? serviceUrl,
+        IReadOnlyDictionary<string, EntityMetadata> tables, OpenApiSpecificationVersion version = OpenApiSpecificationVersion.V3_0)
+        => BuildDocument(inputs, serviceUrl, tables, version, "Custom APIs", true);
+
+    private static JObject BuildDocument(IReadOnlyList<CustomApiOpenApiInput> inputs, Uri? serviceUrl,
+        IReadOnlyDictionary<string, EntityMetadata> tables, OpenApiSpecificationVersion version, string title, bool addTags)
     {
+        if (inputs.Count == 0) throw new ArgumentException("At least one API is required.", nameof(inputs));
         var latest = OpenApiSchemaVersion.IsLatest(version);
+        var ordered = inputs.OrderBy(i => i.Api.UniqueName, StringComparer.Ordinal).ToArray();
+        var paths = new JObject();
+        var schemas = new JObject { ["DataverseError"] = ErrorSchema() };
+        var operationIds = new HashSet<string>(StringComparer.Ordinal);
+        var diagnostics = new HashSet<string>(StringComparer.Ordinal);
+        var sources = CustomApiSchemaComposer.Prepare(ordered, schemas);
+        foreach (var input in ordered)
+        {
+            var name = RequireName(input.Api.UniqueName);
+            if (!operationIds.Add(name)) throw new InvalidOperationException("Duplicate operation ID: " + name);
+            CustomApiOpenApiOperation fragment;
+            try { fragment = BuildOperation(input.Api, serviceUrl, tables, sources[name], version); }
+            catch (Exception ex) { throw new InvalidOperationException("API " + name + ": " + ex.Message, ex); }
+            var item = paths[fragment.Path] as JObject;
+            if (item == null) { item = new JObject(); paths[fragment.Path] = item; }
+            if (item[fragment.Method] != null) throw new InvalidOperationException("Duplicate operation: " + fragment.Method + " " + fragment.Path);
+            if (addTags && !string.IsNullOrWhiteSpace(input.GroupName)) fragment.Operation["tags"] = new JArray(input.GroupName!);
+            item[fragment.Method] = fragment.Operation;
+            foreach (var diagnostic in input.Source?.Diagnostics ?? []) diagnostics.Add(addTags ? name + ": " + diagnostic : diagnostic);
+        }
+        paths = Sort(paths);
+        schemas = Sort(schemas);
+        var document = new JObject
+        {
+            ["openapi"] = latest ? "3.2.1" : "3.0.4",
+            ["info"] = new JObject { ["title"] = title, ["version"] = "1.0.0" },
+            ["servers"] = serviceUrl != null
+                ? new JArray(new JObject { ["url"] = serviceUrl.AbsoluteUri.TrimEnd('/') })
+                : new JArray(new JObject { ["url"] = "https://{organization}.crm.dynamics.com/api/data/v9.2",
+                    ["description"] = "Replace the organization variable with your Dataverse organization, or edit this URL for your region.",
+                    ["variables"] = new JObject { ["organization"] = new JObject { ["default"] = "YOUR-ORGANIZATION" } } }),
+            ["paths"] = paths,
+            ["components"] = new JObject
+            {
+                ["securitySchemes"] = new JObject { ["bearerAuth"] = new JObject { ["type"] = "http", ["scheme"] = "bearer" } },
+                ["schemas"] = schemas,
+            },
+            ["security"] = new JArray(new JObject { ["bearerAuth"] = new JArray() }),
+        };
+        if (diagnostics.Count > 0) document["x-xrmtools-diagnostics"] = new JArray(diagnostics.OrderBy(d => d, StringComparer.Ordinal));
+        OpenApiSchemaVersion.Apply(document, version);
+        return document;
+    }
+
+    private static JObject Sort(JObject value) => new(value.Properties().OrderBy(p => p.Name, StringComparer.Ordinal).Select(p => new JProperty(p.Name, p.Value.DeepClone())));
+
+    private static CustomApiOpenApiOperation BuildOperation(Api api, Uri? serviceUrl, IReadOnlyDictionary<string, EntityMetadata> tables, CustomApiSourceSchemas? source, OpenApiSpecificationVersion version)
+    {
         ODataFunctionParameters.Validate(api);
         var name = RequireName(api.UniqueName);
         if (!Enum.IsDefined(typeof(Api.BindingTypes), api.BindingType)) throw new InvalidOperationException("Unsupported Custom API binding type.");
@@ -93,28 +153,7 @@ internal static class CustomApiOpenApiWriter
         }
         operation["responses"]!["4XX"] = ErrorResponse("Dataverse rejected the request.");
         operation["responses"]!["5XX"] = ErrorResponse("A server or plugin execution error occurred.");
-        var schemas = source == null ? new JObject() : (JObject)source.Components.DeepClone();
-        schemas["DataverseError"] = ErrorSchema();
-        var document = new JObject
-        {
-            ["openapi"] = latest ? "3.2.1" : "3.0.4",
-            ["info"] = new JObject { ["title"] = api.DisplayName ?? name, ["version"] = "1.0.0" },
-            ["servers"] = serviceUrl != null
-                ? new JArray(new JObject { ["url"] = serviceUrl.AbsoluteUri.TrimEnd('/') })
-                : new JArray(new JObject { ["url"] = "https://{organization}.crm.dynamics.com/api/data/v9.2",
-                    ["description"] = "Replace the organization variable with your Dataverse organization, or edit this URL for your region.",
-                    ["variables"] = new JObject { ["organization"] = new JObject { ["default"] = "YOUR-ORGANIZATION" } } }),
-            ["paths"] = new JObject { [path] = new JObject { [api.IsFunction ? "get" : "post"] = operation } },
-            ["components"] = new JObject
-            {
-                ["securitySchemes"] = new JObject { ["bearerAuth"] = new JObject { ["type"] = "http", ["scheme"] = "bearer" } },
-                ["schemas"] = schemas,
-            },
-            ["security"] = new JArray(new JObject { ["bearerAuth"] = new JArray() }),
-        };
-        if (source?.Diagnostics.Count > 0) document["x-xrmtools-diagnostics"] = new JArray(source.Diagnostics.Distinct(StringComparer.Ordinal));
-        OpenApiSchemaVersion.Apply(document, version);
-        return document;
+        return new CustomApiOpenApiOperation(path, api.IsFunction ? "get" : "post", operation);
     }
 
     private static JObject EnrichSchema(JObject schema, IReadOnlyDictionary<string, JObject>? source, string name)

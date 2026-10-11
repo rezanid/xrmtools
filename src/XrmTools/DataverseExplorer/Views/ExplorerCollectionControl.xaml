@@ -1,0 +1,64 @@
+<UserControl x:Class="XrmTools.DataverseExplorer.Views.ExplorerCollectionControl"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:ctrls="clr-namespace:XrmTools.Shell.Controls"
+             xmlns:p="clr-namespace:Microsoft.VisualStudio.PlatformUI;assembly=Microsoft.VisualStudio.Shell.15.0"
+             Loaded="Workspace_Loaded" PreviewKeyDown="Workspace_PreviewKeyDown"
+             Background="{DynamicResource {x:Static p:ThemedDialogColors.WindowPanelBrushKey}}"
+             Foreground="{DynamicResource {x:Static p:ThemedDialogColors.WindowPanelTextBrushKey}}">
+    <UserControl.Resources>
+        <BooleanToVisibilityConverter x:Key="BoolVisibility"/>
+    </UserControl.Resources>
+    <Grid Margin="6">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/><RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+        <StackPanel>
+            <TextBlock Text="{Binding Title}" FontWeight="SemiBold" TextWrapping="Wrap"/>
+            <TextBlock Text="{Binding Context}" TextWrapping="Wrap" Margin="0,3,0,6"/>
+        </StackPanel>
+        <ctrls:TextBox x:Name="SearchBox" Grid.Row="1" Text="{Binding SearchText, UpdateSourceTrigger=PropertyChanged}" HintText="Search APIs or assemblies"
+                 ToolTip="Search API names or assemblies" AutomationProperties.Name="Search collection items" Margin="0,0,0,6"/>
+        <ctrls:TreeView x:Name="CandidateTree" Grid.Row="2" ItemsSource="{Binding VisibleGroups}" AutomationProperties.Name="Available collection items">
+            <ctrls:TreeView.Style>
+                <Style TargetType="{x:Type ctrls:TreeView}" BasedOn="{StaticResource {x:Type ctrls:TreeView}}">
+                    <Style.Triggers><DataTrigger Binding="{Binding IsBusy}" Value="True"><Setter Property="IsEnabled" Value="False"/></DataTrigger></Style.Triggers>
+                </Style>
+            </ctrls:TreeView.Style>
+            <ctrls:TreeView.ItemContainerStyle>
+                <Style TargetType="{x:Type ctrls:TreeViewItem}" BasedOn="{StaticResource {x:Type ctrls:TreeViewItem}}">
+                    <Setter Property="IsExpanded" Value="{Binding IsExpanded, Mode=TwoWay}"/>
+                    <Setter Property="AutomationProperties.Name" Value="{Binding SelectionHint}"/>
+                </Style>
+            </ctrls:TreeView.ItemContainerStyle>
+            <ctrls:TreeView.ItemTemplate>
+                <HierarchicalDataTemplate ItemsSource="{Binding VisibleChildren}">
+                    <StackPanel Orientation="Horizontal">
+                        <ctrls:CheckBox IsChecked="{Binding IsChecked, Mode=OneWay}" Click="Selection_Click" Focusable="False" VerticalAlignment="Center"
+                                  Margin="0,0,6,0" AutomationProperties.Name="{Binding SelectionHint}" ToolTip="{Binding SelectionHint}"/>
+                        <StackPanel>
+                            <TextBlock Text="{Binding DisplayName}"/>
+                            <TextBlock Text="{Binding UniqueName}" FontSize="11" Opacity="0.75">
+                                <TextBlock.Style><Style TargetType="TextBlock"><Style.Triggers>
+                                    <DataTrigger Binding="{Binding UniqueName}" Value=""><Setter Property="Visibility" Value="Collapsed"/></DataTrigger>
+                                </Style.Triggers></Style></TextBlock.Style>
+                            </TextBlock>
+                        </StackPanel>
+                    </StackPanel>
+                </HierarchicalDataTemplate>
+            </ctrls:TreeView.ItemTemplate>
+        </ctrls:TreeView>
+        <StackPanel Grid.Row="3" Margin="0,6,0,6">
+            <TextBlock Text="{Binding SelectionSummary}"/>
+            <TextBlock Text="{Binding Status}" TextWrapping="Wrap" AutomationProperties.LiveSetting="Polite"/>
+            <ProgressBar IsIndeterminate="True" Height="3" Margin="0,4,0,0" Visibility="{Binding IsBusy, Converter={StaticResource BoolVisibility}}"/>
+        </StackPanel>
+        <WrapPanel Grid.Row="4">
+            <ctrls:Button Content="{Binding ActionLabel}" Kind="Accent" Command="{Binding ExecuteCommand}" Padding="10,4" Margin="0,0,6,4"/>
+            <ctrls:Button Content="Cancel" Command="{Binding CancelCommand}" Padding="10,4" Margin="0,0,6,4"/>
+            <ctrls:Button Content="Select matching" Command="{Binding SelectMatchingCommand}" Padding="6,4" Margin="0,0,6,4"/>
+            <ctrls:Button Content="Clear selection" Command="{Binding ClearSelectionCommand}" Padding="6,4" Margin="0,0,6,4"/>
+        </WrapPanel>
+    </Grid>
+</UserControl>

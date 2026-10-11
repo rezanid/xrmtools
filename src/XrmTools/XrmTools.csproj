@@ -156,6 +156,13 @@
     <Compile Include="DataverseExplorer\Services\IExplorerDataService.cs" />
     <Compile Include="DataverseExplorer\Services\ExplorerCategoryProviders.cs" />
     <Compile Include="DataverseExplorer\Services\ExplorerCommandProviders.cs" />
+    <Compile Include="DataverseExplorer\Services\ExplorerCollectionOperation.cs" />
+    <Compile Include="DataverseExplorer\Services\CustomApiOpenApiCollectionOperation.cs" />
+    <Compile Include="DataverseExplorer\ViewModels\ExplorerCollectionSession.cs" />
+    <Compile Include="DataverseExplorer\Views\ExplorerCollectionControl.xaml.cs" />
+    <Compile Include="CodeGen\CustomApi\CustomApiSchemaComposer.cs" />
+    <Compile Include="CodeGen\CustomApi\CustomApiEnvironment.cs" />
+    <Page Include="DataverseExplorer\Views\ExplorerCollectionControl.xaml"><Generator>MSBuild:Compile</Generator></Page>
     <Compile Include="DataverseExplorer\Services\CustomApiCommandProvider.cs" />
     <Compile Include="CodeGen\CustomApi\CustomApiClientGenerator.cs" />
     <Compile Include="CodeGen\CustomApi\CustomApiOpenApiGenerator.cs" />
