@@ -11,16 +11,14 @@
     </UserControl.Resources>
     <Grid Margin="6">
         <Grid.RowDefinitions>
-            <RowDefinition Height="Auto"/><RowDefinition Height="Auto"/>
-            <RowDefinition Height="*"/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/><RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
         <StackPanel>
             <TextBlock Text="{Binding Title}" FontWeight="SemiBold" TextWrapping="Wrap"/>
             <TextBlock Text="{Binding Context}" TextWrapping="Wrap" Margin="0,3,0,6"/>
         </StackPanel>
-        <ctrls:TextBox x:Name="SearchBox" Grid.Row="1" Text="{Binding SearchText, UpdateSourceTrigger=PropertyChanged}" HintText="Search APIs or assemblies"
-                 ToolTip="Search API names or assemblies" AutomationProperties.Name="Search collection items" Margin="0,0,0,6"/>
-        <ctrls:TreeView x:Name="CandidateTree" Grid.Row="2" ItemsSource="{Binding VisibleGroups}" AutomationProperties.Name="Available collection items">
+        <ctrls:TreeView x:Name="CandidateTree" Grid.Row="1" ItemsSource="{Binding VisibleGroups}" AutomationProperties.Name="Available collection items">
             <ctrls:TreeView.Style>
                 <Style TargetType="{x:Type ctrls:TreeView}" BasedOn="{StaticResource {x:Type ctrls:TreeView}}">
                     <Style.Triggers><DataTrigger Binding="{Binding IsBusy}" Value="True"><Setter Property="IsEnabled" Value="False"/></DataTrigger></Style.Triggers>
@@ -49,16 +47,11 @@
                 </HierarchicalDataTemplate>
             </ctrls:TreeView.ItemTemplate>
         </ctrls:TreeView>
-        <StackPanel Grid.Row="3" Margin="0,6,0,6">
+        <StackPanel Grid.Row="2" Margin="0,6,0,6">
             <TextBlock Text="{Binding SelectionSummary}"/>
             <TextBlock Text="{Binding Status}" TextWrapping="Wrap" AutomationProperties.LiveSetting="Polite"/>
             <ProgressBar IsIndeterminate="True" Height="3" Margin="0,4,0,0" Visibility="{Binding IsBusy, Converter={StaticResource BoolVisibility}}"/>
         </StackPanel>
-        <WrapPanel Grid.Row="4">
-            <ctrls:Button Content="{Binding ActionLabel}" Kind="Accent" Command="{Binding ExecuteCommand}" Padding="10,4" Margin="0,0,6,4"/>
-            <ctrls:Button Content="Cancel" Command="{Binding CancelCommand}" Padding="10,4" Margin="0,0,6,4"/>
-            <ctrls:Button Content="Select matching" Command="{Binding SelectMatchingCommand}" Padding="6,4" Margin="0,0,6,4"/>
-            <ctrls:Button Content="Clear selection" Command="{Binding ClearSelectionCommand}" Padding="6,4" Margin="0,0,6,4"/>
-        </WrapPanel>
+
     </Grid>
 </UserControl>

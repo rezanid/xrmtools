@@ -30,6 +30,8 @@ internal sealed class ExplorerCollectionSession : ViewModelBase, IDisposable
     private bool _ready;
     private bool _disposed;
     private bool _executing;
+    private bool _matchCase;
+    private bool _updatedLast3Hours;
     private string _search = string.Empty;
     private string _status = string.Empty;
 
@@ -132,13 +134,24 @@ internal sealed class ExplorerCollectionSession : ViewModelBase, IDisposable
         foreach (var row in Rows.Where(r => r.IsVisible)) _selected.Add(row.Candidate!.Id);
         SelectionChanged();
     }
+    internal uint ApplySearch(string text, bool matchCase, bool updatedLast3Hours)
+    {
+        _matchCase = matchCase; _updatedLast3Hours = updatedLast3Hours;
+        SetProperty(ref _search, text, nameof(SearchText));
+        ApplyFilter();
+        return (uint)Rows.Count(r => r.IsVisible);
+    }
+
     private void ApplyFilter()
     {
+        var comparison = _matchCase ? StringComparison.Ordinal : StringComparison.OrdinalIgnoreCase;
+        var threshold = DateTimeOffset.UtcNow.AddHours(-3);
         foreach (var group in Groups)
         {
-            var groupMatches = group.DisplayName.IndexOf(SearchText, StringComparison.OrdinalIgnoreCase) >= 0;
+            var groupMatches = group.DisplayName.IndexOf(SearchText, comparison) >= 0;
             foreach (var row in group.Children)
-                row.IsVisible = groupMatches || row.DisplayName.IndexOf(SearchText, StringComparison.OrdinalIgnoreCase) >= 0 || row.UniqueName.IndexOf(SearchText, StringComparison.OrdinalIgnoreCase) >= 0;
+                row.IsVisible = (groupMatches || row.DisplayName.IndexOf(SearchText, comparison) >= 0 || row.UniqueName.IndexOf(SearchText, comparison) >= 0)
+                    && (!_updatedLast3Hours || row.Candidate?.ModifiedOn >= threshold);
             group.IsVisible = group.Children.Any(r => r.IsVisible);
             if (group.IsVisible && !string.IsNullOrWhiteSpace(SearchText)) group.IsExpanded = true;
             group.VisibleChildren.Refresh();

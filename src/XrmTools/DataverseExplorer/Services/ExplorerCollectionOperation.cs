@@ -18,4 +18,4 @@ internal interface IExplorerCollectionOperation
 }
 
 internal sealed record ExplorerCollectionCandidate(string Id, string DisplayName, string UniqueName,
-    string GroupId, string GroupName, object Target);
+    string GroupId, string GroupName, object Target, DateTimeOffset? ModifiedOn = null);

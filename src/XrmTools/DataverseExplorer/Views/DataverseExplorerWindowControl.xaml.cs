@@ -24,6 +24,7 @@ public partial class DataverseExplorerWindowControl : UserControl
     internal IEnumerable<IExplorerCommandProvider> CommandProviders { get; set; } = [];
     internal IEnumerable<IExplorerCollectionOperation> CollectionOperations { get; set; } = [];
     private FrameworkElement? _returnFocus;
+    internal event System.Action? FocusSearchRequested;
 
     private void TreeViewItem_ContextMenuOpening(object sender, ContextMenuEventArgs e)
     {
@@ -63,10 +64,8 @@ public partial class DataverseExplorerWindowControl : UserControl
         InitializeComponent();
         PreviewKeyDown += (_, e) =>
         {
-            if (DataContext is DataverseExplorerViewModel { Collection: null } && e.Key == Key.F && Keyboard.Modifiers == ModifierKeys.Control)
-            { BrowseSearch.Focus(); BrowseSearch.SelectAll(); e.Handled = true; }
-            else if (e.Key == Key.Escape && BrowseSearch.IsKeyboardFocusWithin && DataContext is DataverseExplorerViewModel model)
-            { model.SearchText = string.Empty; e.Handled = true; }
+            if (e.Key == Key.F && Keyboard.Modifiers == ModifierKeys.Control)
+            { FocusSearchRequested?.Invoke(); e.Handled = true; }
         };
         DataContextChanged += (_, e) =>
         {

@@ -109,10 +109,8 @@ public sealed class CollectionSessionTests
         var control = new ExplorerCollectionControl { DataContext = session };
         control.Resources.MergedDictionaries.Add(DefaultStyles.Instance);
         control.Measure(new Size(300, 600)); control.Arrange(new Rect(0, 0, 300, 600)); control.UpdateLayout();
-        var search = (TextBox)control.FindName("SearchBox");
-        search.Text = "new_B";
+        session.ApplySearch("new_B", false, false);
         control.Dispatcher.Invoke(() => { }, DispatcherPriority.ApplicationIdle);
-        Assert.Equal("new_B", session.SearchText);
         var tree = (XrmTools.Shell.Controls.TreeView)control.FindName("CandidateTree");
         Assert.Single(tree.Items);
         session.SelectMatchingCommand.Execute(null);
@@ -161,10 +159,26 @@ public sealed class CollectionSessionTests
         Assert.True(root.IsExpanded); Assert.Equal("API", vm.SearchText);
         control.Dispatcher.Invoke(() => { }, DispatcherPriority.ApplicationIdle);
         Assert.Equal(Visibility.Visible, ((FrameworkElement)control.FindName("BrowseTree")).Visibility);
-        Assert.Equal("API", ((TextBox)control.FindName("BrowseSearch")).Text);
+        Assert.Null(control.FindName("BrowseSearch"));
     });
 
     private static ExplorerCollectionSession Session(Operation op, Action? close = null) => new(op, new CategoryNode { DisplayName = "Assemblies" }, Environment, Mock.Of<ILogger>(), close ?? (() => { }));
+
+    [Fact]
+    public Task NativeSearchOptionsApplyCaseAndDateFiltersWithoutClearingSelection() => OnSta(() =>
+    {
+        var op = new Operation { Candidates = [
+            Candidate("a", "API A", "new_A") with { ModifiedOn = DateTimeOffset.UtcNow },
+            Candidate("b", "API B", "new_B") with { ModifiedOn = DateTimeOffset.UtcNow.AddDays(-1) },
+        ] };
+        using var session = Session(op); session.LoadAsync().GetAwaiter().GetResult();
+        session.SelectMatchingCommand.Execute(null);
+        Assert.Equal(0u, session.ApplySearch("NEW_A", true, false));
+        Assert.Equal(1u, session.ApplySearch("NEW_A", false, false));
+        Assert.Equal(1u, session.ApplySearch("", false, true));
+        Assert.Equal("2 selected · 1 matching", session.SelectionSummary);
+        Assert.Equal(2u, session.ApplySearch("", false, false));
+    });
     private static ExplorerCollectionCandidate Candidate(string id, string label, string name) => new(id, label, name, "assembly", "Assembly", id);
     private sealed class Provider(CategoryNode root) : IExplorerCategoryProvider { public int Order => 0; public CategoryNode CreateRoot() => root; }
     private sealed class Operation : IExplorerCollectionOperation

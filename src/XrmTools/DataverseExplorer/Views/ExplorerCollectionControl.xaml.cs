@@ -9,7 +9,7 @@ using XrmTools.DataverseExplorer.ViewModels;
 public partial class ExplorerCollectionControl : UserControl
 {
     public ExplorerCollectionControl() => InitializeComponent();
-    private void Workspace_Loaded(object sender, RoutedEventArgs e) => SearchBox.Focus();
+    private void Workspace_Loaded(object sender, RoutedEventArgs e) => CandidateTree.Focus();
     private void Selection_Click(object sender, RoutedEventArgs e)
     {
         if (sender is FrameworkElement { DataContext: ExplorerCollectionRow row }) row.IsChecked = row.IsChecked != true;
@@ -17,11 +17,7 @@ public partial class ExplorerCollectionControl : UserControl
     private void Workspace_PreviewKeyDown(object sender, KeyEventArgs e)
     {
         if (DataContext is not ExplorerCollectionSession session) return;
-        if (e.Key == Key.F && Keyboard.Modifiers == ModifierKeys.Control)
-        {
-            SearchBox.Focus(); SearchBox.SelectAll(); e.Handled = true;
-        }
-        else if (e.Key == Key.Escape)
+        if (e.Key == Key.Escape)
         {
             session.CancelCommand.Execute(null); e.Handled = true;
         }

@@ -135,6 +135,7 @@
     <Compile Include="CodeRefactoringProviders\WebApiServiceHelper.cs" />
     <Compile Include="Commands\AddDataverseSolutionProjectCommand.cs" />
     <Compile Include="Commands\RefreshDataverseExplorerCommand.cs" />
+    <Compile Include="Commands\ExplorerCollectionToolbarCommands.cs" />
     <Compile Include="Commands\RecloneDataverseSolutionCommand.cs" />
     <Compile Include="Commands\ShowDataverseExplorerCommand.cs" />
     <Compile Include="Commands\CdsProjectCommandBase.cs" />

@@ -6,6 +6,8 @@ Assemblies, a package, or an assembly. The existing single-API command remains a
 
 ## Developer experience
 
+The native search box and dropdown provide name search, match-case and recent-update
+filters for the active workspace. Browsing search is restored on returning from a task.
 The collection workspace shows its operation, environment and scope, then discovers
 eligible APIs independently of which browsing branches have been expanded. APIs are
 grouped by assembly and show both display and unique names.
@@ -15,6 +17,7 @@ grouped by assembly and show both display and unique names.
 - **Select matching** adds the current matches; **Clear selection** clears all checked items.
 - The count shows both total selection and matching candidates.
 - Use the Explorer toolbar's **Refresh** to reload candidates and reconcile selection.
+- Native toolbar moniker buttons provide Generate, Cancel, Select matching and Clear selection.
 - **Generate** opens one unsaved document using the configured OpenAPI version and output format.
 - **Cancel** or Escape returns to browsing. Ctrl+F focuses the active workspace's search.
 - Arrow keys navigate the tree; Space toggles the focused row or group.
@@ -31,7 +34,8 @@ display/unique names, grouping information and an operation-specific target.
 
 `ExplorerCollectionSession` owns checked identities, filtered views, group states,
 loading, error handling, cancellation and immutable execution selection. The shared
-`ExplorerCollectionControl` handles presentation and keyboard interaction. The Explorer
+`ExplorerCollectionControl` handles presentation and keyboard interaction; native Visual
+Studio toolbar commands route actions to the active session. The Explorer
 adds entry commands to applicable context menus. No new dialog or browsing-node flags
 are needed for another task.
 

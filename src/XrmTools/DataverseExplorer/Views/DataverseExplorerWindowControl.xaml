@@ -32,18 +32,11 @@
         </Grid.RowDefinitions>
 
         <StackPanel Grid.Row="0">
-            <TextBlock Text="{Binding WorkspaceNotice}" TextWrapping="Wrap" Margin="6,2"/>
-            <StackPanel Margin="6,0,6,6">
-                <StackPanel.Style><Style TargetType="StackPanel">
-                    <Setter Property="Visibility" Value="Collapsed"/>
-                    <Style.Triggers><DataTrigger Binding="{Binding Collection}" Value="{x:Null}"><Setter Property="Visibility" Value="Visible"/></DataTrigger></Style.Triggers>
-                </Style></StackPanel.Style>
-                <ctrls:TextBox x:Name="BrowseSearch" Text="{Binding SearchText, UpdateSourceTrigger=PropertyChanged}" HintText="Search loaded items" AutomationProperties.Name="Search Dataverse Explorer"/>
-                <WrapPanel Margin="0,4,0,0">
-                    <ctrls:CheckBox Content="Match case" IsChecked="{Binding MatchCase}" Margin="0,0,8,0"/>
-                    <ctrls:CheckBox Content="Updated in last 3 hours" IsChecked="{Binding UpdatedLast3Hours}"/>
-                </WrapPanel>
-            </StackPanel>
+            <TextBlock Text="{Binding WorkspaceNotice}" TextWrapping="Wrap" Margin="6,2">
+                <TextBlock.Style><Style TargetType="TextBlock"><Style.Triggers>
+                    <DataTrigger Binding="{Binding WorkspaceNotice}" Value=""><Setter Property="Visibility" Value="Collapsed"/></DataTrigger>
+                </Style.Triggers></Style></TextBlock.Style>
+            </TextBlock>
         </StackPanel>
         <ctrls:TreeView x:Name="BrowseTree" Grid.Row="1" ItemsSource="{Binding VisibleRoots}" ToolTip="Search includes loaded nodes. Expand a node to load more."
                         SelectedItemChanged="TreeView_SelectedItemChanged"

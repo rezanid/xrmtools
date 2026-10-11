@@ -25,7 +25,7 @@ internal sealed class CustomApiOpenApiCollectionOperation(IWebApiService webApi,
     {
         var baseUrl = await CustomApiEnvironment.RequireAsync(webApi, environment, token);
         // Single-valued expansions avoid paging nested collections. No parameters, steps or images are fetched.
-        var query = "customapis?$select=customapiid,displayname,uniquename&$orderby=uniquename" +
+        var query = "customapis?$select=customapiid,displayname,uniquename,modifiedon&$orderby=uniquename" +
             "&$expand=PluginTypeId($select=typename;$expand=pluginassemblyid($select=pluginassemblyid,name,_packageid_value))";
         var rows = new List<JObject>();
         string? next = new Uri(baseUrl, query).AbsoluteUri;
@@ -64,7 +64,7 @@ internal sealed class CustomApiOpenApiCollectionOperation(IWebApiService webApi,
                 throw new InvalidOperationException("Custom API candidate metadata is incomplete.");
             var assemblyName = (string?)assembly["name"] ?? assemblyId.ToString();
             result.Add(new ExplorerCollectionCandidate(id.ToString(), (string?)api["displayname"] ?? name!, name!,
-                assemblyId.ToString(), assemblyName, new CustomApiOpenApiTarget(id, (string?)plugin?["typename"], assemblyName, name)));
+                assemblyId.ToString(), assemblyName, new CustomApiOpenApiTarget(id, (string?)plugin?["typename"], assemblyName, name), (DateTimeOffset?)api["modifiedon"]));
         }
         return result;
     }

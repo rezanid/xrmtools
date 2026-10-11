@@ -11,7 +11,7 @@ internal sealed class RefreshDataverseExplorerCommand : BaseCommand<RefreshDatav
 {
     protected override void BeforeQueryStatus(EventArgs e)
     {
-        Command.Enabled = true;
+        Command.Enabled = DataverseExplorer.Views.DataverseExplorerWindow.Current?.Collection?.IsBusy != true;
         Command.Visible = true;
         Command.Text = "Refresh";
     }
