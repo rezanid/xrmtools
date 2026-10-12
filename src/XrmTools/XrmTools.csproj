@@ -172,6 +172,7 @@
     <Compile Include="CodeRefactoringProviders\CustomApiOpenApiRefactoringProvider.cs" />
     <Compile Include="Helpers\SourceTypeResolver.cs" />
     <Compile Include="CodeGen\CustomApi\CustomApiOpenApiWriter.cs" />
+    <Compile Include="CodeGen\CustomApi\ScalarHtmlDocument.cs" />
     <Compile Include="CodeGen\CustomApi\OpenApiDocumentFormatter.cs" />
     <Compile Include="CodeGen\CustomApi\OpenApiSchemaVersion.cs" />
     <Compile Include="CodeGen\CustomApi\ODataFunctionParameters.cs" />

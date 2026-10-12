@@ -1,0 +1,39 @@
+#nullable enable
+namespace XrmTools.Tests.CodeGen.CustomApi;
+
+using Newtonsoft.Json;
+using System;
+using System.Text.RegularExpressions;
+using Xunit;
+using XrmTools.CodeGen.CustomApi;
+
+public sealed class ScalarHtmlDocumentTests
+{
+    [Theory]
+    [InlineData("custom-apis.openapi.json")]
+    [InlineData("custom-apis.openapi.yaml")]
+    [InlineData("API & café #1.openapi.json")]
+    [InlineData("API 'quoted' & names.openapi.json")]
+    public void CompanionLoadsOriginalSpecificationUsingSafeRelativeUrl(string filename)
+    {
+        var html = ScalarHtmlDocument.Create(filename);
+        Assert.EndsWith(".openapi.html", html.FileName);
+        var match = Regex.Match(html.Content, @"url: (.+),");
+        Assert.True(match.Success);
+        var url = JsonConvert.DeserializeObject<string>(match.Groups[1].Value)!;
+        Assert.StartsWith("./", url);
+        Assert.Equal(filename, Uri.UnescapeDataString(url.Substring(2)));
+        Assert.Contains("createApiReference('#app'", html.Content);
+        Assert.Contains("https://cdn.jsdelivr.net/npm/@scalar/api-reference/esm.js", html.Content);
+        Assert.DoesNotContain("proxy.scalar.com", html.Content);
+        Assert.DoesNotContain("'<script>", html.Content);
+    }
+
+    [Theory]
+    [InlineData("API '<script>.openapi.json")]
+    [InlineData("")]
+    [InlineData("../openapi.json")]
+    [InlineData("C:\\specs\\openapi.json")]
+    public void RejectsMissingFilenamesAndDirectoryPaths(string filename)
+        => Assert.Throws<ArgumentException>(() => ScalarHtmlDocument.Create(filename));
+}

@@ -60,3 +60,17 @@ internal sealed class ClearExplorerCollectionSelectionCommand : ExplorerCollecti
     protected override ICommand? Action => DataverseExplorerWindow.Current?.Collection?.ClearSelectionCommand;
     protected override string Label => "Clear selection";
 }
+
+[Command(PackageGuids.XrmToolsCmdSetIdString, PackageIds.ToggleExplorerCollectionDocumentationCmdId)]
+internal sealed class ToggleExplorerCollectionDocumentationCommand : ExplorerCollectionToolbarCommand<ToggleExplorerCollectionDocumentationCommand>
+{
+    protected override ICommand? Action => DataverseExplorerWindow.Current?.Collection is { SupportsDocumentation: true } session
+        ? session.ToggleDocumentationCommand : null;
+    protected override string Label => "Generate Scalar HTML documentation";
+
+    protected override void BeforeQueryStatus(EventArgs e)
+    {
+        base.BeforeQueryStatus(e);
+        Command.Checked = DataverseExplorerWindow.Current?.Collection?.IncludeDocumentation == true;
+    }
+}

@@ -247,6 +247,7 @@ public sealed partial class XrmToolsPackage : ToolkitPackage
         await CancelExplorerCollectionCommand.InitializeAsync(this);
         await SelectMatchingExplorerCollectionCommand.InitializeAsync(this);
         await ClearExplorerCollectionSelectionCommand.InitializeAsync(this);
+        await ToggleExplorerCollectionDocumentationCommand.InitializeAsync(this);
 
         VS.Events.SolutionEvents.OnAfterOpenSolution += (solution) => OnAfterOpenSolution(solution, cancellationToken);
         VS.Events.SolutionEvents.OnAfterCloseSolution += () => OnAfterCloseSolution(cancellationToken);

@@ -57,6 +57,14 @@ internal sealed record GenerateOpenApiTarget(Guid ApiId, CancellationToken Token
 /// <summary>Shared presentation for generated Custom API artifacts.</summary>
 internal static class GeneratedCustomApiDocument
 {
+    public static async Task OpenWithDocumentationAsync(GeneratedClient specification, CancellationToken token)
+    {
+        var html = ScalarHtmlDocument.Create(specification.FileName);
+        await OpenAsync(html, "Scalar HTML documentation", token);
+        await OpenAsync(specification, "OpenAPI specification", token);
+        await VS.StatusBar.ShowMessageAsync("Generated specification and Scalar HTML opened as unsaved documents. Save both in the same folder and serve it to view documentation.");
+    }
+
     public static async Task OpenAsync(GeneratedClient result, string artifactName, CancellationToken token)
     {
         var dte = await VS.GetServiceAsync<EnvDTE.DTE, EnvDTE.DTE>()

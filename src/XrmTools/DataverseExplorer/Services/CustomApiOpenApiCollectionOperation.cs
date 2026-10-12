@@ -15,7 +15,7 @@ using XrmTools.WebApi.Methods;
 
 [Export(typeof(IExplorerCollectionOperation))]
 [method: ImportingConstructor]
-internal sealed class CustomApiOpenApiCollectionOperation(IWebApiService webApi, ICustomApiOpenApiGenerator generator) : IExplorerCollectionOperation
+internal sealed class CustomApiOpenApiCollectionOperation(IWebApiService webApi, ICustomApiOpenApiGenerator generator) : IExplorerCollectionDocumentationOperation
 {
     public string Title => "Generate OpenAPI specification";
     public string ActionLabel => "Generate";
@@ -69,10 +69,19 @@ internal sealed class CustomApiOpenApiCollectionOperation(IWebApiService webApi,
         return result;
     }
 
-    public async Task ExecuteAsync(IReadOnlyList<ExplorerCollectionCandidate> selection, Uri environment, CancellationToken token)
+    public Task ExecuteAsync(IReadOnlyList<ExplorerCollectionCandidate> selection, Uri environment, CancellationToken token)
+        => GenerateAsync(selection, environment, false, token);
+
+    public Task ExecuteWithDocumentationAsync(IReadOnlyList<ExplorerCollectionCandidate> selection, Uri environment, CancellationToken token)
+        => GenerateAsync(selection, environment, true, token);
+
+    private async Task GenerateAsync(IReadOnlyList<ExplorerCollectionCandidate> selection, Uri environment, bool documentation, CancellationToken token)
     {
         var result = await generator.GenerateManyAsync(selection.Select(c => (CustomApiOpenApiTarget)c.Target).ToArray(), environment, token);
         token.ThrowIfCancellationRequested();
-        await GeneratedCustomApiDocument.OpenAsync(result, "OpenAPI specification", token);
+        if (documentation)
+            await GeneratedCustomApiDocument.OpenWithDocumentationAsync(result, token);
+        else
+            await GeneratedCustomApiDocument.OpenAsync(result, "OpenAPI specification", token);
     }
 }

@@ -32,6 +32,7 @@ internal sealed class ExplorerCollectionSession : ViewModelBase, IDisposable
     private bool _executing;
     private bool _matchCase;
     private bool _updatedLast3Hours;
+    private bool _includeDocumentation;
     private string _search = string.Empty;
     private string _status = string.Empty;
 
@@ -48,6 +49,9 @@ internal sealed class ExplorerCollectionSession : ViewModelBase, IDisposable
     public RelayCommand SelectMatchingCommand { get; }
     public RelayCommand ClearSelectionCommand { get; }
     public RelayCommand CancelCommand { get; }
+    public bool SupportsDocumentation => _operation is IExplorerCollectionDocumentationOperation;
+    public bool IncludeDocumentation => _includeDocumentation;
+    public RelayCommand ToggleDocumentationCommand { get; }
     private IEnumerable<ExplorerCollectionRow> Rows => Groups.SelectMany(g => g.Children);
 
     public ExplorerCollectionSession(IExplorerCollectionOperation operation, ExplorerNodeBase scope, Uri environment,
@@ -59,6 +63,11 @@ internal sealed class ExplorerCollectionSession : ViewModelBase, IDisposable
         SelectMatchingCommand = new RelayCommand(SelectMatching, () => !_disposed && _ready && !IsBusy);
         ClearSelectionCommand = new RelayCommand(() => { if (_disposed || IsBusy) return; _selected.Clear(); SelectionChanged(); }, () => !_disposed && !IsBusy && _selected.Count > 0);
         CancelCommand = new RelayCommand(close, () => !_disposed);
+        ToggleDocumentationCommand = new RelayCommand(() =>
+        {
+            if (_disposed || IsBusy || !SupportsDocumentation) return;
+            SetProperty(ref _includeDocumentation, !_includeDocumentation, nameof(IncludeDocumentation));
+        }, () => !_disposed && !IsBusy && SupportsDocumentation);
     }
 
     public async Task LoadAsync()
@@ -107,7 +116,10 @@ internal sealed class ExplorerCollectionSession : ViewModelBase, IDisposable
         _executing = true; IsBusy = true; Status = "Working…";
         try
         {
-            await _operation.ExecuteAsync(selection, _environment, token);
+            if (IncludeDocumentation && _operation is IExplorerCollectionDocumentationOperation documentation)
+                await documentation.ExecuteWithDocumentationAsync(selection, _environment, token);
+            else
+                await _operation.ExecuteAsync(selection, _environment, token);
             token.ThrowIfCancellationRequested();
             _close();
         }
@@ -167,6 +179,7 @@ internal sealed class ExplorerCollectionSession : ViewModelBase, IDisposable
     private void UpdateCommands()
     {
         ExecuteCommand.NotifyCanExecuteChanged();
+        ToggleDocumentationCommand.NotifyCanExecuteChanged();
         SelectMatchingCommand.NotifyCanExecuteChanged(); ClearSelectionCommand.NotifyCanExecuteChanged();
     }
     public void Dispose()

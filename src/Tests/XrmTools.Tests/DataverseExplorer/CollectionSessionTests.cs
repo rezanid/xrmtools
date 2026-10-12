@@ -162,7 +162,7 @@ public sealed class CollectionSessionTests
         Assert.Null(control.FindName("BrowseSearch"));
     });
 
-    private static ExplorerCollectionSession Session(Operation op, Action? close = null) => new(op, new CategoryNode { DisplayName = "Assemblies" }, Environment, Mock.Of<ILogger>(), close ?? (() => { }));
+    private static ExplorerCollectionSession Session(IExplorerCollectionOperation op, Action? close = null) => new(op, new CategoryNode { DisplayName = "Assemblies" }, Environment, Mock.Of<ILogger>(), close ?? (() => { }));
 
     [Fact]
     public Task NativeSearchOptionsApplyCaseAndDateFiltersWithoutClearingSelection() => OnSta(() =>
@@ -179,9 +179,65 @@ public sealed class CollectionSessionTests
         Assert.Equal("2 selected · 1 matching", session.SelectionSummary);
         Assert.Equal(2u, session.ApplySearch("", false, false));
     });
+    [Fact]
+    public Task DocumentationChoiceIsOffByDefaultAndIsolatedToEachSession() => OnSta(() =>
+    {
+        var op = new DocumentationOperation();
+        using var session = Session(op);
+        Assert.True(session.SupportsDocumentation);
+        Assert.False(session.IncludeDocumentation);
+        session.LoadAsync().GetAwaiter().GetResult();
+        session.SelectMatchingCommand.Execute(null);
+        session.ToggleDocumentationCommand.Execute(null);
+        Assert.True(session.IncludeDocumentation);
+        session.LoadAsync().GetAwaiter().GetResult();
+        Assert.True(session.IncludeDocumentation);
+        session.ExecuteCommand.ExecuteAsync(null).GetAwaiter().GetResult();
+        Assert.Equal(1, op.DocumentationExecutions);
+        using var next = Session(op);
+        Assert.False(next.IncludeDocumentation);
+        next.LoadAsync().GetAwaiter().GetResult();
+        next.SelectMatchingCommand.Execute(null);
+        next.ExecuteCommand.ExecuteAsync(null).GetAwaiter().GetResult();
+        Assert.Equal(1, op.DocumentationExecutions);
+        Assert.Equal(2, op.Executed.Count);
+        using var unsupported = Session(new Operation());
+        Assert.False(unsupported.SupportsDocumentation);
+        Assert.False(unsupported.ToggleDocumentationCommand.CanExecute(null));
+    });
+
+    [Fact]
+    public Task DocumentationChoiceCannotChangeDuringExecution() => OnSta(() =>
+    {
+        var pending = new TaskCompletionSource<bool>();
+        var op = new DocumentationOperation { ExecutionPending = pending.Task };
+        using var session = Session(op);
+        session.LoadAsync().GetAwaiter().GetResult();
+        session.SelectMatchingCommand.Execute(null);
+        session.ToggleDocumentationCommand.Execute(null);
+        var execution = session.ExecuteCommand.ExecuteAsync(null);
+        Assert.False(session.ToggleDocumentationCommand.CanExecute(null));
+        session.ToggleDocumentationCommand.Execute(null);
+        Assert.True(session.IncludeDocumentation);
+        pending.SetResult(true);
+        execution.GetAwaiter().GetResult();
+        session.Dispose();
+        Assert.False(session.ToggleDocumentationCommand.CanExecute(null));
+    });
+
+    private sealed class DocumentationOperation : Operation, IExplorerCollectionDocumentationOperation
+    {
+        public int DocumentationExecutions;
+        public Task ExecuteWithDocumentationAsync(IReadOnlyList<ExplorerCollectionCandidate> selection, Uri environment, CancellationToken token)
+        {
+            DocumentationExecutions++;
+            return ExecuteAsync(selection, environment, token);
+        }
+    }
+
     private static ExplorerCollectionCandidate Candidate(string id, string label, string name) => new(id, label, name, "assembly", "Assembly", id);
     private sealed class Provider(CategoryNode root) : IExplorerCategoryProvider { public int Order => 0; public CategoryNode CreateRoot() => root; }
-    private sealed class Operation : IExplorerCollectionOperation
+    private class Operation : IExplorerCollectionOperation
     {
         public string Title => "Generate OpenAPI specification"; public string ActionLabel => "Generate";
         public IReadOnlyList<ExplorerCollectionCandidate> Candidates = [Candidate("a", "API A", "new_A"), Candidate("b", "API B", "new_B")];

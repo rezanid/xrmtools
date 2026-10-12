@@ -19,6 +19,12 @@ grouped by assembly and show both display and unique names.
 - Use the Explorer toolbar's **Refresh** to reload candidates and reconcile selection.
 - Native toolbar moniker buttons provide Generate, Cancel, Select matching and Clear selection.
 - **Generate** opens one unsaved document using the configured OpenAPI version and output format.
+- Toggle **Generate Scalar HTML documentation** (Web icon) to also open a companion
+  `custom-apis.openapi.html` document. This is off for each new selection session.
+  Save both documents with their generated names in the same folder, then serve that
+  folder over HTTP to view the HTML page. It reads the JSON/YAML specification by
+  relative URL, so subsequent specification edits appear without regenerating HTML.
+  Scalar loads from its CDN and requires an internet connection.
 - **Cancel** or Escape returns to browsing. Ctrl+F focuses the active workspace's search.
 - Arrow keys navigate the tree; Space toggles the focused row or group.
 

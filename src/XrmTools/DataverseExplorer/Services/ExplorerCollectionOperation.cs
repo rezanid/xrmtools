@@ -17,5 +17,11 @@ internal interface IExplorerCollectionOperation
     Task ExecuteAsync(IReadOnlyList<ExplorerCollectionCandidate> selection, Uri environment, CancellationToken token);
 }
 
+/// <summary>Optional companion documentation output, enabled independently for each session.</summary>
+internal interface IExplorerCollectionDocumentationOperation : IExplorerCollectionOperation
+{
+    Task ExecuteWithDocumentationAsync(IReadOnlyList<ExplorerCollectionCandidate> selection, Uri environment, CancellationToken token);
+}
+
 internal sealed record ExplorerCollectionCandidate(string Id, string DisplayName, string UniqueName,
     string GroupId, string GroupName, object Target, DateTimeOffset? ModifiedOn = null);

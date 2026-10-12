@@ -393,6 +393,14 @@
         <CommandFlag>DefaultInvisible</CommandFlag>
         <Strings><ButtonText>Clear selection</ButtonText><ToolTipText>Clear selection</ToolTipText></Strings>
       </Button>
+      <Button guid="XrmToolsCmdSetId" id="ToggleExplorerCollectionDocumentationCmdId" priority="0x0240" type="Button">
+        <Parent guid="XrmToolsCmdSetId" id="DataverseExplorerToolbarGroup" />
+        <Icon guid="ImageCatalogGuid" id="Web" />
+        <CommandFlag>IconIsMoniker</CommandFlag>
+        <CommandFlag>DynamicVisibility</CommandFlag>
+        <CommandFlag>DefaultInvisible</CommandFlag>
+        <Strings><ButtonText>Generate Scalar HTML documentation</ButtonText><ToolTipText>Generate Scalar HTML documentation (save alongside the specification)</ToolTipText></Strings>
+      </Button>
     </Buttons>
   </Commands>
   
@@ -496,6 +504,7 @@
       <IDSymbol name="CancelExplorerCollectionCmdId" value="0x2023"/>
       <IDSymbol name="SelectMatchingExplorerCollectionCmdId" value="0x2024"/>
       <IDSymbol name="ClearExplorerCollectionSelectionCmdId" value="0x2025"/>
+      <IDSymbol name="ToggleExplorerCollectionDocumentationCmdId" value="0x2026"/>
 
     </GuidSymbol>
   </Symbols> 
