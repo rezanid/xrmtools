@@ -168,6 +168,10 @@ internal class DataverseExplorerWindow : ToolWindowPane // BaseToolWindow<Datave
     {
         ThreadHelper.ThrowIfNotOnUIThread();
         base.OnCreate();
+        // Keep native search on its own row so it does not crowd toolbar commands.
+        ErrorHandler.ThrowOnFailure(((IVsWindowFrame)Frame).SetProperty(
+            (int)__VSFPROPID5.VSFPROPID_SearchPlacement,
+            (int)__VSSEARCHPLACEMENT.SP_STRETCH));
         Current = this;
         _trackSelection = GetService(typeof(STrackSelection)) as ITrackSelection;
         UpdatePropertiesWindowSelection(_viewModel?.SelectedNode);
