@@ -4,17 +4,34 @@ namespace XrmTools.CodeGen.CustomApi;
 using Newtonsoft.Json;
 using System;
 using System.IO;
+using System.ComponentModel;
 using System.Net;
 
-/// <summary>A companion page that reads the saved specification rather than embedding a snapshot.</summary>
+public enum OpenApiHtmlMode
+{
+    [Description("Embedded specification")] Embedded,
+    [Description("Linked specification (requires HTTP)")] Linked,
+}
+
+/// <summary>A Scalar companion page with an embedded snapshot or a relative specification URL.</summary>
 internal static class ScalarHtmlDocument
 {
-    internal static GeneratedClient Create(string specificationFileName)
+    internal static GeneratedClient Create(GeneratedClient specification, OpenApiHtmlMode mode = OpenApiHtmlMode.Embedded)
     {
+        var specificationFileName = specification.FileName;
         if (string.IsNullOrWhiteSpace(specificationFileName) || Path.GetFileName(specificationFileName) != specificationFileName)
             throw new ArgumentException("A specification filename without a directory is required.", nameof(specificationFileName));
-        var url = JsonConvert.SerializeObject("./" + Uri.EscapeDataString(specificationFileName),
-            new JsonSerializerSettings { StringEscapeHandling = StringEscapeHandling.EscapeHtml });
+        var value = mode switch
+        {
+            OpenApiHtmlMode.Embedded => specification.Content,
+            OpenApiHtmlMode.Linked => "./" + Uri.EscapeDataString(specificationFileName),
+            _ => throw new ArgumentOutOfRangeException(nameof(mode)),
+        };
+        var configuration = (mode == OpenApiHtmlMode.Embedded ? "content: " : "url: ") +
+            JsonConvert.SerializeObject(value, new JsonSerializerSettings { StringEscapeHandling = StringEscapeHandling.EscapeHtml });
+        var instructions = mode == OpenApiHtmlMode.Embedded
+            ? "Embedded specification snapshot. Regenerate this HTML after specification changes."
+            : "Save beside the referenced specification and serve this folder over HTTP.";
         var title = WebUtility.HtmlEncode(Path.GetFileNameWithoutExtension(specificationFileName) + " API Reference");
         var html = $$"""
             <!doctype html>
@@ -25,7 +42,7 @@ internal static class ScalarHtmlDocument
                 <title>{{title}}</title>
               </head>
               <body>
-                <!-- Save beside the referenced specification and serve this folder over HTTP.
+                <!-- {{instructions}}
                      Scalar loads from its CDN; an internet connection is required. -->
                 <div id="app"></div>
                 <noscript>Enable JavaScript to view the API reference.</noscript>
@@ -33,7 +50,7 @@ internal static class ScalarHtmlDocument
                   import { createApiReference } from 'https://cdn.jsdelivr.net/npm/@scalar/api-reference/esm.js'
 
                   createApiReference('#app', {
-                    url: {{url}},
+                    {{configuration}},
                   })
                 </script>
               </body>

@@ -16,7 +16,7 @@ public sealed class ScalarHtmlDocumentTests
     [InlineData("API 'quoted' & names.openapi.json")]
     public void CompanionLoadsOriginalSpecificationUsingSafeRelativeUrl(string filename)
     {
-        var html = ScalarHtmlDocument.Create(filename);
+        var html = ScalarHtmlDocument.Create(new GeneratedClient(filename, "{}"), OpenApiHtmlMode.Linked);
         Assert.EndsWith(".openapi.html", html.FileName);
         var match = Regex.Match(html.Content, @"url: (.+),");
         Assert.True(match.Success);
@@ -30,10 +30,28 @@ public sealed class ScalarHtmlDocumentTests
     }
 
     [Theory]
+    [InlineData("json", "{\"openapi\":\"3.0.4\",\"info\":{\"description\":\"</script><script>alert(1)</script> & café\"}}")]
+    [InlineData("yaml", "openapi: 3.0.4\ninfo:\n  description: '</script> & café'\n")]
+    public void EmbeddedModeDefaultsToSafelyEncodedContentWithoutFileFetch(string extension, string content)
+    {
+        var html = ScalarHtmlDocument.Create(new GeneratedClient("custom-apis.openapi." + extension, content));
+        var match = Regex.Match(html.Content, @"content: (.+),");
+        Assert.True(match.Success);
+        Assert.Equal(content, JsonConvert.DeserializeObject<string>(match.Groups[1].Value));
+        Assert.DoesNotContain("url:", html.Content);
+        Assert.DoesNotContain("</script><script>alert", html.Content);
+        Assert.Contains("Embedded specification snapshot", html.Content);
+    }
+
+    [Fact]
+    public void UnsupportedModesAreRejected()
+        => Assert.Throws<ArgumentOutOfRangeException>(() => ScalarHtmlDocument.Create(new GeneratedClient("api.json", "{}"), (OpenApiHtmlMode)999));
+
+    [Theory]
     [InlineData("API '<script>.openapi.json")]
     [InlineData("")]
     [InlineData("../openapi.json")]
     [InlineData("C:\\specs\\openapi.json")]
     public void RejectsMissingFilenamesAndDirectoryPaths(string filename)
-        => Assert.Throws<ArgumentException>(() => ScalarHtmlDocument.Create(filename));
+        => Assert.Throws<ArgumentException>(() => ScalarHtmlDocument.Create(new GeneratedClient(filename, "{}"), OpenApiHtmlMode.Linked));
 }
