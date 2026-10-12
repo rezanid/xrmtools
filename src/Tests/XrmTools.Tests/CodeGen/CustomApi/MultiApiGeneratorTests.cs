@@ -5,6 +5,7 @@ using Moq;
 using Newtonsoft.Json.Linq;
 using System;
 using System.Threading;
+using System.Linq;
 using System.Threading.Tasks;
 using Xunit;
 using XrmTools.CodeGen.CustomApi;
@@ -20,7 +21,8 @@ public sealed class MultiApiGeneratorTests
     [Theory]
     [InlineData(OpenApiOutputFormat.Json)]
     [InlineData(OpenApiOutputFormat.Yaml)]
-    public async Task CollectionReadsPagedParametersAndReusesTableMetadata(OpenApiOutputFormat format)
+    [InlineData(OpenApiOutputFormat.Json, false)]
+    public async Task CollectionReadsPagedParametersAndReusesTableMetadata(OpenApiOutputFormat format, bool groupByAssembly = true)
     {
         var webApi = new Mock<IWebApiService>(MockBehavior.Strict);
         webApi.Setup(w => w.GetBaseUrlAsync()).ReturnsAsync(Environment);
@@ -39,6 +41,7 @@ public sealed class MultiApiGeneratorTests
         var source = new Mock<ICustomApiSourceReader>(MockBehavior.Strict);
         source.Setup(s => s.ReadAsync(It.IsAny<Api>(), "Contoso.Plugin", "Contoso", It.IsAny<CancellationToken>())).ReturnsAsync(new CustomApiSourceSchemas());
         var settings = Settings(format);
+        settings.Setup(s => s.GetGroupByAssemblyAsync()).ReturnsAsync(groupByAssembly);
         var generator = new CustomApiOpenApiGenerator(webApi.Object, source.Object, settings.Object);
         var result = await generator.GenerateManyAsync([new(Guid.NewGuid(), "Contoso.Plugin", "Contoso"), new(Guid.NewGuid(), "Contoso.Plugin", "Contoso")], Environment, TestContext.Current.CancellationToken);
         Assert.Equal("custom-apis.openapi." + (format == OpenApiOutputFormat.Json ? "json" : "yaml"), result.FileName);
@@ -46,7 +49,13 @@ public sealed class MultiApiGeneratorTests
         Assert.Contains("First", result.Content); Assert.Contains("Second", result.Content);
         webApi.Verify(w => w.SendAsync(It.IsAny<WebApiRequest<ODataQueryResponse<EntityMetadata>>>(), false, It.IsAny<CancellationToken>()), Times.Once);
         settings.Verify(s => s.GetFormatAsync(), Times.Once); settings.Verify(s => s.GetVersionAsync(), Times.Once);
-        if (format == OpenApiOutputFormat.Json) Assert.Equal(2, ((JObject)JObject.Parse(result.Content)["paths"]!).Count);
+        settings.Verify(s => s.GetGroupByAssemblyAsync(), Times.Once);
+        if (format == OpenApiOutputFormat.Json)
+        {
+            var paths = (JObject)JObject.Parse(result.Content)["paths"]!;
+            Assert.Equal(2, paths.Count);
+            Assert.Equal(groupByAssembly ? 2 : 0, paths.Descendants().OfType<JProperty>().Count(p => p.Name == "tags"));
+        }
     }
 
     [Fact]
@@ -76,6 +85,7 @@ public sealed class MultiApiGeneratorTests
         var settings = new Mock<IOpenApiOutputSettings>(MockBehavior.Strict);
         settings.Setup(s => s.GetFormatAsync()).ReturnsAsync(format);
         settings.Setup(s => s.GetVersionAsync()).ReturnsAsync(OpenApiSpecificationVersion.V3_0);
+        settings.Setup(s => s.GetGroupByAssemblyAsync()).ReturnsAsync(true);
         return settings;
     }
 }

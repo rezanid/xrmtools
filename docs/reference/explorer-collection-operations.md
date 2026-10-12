@@ -56,9 +56,12 @@ details only for selected APIs and shares table metadata across the document.
 
 The writer builds operations and one document envelope. Server/security settings and
 the common Dataverse error schema are emitted once. Assembly names become operation
-tags; operation and component ordering is deterministic. Duplicate identities/operation
+tags by default; disable **Group APIs by Assembly** under General Options →
+**OpenAPI Generation** to omit those tags. Operation and component ordering is deterministic. Duplicate identities/operation
 IDs and invalid API metadata fail the operation rather than produce partial output.
 
+Source models use short type names without a `Source_` prefix or nullable suffix.
+Namespace qualification is retained only when different types have the same short name.
 Identical source component definitions are shared. Conflicting names and any schemas
 that depend on those conflicts are namespaced by API unique name. References, including
 recursive references, are rewritten in schema locations only. Example payloads are

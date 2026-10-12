@@ -53,8 +53,9 @@ internal sealed class CustomApiOpenApiGenerator(IWebApiService webApi, ICustomAp
         }
         var format = await outputSettings.GetFormatAsync().ConfigureAwait(false);
         var version = await outputSettings.GetVersionAsync().ConfigureAwait(false);
+        var groupByAssembly = await outputSettings.GetGroupByAssemblyAsync().ConfigureAwait(false);
         await CustomApiEnvironment.RequireAsync(webApi, environment, cancellationToken).ConfigureAwait(false);
-        return OpenApiDocumentFormatter.Create("custom-apis", CustomApiOpenApiWriter.BuildMany(inputs, baseUrl, tables, version), format);
+        return OpenApiDocumentFormatter.Create("custom-apis", CustomApiOpenApiWriter.BuildMany(inputs, baseUrl, tables, version, groupByAssembly), format);
     }
 
     private async Task<CustomApiOpenApiInput> LoadAsync(CustomApiOpenApiTarget target, Uri baseUrl,

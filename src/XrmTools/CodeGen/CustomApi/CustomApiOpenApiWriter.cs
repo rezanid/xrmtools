@@ -24,8 +24,8 @@ internal static class CustomApiOpenApiWriter
         => BuildDocument([new CustomApiOpenApiInput(api, source, null)], serviceUrl, tables, version, api.DisplayName ?? RequireName(api.UniqueName), false);
 
     internal static JObject BuildMany(IReadOnlyList<CustomApiOpenApiInput> inputs, Uri? serviceUrl,
-        IReadOnlyDictionary<string, EntityMetadata> tables, OpenApiSpecificationVersion version = OpenApiSpecificationVersion.V3_0)
-        => BuildDocument(inputs, serviceUrl, tables, version, "Custom APIs", true);
+        IReadOnlyDictionary<string, EntityMetadata> tables, OpenApiSpecificationVersion version = OpenApiSpecificationVersion.V3_0, bool groupByAssembly = true)
+        => BuildDocument(inputs, serviceUrl, tables, version, "Custom APIs", groupByAssembly);
 
     private static JObject BuildDocument(IReadOnlyList<CustomApiOpenApiInput> inputs, Uri? serviceUrl,
         IReadOnlyDictionary<string, EntityMetadata> tables, OpenApiSpecificationVersion version, string title, bool addTags)
@@ -50,7 +50,7 @@ internal static class CustomApiOpenApiWriter
             if (item[fragment.Method] != null) throw new InvalidOperationException("Duplicate operation: " + fragment.Method + " " + fragment.Path);
             if (addTags && !string.IsNullOrWhiteSpace(input.GroupName)) fragment.Operation["tags"] = new JArray(input.GroupName!);
             item[fragment.Method] = fragment.Operation;
-            foreach (var diagnostic in input.Source?.Diagnostics ?? []) diagnostics.Add(addTags ? name + ": " + diagnostic : diagnostic);
+            foreach (var diagnostic in input.Source?.Diagnostics ?? []) diagnostics.Add(inputs.Count > 1 ? name + ": " + diagnostic : diagnostic);
         }
         paths = Sort(paths);
         schemas = Sort(schemas);

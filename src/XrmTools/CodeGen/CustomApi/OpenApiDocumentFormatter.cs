@@ -25,11 +25,14 @@ internal interface IOpenApiOutputSettings
 {
     Task<OpenApiOutputFormat> GetFormatAsync();
     Task<OpenApiSpecificationVersion> GetVersionAsync();
+    Task<bool> GetGroupByAssemblyAsync();
 }
 
 [Export(typeof(IOpenApiOutputSettings))]
 internal sealed class OpenApiOutputSettings : IOpenApiOutputSettings
 {
+    public async Task<bool> GetGroupByAssemblyAsync()
+        => (await GeneralOptions.GetLiveInstanceAsync().ConfigureAwait(false)).OpenApiGroupByAssembly;
     public async Task<OpenApiOutputFormat> GetFormatAsync()
         => (await GeneralOptions.GetLiveInstanceAsync().ConfigureAwait(false)).OpenApiOutputFormat;
     public async Task<OpenApiSpecificationVersion> GetVersionAsync()

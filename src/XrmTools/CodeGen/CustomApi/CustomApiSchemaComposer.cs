@@ -13,6 +13,7 @@ internal static class CustomApiSchemaComposer
 
     internal static Dictionary<string, CustomApiSourceSchemas?> Prepare(CustomApiOpenApiInput[] inputs, JObject destination)
     {
+        inputs = NormalizeNames(inputs);
         var names = inputs.Select(i => CustomApiOpenApiWriter.RequireName(i.Api.UniqueName)).ToArray();
         if (names.Distinct(StringComparer.Ordinal).Count() != names.Length)
             throw new InvalidOperationException("Duplicate operation ID in the selected APIs.");
@@ -59,6 +60,39 @@ internal static class CustomApiSchemaComposer
             result.Add(name, source);
         }
         return result;
+    }
+
+    // Choose names across the whole document, before comparing or merging schema graphs.
+    private static CustomApiOpenApiInput[] NormalizeNames(CustomApiOpenApiInput[] inputs)
+    {
+        var definitions = inputs.Where(i => i.Source != null).SelectMany(i => i.Source!.Components.Properties()
+            .Select(p => (Identity: p.Name, Name: i.Source.ComponentNames.TryGetValue(p.Name, out var name) ? name : p.Name))).ToArray();
+        var collisions = new HashSet<string>(definitions.GroupBy(d => d.Name, StringComparer.Ordinal)
+            .Where(g => g.Select(d => d.Identity).Distinct(StringComparer.Ordinal).Skip(1).Any())
+            .Select(g => g.Key), StringComparer.Ordinal);
+        // Reserve qualified names first, so a short name cannot overwrite a collision fallback.
+        var reserved = new HashSet<string>(definitions.Where(d => collisions.Contains(d.Name)).Select(d => d.Identity), StringComparer.Ordinal);
+        var map = new Dictionary<string, string>(StringComparer.Ordinal);
+        foreach (var definition in definitions.OrderBy(d => d.Identity, StringComparer.Ordinal))
+        {
+            if (map.ContainsKey(definition.Identity)) continue;
+            var target = collisions.Contains(definition.Name) ? definition.Identity : definition.Name;
+            if (!collisions.Contains(definition.Name))
+            {
+                var baseName = target;
+                for (var suffix = 2; !reserved.Add(target); suffix++) target = baseName + "_" + suffix;
+            }
+            map.Add(definition.Identity, target);
+        }
+        return inputs.Select(input =>
+        {
+            if (input.Source == null) return input;
+            var source = new CustomApiSourceSchemas();
+            foreach (var pair in input.Source.Inputs) source.Inputs.Add(pair.Key, Rewrite(pair.Value, map));
+            foreach (var pair in input.Source.Outputs) source.Outputs.Add(pair.Key, Rewrite(pair.Value, map));
+            foreach (var property in input.Source.Components.Properties()) source.Components[map[property.Name]] = Rewrite((JObject)property.Value, map);
+            return input with { Source = source };
+        }).ToArray();
     }
 
     private static JObject Rewrite(JObject schema, IReadOnlyDictionary<string, string> map)

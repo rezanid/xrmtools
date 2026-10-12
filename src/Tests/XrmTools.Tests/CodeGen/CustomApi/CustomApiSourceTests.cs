@@ -84,9 +84,9 @@ public sealed class CustomApiSourceTests
         }
         """;
 
-    private static (Api Api, INamedTypeSymbol Plugin, Compilation Compilation) Fixture()
+    private static (Api Api, INamedTypeSymbol Plugin, Compilation Compilation) Fixture(string code = Source)
     {
-        var compilation = CSharpCompilation.Create("Plugins", [CSharpSyntaxTree.ParseText(Source)],
+        var compilation = CSharpCompilation.Create("Plugins", [CSharpSyntaxTree.ParseText(code)],
             [MetadataReference.CreateFromFile(typeof(object).Assembly.Location)], new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary));
         Assert.Empty(compilation.GetDiagnostics().Where(d => d.Severity == DiagnosticSeverity.Error));
         var api = new Api { UniqueName = "new_Test" };
@@ -95,6 +95,27 @@ public sealed class CustomApiSourceTests
         api.RequestParameters.Add(new CustomApiRequestParameter { UniqueName = "Choice", Type = CustomApiFieldType.Picklist, IsOptional = true });
         api.ResponseProperties.Add(new CustomApiResponseProperty { UniqueName = "Result", Type = CustomApiFieldType.Entity });
         return (api, compilation.GetTypeByMetadataName("Plugin")!, compilation);
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void NullableAndQualifiedUsesShareOneCleanModelAndRecursiveReferences(bool generic)
+    {
+        var code = "#nullable enable\nusing Models;\n" + Source
+            .Replace("public class Parent : Entity", "namespace Models { public class Parent : Entity")
+            .Replace("public Child Data", "public Child? Data")
+            .Replace("public Child Next", "public Child? Next") + "\n}";
+        if (generic) code = code.Replace("Child", "Child<string>").Replace("class Child<string>", "class Child<T>");
+        var modelName = generic ? "ChildOfString" : "Child";
+        var (api, plugin, compilation) = Fixture(code);
+        var rich = CustomApiSourceReader.Enrich(api, api, plugin, compilation, CancellationToken.None);
+        var doc = CustomApiOpenApiWriter.Build(api, null, new Dictionary<string, EntityMetadata>(), rich);
+        var schemas = (JObject)doc["components"]!["schemas"]!;
+        Assert.Equal(new[] { modelName, "DataverseError" }, schemas.Properties().Select(p => p.Name));
+        Assert.Equal("#/components/schemas/" + modelName, (string?)schemas[modelName]!["properties"]!["next"]!["$ref"]);
+        Assert.DoesNotContain("Source_", doc.ToString());
+        Assert.DoesNotContain("Models.Child", doc["paths"]!.ToString());
     }
 
     [Fact]
@@ -242,7 +263,7 @@ public sealed class CustomApiSourceTests
         var operation = path.Value["get"]!;
         Assert.Null(operation["requestBody"]);
         Assert.NotNull(operation["responses"]!["200"]);
-        Assert.NotNull(spec["components"]!["schemas"]!["Source_Child"]);
+        Assert.NotNull(spec["components"]!["schemas"]!["Child"]);
         Assert.Empty(webApi.Invocations);
     }
 

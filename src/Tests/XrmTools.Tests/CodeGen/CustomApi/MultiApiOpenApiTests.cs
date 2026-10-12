@@ -84,6 +84,41 @@ public sealed class MultiApiOpenApiTests
     }
 
     [Fact]
+    public void SameShortNamesFromDifferentNamespacesRemainDistinct()
+    {
+        CustomApiSourceSchemas Model(string identity, string type)
+        {
+            var source = new CustomApiSourceSchemas();
+            source.Components[identity] = new JObject { ["type"] = type };
+            source.ComponentNames[identity] = "Model";
+            source.Inputs["Payload"] = Ref(identity);
+            return source;
+        }
+        var a = Input("new_A", Model("Contoso.Model", "string"));
+        var b = Input("new_B", Model("Fabrikam.Model", "integer"));
+        var doc = Build(a, b);
+        Assert.Equal(doc.ToString(), Build(b, a).ToString());
+        Assert.NotNull(doc["components"]!["schemas"]!["Contoso.Model"]);
+        Assert.NotNull(doc["components"]!["schemas"]!["Fabrikam.Model"]);
+        Assert.Contains("#/components/schemas/Contoso.Model", doc["paths"]!["/new_A"]!.ToString());
+        Assert.Contains("#/components/schemas/Fabrikam.Model", doc["paths"]!["/new_B"]!.ToString());
+    }
+
+    [Fact]
+    public void DisablingAssemblyGroupingKeepsOperationsAndDiagnostics()
+    {
+        var source = Source("string");
+        source.Diagnostics.Add("Source warning");
+        var inputs = new[] { Input("new_A", source), Input("new_B", null) };
+        var grouped = Build(inputs);
+        var flat = CustomApiOpenApiWriter.BuildMany(inputs, null, new Dictionary<string, EntityMetadata>(), groupByAssembly: false);
+        Assert.DoesNotContain(((JObject)flat["paths"]!).Descendants().OfType<JProperty>(), p => p.Name == "tags");
+        Assert.True(JToken.DeepEquals(grouped["components"], flat["components"]));
+        Assert.True(JToken.DeepEquals(grouped["x-xrmtools-diagnostics"], flat["x-xrmtools-diagnostics"]));
+        Assert.Equal(2, ((JObject)flat["paths"]!).Count);
+    }
+
+    [Fact]
     public void DuplicateOperationsAndInvalidApisFailTheWholeDocument()
     {
         var input = Input("new_A", null);
