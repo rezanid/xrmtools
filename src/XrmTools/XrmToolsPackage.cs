@@ -152,6 +152,9 @@ public sealed partial class XrmToolsPackage : ToolkitPackage
     [ImportMany]
     IEnumerable<IExplorerCommandProvider> ExplorerCommands { get; set; } = [];
 
+    [ImportMany]
+    IEnumerable<IExplorerCollectionOperation> ExplorerCollectionOperations { get; set; } = [];
+
     [Import]
     XrmTools.Services.IPluginRegistrationService PluginRegistrationService { get; set; } = null!;
 
@@ -240,6 +243,11 @@ public sealed partial class XrmToolsPackage : ToolkitPackage
         await ShowDataverseExplorerCommand.InitializeAsync(this);
         await ShowPluginTraceExplorerCommand.InitializeAsync(this);
         await RefreshDataverseExplorerCommand.InitializeAsync(this);
+        await ExecuteExplorerCollectionCommand.InitializeAsync(this);
+        await CancelExplorerCollectionCommand.InitializeAsync(this);
+        await SelectMatchingExplorerCollectionCommand.InitializeAsync(this);
+        await ClearExplorerCollectionSelectionCommand.InitializeAsync(this);
+        await ToggleExplorerCollectionDocumentationCommand.InitializeAsync(this);
 
         VS.Events.SolutionEvents.OnAfterOpenSolution += (solution) => OnAfterOpenSolution(solution, cancellationToken);
         VS.Events.SolutionEvents.OnAfterCloseSolution += () => OnAfterCloseSolution(cancellationToken);
@@ -288,6 +296,7 @@ public sealed partial class XrmToolsPackage : ToolkitPackage
             { 
                 Categories = ExplorerCategories,
                 Commands = ExplorerCommands,
+                CollectionOperations = ExplorerCollectionOperations,
                 Registration = PluginRegistrationService,
                 GetEnvironmentUrl = async () => (await EnvironmentSelection.GetSelectedEnvironmentAsync())?.BaseServiceUrl,
                 Logger = new OutputLogger("Xrm Tools", OutputLoggerService)

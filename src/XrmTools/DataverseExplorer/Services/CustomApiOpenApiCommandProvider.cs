@@ -12,6 +12,7 @@ using System.Threading.Tasks;
 using XrmTools.CodeGen.CustomApi;
 using XrmTools.DataverseExplorer.Models;
 using XrmTools.Logging.Compatibility;
+using XrmTools.Options;
 
 [Export(typeof(IExplorerCommandProvider))]
 internal sealed class CustomApiOpenApiCommandProvider : IExplorerCommandProvider
@@ -57,11 +58,24 @@ internal sealed record GenerateOpenApiTarget(Guid ApiId, CancellationToken Token
 /// <summary>Shared presentation for generated Custom API artifacts.</summary>
 internal static class GeneratedCustomApiDocument
 {
+    public static async Task OpenWithDocumentationAsync(GeneratedClient specification, CancellationToken token)
+    {
+        var mode = (await GeneralOptions.GetLiveInstanceAsync()).OpenApiHtmlMode;
+        token.ThrowIfCancellationRequested();
+        var html = ScalarHtmlDocument.Create(specification, mode);
+        await OpenAsync(html, "Scalar HTML documentation", token);
+        await OpenAsync(specification, "OpenAPI specification", token);
+        await VS.StatusBar.ShowMessageAsync(mode == OpenApiHtmlMode.Embedded
+            ? "Generated specification and Scalar HTML opened as unsaved documents. Save the HTML and open it in a browser to view documentation."
+            : "Generated specification and Scalar HTML opened as unsaved documents. Save both in the same folder and serve it to view documentation.");
+    }
+
     public static async Task OpenAsync(GeneratedClient result, string artifactName, CancellationToken token)
     {
         var dte = await VS.GetServiceAsync<EnvDTE.DTE, EnvDTE.DTE>()
             ?? throw new InvalidOperationException("Visual Studio's document service is unavailable.");
         await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync(token);
+        token.ThrowIfCancellationRequested();
         var window = dte.ItemOperations.NewFile(@"General\Text File", result.FileName, EnvDTE.Constants.vsViewKindTextView);
         var document = window.Document;
         if (document.Object("TextDocument") is not EnvDTE.TextDocument textDocument)

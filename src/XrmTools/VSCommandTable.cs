@@ -92,6 +92,11 @@ namespace XrmTools
         public const int ShowDataverseExplorerCmdId = 0x2001;
         public const int ShowPluginTraceExplorerCmdId = 0x2003;
         public const int RefreshDataverseExplorerCmdId = 0x2002;
+        public const int ExecuteExplorerCollectionCmdId = 0x2022;
+        public const int CancelExplorerCollectionCmdId = 0x2023;
+        public const int SelectMatchingExplorerCollectionCmdId = 0x2024;
+        public const int ClearExplorerCollectionSelectionCmdId = 0x2025;
+        public const int ToggleExplorerCollectionDocumentationCmdId = 0x2026;
         public const int DataverseExplorerToolbar = 0x2020;
         public const int DataverseExplorerToolbarGroup = 0x2021;
     }

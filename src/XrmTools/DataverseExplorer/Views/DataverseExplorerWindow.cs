@@ -2,12 +2,13 @@
 namespace XrmTools.DataverseExplorer.Views;
 
 using System.ComponentModel.Design;
+using System.ComponentModel;
 using Microsoft.Internal.VisualStudio.PlatformUI;
+using Microsoft.VisualStudio.PlatformUI;
 using Microsoft.VisualStudio;
 using Microsoft.VisualStudio.ComponentModelHost;
 using Microsoft.VisualStudio.Imaging;
 using Microsoft.VisualStudio.LanguageServices;
-using Microsoft.VisualStudio.PlatformUI;
 using Microsoft.VisualStudio.Shell;
 using Microsoft.VisualStudio.Shell.Interop;
 using System;
@@ -17,9 +18,9 @@ using System.Threading.Tasks;
 using XrmTools.DataverseExplorer.Models;
 using XrmTools.DataverseExplorer.Services;
 using XrmTools.DataverseExplorer.ViewModels;
-using XrmTools.Helpers;
 using XrmTools.Logging.Compatibility;
 using XrmTools.Options;
+using XrmTools.Helpers;
 using XrmTools.Services;
 
 internal class DataverseExplorerSource
@@ -27,6 +28,7 @@ internal class DataverseExplorerSource
     public required ILogger Logger { get; init; }
     public required IEnumerable<IExplorerCategoryProvider> Categories { get; init; }
     public required IEnumerable<IExplorerCommandProvider> Commands { get; init; }
+    public IEnumerable<IExplorerCollectionOperation> CollectionOperations { get; init; } = [];
     public required IPluginRegistrationService Registration { get; init; }
     public required Func<Task<Uri?>> GetEnvironmentUrl { get; init; }
 
@@ -45,7 +47,14 @@ internal class DataverseExplorerWindow : ToolWindowPane // BaseToolWindow<Datave
     private IVsEnumWindowSearchOptions? _searchOptions;
     private IVsEnumWindowSearchFilters? _searchFilters;
     private WindowSearchBooleanOption? _matchCaseOption;
-    
+
+    internal static DataverseExplorerWindow? Current { get; private set; }
+    internal ExplorerCollectionSession? Collection => _viewModel?.Collection;
+    private ExplorerCollectionSession? _toolbarSession;
+
+    private string _browseQuery = string.Empty;
+    private bool _browseMatchCase;
+
     public ILogger Logger { get; set; }
 
     public DataverseExplorerWindow(DataverseExplorerSource source) : base()
@@ -64,13 +73,16 @@ internal class DataverseExplorerWindow : ToolWindowPane // BaseToolWindow<Datave
         _viewModel = new DataverseExplorerViewModel(source.Categories, Logger, source.Registration, source.GetEnvironmentUrl);
         _viewModel.SelectedNodeChanged += OnSelectedNodeChanged;
         control.CommandProviders = source.Commands;
+        control.CollectionOperations = source.CollectionOperations;
         control.DataContext = _viewModel;
+        control.FocusSearchRequested += () => SearchHost?.Activate();
+        _viewModel.PropertyChanged += OnWorkspaceChanged;
         Content = control;
     }
 
     public Task RefreshAsync()
     {
-        return _viewModel?.RefreshAsync() ?? Task.CompletedTask;
+        return _viewModel?.RefreshWorkspaceAsync() ?? Task.CompletedTask;
     }
 
     public override bool SearchEnabled => true;
@@ -146,17 +158,30 @@ internal class DataverseExplorerWindow : ToolWindowPane // BaseToolWindow<Datave
         ThreadHelper.JoinableTaskFactory.Run(async () =>
         {
             await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync();
-            await _viewModel.ClearSearchAsync();
+            if (_viewModel.Collection is { } collection) collection.ApplySearch(string.Empty, MatchCaseOption.Value, false);
+            else await _viewModel.ApplySearchAsync(string.Empty, MatchCaseOption.Value, false);
         });
     }
+
 
     protected override void OnCreate()
     {
         ThreadHelper.ThrowIfNotOnUIThread();
         base.OnCreate();
+        Current = this;
         _trackSelection = GetService(typeof(STrackSelection)) as ITrackSelection;
         UpdatePropertiesWindowSelection(_viewModel?.SelectedNode);
         _ = InitializeViewModelAsync();
+    }
+
+    public override void OnToolWindowCreated()
+    {
+        ThreadHelper.ThrowIfNotOnUIThread();
+        base.OnToolWindowCreated();
+        // The shell assigns Frame after OnCreate; configure search once it is available.
+        ErrorHandler.ThrowOnFailure(((IVsWindowFrame)Frame).SetProperty(
+            (int)__VSFPROPID5.VSFPROPID_SearchPlacement,
+            (int)__VSSEARCHPLACEMENT.SP_STRETCH));
     }
 
     protected override void Dispose(bool disposing)
@@ -164,6 +189,9 @@ internal class DataverseExplorerWindow : ToolWindowPane // BaseToolWindow<Datave
         if (disposing && _viewModel != null)
         {
             _viewModel.SelectedNodeChanged -= OnSelectedNodeChanged;
+            _viewModel.PropertyChanged -= OnWorkspaceChanged;
+            if (_toolbarSession != null) _toolbarSession.PropertyChanged -= OnCollectionStateChanged;
+            if (ReferenceEquals(Current, this)) Current = null;
             _viewModel.Dispose();
             if (ThreadHelper.CheckAccess())
             {
@@ -206,7 +234,7 @@ internal class DataverseExplorerWindow : ToolWindowPane // BaseToolWindow<Datave
 
     private async Task SyncWithProjectSystemAsync(ExplorerNodeBase? node)
     {
-        if (node == null)
+        if (node == null || _viewModel?.Collection != null)
         {
             return;
         }
@@ -272,7 +300,41 @@ internal class DataverseExplorerWindow : ToolWindowPane // BaseToolWindow<Datave
             ? (searchQuery.Remove(filterIndex, updatedFilter.Length)).Trim()
             : searchQuery;
 
+        if (_viewModel.Collection is { } collection) return collection.ApplySearch(searchText, MatchCaseOption.Value, updatedLastThreeHours);
         return await _viewModel.ApplySearchAsync(searchText, MatchCaseOption.Value, updatedLastThreeHours);
+    }
+
+    private void OnWorkspaceChanged(object? sender, PropertyChangedEventArgs e)
+    {
+        if (e.PropertyName != nameof(DataverseExplorerViewModel.Collection)) return;
+        if (_toolbarSession != null) _toolbarSession.PropertyChanged -= OnCollectionStateChanged;
+        _toolbarSession = _viewModel?.Collection;
+        if (_toolbarSession != null) _toolbarSession.PropertyChanged += OnCollectionStateChanged;
+        UpdateToolbar();
+        if (SearchHost == null) return;
+        ThreadHelper.ThrowIfNotOnUIThread();
+        if (_viewModel?.Collection != null)
+        {
+            _browseQuery = SearchHost.SearchQuery?.SearchString ?? string.Empty;
+            _browseMatchCase = MatchCaseOption.Value;
+            SearchHost.SearchAsync(null!);
+            MatchCaseOption.Value = false;
+        }
+        else
+        {
+            SearchHost.SearchAsync(null!);
+            MatchCaseOption.Value = _browseMatchCase;
+            if (!string.IsNullOrEmpty(_browseQuery)) SearchHost.SearchAsync(SearchUtilities.CreateSearchQuery(_browseQuery));
+        }
+        UpdateToolbar();
+    }
+
+    private void OnCollectionStateChanged(object? sender, PropertyChangedEventArgs e) => UpdateToolbar();
+
+    private void UpdateToolbar()
+    {
+        ThreadHelper.ThrowIfNotOnUIThread();
+        if (GetService(typeof(SVsUIShell)) is IVsUIShell shell) shell.UpdateCommandUI(0);
     }
 
     private sealed class DataverseExplorerSearchTask(
@@ -282,6 +344,8 @@ internal class DataverseExplorerWindow : ToolWindowPane // BaseToolWindow<Datave
         DataverseExplorerWindow toolWindow)
         : VsSearchTask(cookie, searchQuery, searchCallback)
     {
+        private readonly ExplorerCollectionSession? _workspace = toolWindow._viewModel?.Collection;
+
         protected override void OnStartSearch()
         {
             ErrorCode = VSConstants.S_OK;
@@ -290,6 +354,7 @@ internal class DataverseExplorerWindow : ToolWindowPane // BaseToolWindow<Datave
                 var resultCount = ThreadHelper.JoinableTaskFactory.Run(async () =>
                 {
                     await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync();
+                    if (!ReferenceEquals(_workspace, toolWindow._viewModel?.Collection)) return 0u;
                     return await toolWindow.ApplySearchAsync(SearchQuery.SearchString);
                 });
                 SearchResults = resultCount;

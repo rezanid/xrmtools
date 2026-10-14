@@ -25,6 +25,7 @@ internal sealed class CustomApiSourceSchemas
     public Dictionary<string, JObject> Inputs { get; } = new(StringComparer.Ordinal);
     public Dictionary<string, JObject> Outputs { get; } = new(StringComparer.Ordinal);
     public JObject Components { get; } = new();
+    public Dictionary<string, string> ComponentNames { get; } = new(StringComparer.Ordinal);
     public List<string> Diagnostics { get; } = [];
 }
 
@@ -142,6 +143,7 @@ internal sealed class CustomApiSourceReader(ICSharpXrmMetaParser parser) : ICust
         {
             token.ThrowIfCancellationRequested();
             var type = original is INamedTypeSymbol nullable && nullable.OriginalDefinition.SpecialType == SpecialType.System_Nullable_T ? nullable.TypeArguments[0] : original;
+            type = type.WithNullableAnnotation(NullableAnnotation.None);
             if (type.TypeKind == TypeKind.Error) return null;
             if (type.TypeKind == TypeKind.Enum)
             {
@@ -192,8 +194,13 @@ internal sealed class CustomApiSourceReader(ICSharpXrmMetaParser parser) : ICust
                 result.Diagnostics.Add("Source schema traversal limit reached for '" + fullName + "'. Retained an open object.");
                 return new JObject { ["type"] = "object", ["additionalProperties"] = true };
             }
-            var name = "Source_" + System.Text.RegularExpressions.Regex.Replace(fullName, @"[^A-Za-z0-9_.-]", "_");
-            while (result.Components.Property(name) != null) name += "_";
+            var identity = type.ToDisplayString(new SymbolDisplayFormat(
+                typeQualificationStyle: SymbolDisplayTypeQualificationStyle.NameAndContainingTypesAndNamespaces,
+                genericsOptions: SymbolDisplayGenericsOptions.IncludeTypeParameters));
+            var baseName = System.Text.RegularExpressions.Regex.Replace(identity, @"[^A-Za-z0-9_.-]", "_").TrimEnd('_');
+            var name = baseName;
+            for (var suffix = 2; result.Components.Property(name) != null; suffix++) name = baseName + "_" + suffix;
+            result.ComponentNames[name] = ModelName(entity);
             names[type] = name;
             var properties = new JObject { ["@odata.type"] = new JObject { ["type"] = "string" } };
             var schema = new JObject { ["type"] = "object", ["properties"] = properties, ["additionalProperties"] = true };
@@ -227,6 +234,10 @@ internal sealed class CustomApiSourceReader(ICSharpXrmMetaParser parser) : ICust
             finally { depth--; }
             return Reference(name);
         }
+
+        private static string ModelName(ITypeSymbol type) => type is INamedTypeSymbol named && named.IsGenericType
+            ? named.Name + "Of" + string.Join("And", named.TypeArguments.Select(ModelName))
+            : type is IArrayTypeSymbol array ? ModelName(array.ElementType) + "Array" : type.Name;
 
         private static JObject Reference(string name) => new() { ["allOf"] = new JArray(new JObject { ["$ref"] = "#/components/schemas/" + name }) };
         private static bool IsEntity(INamedTypeSymbol type)

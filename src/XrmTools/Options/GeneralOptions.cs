@@ -34,6 +34,19 @@ internal class GeneralOptions : BaseOptionModel<GeneralOptions>
     [TypeConverter(typeof(EnumDescriptionConverter))]
     public OpenApiSpecificationVersion OpenApiSpecificationVersion { get; set; } = OpenApiSpecificationVersion.V3_0;
 
+    [Category("OpenAPI Generation")]
+    [DisplayName("Group APIs by Assembly")]
+    [Description("Group operations by plugin assembly in specifications generated from multiple Custom APIs.")]
+    [DefaultValue(true)]
+    public bool OpenApiGroupByAssembly { get; set; } = true;
+
+    [Category("OpenAPI Generation")]
+    [DisplayName("HTML Documentation Mode")]
+    [Description("Embed a specification snapshot to open HTML directly, or link to the separate JSON/YAML file for HTTP hosting. Used when the Scalar HTML toolbar toggle is enabled.")]
+    [DefaultValue(OpenApiHtmlMode.Embedded)]
+    [TypeConverter(typeof(EnumDescriptionConverter))]
+    public OpenApiHtmlMode OpenApiHtmlMode { get; set; } = OpenApiHtmlMode.Embedded;
+
     [Category("Logging")]
     [DisplayName("Logging Level")]
     [Description("Setting the logging level to Trace will have performance implications.")]
