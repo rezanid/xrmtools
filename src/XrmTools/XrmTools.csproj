@@ -52,6 +52,7 @@
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="DataverseSolutions\CdsPackageReferenceCapabilitiesProvider.cs" />
     <Compile Include="DataverseSolutions\CdsProjectConfigurationDimensionsProvider.cs" />
     <Compile Include="DataverseSolutions\CdsProjectGlobalPropertiesProvider.cs" />
     <Compile Include="Shell\Controls\Window.cs" />
