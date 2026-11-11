@@ -39,7 +39,7 @@
     <PackageReference Include="Microsoft.CodeAnalysis.CSharp.Workspaces" Version="4.14.0" />
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="18.4.0" />
     <PackageReference Include="Microsoft.VisualStudio.ProjectSystem" Version="17.9.380" PrivateAssets="all">
-      <IncludeAssets>runtime</IncludeAssets>
+      <IncludeAssets>compile;runtime</IncludeAssets>
     </PackageReference>
     <PackageReference Include="Microsoft.VisualStudio.ProjectSystem.VS" Version="17.9.380" PrivateAssets="all">
       <IncludeAssets>runtime</IncludeAssets>

@@ -7,6 +7,6 @@ internal static class CdsProjectRegistration
     public const string ProjectExtension = "cdsproj";
     public const string Language = "csharp";
     public const string UniqueCapability = "XrmToolsCdsProject";
-    public const string Capabilities = UniqueCapability + ";OpenProjectFile;HandlesOwnReload;ProjectConfigurationsDeclaredDimensions;DependenciesTree;UseProjectEvaluationCache";
+    public const string Capabilities = UniqueCapability + ";OpenProjectFile;HandlesOwnReload;ProjectConfigurationsDeclaredDimensions;DependenciesTree;UseProjectEvaluationCache;UseFileGlobs";
 }
 #nullable restore

@@ -52,6 +52,8 @@
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="DataverseSolutions\CdsProjectConfigurationDimensionsProvider.cs" />
+    <Compile Include="DataverseSolutions\CdsProjectGlobalPropertiesProvider.cs" />
     <Compile Include="Shell\Controls\Window.cs" />
     <Compile Include="Shell\Controls\DialogWindow.cs" />
     <Compile Include="Shell\Controls\PathButton.cs" />
@@ -718,6 +720,8 @@
     </None>
   </ItemGroup>
   <ItemGroup>
+    <!-- Resolve host MSBuild types during registration without redistributing MSBuild in the VSIX. -->
+    <CreatePkgDefReferencedAssemblies Include="$(MSBuildToolsPath32)\Microsoft.Build.dll" />
     <Reference Include="Microsoft.CSharp" />
     <!--<Reference Include="Microsoft.VisualStudio.ProjectSystem">
       <HintPath>$(PkgMicrosoft_VisualStudio_ProjectSystem)\lib\net472\Microsoft.VisualStudio.ProjectSystem.dll</HintPath>

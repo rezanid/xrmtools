@@ -81,7 +81,7 @@ internal class GeneralOptions : BaseOptionModel<GeneralOptions>
 
     [Category("Dataverse Solution Projects")]
     [DisplayName("Project SDK")]
-    [Description("Selects the project format used when creating Dataverse solution projects.")]
+    [Description("Selects the project format used when creating Dataverse solution projects. Existing projects open using their own format, regardless of this setting.")]
     [DefaultValue(DataverseSolutionProjectSdk.AlbanianXrm)]
     [TypeConverter(typeof(EnumDescriptionConverter))]
     public DataverseSolutionProjectSdk DataverseSolutionProjectSdk { get; set; } = DataverseSolutionProjectSdk.AlbanianXrm;
