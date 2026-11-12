@@ -79,6 +79,12 @@ public interface IPacCli
         IProgress<ProcessOutputLine> output,
         CancellationToken cancellationToken);
 
+    Task<ProcessCommandResult> RunPcfCommandAsync(
+        string workingDirectory,
+        IReadOnlyList<string> arguments,
+        IProgress<ProcessOutputLine> output,
+        CancellationToken cancellationToken);
+
     Task<ProcessCommandResult> RunSolutionCommandAsync(
         CdsProjectInfo project,
         IReadOnlyList<string> arguments,

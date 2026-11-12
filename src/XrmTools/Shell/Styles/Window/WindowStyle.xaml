@@ -51,14 +51,26 @@
                                     </StackPanel>
                                 </Grid>
                                 <ContentPresenter Grid.Row="1" ContentSource="Content" Margin="{TemplateBinding Padding}"/>
-                                <Border x:Name="Footer" Grid.Row="2" BorderThickness="0,1,0,0" BorderBrush="{DynamicResource {x:Static vs:EnvironmentColors.ToolWindowBorderBrushKey}}"
-                                        Padding="{TemplateBinding Padding}">
-                                    <ContentPresenter Content="{TemplateBinding FooterContent}"/>
-                                </Border>
+                                <Grid x:Name="Footer" Grid.Row="2">
+                                    <Border x:Name="FooterBorder" BorderThickness="0,1,0,0" BorderBrush="{DynamicResource {x:Static vs:EnvironmentColors.ToolWindowBorderBrushKey}}"
+                                            Padding="{TemplateBinding Padding}">
+                                        <ContentPresenter Content="{TemplateBinding FooterContent}"/>
+                                    </Border>
+                                    <ctrls:ProgressControl x:Name="FooterProgress" Kind="BarIndeterminate" Height="3"
+                                                           VerticalAlignment="Top" Margin="0,-1,0,0" IsHitTestVisible="False"
+                                                           IsRunning="{TemplateBinding IsFooterProgressRunning}"
+                                                           AutomationProperties.Name="Operation progress"/>
+                                </Grid>
                             </Grid>
                         </Border>
                     </AdornerDecorator>
                     <ControlTemplate.Triggers>
+                        <Trigger Property="IsFooterProgressRunning" Value="False">
+                            <Setter TargetName="FooterProgress" Property="Visibility" Value="Collapsed"/>
+                        </Trigger>
+                        <Trigger Property="IsFooterProgressRunning" Value="True">
+                            <Setter TargetName="FooterBorder" Property="BorderBrush" Value="Transparent"/>
+                        </Trigger>
                         <Trigger Property="FooterContent" Value="{x:Null}">
                             <Setter TargetName="Footer" Property="Visibility" Value="Collapsed"/>
                         </Trigger>

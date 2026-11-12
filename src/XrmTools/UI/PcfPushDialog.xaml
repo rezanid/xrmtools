@@ -1,0 +1,79 @@
+<ctrls:DialogWindow xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:ctrls="clr-namespace:XrmTools.Shell.Controls"
+    xmlns:p="clr-namespace:Microsoft.VisualStudio.PlatformUI;assembly=Microsoft.VisualStudio.Shell.15.0"
+    x:Class="XrmTools.UI.PcfPushDialog" x:ClassModifier="internal"
+    Title="Push PCF to environment" Width="620" MinWidth="500"
+    SizeToContent="Height" Padding="24,12" Loaded="OnLoaded" IsFooterProgressRunning="{Binding IsBusy}">
+    <ctrls:DialogWindow.Resources>
+        <BooleanToVisibilityConverter x:Key="BoolVisibility"/>
+        <Style x:Key="FieldLabel" TargetType="Label"><Setter Property="Foreground" Value="{DynamicResource {x:Static p:EnvironmentColors.ToolWindowTextBrushKey}}"/><Setter Property="Padding" Value="0"/><Setter Property="Margin" Value="0,0,0,6"/><Setter Property="FontWeight" Value="SemiBold"/></Style>
+    </ctrls:DialogWindow.Resources>
+    <ctrls:DialogWindow.FooterContent>
+        <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+            <ctrls:Button x:Name="PushButton" Content="_Push" Kind="Accent" MinWidth="100" IsDefault="True" IsEnabled="{Binding IsIdle}" Click="OnPush"/>
+            <ctrls:Button x:Name="CancelButton" Content="Cancel" MinWidth="100" Margin="8,0,0,0" IsCancel="True" Click="OnCancel"/>
+        </StackPanel>
+    </ctrls:DialogWindow.FooterContent>
+    <Grid>
+        <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
+        <StackPanel IsEnabled="{Binding IsIdle}">
+            <ctrls:TextBlock Text="Development deployment: PAC builds and imports this control into the selected environment. Use a solution-based deployment for production." TextWrapping="Wrap" Margin="0,0,0,18"/>
+            <Label Content="Target environment (active)" Style="{StaticResource FieldLabel}"/>
+            <ctrls:TextBox Text="{Binding EnvironmentUrl, Mode=OneWay}" IsReadOnly="True" Margin="0,0,0,16"/>
+            <StackPanel x:Name="ProjectDestination" Visibility="{Binding ShowProjectDestination, Converter={StaticResource BoolVisibility}}" Margin="0,0,0,12">
+                <Label Content="Destination solution" Style="{StaticResource FieldLabel}"/>
+                <ctrls:TextBlock Text="{Binding DestinationDisplayName}" TextWrapping="Wrap" FontWeight="SemiBold" Margin="0,0,0,8"/>
+                <StackPanel Orientation="Horizontal">
+                    <ctrls:Button x:Name="ChangeDestinationButton" Content="_Change..." Click="OnChangeDestination"/>
+                    <ctrls:Button x:Name="ProjectRefreshButton" Content="_Refresh" Click="OnRefreshSolutions" Margin="8,0,0,0"
+                                  Visibility="{Binding ShowProjectRefresh, Converter={StaticResource BoolVisibility}}"/>
+                </StackPanel>
+            </StackPanel>
+            <ctrls:TextBlock Text="{Binding DestinationNotice}" TextWrapping="Wrap" Margin="0,0,0,12" MaxHeight="96" TextTrimming="CharacterEllipsis" ToolTip="{Binding DestinationNotice}">
+                <ctrls:TextBlock.Style>
+                    <Style TargetType="ctrls:TextBlock">
+                        <Style.Triggers>
+                            <DataTrigger Binding="{Binding DestinationNotice}" Value="{x:Null}"><Setter Property="Visibility" Value="Collapsed"/></DataTrigger>
+                            <DataTrigger Binding="{Binding DestinationNotice}" Value=""><Setter Property="Visibility" Value="Collapsed"/></DataTrigger>
+                        </Style.Triggers>
+                    </Style>
+                </ctrls:TextBlock.Style>
+            </ctrls:TextBlock>
+            <StackPanel x:Name="DestinationOptions" Visibility="{Binding ShowDestinationOptions, Converter={StaticResource BoolVisibility}}">
+                <ctrls:RadioButton Content="Use publisher prefi_x" GroupName="PushDestination" IsChecked="{Binding UsePublisherPrefix}" Margin="0,0,0,6"/>
+                <ctrls:TextBox x:Name="Prefix" AutomationProperties.Name="Publisher prefix" IsEnabled="{Binding UsePublisherPrefix}" Text="{Binding PublisherPrefix, UpdateSourceTrigger=PropertyChanged}" Margin="24,0,0,12"/>
+                <ctrls:RadioButton Content="Use an existing _solution" GroupName="PushDestination" IsChecked="{Binding UseExistingSolution}" Checked="OnSolutionSelected" Margin="0,0,0,6"/>
+                <ctrls:TextBlock Text="PAC accepts a publisher prefix or a solution unique name, never both." TextWrapping="Wrap" Margin="0,0,0,12"/>
+            </StackPanel>
+            <Grid Margin="0,0,0,12" Visibility="{Binding ShowSolutionPicker, Converter={StaticResource BoolVisibility}}">
+                <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+                <ctrls:ComboBox x:Name="Solution" ItemsSource="{Binding SolutionChoices}" SelectedItem="{Binding SelectedSolution}"
+                                IsEditable="False" MaxDropDownHeight="240" HorizontalContentAlignment="Stretch"
+                                AutomationProperties.Name="Unmanaged solutions">
+                    <ctrls:ComboBox.ItemTemplate>
+                        <DataTemplate>
+                            <StackPanel>
+                                <ctrls:TextBlock Text="{Binding FriendlyName}" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" ToolTip="{Binding FriendlyName}"/>
+                                <ctrls:TextBlock Text="{Binding UniqueName}" Opacity="0.75" TextTrimming="CharacterEllipsis" ToolTip="{Binding UniqueName}"/>
+                            </StackPanel>
+                        </DataTemplate>
+                    </ctrls:ComboBox.ItemTemplate>
+                </ctrls:ComboBox>
+                <ctrls:Button Grid.Column="1" Content="_Refresh" Click="OnRefreshSolutions" Margin="8,0,0,0"/>
+            </Grid>
+            <ctrls:CheckBox Content="Incremental push (only changed files)" IsChecked="{Binding Incremental}"/>
+        </StackPanel>
+        <ScrollViewer x:Name="StatusScroll" Grid.Row="1" Margin="0,4,0,0" MaxHeight="96" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+            <ScrollViewer.Style>
+                <Style TargetType="ScrollViewer">
+                    <Style.Triggers>
+                        <DataTrigger Binding="{Binding Status}" Value="{x:Null}"><Setter Property="Visibility" Value="Collapsed"/></DataTrigger>
+                        <DataTrigger Binding="{Binding Status}" Value=""><Setter Property="Visibility" Value="Collapsed"/></DataTrigger>
+                    </Style.Triggers>
+                </Style>
+            </ScrollViewer.Style>
+            <ctrls:TextBlock Text="{Binding Status}" TextWrapping="Wrap" AutomationProperties.LiveSetting="Polite"/>
+        </ScrollViewer>
+    </Grid>
+</ctrls:DialogWindow>

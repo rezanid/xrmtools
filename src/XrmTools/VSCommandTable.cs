@@ -85,6 +85,10 @@ namespace XrmTools
         public const int ImportAndOpenDataverseSolutionCmdId = 0x0970;
         public const int AddDataverseSolutionProjectCmdId = 0x0980;
         public const int RegisterWebResourcesCmdId = 0x0990;
+        public const int AddPcfProjectCmdId = 0x09A0;
+        public const int PushPcfProjectCmdId = 0x09A1;
+        public const int StartPcfHarnessCmdId = 0x09A2;
+        public const int StopPcfHarnessCmdId = 0x09A3;
         public const int XrmToolsToolbar = 0x2000;
         public const int XrmToolsToolbarGroup = 0x2010;
         public const int XrmToolsContextSubMenu = 0x1000;

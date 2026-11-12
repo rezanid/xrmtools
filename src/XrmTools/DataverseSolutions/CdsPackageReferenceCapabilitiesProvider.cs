@@ -10,8 +10,9 @@ using System.Threading;
 using System.Threading.Tasks;
 
 [Export(ExportContractNames.Scopes.ConfiguredProject, typeof(IProjectCapabilitiesProvider))]
-[AppliesTo(CdsProjectRegistration.UniqueCapability + " & !.NET")]
+[AppliesTo("(" + CdsProjectRegistration.UniqueCapability + " | " + PcfProjectRegistration.UniqueCapability + ") & !.NET")]
 [SupportsFileExtension(".cdsproj")]
+[SupportsFileExtension(".pcfproj")]
 internal sealed class CdsPackageReferenceCapabilitiesProvider : ConfiguredProjectCapabilitiesProviderBase
 {
     [ImportingConstructor]

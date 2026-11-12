@@ -9,7 +9,7 @@ using System.Linq;
 using System.Threading.Tasks;
 
 [Export(typeof(IProjectConfigurationDimensionsProvider))]
-[AppliesTo(CdsProjectRegistration.UniqueCapability + " & !.NET")]
+[AppliesTo(CpsProjectCapabilities.NonDotNetProject + " & !.NET")]
 [ConfigurationDimensionDescription("Configuration", isVariantDimension: false)]
 [ConfigurationDimensionDescription("Platform", isVariantDimension: false)]
 internal sealed class CdsProjectConfigurationDimensionsProvider : IProjectConfigurationDimensionsProvider

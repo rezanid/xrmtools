@@ -32,6 +32,15 @@ using XrmTools;
     resourcePackageGuid: PackageGuids.XrmToolsPackageIdString,
     PossibleProjectExtensions = CdsProjectRegistration.ProjectExtension,
     Capabilities = CdsProjectRegistration.Capabilities)]
+[assembly: ProjectTypeRegistration(
+    projectTypeGuid: PcfProjectRegistration.ProjectTypeGuid,
+    displayName: "Power Apps Component Framework Project",
+    displayProjectFileExtensions: "Power Apps Component Framework Project Files (*.pcfproj);*.pcfproj",
+    defaultProjectExtension: PcfProjectRegistration.ProjectExtension,
+    language: PcfProjectRegistration.Language,
+    resourcePackageGuid: PackageGuids.XrmToolsPackageIdString,
+    PossibleProjectExtensions = PcfProjectRegistration.ProjectExtension,
+    Capabilities = PcfProjectRegistration.Capabilities)]
 
 [assembly: ProvideCodeBase(
     AssemblyName = @"XrmTools.WebResourceProjectTemplate",

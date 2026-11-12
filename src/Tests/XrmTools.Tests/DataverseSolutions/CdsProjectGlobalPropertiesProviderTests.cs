@@ -74,8 +74,9 @@ public sealed class CdsProjectGlobalPropertiesProviderTests
     }
 
     [Theory]
-    [InlineData("XrmToolsCdsProject", true)]
-    [InlineData("XrmToolsCdsProject;.NET", false)]
+    [InlineData("XrmToolsCdsProject;XrmToolsNonDotNetProject", true)]
+    [InlineData("XrmToolsPcfProject;XrmToolsNonDotNetProject", true)]
+    [InlineData("XrmToolsNonDotNetProject;.NET", false)]
     [InlineData(".NET", false)]
     [InlineData("", false)]
     public void AppliesTo_OnlyCdsProjectsWithoutSdkIntegration(string capabilities, bool expected)
