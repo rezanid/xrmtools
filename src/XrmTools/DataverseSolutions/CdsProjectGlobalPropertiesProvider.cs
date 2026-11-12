@@ -12,7 +12,7 @@ using System.Threading;
 using System.Threading.Tasks;
 
 [Export(typeof(IProjectGlobalPropertiesProvider))]
-[AppliesTo(CdsProjectRegistration.UniqueCapability + " & !.NET")]
+[AppliesTo(CpsProjectCapabilities.NonDotNetProject + " & !.NET")]
 internal sealed class CdsProjectGlobalPropertiesProvider : StaticGlobalPropertiesProviderBase
 {
     [ImportingConstructor]

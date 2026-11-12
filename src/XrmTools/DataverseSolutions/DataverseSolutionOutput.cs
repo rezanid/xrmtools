@@ -35,6 +35,16 @@ internal sealed class DataverseSolutionOutput(IOutputLoggerService outputLoggerS
 
     public void WriteWarning(string message) => _outputLoggerService.OutputString($"Warning: {message}{Environment.NewLine}");
 
-    public Task ShowPaneAsync() => VS.Windows.CreateOutputWindowPaneAsync(Vsix.Name);
+    public async Task ShowPaneAsync()
+    {
+        await Microsoft.VisualStudio.Shell.ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync();
+        // Initialize the logger's pane; creating a toolkit pane by name uses a different GUID.
+        WriteBlankLine();
+        var pane = await VS.Windows.GetOutputWindowPaneAsync(PackageGuids.XrmToolsPackageId)
+            ?? throw new InvalidOperationException("The Xrm Tools output pane could not be opened.");
+        if (await VS.Windows.ShowToolWindowAsync(new Guid(WindowGuids.OutputWindow)) is null)
+            throw new InvalidOperationException("The Visual Studio Output window could not be opened.");
+        await pane.ActivateAsync();
+    }
 }
 #nullable restore

@@ -82,8 +82,9 @@ public sealed class CdsProjectConfigurationDimensionsProviderTests
     }
 
     [Theory]
-    [InlineData("XrmToolsCdsProject", true)]
-    [InlineData("XrmToolsCdsProject;.NET", false)]
+    [InlineData("XrmToolsCdsProject;XrmToolsNonDotNetProject", true)]
+    [InlineData("XrmToolsPcfProject;XrmToolsNonDotNetProject", true)]
+    [InlineData("XrmToolsNonDotNetProject;.NET", false)]
     [InlineData(".NET", false)]
     [InlineData("", false)]
     public void AppliesTo_OnlyProjectsWithoutSdkDimensions(string capabilities, bool expected)

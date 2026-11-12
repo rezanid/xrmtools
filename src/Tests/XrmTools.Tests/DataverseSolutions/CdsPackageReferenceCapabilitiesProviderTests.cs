@@ -6,6 +6,7 @@ using System;
 using System.Collections.Immutable;
 using System.ComponentModel.Composition;
 using System.IO;
+using System.Linq;
 using System.Reflection;
 using Xunit;
 using XrmTools.DataverseSolutions;
@@ -48,23 +49,25 @@ public sealed class CdsPackageReferenceCapabilitiesProviderTests
     }
 
     [Fact]
-    public void Export_OnlySuppliesConfiguredCdsProjectCapabilities()
+    public void Export_OnlySuppliesConfiguredPowerAppsProjectCapabilities()
     {
         var type = typeof(CdsPackageReferenceCapabilitiesProvider);
         var export = type.GetCustomAttribute<ExportAttribute>();
         export!.ContractType.Should().Be(typeof(IProjectCapabilitiesProvider));
         export.ContractName.Should().Be(ExportContractNames.Scopes.ConfiguredProject);
-        type.GetCustomAttribute<SupportsFileExtensionAttribute>()!.SupportedExtension.Should().Be(".cdsproj");
+        type.GetCustomAttributes<SupportsFileExtensionAttribute>().Select(attribute => attribute.SupportedExtension)
+            .Should().BeEquivalentTo(".cdsproj", ".pcfproj");
         type.Should().BeDerivedFrom<ConfiguredProjectCapabilitiesProviderBase>();
     }
 
     [Theory]
     [InlineData("XrmToolsCdsProject", true)]
     [InlineData("XrmToolsCdsProject;.NET", false)]
-    [InlineData("XrmToolsPcfProject", false)]
+    [InlineData("XrmToolsPcfProject", true)]
+    [InlineData("XrmToolsPcfProject;.NET", false)]
     [InlineData(".NET", false)]
     [InlineData("", false)]
-    public void AppliesTo_OnlyNativeCdsProjects(string capabilities, bool expected)
+    public void AppliesTo_OnlyNativePowerAppsProjects(string capabilities, bool expected)
     {
         var appliesTo = typeof(CdsPackageReferenceCapabilitiesProvider).GetCustomAttribute<AppliesToAttribute>();
         var capabilitySet = capabilities.Split(new[] { ';' }, StringSplitOptions.RemoveEmptyEntries)

@@ -42,7 +42,7 @@
       <IncludeAssets>compile;runtime</IncludeAssets>
     </PackageReference>
     <PackageReference Include="Microsoft.VisualStudio.ProjectSystem.VS" Version="17.9.380" PrivateAssets="all">
-      <IncludeAssets>runtime</IncludeAssets>
+      <IncludeAssets>compile;runtime</IncludeAssets>
     </PackageReference>
     <PackageReference Include="Moq" Version="4.20.72" />
     <PackageReference Include="xunit.v3" Version="3.2.2" />

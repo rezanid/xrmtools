@@ -157,6 +157,19 @@ internal sealed class PacCli(IProcessCommandRunner processCommandRunner) : IPacC
             cancellationToken);
     }
 
+    public Task<ProcessCommandResult> RunPcfCommandAsync(
+        string workingDirectory,
+        IReadOnlyList<string> arguments,
+        IProgress<ProcessOutputLine> output,
+        CancellationToken cancellationToken)
+    {
+        ValidateRequiredValue(workingDirectory, nameof(workingDirectory));
+        if (arguments is null) throw new ArgumentNullException(nameof(arguments));
+        if (output is null) throw new ArgumentNullException(nameof(output));
+        cancellationToken.ThrowIfCancellationRequested();
+        return RunPacAsync(arguments, workingDirectory, null, output, cancellationToken);
+    }
+
     public Task<ProcessCommandResult> RunSolutionCommandAsync(
         CdsProjectInfo project,
         IReadOnlyList<string> arguments,

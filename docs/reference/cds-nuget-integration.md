@@ -4,7 +4,7 @@
 
 A PAC-generated `.cdsproj` opened through Xrm Tools can use **Manage NuGet Packages** with its existing `PackageReference` format. Opening the project does not rewrite it. Installing or uninstalling packages uses Visual Studio's normal CPS item-editing services; commit the resulting project file, not a VS-specific replacement project format.
 
-The integration applies only to native, non-.NET Xrm Tools CDS projects whose **evaluated** `RestoreProjectStyle` is `PackageReference` and whose project directory does not contain `packages.config`. It does not change PCF integration, SDK-managed projects, machine-wide NuGet settings, or existing `packages.config` installations. After manually changing the package-management format, reload the project before using the package manager.
+The integration applies to native, non-.NET Xrm Tools projects whose **evaluated** `RestoreProjectStyle` is `PackageReference` and whose project directory does not contain `packages.config`. The same guarded integration also supports [PCF projects](pcf-projects.md), allowing their Microsoft build targets to restore in Visual Studio. It does not change SDK-managed projects, machine-wide NuGet settings, or existing `packages.config` installations. After manually changing the package-management format, reload the project before using the package manager.
 
 Projects already modified by the old UI behavior are deliberately not migrated. Restore the accidental `packages.config`, its `None` entry, and the added assembly reference/`HintPath` changes from source control if those changes were unintended, preserving any legitimate package changes. Merely deleting `packages.config` is not a complete reversal of an installation.
 
@@ -33,7 +33,7 @@ This is an extension-owned missing opt-in, not evidence that PAC projects must b
 
 ## Why the capability is backed by services
 
-`CdsPackageReferenceCapabilitiesProvider` is a configured-project capability provider, restricted by the CDS file extension and `XrmToolsCdsProject & !.NET` applicability. It reads the evaluated restore style under CPS's project read lock, honors the packages.config guard, and publishes only `PackageReferences`. Its base class refreshes after configured-project changes. It neither edits the project nor intercepts NuGet installation.
+`CdsPackageReferenceCapabilitiesProvider` is a configured-project capability provider, restricted to the CDS/PCF file extensions and `(XrmToolsCdsProject | XrmToolsPcfProject) & !.NET` applicability. It reads the evaluated restore style under CPS's project read lock, honors the packages.config guard, and publishes only `PackageReferences`. Its base class refreshes after configured-project changes. It neither edits the project nor intercepts NuGet installation.
 
 The installed Visual Studio implementations were inspected, rather than assuming a capability string implements NuGet:
 
