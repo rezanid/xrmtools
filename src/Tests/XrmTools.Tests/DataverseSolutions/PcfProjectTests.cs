@@ -3,6 +3,7 @@ namespace XrmTools.Tests.DataverseSolutions;
 
 using FluentAssertions;
 using System;
+using System.ComponentModel;
 using System.IO;
 using System.Linq;
 using System.Threading;
@@ -276,7 +277,12 @@ public class PcfProjectTests
                     {
                         lastProgress = progress;
                         progress!.Report("Complete sign-in in your browser.");
-                        await Task.Delay(Timeout.Infinite, token);
+                        try { await Task.Delay(Timeout.Infinite, token); }
+                        finally
+                        {
+                            // Cancellation cleanup need not finish before the dispatcher becomes idle.
+                            await dialog.Dispatcher.InvokeAsync(() => { }, System.Windows.Threading.DispatcherPriority.SystemIdle);
+                        }
                     };
                     var pushField = typeof(PcfPushDialog).GetField("push", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic)!;
                     pushField.SetValue(dialog, waitForAuthentication);
@@ -307,7 +313,7 @@ public class PcfProjectTests
                     progressControl.Background.Should().BeSameAs(System.Windows.Media.Brushes.Orange);
 
                     cancelButton.RaiseEvent(new System.Windows.RoutedEventArgs(Button.ClickEvent));
-                    dialog.Dispatcher.Invoke(() => { }, System.Windows.Threading.DispatcherPriority.ApplicationIdle);
+                    WaitForIdle(model, dialog.Dispatcher);
                     model.IsIdle.Should().BeTrue();
                     model.Status.Should().Contain("canceled").And.Contain("Dataverse");
                     progressControl.Visibility.Should().Be(System.Windows.Visibility.Collapsed);
@@ -324,7 +330,7 @@ public class PcfProjectTests
                     dialog.Dispatcher.Invoke(() => { }, System.Windows.Threading.DispatcherPriority.ApplicationIdle);
                     model.IsBusy.Should().BeTrue();
                     dialog.Close();
-                    dialog.Dispatcher.Invoke(() => { }, System.Windows.Threading.DispatcherPriority.ApplicationIdle);
+                    WaitForIdle(model, dialog.Dispatcher);
                     model.IsIdle.Should().BeTrue();
                     model.Status.Should().Contain("canceled");
                     dialog.IsVisible.Should().BeTrue();
@@ -358,6 +364,36 @@ public class PcfProjectTests
         thread.SetApartmentState(ApartmentState.STA);
         thread.Start();
         return completion.Task;
+    }
+
+    private static void WaitForIdle(PcfPushDialogViewModel model, System.Windows.Threading.Dispatcher dispatcher)
+    {
+        var frame = new System.Windows.Threading.DispatcherFrame();
+        var timeout = new System.Windows.Threading.DispatcherTimer(System.Windows.Threading.DispatcherPriority.Send, dispatcher)
+        {
+            Interval = TimeSpan.FromSeconds(10)
+        };
+        PropertyChangedEventHandler onChanged = (_, args) =>
+        {
+            if (args.PropertyName == nameof(model.IsIdle) && model.IsIdle)
+                frame.Continue = false;
+        };
+        EventHandler onTimeout = (_, _) => frame.Continue = false;
+        model.PropertyChanged += onChanged;
+        timeout.Tick += onTimeout;
+        try
+        {
+            timeout.Start();
+            if (!model.IsIdle) System.Windows.Threading.Dispatcher.PushFrame(frame);
+        }
+        finally
+        {
+            timeout.Stop();
+            timeout.Tick -= onTimeout;
+            model.PropertyChanged -= onChanged;
+        }
+        model.IsIdle.Should().BeTrue("cancellation should complete within ten seconds");
+        dispatcher.Invoke(() => { }, System.Windows.Threading.DispatcherPriority.ApplicationIdle);
     }
 
     [Fact]
