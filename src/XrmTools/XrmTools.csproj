@@ -52,6 +52,18 @@
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="Commands\AddPcfProjectCommand.cs" />
+    <Compile Include="Commands\PcfHarnessCommands.cs" />
+    <Compile Include="Commands\PushPcfProjectCommand.cs" />
+    <Compile Include="DataverseSolutions\CdsPackageReferenceCapabilitiesProvider.cs" />
+    <Compile Include="DataverseSolutions\CdsProjectConfigurationDimensionsProvider.cs" />
+    <Compile Include="DataverseSolutions\CdsProjectGlobalPropertiesProvider.cs" />
+    <Compile Include="DataverseSolutions\PcfProjectModels.cs" />
+    <Compile Include="DataverseSolutions\PcfProjectService.cs" />
+    <Compile Include="DataverseSolutions\PcfPushDestinationResolver.cs" />
+    <Compile Include="Pcf\PcfDebugLaunchProvider.cs" />
+    <Compile Include="Pcf\PcfHarnessProcess.cs" />
+    <Compile Include="Pcf\PcfHarnessSession.cs" />
     <Compile Include="Shell\Controls\Window.cs" />
     <Compile Include="Shell\Controls\DialogWindow.cs" />
     <Compile Include="Shell\Controls\PathButton.cs" />
@@ -163,7 +175,9 @@
     <Compile Include="DataverseExplorer\Views\ExplorerCollectionControl.xaml.cs" />
     <Compile Include="CodeGen\CustomApi\CustomApiSchemaComposer.cs" />
     <Compile Include="CodeGen\CustomApi\CustomApiEnvironment.cs" />
-    <Page Include="DataverseExplorer\Views\ExplorerCollectionControl.xaml"><Generator>MSBuild:Compile</Generator></Page>
+    <Page Include="DataverseExplorer\Views\ExplorerCollectionControl.xaml">
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
     <Compile Include="DataverseExplorer\Services\CustomApiCommandProvider.cs" />
     <Compile Include="CodeGen\CustomApi\CustomApiClientGenerator.cs" />
     <Compile Include="CodeGen\CustomApi\CustomApiOpenApiGenerator.cs" />
@@ -382,6 +396,13 @@
       <DependentUpon>DataverseSolutionProjectDialog.xaml</DependentUpon>
     </Compile>
     <Compile Include="UI\DataverseSolutionProjectDialogViewModel.cs" />
+    <Compile Include="UI\PcfCreateDialog.xaml.cs">
+      <DependentUpon>PcfCreateDialog.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="UI\PcfProjectDialogViewModels.cs" />
+    <Compile Include="UI\PcfPushDialog.xaml.cs">
+      <DependentUpon>PcfPushDialog.xaml</DependentUpon>
+    </Compile>
     <Compile Include="UI\RemovedPluginsDecision.cs" />
     <Compile Include="UI\RemovedPluginsDialog.xaml.cs">
       <DependentUpon>RemovedPluginsDialog.xaml</DependentUpon>
@@ -566,6 +587,12 @@
     <Compile Include="Xrm\Repositories\SystemRepository.cs" />
     <Compile Include="Xrm\Repositories\XrmRepository.cs" />
     <Compile Include="Logging\OutputLogger.cs" />
+    <Page Include="UI\PcfCreateDialog.xaml">
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="UI\PcfPushDialog.xaml">
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
     <Page Include="UI\RemovedPluginsDialog.xaml">
       <Generator>MSBuild:Compile</Generator>
     </Page>
@@ -601,6 +628,7 @@
     <Resource Include="Resources\ApplyToDataverse.png" />
     <Resource Include="Resources\ApplyToDataverse.16.16.png" />
     <Resource Include="Resources\ApplyToDataverse.32.32.png" />
+    <EmbeddedResource Include="Pcf\PcfHarnessDebugger.xml" />
     <Content Include="Resources\GettingStarted.html">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
       <IncludeInVSIX>true</IncludeInVSIX>
@@ -718,6 +746,8 @@
     </None>
   </ItemGroup>
   <ItemGroup>
+    <!-- Resolve host MSBuild types during registration without redistributing MSBuild in the VSIX. -->
+    <CreatePkgDefReferencedAssemblies Include="$(MSBuildToolsPath32)\Microsoft.Build.dll" />
     <Reference Include="Microsoft.CSharp" />
     <!--<Reference Include="Microsoft.VisualStudio.ProjectSystem">
       <HintPath>$(PkgMicrosoft_VisualStudio_ProjectSystem)\lib\net472\Microsoft.VisualStudio.ProjectSystem.dll</HintPath>

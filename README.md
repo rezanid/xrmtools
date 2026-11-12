@@ -9,6 +9,9 @@ Xrm Tools is a Visual Studio extension that aims to make Power Platform developm
 * Intellisense for Power Platform metadata (e.g. entities, attributes, messages).
 * Supports both traditional and packaged plugins (dependent assemblies).
 * Supports SDK-style and classic projects.
+* Opens Dataverse solution (`.cdsproj`) projects using either AlbanianXrm.CDSProj.Sdk or the standard PAC CLI Microsoft.PowerApps.MSBuild.Solution format, including source-file browsing and project configurations. **Xrm Tools > General > Project SDK** selects the format for newly created projects only; opening existing projects does not require changing this setting or converting their project files. Each format retains its own SDK-specific build behavior.
+* [Manage NuGet packages in PAC-generated Dataverse solution projects](docs/reference/cds-nuget-integration.md) using their existing `PackageReference` format, without converting projects on open or migrating `packages.config` installations.
+* [Power Apps Component Framework (`.pcfproj`) projects](docs/reference/pcf-projects.md): open existing projects, create controls with a themed wizard, push to a development environment, and run the local harness with F5/Ctrl+F5. See the [build-failure packaging caveat and verified remedy](docs/reference/pcf-build-failure-behavior.md).
 * [Solution aware plugins](https://github.com/rezanid/xrmtools/wiki/Solution%E2%80%90Aware-Plugins)
 * [Environment management at User, Solution or Project level](https://github.com/rezanid/xrmtools/wiki/Environment-Management)
 * [Secure secret managment using Windows Credential Management or environment variables](https://github.com/rezanid/xrmtools/wiki/Connection-String-Secrets)

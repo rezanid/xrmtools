@@ -50,7 +50,9 @@
         <StackPanel Grid.Row="2" Margin="0,6,0,6">
             <TextBlock Text="{Binding SelectionSummary}"/>
             <TextBlock Text="{Binding Status}" TextWrapping="Wrap" AutomationProperties.LiveSetting="Polite"/>
-            <ProgressBar IsIndeterminate="True" Height="3" Margin="0,4,0,0" Visibility="{Binding IsBusy, Converter={StaticResource BoolVisibility}}"/>
+            <ctrls:ProgressControl Kind="BarIndeterminate" IsRunning="{Binding IsBusy}" Margin="0,4,0,0"
+                                   Visibility="{Binding IsBusy, Converter={StaticResource BoolVisibility}}"
+                                   AutomationProperties.Name="Collection loading progress"/>
         </StackPanel>
 
     </Grid>

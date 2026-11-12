@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Rule Name="XrmToolsPcfHarness"
+	  DisplayName="PCF Local Harness (Edge)"
+	  PageTemplate="debugger"
+	  Description="Run the PCF local harness with the Visual Studio JavaScript browser debugger."
+	  xmlns="http://schemas.microsoft.com/build/2009/properties">
+  <Rule.DataSource>
+	<DataSource Persistence="UserFileWithXamlDefaults" HasConfigurationCondition="True" />
+  </Rule.DataSource>
+</Rule>

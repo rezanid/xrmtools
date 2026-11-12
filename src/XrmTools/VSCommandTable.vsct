@@ -147,6 +147,42 @@
           <CanonicalName>.XrmTools.DataverseSolution.AddProject</CanonicalName>
         </Strings>
       </Button>
+      <Button guid="XrmToolsCmdSetId" id="AddPcfProjectCmdId" priority="0x0910" type="Button">
+        <Parent guid="guidSHLMainMenu" id="IDG_VS_CTXT_SOLUTION_ADD_PROJ" />
+        <Strings>
+          <ButtonText>Power Apps Component Project...</ButtonText>
+          <CanonicalName>.XrmTools.Pcf.AddProject</CanonicalName>
+        </Strings>
+      </Button>
+      <Button guid="XrmToolsCmdSetId" id="PushPcfProjectCmdId" priority="0x0110" type="Button">
+        <Parent guid="XrmToolsCmdSetId" id="XrmToolsProjectContextMenuGroup" />
+        <Icon guid="AssetsGuid" id="ApplyToDataverse" />
+        <CommandFlag>IconIsMoniker</CommandFlag>
+        <CommandFlag>DynamicVisibility</CommandFlag>
+        <CommandFlag>DefaultInvisible</CommandFlag>
+        <Strings>
+          <ButtonText>Push to Environment...</ButtonText>
+          <CanonicalName>.XrmTools.Pcf.Push</CanonicalName>
+        </Strings>
+      </Button>
+      <Button guid="XrmToolsCmdSetId" id="StartPcfHarnessCmdId" priority="0x0111" type="Button">
+        <Parent guid="XrmToolsCmdSetId" id="XrmToolsProjectContextMenuGroup" />
+        <CommandFlag>DynamicVisibility</CommandFlag>
+        <CommandFlag>DefaultInvisible</CommandFlag>
+        <Strings>
+          <ButtonText>Start Local Test Harness</ButtonText>
+          <CanonicalName>.XrmTools.Pcf.StartHarness</CanonicalName>
+        </Strings>
+      </Button>
+      <Button guid="XrmToolsCmdSetId" id="StopPcfHarnessCmdId" priority="0x0112" type="Button">
+        <Parent guid="XrmToolsCmdSetId" id="XrmToolsProjectContextMenuGroup" />
+        <CommandFlag>DynamicVisibility</CommandFlag>
+        <CommandFlag>DefaultInvisible</CommandFlag>
+        <Strings>
+          <ButtonText>Stop Local Test Harness</ButtonText>
+          <CanonicalName>.XrmTools.Pcf.StopHarness</CanonicalName>
+        </Strings>
+      </Button>
       <Button guid="XrmToolsCmdSetId" id="RecloneDataverseSolutionCmdId" priority="0x0105" type="Button">
         <Parent guid="XrmToolsCmdSetId" id="XrmToolsProjectContextMenuGroup" />
         <Icon guid="ImageCatalogGuid" id="Refresh" />
@@ -417,6 +453,9 @@
     <CommandPlacement guid="XrmToolsCmdSetId" id="AddDataverseSolutionProjectCmdId" priority="0x0900">
       <Parent guid="guidSHLMainMenu" id="IDG_VS_CTXT_SLNFLDR_ADD_PROJ"/>
     </CommandPlacement>
+    <CommandPlacement guid="XrmToolsCmdSetId" id="AddPcfProjectCmdId" priority="0x0910">
+      <Parent guid="guidSHLMainMenu" id="IDG_VS_CTXT_SLNFLDR_ADD_PROJ"/>
+    </CommandPlacement>
     <!--Project Context Menu > "Set environment..."-->
     <CommandPlacement guid="XrmToolsCmdSetId" id="SetEnvironmentCmdId" priority="0x0200">
       <Parent guid="XrmToolsCmdSetId" id="XrmToolsProjectContextMenuGroup"/>
@@ -491,6 +530,10 @@
       <IDSymbol name="UnpackDataverseSolutionCmdId" value="0x0960"/>
       <IDSymbol name="ImportAndOpenDataverseSolutionCmdId" value="0x0970"/>
       <IDSymbol name="AddDataverseSolutionProjectCmdId" value="0x0980"/>
+      <IDSymbol name="AddPcfProjectCmdId" value="0x09A0"/>
+      <IDSymbol name="PushPcfProjectCmdId" value="0x09A1"/>
+      <IDSymbol name="StartPcfHarnessCmdId" value="0x09A2"/>
+      <IDSymbol name="StopPcfHarnessCmdId" value="0x09A3"/>
       <IDSymbol name="XrmToolsToolbar" value="0x2000"/>
       <IDSymbol name="XrmToolsToolbarGroup" value="0x2010"/>
       <IDSymbol name="XrmToolsContextSubMenu" value="0x1000"/>

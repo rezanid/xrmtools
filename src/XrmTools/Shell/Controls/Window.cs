@@ -22,6 +22,7 @@ public class Window : System.Windows.Window
     private HwndSource? source;
 
     public static readonly DependencyProperty FooterContentProperty = Property.RegisterFull<Window, object>(nameof(FooterContent));
+    public static readonly DependencyProperty IsFooterProgressRunningProperty = Property.Register<Window, bool>(nameof(IsFooterProgressRunning));
     public static readonly DependencyProperty ShowMinimizeButtonProperty = Property.Register<Window, bool>(nameof(ShowMinimizeButton), true);
     public static readonly DependencyProperty ShowMaximizeButtonProperty = Property.Register<Window, bool>(nameof(ShowMaximizeButton), true);
     public static readonly DependencyProperty IsCloseButtonEnabledProperty = Property.Register<Window, bool>(nameof(IsCloseButtonEnabled), true, propertyChanged: OnCommandStateChanged);
@@ -44,6 +45,7 @@ public class Window : System.Windows.Window
     }
 
     public object FooterContent { get => GetValue(FooterContentProperty); set => SetValue(FooterContentProperty, value); }
+    public bool IsFooterProgressRunning { get => (bool)GetValue(IsFooterProgressRunningProperty); set => SetValue(IsFooterProgressRunningProperty, value); }
     public bool ShowMinimizeButton { get => (bool)GetValue(ShowMinimizeButtonProperty); set => SetValue(ShowMinimizeButtonProperty, value); }
     public bool ShowMaximizeButton { get => (bool)GetValue(ShowMaximizeButtonProperty); set => SetValue(ShowMaximizeButtonProperty, value); }
     public bool IsCloseButtonEnabled { get => (bool)GetValue(IsCloseButtonEnabledProperty); set => SetValue(IsCloseButtonEnabledProperty, value); }
