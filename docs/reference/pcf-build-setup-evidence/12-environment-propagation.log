@@ -1,0 +1,10 @@
+Visual Studio 19284 started without Node.js on PATH and was not restarted; three PCF projects build in parallel; the stored selection for all three is rewritten before each build
+build 1, selection v22.15.0 -> REBUILD failedProjects=0 seconds=74; ========== Rebuild All: 3 succeeded, 0 failed, 0 skipped ==========
+    Node.js reported from inside Microsoft's npm scripts: XTNODE P1 v22.15.0; XTNODE P2 v22.15.0; XTNODE P3 v22.15.0
+    XTPCF008 (build process saw another Node.js): False; MSBuild worker processes of this Visual Studio after the build: 1036, 16884, 18824
+build 2, selection v24.21.0 -> REBUILD failedProjects=0 seconds=42; ========== Rebuild All: 3 succeeded, 0 failed, 0 skipped ==========
+    Node.js reported from inside Microsoft's npm scripts: XTNODE P1 v24.21.0; XTNODE P2 v24.21.0; XTNODE P3 v24.21.0
+    XTPCF008 (build process saw another Node.js): False; MSBuild worker processes of this Visual Studio after the build: 1036, 16884
+build 3, selection v22.15.0 -> REBUILD failedProjects=0 seconds=38; ========== Rebuild All: 3 succeeded, 0 failed, 0 skipped ==========
+    Node.js reported from inside Microsoft's npm scripts: XTNODE P1 v22.15.0; XTNODE P2 v22.15.0; XTNODE P3 v22.15.0
+    XTPCF008 (build process saw another Node.js): False; MSBuild worker processes of this Visual Studio after the build: 1036, 16884, 22464

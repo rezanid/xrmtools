@@ -1,0 +1,12 @@
+package.json declares: "packageManager": "pnpm@9.12.0", (pnpm and Yarn are also installed on this machine)
+BUILD failedProjects=1 seconds=2; ========== Build: 0 succeeded or up-to-date, 1 failed, 0 skipped ==========
+    1>%USERPROFILE%\AppData\Local\Temp\xt-pcf\acc11\Pnpm11\Pnpm11.pcfproj : error XTPCF004: PCF project 'Pnpm11' is configured for pnpm ("packageManager": "pnpm@9.12.0" in %USERPROFILE%\AppData\Local\Temp\xt-pcf\acc11\Pnpm11\package.json). Microsoft's PCF build installs dependencies with npm, which would add npm files to this project, so npm install was not run and no files were changed. Install dependencies with pnpm and set <PcfEnableAutoNpmInstall>false</PcfEnableAutoNpmInstall> in the project file so builds do not run npm install, then build again.
+REBUILD failedProjects=1 seconds=2; ========== Rebuild All: 0 succeeded, 1 failed, 0 skipped ==========
+    1>%USERPROFILE%\AppData\Local\Temp\xt-pcf\acc11\Pnpm11\Pnpm11.pcfproj : error XTPCF004: PCF project 'Pnpm11' is configured for pnpm ("packageManager": "pnpm@9.12.0" in %USERPROFILE%\AppData\Local\Temp\xt-pcf\acc11\Pnpm11\package.json). Microsoft's PCF build installs dependencies with npm, which would add npm files to this project, so npm install was not run and no files were changed. Install dependencies with pnpm and set <PcfEnableAutoNpmInstall>false</PcfEnableAutoNpmInstall> in the project file so builds do not run npm install, then build again.
+project files unchanged: True; package-lock.json created: False; node_modules created: False
+notification: 'Pnpm11' is configured for pnpm, so the build did not run npm install for it.  Set up PCF build
+%USERPROFILE%\AppData\Local\Temp\xt-pcf\evidence\11a-build-stopped-other-package-manager.png (3866x2090, 383 sampled colors)
+setup dialog: package manager='pnpm ("packageManager": "pnpm@9.12.0" in %USERPROFILE%\AppData\Local\Temp\xt-pcf\acc11\Pnpm11\package.json). Xrm Tools prepares npm projects only, so it will not run npm here and has not changed any file. Install dependencies with pnpm; to keep builds from running npm install, set PcfEnableAutoNpmInstall to false in the project file.'
+setup dialog: dependencies='Not installed.' status='Node.js is ready. Install dependencies with pnpm, then build.'
+after choosing Set up: status='Node.js is ready. Install dependencies with pnpm, then build.'; project files unchanged: True; node_modules created: False
+%USERPROFILE%\AppData\Local\Temp\xt-pcf\evidence\11b-setup-dialog-other-package-manager.png (1320x1082, 249 sampled colors)

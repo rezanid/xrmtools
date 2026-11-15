@@ -1,0 +1,43 @@
+Build started at 5:39 PM...
+1>------ Build started: Project: Base9, Configuration: Debug Any CPU ------
+2>------ Build started: Project: FreshB, Configuration: Debug Any CPU ------
+3>------ Build started: Project: FreshA, Configuration: Debug Any CPU ------
+3>  npm warn deprecated @opentelemetry/sdk-trace-base@1.30.1: Use @opentelemetry/sdk-trace package
+3>  npm warn deprecated eslint@9.39.5: This version is no longer supported. Please see https://eslint.org/version-support for other options.
+3>
+3>  added 537 packages, and audited 538 packages in 1m
+3>
+3>  80 packages are looking for funding
+3>    run `npm fund` for details
+3>
+3>  13 moderate severity vulnerabilities
+3>
+3>  To address issues that do not require attention, run:
+3>    npm audit fix
+3>
+3>  To address all issues (including breaking changes), run:
+3>    npm audit fix --force
+3>
+3>  Run `npm audit` for details.
+3>
+3>  > pcf-project@1.0.0 build
+3>  > node -e "console.log('XTNODE FreshA ' + process.version + ' ' + process.execPath)" && pcf-scripts build --noColor --buildMode development --outDir %USERPROFILE%\AppData\Local\Temp\xt-pcf\acc9\FreshA\out\controls --buildSource VisualStudio
+3>
+3>  XTNODE FreshA v22.15.0 %USERPROFILE%\AppData\Local\Author Software\nvm\installs\v22.15.0\node.exe
+3>  [5:41:08 PM] [build] Initializing...
+3>  [5:41:08 PM] [build] Validating manifest...
+3>  [5:41:08 PM] [build] Validating control...
+3>  [5:41:09 PM] [build] Generating manifest types...
+3>  [5:41:09 PM] [build] Generating design types...
+3>  [5:41:09 PM] [build] Running ESLint...
+3>  [5:41:10 PM] [build] Compiling and bundling control...
+3>  [Webpack stats]:
+3>  asset [1m[32mbundle.js[39m[22m 4.96 KiB [1m[32m[emitted][39m[22m (name: main)
+3>  runtime modules 614 bytes 3 modules
+3>  [1m./FieldControl/index.ts[39m[22m 2.05 KiB [1m[33m[built][39m[22m [1m[33m[code generated][39m[22m
+3>  webpack 5.112.2 compiled [1m[32msuccessfully[39m[22m in 1149 ms
+3>  [5:41:11 PM] [build] Generating build outputs...
+3>  [5:41:11 PM] [build] Succeeded
+========== Build: 3 succeeded or up-to-date, 0 failed, 0 skipped ==========
+========== Build completed at 5:41 PM and took 01:13.073 minutes ==========
+

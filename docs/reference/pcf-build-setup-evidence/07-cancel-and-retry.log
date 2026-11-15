@@ -1,0 +1,15 @@
+before: dependencies='Not installed. Setup runs npm ci, which installs exactly what package-lock.json lists.'
+while installing: status='Installing npm dependencies; this can take several minutes…'; npm processes under Visual Studio: 2; setup lock files: 1; node_modules exists: True
+%USERPROFILE%\AppData\Local\Temp\xt-pcf\evidence\07a-setup-installing.png (1320x1270, 350 sampled colors)
+cancel completed within 4s: status='Setup was canceled. Dependencies may be only partly installed; run setup again to finish.'
+after cancel: dependencies='Not installed. Setup runs npm ci, which installs exactly what package-lock.json lists.'; npm processes under Visual Studio: 0; setup lock files: 0; incomplete markers: 1; pcf-scripts present: False
+%USERPROFILE%\AppData\Local\Temp\xt-pcf\evidence\07b-setup-canceled.png (1320x1270, 298 sampled colors)
+after retry: dependencies='Installed.' status=''Fresh7' is ready to build with Node.js v22.15.0.'
+after retry: setup lock files: 0; incomplete markers: 0; package-lock.json unchanged by npm ci: True
+%USERPROFILE%\AppData\Local\Temp\xt-pcf\evidence\07c-setup-ready-after-retry.png (1320x1270, 346 sampled colors)
+=== 7b: a second project's setup is canceled and then finished by Build instead of by setup ===
+after cancel: status='Setup was canceled. Dependencies may be only partly installed; run setup again to finish.'; node_modules exists: True; pcf-scripts present: True; incomplete markers: 1
+BUILD SOLUTION failedProjects=0 seconds=47; ========== Build: 2 succeeded or up-to-date, 0 failed, 0 skipped ==========
+    2>  Xrm Tools: an earlier dependency install did not finish; running Microsoft's npm restore.
+after the build: incomplete markers: 0; Fresh7b pcf-scripts present: True; bundle.js produced: True
+UNCHANGED BUILD AFTER failedProjects=0 seconds=4; ========== Build: 2 succeeded or up-to-date, 0 failed, 0 skipped ==========; npm install ran: False; pcf-scripts ran: False

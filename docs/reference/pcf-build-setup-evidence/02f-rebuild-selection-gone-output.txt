@@ -1,0 +1,7 @@
+Rebuild started at 5:02 PM...
+1>------ Rebuild All started: Project: Choose2, Configuration: Debug Any CPU ------
+Restored %USERPROFILE%\AppData\Local\Temp\xt-pcf\acc2b\Choose2\Choose2.pcfproj (in 32 ms).
+1>%USERPROFILE%\AppData\Local\Temp\xt-pcf\acc2b\Choose2\Choose2.pcfproj : error XTPCF002: PCF project 'Choose2': The Node.js installation selected for this project is no longer available (%USERPROFILE%\AppData\Local\Temp\xt-pcf\fnmdir\node-versions\v24.21.0\installation). Choose another installation. To do that, choose 'Set Up PCF Build' on the project's context menu.
+========== Rebuild All: 0 succeeded, 1 failed, 0 skipped ==========
+========== Rebuild completed at 5:02 PM and took 01.122 seconds ==========
+

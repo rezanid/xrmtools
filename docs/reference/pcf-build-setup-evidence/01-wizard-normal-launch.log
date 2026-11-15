@@ -1,0 +1,16 @@
+Visual Studio 11888 started with the registered Windows PATH (normal launch)
+wizard summary : Node.js v22.15.0 with npm 10.9.2 — Visual Studio's PATH
+wizard install : Project dependencies will be installed after the project is created.
+setup options  : Collapsed
+%USERPROFILE%\AppData\Local\Temp\xt-pcf\evidence\01a-wizard-defaults.png (1300x1184, 303 sampled colors)
+install project dependencies checkbox: On
+selected Node.js installation: Node.js v22.15.0, npm 10.9.2 (Visual Studio's PATH)
+wizard size with setup options open: 1300x1498 px
+%USERPROFILE%\AppData\Local\Temp\xt-pcf\evidence\01b-wizard-setup-options.png (1300x1498, 420 sampled colors)
+status while installing: Project created. Installing npm dependencies; this can take several minutes…
+%USERPROFILE%\AppData\Local\Temp\xt-pcf\evidence\01c-wizard-installing.png (1300x1738, 525 sampled colors)
+wizard closed 116s after Create
+projects in solution: 2; Wiz1.pcfproj: True; pcf-scripts installed: True; package-lock.json: True
+BUILD failedProjects=0 seconds=63; ========== Build: 2 succeeded or up-to-date, 0 failed, 0 skipped ==========; npm install ran: False; pcf-scripts ran: True
+%USERPROFILE%\AppData\Local\Temp\xt-pcf\evidence\01e-build-succeeded.png (3866x2090, 348 sampled colors)
+UNCHANGED BUILD (acceptance 8) failedProjects=0 seconds=3; ========== Build: 2 succeeded or up-to-date, 0 failed, 0 skipped ==========; npm install ran: False; pcf-scripts ran: False

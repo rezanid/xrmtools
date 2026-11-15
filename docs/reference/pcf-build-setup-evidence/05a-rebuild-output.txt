@@ -1,0 +1,7 @@
+Rebuild started at 5:07 PM...
+1>------ Rebuild All started: Project: None5, Configuration: Debug Any CPU ------
+Restored %USERPROFILE%\AppData\Local\Temp\xt-pcf\acc5\None5\None5.pcfproj (in 39 ms).
+1>%USERPROFILE%\AppData\Local\Temp\xt-pcf\acc5\None5\None5.pcfproj : error XTPCF001: PCF project 'None5': Node.js was not found on Visual Studio's PATH, on the Windows PATH, or in fnm. Install Node.js (LTS), or choose an existing installation. To do that, choose 'Set Up PCF Build' on the project's context menu.
+========== Rebuild All: 0 succeeded, 1 failed, 0 skipped ==========
+========== Rebuild completed at 5:07 PM and took 01.350 seconds ==========
+

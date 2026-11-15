@@ -1,0 +1,20 @@
+Visual Studio 17240: normal PATH; user npm configuration: registry=http://127.0.0.1:9/; fetch-retries=0; 
+=== 6a: install fails, the cause is corrected, Retry setup ===
+status after the failed install: The project was created, but setup is incomplete. npm could not reach the registry (ECONNREFUSED). Check the network connection, proxy and registry settings in your npm configuration, then retry. Choose Retry setup, or open the project and set it up later.
+buttons: Retry setup shown=True; Open project shown=True; Create shown=False
+project kept: Wiz6a.pcfproj=True; pcf-scripts installed=False
+npm output shown in the wizard (last lines): npm error code ECONNREFUSED | npm error syscall connect | npm error errno ECONNREFUSED
+%USERPROFILE%\AppData\Local\Temp\xt-pcf\evidence\06a-wizard-install-failed.png (1300x1488, 430 sampled colors)
+corrected the npm configuration; choosing Retry setup
+after Retry setup: projects in solution=3; pcf-scripts installed=True
+=== 6b: install fails, Open project, notification, Set up PCF build ===
+status after the failed install: The project was created, but setup is incomplete. npm could not reach the registry (ECONNREFUSED). Check the network connection, proxy and registry settings in your npm configuration, then retry. Choose Retry setup, or open the project and set it up later.
+Open project: projects in solution=4; notification: Setup for 'Wiz6b' is incomplete: its npm dependencies are not installed yet.  Set up PCF build
+%USERPROFILE%\AppData\Local\Temp\xt-pcf\evidence\06b-opened-with-incomplete-setup-notification.png (3866x2090, 380 sampled colors)
+corrected the npm configuration; choosing 'Set up PCF build' in the notification
+setup dialog: dependencies='Not installed. Setup runs npm install, because the project has no package-lock.json yet.' status='Choose Set up to install the project's dependencies.'
+%USERPROFILE%\AppData\Local\Temp\xt-pcf\evidence\06c-setup-dialog-incomplete.png (1320x986, 228 sampled colors)
+setup dialog after Set up: dependencies='Installed.' status=''Wiz6b' is ready to build with Node.js v22.15.0.'
+%USERPROFILE%\AppData\Local\Temp\xt-pcf\evidence\06d-setup-dialog-ready.png (1320x1270, 344 sampled colors)
+notification still shown after setup: False
+BUILD after recovery failedProjects=0 seconds=12; ========== Build: 4 succeeded or up-to-date, 0 failed, 0 skipped ==========; npm install ran: False; pcf-scripts ran: True

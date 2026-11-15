@@ -1,0 +1,8 @@
+Build started at 5:39 PM...
+1>------ Build started: Project: Base9, Configuration: Debug Any CPU ------
+2>------ Build started: Project: FreshB, Configuration: Debug Any CPU ------
+3>------ Build started: Project: FreshA, Configuration: Debug Any CPU ------
+3>%USERPROFILE%\AppData\Local\Temp\xt-pcf\acc9\FreshA\FreshA.pcfproj : error XTPCF006: PCF project 'FreshA': setup is still installing npm dependencies. Build again when setup has finished.
+========== Build: 2 succeeded or up-to-date, 1 failed, 0 skipped ==========
+========== Build completed at 5:39 PM and took 03.364 seconds ==========
+

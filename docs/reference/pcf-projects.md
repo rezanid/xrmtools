@@ -83,7 +83,9 @@ Errors from npm scripts themselves (TypeScript, ESLint, webpack) are reported by
 ### How it fits into the build
 
 - Visual Studio's solution build manager still schedules, logs and cancels the build, and Microsoft's targets still run every npm command. Xrm Tools does not start a separate MSBuild, replace Microsoft's targets or override the `Exec` task.
-- When a solution build starts, Xrm Tools decides the Node.js installation for that build. If it is not already on Visual Studio's PATH, it is put first on the Visual Studio process PATH until the build ends, then the original value is restored. MSBuild passes that environment to every node of the build. The machine PATH, fnm's default, shell profiles and `fnm_multishells` folders are never touched, and no shell profile is run.
+- When a solution build starts, Xrm Tools decides the Node.js installation for that build. If it is not already on Visual Studio's PATH, it is put first on the PATH of the Visual Studio process until the build ends, then the original value is restored. In the acceptance runs every MSBuild worker of the build, including reused ones, ran npm with that installation. The machine PATH, fnm's default, shell profiles and `fnm_multishells` folders are never touched, and no shell profile is run.
+- That PATH change is visible to the whole Visual Studio process while the build runs, not only to PCF projects. Other projects in the same build, and anything else Visual Studio starts during it, find the selected Node.js first. When Visual Studio's own PATH already has a fitting Node.js, nothing is changed.
+- Deciding takes a few short process launches per PCF project (`node --version`, and fnm when it is needed) at the start of each solution build, with an upper limit of 30 seconds, after which the build continues without Xrm Tools' preparation.
 - Each PCF project gets a generated file, `obj\<project>.pcfproj.xrmtools.g.targets`, in the MSBuild extensions folder that `Microsoft.Common.targets` imports by wildcard. This is the route by which NuGet brings in Microsoft's PCF targets, so nothing in the project file or its imports changes. The targets in it only run in front of Microsoft's `RestoreNPM`, `PcfClean`, `PcfBuild` and `PcfRebuild`.
 - Those targets do nothing unless Visual Studio passes `XrmToolsPcfBuild=true`, so command-line builds and builds without Xrm Tools are unchanged. Deleting `obj` is harmless; the file is written again.
 
@@ -93,6 +95,7 @@ Limitations:
 - **Push to Environment** runs PAC, which starts its own build with Visual Studio's PATH. It does not yet use a Node.js selected in **Set Up PCF Build**.
 - `Microsoft.PowerApps.MSBuild.Pcf` reinstalls on every build when `package.json` is newer than `package-lock.json`. That is Microsoft's incremental check, and Xrm Tools does not change lock file timestamps.
 - If a later version of Microsoft's package renames its npm targets, the added checks stop applying and builds behave as they do without Xrm Tools.
+- Validated on Visual Studio 18 Insiders only. Visual Studio 2022, Build Selection, and solutions that mix PCF with other project types have not been tested.
 
 Tested with PAC 2.14.1, Microsoft.PowerApps.MSBuild.Pcf 1.52.1, pcf-scripts 1.51.1, Visual Studio 18 Insiders (MSBuild 18.13.0.52701), fnm 1.38.1, Node.js 22.15.0 and 24.21.0. See [PCF build setup validation](pcf-build-setup-validation.md) for the acceptance runs.
 

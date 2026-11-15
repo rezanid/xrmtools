@@ -1,0 +1,20 @@
+=== 9a: setup requested while a build is installing dependencies for the same project ===
+build state when setup is requested: 2 (2 = in progress)
+setup dialog during the build: dependencies='Not installed. Setup runs npm ci, which installs exactly what package-lock.json lists.'
+Set up chosen during the build: status='A build is running. Wait for it to finish or cancel it, then retry setup.'; npm output box shown: False
+%USERPROFILE%\AppData\Local\Temp\xt-pcf\evidence\09a-setup-refused-during-build.png (1320x986, 231 sampled colors)
+REBUILD (not disturbed) failedProjects=0 seconds=131; ========== Rebuild All: 3 succeeded, 0 failed, 0 skipped ==========; 'added N packages' lines: 2, one for each of the two fresh projects
+=== 9b: build requested while this Visual Studio's setup dialog is installing ===
+setup running: status='Installing npm dependencies; this can take several minutes…'
+20s after a Build.BuildSolution request from another process: request still waiting on Visual Studio: True; MSBuild or npm started by a build: False; setup still installing: True
+setup finished undisturbed: dependencies='Installed.' status=''FreshA' is ready to build with Node.js v22.15.0.'
+=== 9c: build requested while another Visual Studio process runs setup for the same project (its setup lock is held) ===
+process 11976 holds %USERPROFILE%\AppData\Local\XrmTools\Pcf\setup\A4C211500DB7493227049807.lock, as a second Visual Studio running setup would
+BUILD while the setup lock is held failedProjects=1 seconds=4; ========== Build: 2 succeeded or up-to-date, 1 failed, 0 skipped ==========
+    3>%USERPROFILE%\AppData\Local\Temp\xt-pcf\acc9\FreshA\FreshA.pcfproj : error XTPCF006: PCF project 'FreshA': setup is still installing npm dependencies. Build again when setup has finished.
+  FreshA node_modules touched by that build: False
+  notification: Setup is still installing npm dependencies for 'FreshA'.  Set up PCF build
+  %USERPROFILE%\AppData\Local\Temp\xt-pcf\evidence\09c-build-stopped-while-setup-runs.png (3866x2090, 386 sampled colors)
+released the setup lock (lock file left behind: False)
+BUILD after the lock was released failedProjects=0 seconds=73; ========== Build: 3 succeeded or up-to-date, 0 failed, 0 skipped ==========
+    3>  added 537 packages, and audited 538 packages in 1m

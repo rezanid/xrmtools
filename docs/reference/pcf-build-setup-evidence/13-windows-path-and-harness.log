@@ -1,0 +1,10 @@
+=== 13a: Visual Studio's own PATH has no Node.js; the registered Windows PATH does; no restart ===
+REBUILD failedProjects=0 seconds=42; ========== Rebuild All: 1 succeeded, 0 failed, 0 skipped ==========
+    1>  Xrm Tools: building 'WinPath' with Node.js v22.15.0, npm 10.9.2 (Windows PATH, newer than this Visual Studio session) from %USERPROFILE%\AppData\Local\Author Software\nvm\.nodejs
+    1>  XTNODE WinPath v22.15.0 %USERPROFILE%\AppData\Local\Author Software\nvm\installs\v22.15.0\node.exe
+=== 13b: Start Local Test Harness with fnm only (no Node.js on Visual Studio's PATH) ===
+    17:51:03:479	Starting PCF local harness: %USERPROFILE%\AppData\Local\Temp\xt-pcf\acc2\Fnm2
+    17:51:03:783	Starting PCF harness using %USERPROFILE%\AppData\Roaming\fnm\aliases\default\npm.cmd.
+    17:51:34:782	 Local: http://localhost:8181
+harness node process: %USERPROFILE%\AppData\Roaming\fnm\aliases\default\node.exe
+harness node processes after Stop Local Test Harness: 0

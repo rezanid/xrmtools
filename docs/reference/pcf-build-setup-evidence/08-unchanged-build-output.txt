@@ -1,0 +1,6 @@
+Build started at 4:57 PM...
+1>------ Build started: Project: Base, Configuration: Debug Any CPU ------
+2>------ Build started: Project: Wiz1, Configuration: Debug Any CPU ------
+========== Build: 2 succeeded or up-to-date, 0 failed, 0 skipped ==========
+========== Build completed at 4:57 PM and took 02.782 seconds ==========
+

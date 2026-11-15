@@ -1,0 +1,16 @@
+Visual Studio started without node, npm or fnm on PATH; the registered Windows PATH is replaced by the same value; fnm's directory has no installed versions
+REBUILD failedProjects=1 seconds=2; ========== Rebuild All: 0 succeeded, 1 failed, 0 skipped ==========
+    1>%USERPROFILE%\AppData\Local\Temp\xt-pcf\acc5\None5\None5.pcfproj : error XTPCF001: PCF project 'None5': Node.js was not found on Visual Studio's PATH, on the Windows PATH, or in fnm. Install Node.js (LTS), or choose an existing installation. To do that, choose 'Set Up PCF Build' on the project's context menu.
+notification: 'None5' cannot build: Node.js was not found on Visual Studio's PATH, on the Windows PATH, or in fnm.  Set up PCF build
+%USERPROFILE%\AppData\Local\Temp\xt-pcf\evidence\05a-build-stopped-node-missing.png (3866x2090, 386 sampled colors)
+setup dialog: summary='Node.js needs your attention before npm can run'
+setup dialog: problem='Node.js was not found on Visual Studio's PATH, on the Windows PATH, or in fnm. Install Node.js (LTS), or choose an existing installation.'
+setup dialog: actions offered: Browse…, Check again, Get Node.js…
+setup dialog: guidance='Get Node.js opens nodejs.org in your browser; Xrm Tools does not install software on this computer. After installing Node.js, choose Check again. Visual Studio does not need to restart.'
+setup dialog after choosing Set up without Node.js: status='Node.js was not found on Visual Studio's PATH, on the Windows PATH, or in fnm. Install Node.js (LTS), or choose an existing installation.'
+%USERPROFILE%\AppData\Local\Temp\xt-pcf\evidence\05b-setup-dialog-node-missing.png (1320x1102, 208 sampled colors)
+wizard: summary='Node.js needs your attention before npm can run'
+wizard: install='Project dependencies cannot be installed until Node.js is set up.'
+wizard: setup options Expanded by itself; problem='Node.js was not found on Visual Studio's PATH, on the Windows PATH, or in fnm. Install Node.js (LTS), or choose an existing installation.'
+wizard window: 1300x1582 px; Create button on screen: True
+%USERPROFILE%\AppData\Local\Temp\xt-pcf\evidence\05c-wizard-node-missing.png (1300x1582, 418 sampled colors)
