@@ -1,25 +1,53 @@
 <ctrls:DialogWindow xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:ctrls="clr-namespace:XrmTools.Shell.Controls"
+    xmlns:ui="clr-namespace:XrmTools.UI"
     xmlns:p="clr-namespace:Microsoft.VisualStudio.PlatformUI;assembly=Microsoft.VisualStudio.Shell.15.0"
     x:Class="XrmTools.UI.PcfCreateDialog" x:ClassModifier="internal"
-    Title="Add PCF project" Width="650" Height="650" MinWidth="500" MinHeight="550"
-    Padding="24,12" IsCloseButtonEnabled="{Binding IsIdle}">
+    Title="Add PCF project" Width="650" Height="720" MinWidth="500" MinHeight="560"
+    Padding="24,12" Loaded="OnLoaded" IsFooterProgressRunning="{Binding IsBusy}">
     <ctrls:DialogWindow.Resources>
+        <BooleanToVisibilityConverter x:Key="BoolVisibility"/>
         <Style x:Key="FieldLabel" TargetType="Label"><Setter Property="Foreground" Value="{DynamicResource {x:Static p:EnvironmentColors.ToolWindowTextBrushKey}}"/><Setter Property="Padding" Value="0"/><Setter Property="Margin" Value="0,0,0,5"/><Setter Property="FontWeight" Value="SemiBold"/></Style>
     </ctrls:DialogWindow.Resources>
-    <ctrls:DialogWindow.FooterContent><StackPanel Orientation="Horizontal" HorizontalAlignment="Right" IsEnabled="{Binding IsIdle}"><ctrls:Button Content="_Create" Kind="Accent" MinWidth="100" IsDefault="True" Click="OnCreate"/><ctrls:Button Content="Cancel" MinWidth="100" Margin="8,0,0,0" IsCancel="True"/></StackPanel></ctrls:DialogWindow.FooterContent>
-    <Grid><Grid.RowDefinitions><RowDefinition Height="*"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
+    <ctrls:DialogWindow.FooterContent>
+        <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+            <ctrls:Button x:Name="CreateButton" Content="_Create" Kind="Accent" MinWidth="100" IsDefault="True" IsEnabled="{Binding IsIdle}" Click="OnCreate"
+                          Visibility="{Binding CanEdit, Converter={StaticResource BoolVisibility}}"/>
+            <ctrls:Button x:Name="RetryButton" Content="_Retry setup" Kind="Accent" MinWidth="100" IsEnabled="{Binding IsIdle}" Click="OnCreate"
+                          Visibility="{Binding IsCreated, Converter={StaticResource BoolVisibility}}"/>
+            <ctrls:Button x:Name="OpenButton" Content="_Open project" MinWidth="100" Margin="8,0,0,0" IsEnabled="{Binding IsIdle}" Click="OnOpen"
+                          Visibility="{Binding IsCreated, Converter={StaticResource BoolVisibility}}"/>
+            <ctrls:Button x:Name="CancelButton" Content="Cancel" MinWidth="100" Margin="8,0,0,0" IsCancel="True" Click="OnCancel"/>
+        </StackPanel>
+    </ctrls:DialogWindow.FooterContent>
+    <Grid><Grid.RowDefinitions><RowDefinition Height="*"/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
         <ScrollViewer VerticalScrollBarVisibility="Auto" IsEnabled="{Binding IsIdle}"><StackPanel>
-            <Label Content="_Location" Target="{Binding ElementName=Location}" Style="{StaticResource FieldLabel}"/><Grid Margin="0,0,0,12"><Grid.ColumnDefinitions><ColumnDefinition/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions><ctrls:TextBox x:Name="Location" Text="{Binding Location, UpdateSourceTrigger=PropertyChanged}"/><ctrls:Button Grid.Column="1" Content="_Browse…" Margin="8,0,0,0" Click="OnBrowse"/></Grid>
-            <Label Content="Project _name" Target="{Binding ElementName=ProjectName}" Style="{StaticResource FieldLabel}"/><ctrls:TextBox x:Name="ProjectName" Text="{Binding ProjectName, UpdateSourceTrigger=PropertyChanged}" Margin="0,0,0,12"/>
-            <Label Content="_Control name" Target="{Binding ElementName=ControlName}" Style="{StaticResource FieldLabel}"/><ctrls:TextBox x:Name="ControlName" Text="{Binding ControlName, UpdateSourceTrigger=PropertyChanged}" Margin="0,0,0,12"/>
-            <Label Content="_Namespace" Target="{Binding ElementName=Namespace}" Style="{StaticResource FieldLabel}"/><ctrls:TextBox x:Name="Namespace" Text="{Binding Namespace, UpdateSourceTrigger=PropertyChanged}" Margin="0,0,0,12"/>
-            <Label Content="Template" Style="{StaticResource FieldLabel}"/><ctrls:ComboBox SelectedValue="{Binding Template}" SelectedValuePath="Tag" Margin="0,0,0,12"><ctrls:ComboBoxItem Content="Field" Tag="field"/><ctrls:ComboBoxItem Content="Dataset" Tag="dataset"/></ctrls:ComboBox>
-            <Label Content="Framework" Style="{StaticResource FieldLabel}"/><ctrls:ComboBox SelectedValue="{Binding Framework}" SelectedValuePath="Tag" Margin="0,0,0,12"><ctrls:ComboBoxItem Content="None" Tag="none"/><ctrls:ComboBoxItem Content="React" Tag="react"/></ctrls:ComboBox>
-            <ctrls:CheckBox Content="Install npm dependencies after scaffolding" IsChecked="{Binding InstallDependencies}"/>
-            <ctrls:TextBlock Text="If creation fails or is canceled, generated files remain in the project folder." TextWrapping="Wrap" Margin="0,10,0,0"/>
+            <StackPanel IsEnabled="{Binding CanEdit}">
+                <Label Content="_Location" Target="{Binding ElementName=Location}" Style="{StaticResource FieldLabel}"/><Grid Margin="0,0,0,12"><Grid.ColumnDefinitions><ColumnDefinition/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions><ctrls:TextBox x:Name="Location" Text="{Binding Location, UpdateSourceTrigger=PropertyChanged}"/><ctrls:Button Grid.Column="1" Content="_Browse…" Margin="8,0,0,0" Click="OnBrowse"/></Grid>
+                <Label Content="Project _name" Target="{Binding ElementName=ProjectName}" Style="{StaticResource FieldLabel}"/><ctrls:TextBox x:Name="ProjectName" Text="{Binding ProjectName, UpdateSourceTrigger=PropertyChanged}" Margin="0,0,0,12"/>
+                <Label Content="_Control name" Target="{Binding ElementName=ControlName}" Style="{StaticResource FieldLabel}"/><ctrls:TextBox x:Name="ControlName" Text="{Binding ControlName, UpdateSourceTrigger=PropertyChanged}" Margin="0,0,0,12"/>
+                <Label Content="_Namespace" Target="{Binding ElementName=Namespace}" Style="{StaticResource FieldLabel}"/><ctrls:TextBox x:Name="Namespace" Text="{Binding Namespace, UpdateSourceTrigger=PropertyChanged}" Margin="0,0,0,12"/>
+                <Label Content="Template" Style="{StaticResource FieldLabel}"/><ctrls:ComboBox SelectedValue="{Binding Template}" SelectedValuePath="Tag" Margin="0,0,0,12" AutomationProperties.Name="Template"><ctrls:ComboBoxItem Content="Field" Tag="field"/><ctrls:ComboBoxItem Content="Dataset" Tag="dataset"/></ctrls:ComboBox>
+                <Label Content="Framework" Style="{StaticResource FieldLabel}"/><ctrls:ComboBox SelectedValue="{Binding Framework}" SelectedValuePath="Tag" Margin="0,0,0,12" AutomationProperties.Name="Framework"><ctrls:ComboBoxItem Content="None" Tag="none"/><ctrls:ComboBoxItem Content="React" Tag="react"/></ctrls:ComboBox>
+            </StackPanel>
+            <Label Content="Build setup" Style="{StaticResource FieldLabel}"/>
+            <ctrls:TextBlock x:Name="SetupSummary" Text="{Binding Setup.Summary}" TextWrapping="Wrap" AutomationProperties.LiveSetting="Polite"/>
+            <ctrls:TextBlock x:Name="InstallSummary" Text="{Binding Setup.InstallSummary}" TextWrapping="Wrap" Margin="0,2,0,4"/>
+            <ctrls:Expander x:Name="SetupOptions" Header="Setup o_ptions" IsExpanded="{Binding Setup.IsExpanded, Mode=TwoWay}" Margin="0,0,0,4">
+                <ui:PcfSetupView x:Name="SetupView" DataContext="{Binding Setup}" Margin="0,6,0,0"/>
+            </ctrls:Expander>
+            <ctrls:TextBlock Text="If creation fails or is canceled, generated files remain in the project folder." TextWrapping="Wrap" Margin="0,6,0,0" Opacity="0.8"/>
         </StackPanel></ScrollViewer>
-        <ScrollViewer Grid.Row="1" MaxHeight="70" VerticalScrollBarVisibility="Auto" Margin="0,12,0,0"><ctrls:TextBlock Text="{Binding Status}" TextWrapping="Wrap" AutomationProperties.LiveSetting="Polite"/></ScrollViewer>
+        <ctrls:TextBox x:Name="SetupOutput" Grid.Row="1" Text="{Binding Setup.Output, Mode=OneWay}" IsReadOnly="True" TextWrapping="NoWrap" FontFamily="Consolas"
+                       VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Auto" Height="110" Margin="0,10,0,0"
+                       AutomationProperties.Name="npm output" TextChanged="OnOutputChanged">
+            <ctrls:TextBox.Style>
+                <Style TargetType="ctrls:TextBox" BasedOn="{StaticResource {x:Type ctrls:TextBox}}">
+                    <Style.Triggers><DataTrigger Binding="{Binding Setup.Output}" Value=""><Setter Property="Visibility" Value="Collapsed"/></DataTrigger></Style.Triggers>
+                </Style>
+            </ctrls:TextBox.Style>
+        </ctrls:TextBox>
+        <ScrollViewer Grid.Row="2" MaxHeight="96" VerticalScrollBarVisibility="Auto" Margin="0,10,0,0"><ctrls:TextBlock x:Name="StatusText" Text="{Binding Status}" TextWrapping="Wrap" AutomationProperties.LiveSetting="Polite"/></ScrollViewer>
     </Grid>
 </ctrls:DialogWindow>
