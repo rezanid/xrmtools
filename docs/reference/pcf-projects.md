@@ -76,7 +76,7 @@ For such a project Xrm Tools does not run npm, and it stops the build before Mic
 | `XTPCF005` | Dependencies are not installed and this step cannot install them: Clean on a fresh checkout, or automatic install is turned off. | Build the project, or use **Set Up PCF Build**. |
 | `XTPCF006` | Setup is still installing dependencies for this project. | Build again when setup has finished. |
 | `XTPCF007` | The project needs a different Node.js than the other PCF projects in this build. | See "One build uses one Node.js installation" above. |
-| `XTPCF008` | The build process did not see the Node.js the build was set up for. Nothing was built. | Close all Visual Studio windows, reopen the solution and build again. |
+| `XTPCF008` | The build process did not see the Node.js the build was set up for. Nothing was built. | Build again. If the message returns, close all Visual Studio windows and reopen the solution. |
 
 Errors from npm scripts themselves (TypeScript, ESLint, webpack) are reported by Microsoft's targets as before.
 

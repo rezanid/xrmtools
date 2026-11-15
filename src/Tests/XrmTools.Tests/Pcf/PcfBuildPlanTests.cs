@@ -40,6 +40,7 @@ public sealed class PcfBuildPlanTests : IDisposable
             ProjectDirectory = directory,
             PackageManager = PcfPackageManagerInfo.Detect(directory),
             Dependencies = PcfDependencyState.Read(directory, incomplete),
+            IncompleteMarker = incomplete ? Path.Combine(_root, name + ".incomplete") : null,
             Environment = node is null
                 ? new PcfEnvironmentResolution { Status = PcfEnvironmentStatus.NodeMissing, Requirement = NoRequirement, Problem = "Node.js was not found.", Remedy = "Install Node.js." }
                 : new PcfEnvironmentResolution { Status = PcfEnvironmentStatus.Ready, Requirement = NoRequirement, Installation = node }
@@ -148,8 +149,8 @@ public sealed class PcfBuildPlanTests : IDisposable
         var plan = PcfBuildPlan.Create([pnpm, interrupted]);
 
         plan.PropertiesFor(pnpm)["XrmToolsPcfPackageManagerError"].Should().Contain("pnpm").And.Contain("no files were changed");
-        plan.PropertiesFor(pnpm).Should().NotContainKey("XrmToolsPcfRestoreRequired");
-        plan.PropertiesFor(interrupted)["XrmToolsPcfRestoreRequired"].Should().Be("true");
+        plan.PropertiesFor(pnpm).Should().NotContainKey("XrmToolsPcfIncompleteMarker");
+        plan.PropertiesFor(interrupted)["XrmToolsPcfIncompleteMarker"].Should().Be(Path.Combine(_root, "Interrupted.incomplete"));
     }
 
     [Fact]
@@ -210,6 +211,11 @@ public sealed class PcfBuildPlanTests : IDisposable
         // The only npm work is Microsoft's own install target, called earlier than Microsoft calls it.
         XDocument.Parse(PcfBuildTargets.Content).Descendants(none + "Exec").Select(exec => (string)exec.Attribute("Command")!).Should().Equal("node --version");
         XDocument.Parse(PcfBuildTargets.Content).Descendants(none + "CallTarget").Select(call => (string)call.Attribute("Targets")!).Distinct().Should().Equal("RestoreNPM");
+        // The unfinished-install marker is removed only by the target that reinstalled, and only after that succeeded.
+        var delete = XDocument.Parse(PcfBuildTargets.Content).Descendants(none + "Delete").Single();
+        ((string)delete.Parent!.Attribute("Name")!).Should().Be("XrmToolsPcfRepairIncompleteSetup");
+        delete.ElementsBeforeSelf(none + "CallTarget").Should().ContainSingle();
+        ((string)delete.Parent.Attribute("BeforeTargets")!).Should().Be("BeforeBuild;BeforeRebuild", "a Clean never installs, so it must never clear the marker");
     }
 
     [Fact]

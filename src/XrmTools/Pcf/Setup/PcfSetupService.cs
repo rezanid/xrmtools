@@ -26,6 +26,8 @@ internal sealed class PcfSetupState
     public PcfPackageManagerInfo PackageManager { get; init; } = null!;
     public PcfEnvironmentResolution Environment { get; init; } = null!;
     public PcfDependencyState Dependencies { get; init; } = null!;
+    /// <summary>The marker of an unfinished install, for the build to remove once its own install has succeeded.</summary>
+    public string? IncompleteMarker { get; init; }
     public bool SetupRunning { get; init; }
 
     /// <summary>Set when a build must not reach Microsoft's npm commands until the developer has decided something.</summary>
@@ -110,13 +112,15 @@ internal sealed class PcfSetupService : IPcfSetupService
     public async Task<PcfSetupState> InspectAsync(string projectFile, CancellationToken cancellationToken)
     {
         var directory = Path.GetDirectoryName(Path.GetFullPath(projectFile))!;
+        var incomplete = _store.IsSetupIncomplete(directory);
         return new PcfSetupState
         {
             ProjectFile = projectFile,
             ProjectDirectory = directory,
             PackageManager = PcfPackageManagerInfo.Detect(directory),
             Environment = await _resolver.ResolveAsync(projectFile, directory, cancellationToken).ConfigureAwait(false),
-            Dependencies = PcfDependencyState.Read(directory, _store.IsSetupIncomplete(directory)),
+            Dependencies = PcfDependencyState.Read(directory, incomplete),
+            IncompleteMarker = incomplete ? _store.IncompleteMarker(directory) : null,
             SetupRunning = _store.IsLocked(directory)
         };
     }

@@ -4,6 +4,8 @@ namespace XrmTools.Pcf.Setup;
 using Microsoft.Build.Evaluation;
 using Microsoft.VisualStudio.ProjectSystem;
 using Microsoft.VisualStudio.ProjectSystem.Build;
+using Microsoft.VisualStudio.Shell;
+using Task = System.Threading.Tasks.Task;
 using System;
 using System.Collections.Immutable;
 using System.ComponentModel.Composition;
@@ -19,14 +21,24 @@ internal sealed class PcfProjectBuildIntegration
 {
     private readonly UnconfiguredProject _project;
     private readonly IOutputLoggerService _output;
+    private readonly PcfBuildCoordinator _coordinator;
     private bool _reported;
 
     [ImportingConstructor]
-    public PcfProjectBuildIntegration(UnconfiguredProject project, IOutputLoggerService output) { _project = project; _output = output; }
+    public PcfProjectBuildIntegration(UnconfiguredProject project, IOutputLoggerService output, PcfBuildCoordinator coordinator)
+    {
+        _project = project; _output = output; _coordinator = coordinator;
+    }
 
     [ProjectAutoLoad(ProjectLoadCheckpoint.ProjectFactoryCompleted)]
     [AppliesTo(PcfProjectRegistration.UniqueCapability)]
-    public Task OnProjectLoadedAsync() => EnsureTargetsAsync();
+    public Task OnProjectLoadedAsync()
+    {
+        // Builds must be seen from the first one, even before the package has finished loading. Not awaited: project
+        // load may itself be holding the UI thread.
+        ThreadHelper.JoinableTaskFactory.RunAsync(_coordinator.EnsureAdvisedAsync).FileAndForget("XrmTools/Pcf/Advise");
+        return EnsureTargetsAsync();
+    }
 
     public async Task EnsureTargetsAsync()
     {

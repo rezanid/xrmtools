@@ -65,7 +65,7 @@ internal sealed class PcfBuildPlan
             return properties;
         }
         if (state.PackageManagerNotice is { } notice) properties["XrmToolsPcfPackageManagerError"] = notice;
-        if (state.Dependencies.Status == PcfDependencyStatus.Incomplete) properties["XrmToolsPcfRestoreRequired"] = "true";
+        if (state.IncompleteMarker is { } marker) properties["XrmToolsPcfIncompleteMarker"] = marker;
         var node = state.Environment.Installation!;
         if (node.Source != NodeEnvironmentSource.BuildEnvironment)
         {
@@ -125,7 +125,7 @@ internal static class PcfBuildTargets
               <Output TaskParameter="ConsoleOutput" PropertyName="_XrmToolsPcfActualNode" />
             </Exec>
             <Error Condition="'$(_XrmToolsPcfActualNode)' != '$(XrmToolsPcfExpectedNode)'" Code="XTPCF008" File="$(MSBuildProjectFullPath)"
-                   Text="PCF project '$(MSBuildProjectName)': this build was set up to use Node.js $(XrmToolsPcfExpectedNode), but the build process reported '$(_XrmToolsPcfActualNode)'. Nothing was built with the wrong version. Close all Visual Studio windows, reopen the solution and build again." />
+                   Text="PCF project '$(MSBuildProjectName)': this build was set up to use Node.js $(XrmToolsPcfExpectedNode), but the build process reported '$(_XrmToolsPcfActualNode)'. Nothing was built with the wrong version. Build again; if this message returns, close all Visual Studio windows and reopen the solution." />
             <Message Importance="high" Text="$(XrmToolsPcfEnvironmentNote)" Condition="'$(XrmToolsPcfEnvironmentNote)' != ''" />
           </Target>
 
@@ -139,11 +139,15 @@ internal static class PcfBuildTargets
             <CallTarget Targets="RestoreNPM" />
           </Target>
 
-          <!-- A setup that was canceled or failed can leave node_modules half installed; let Microsoft's install finish it. -->
+          <!--
+            A setup or install that was canceled or failed can leave node_modules half installed. Let Microsoft's
+            install finish it, and only then remove the marker that says so.
+          -->
           <Target Name="XrmToolsPcfRepairIncompleteSetup" BeforeTargets="BeforeBuild;BeforeRebuild"
-                  Condition="'$(XrmToolsPcfBuild)' == 'true' and '$(XrmToolsPcfRestoreRequired)' == 'true' and '$(XrmToolsPcfSetupError)' == '' and '$(XrmToolsPcfPackageManagerError)' == '' and '$(PcfEnableAutoNpmInstall)' == 'true'">
-            <Message Importance="high" Text="Xrm Tools: an earlier dependency setup did not finish; running Microsoft's npm restore." />
+                  Condition="'$(XrmToolsPcfBuild)' == 'true' and '$(XrmToolsPcfIncompleteMarker)' != '' and '$(XrmToolsPcfSetupError)' == '' and '$(XrmToolsPcfPackageManagerError)' == '' and '$(PcfEnableAutoNpmInstall)' == 'true'">
+            <Message Importance="high" Text="Xrm Tools: an earlier dependency install did not finish; running Microsoft's npm restore." />
             <CallTarget Targets="RestoreNPM" />
+            <Delete Files="$(XrmToolsPcfIncompleteMarker)" />
           </Target>
 
           <!-- Microsoft's npm scripts need pcf-scripts; say so instead of letting them fail with "'pcf-scripts' is not recognized". -->

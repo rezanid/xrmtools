@@ -135,11 +135,16 @@ public sealed class PcfSetupServiceTests : IDisposable
 
         (await InstallAsync(node)).Outcome.Should().Be(PcfInstallOutcome.Failed);
         File.Exists(_h.Project.ProjectFile).Should().BeTrue();
-        (await _h.InspectAsync()).Dependencies.Status.Should().Be(PcfDependencyStatus.Incomplete);
+        var failed = await _h.InspectAsync();
+        failed.Dependencies.Status.Should().Be(PcfDependencyStatus.Incomplete);
+        File.Exists(failed.IncompleteMarker).Should().BeTrue("a build is handed the marker so its own install can remove it");
 
         _h.Npm.Behavior = null;
         (await InstallAsync(node)).Succeeded.Should().BeTrue();
-        (await _h.InspectAsync()).Dependencies.Status.Should().Be(PcfDependencyStatus.Installed);
+        var repaired = await _h.InspectAsync();
+        repaired.Dependencies.Status.Should().Be(PcfDependencyStatus.Installed);
+        repaired.IncompleteMarker.Should().BeNull();
+        File.Exists(failed.IncompleteMarker).Should().BeFalse();
     }
 
     [Fact]

@@ -27,6 +27,8 @@ internal interface IPcfSetupStore
     void SetSelection(string projectFile, PcfNodeSelection? selection);
     bool IsSetupIncomplete(string projectDirectory);
     void SetSetupIncomplete(string projectDirectory, bool incomplete);
+    /// <summary>The file whose existence means an install for this project was started and has not finished.</summary>
+    string IncompleteMarker(string projectDirectory);
     /// <returns><c>null</c> when another setup for the same project is running, in this or another Visual Studio.</returns>
     IDisposable? TryLock(string projectDirectory);
     bool IsLocked(string projectDirectory);
@@ -64,6 +66,8 @@ internal sealed class PcfSetupStore : IPcfSetupStore
             if (File.Exists(SelectionsFile)) File.Replace(temporary, SelectionsFile, null); else File.Move(temporary, SelectionsFile);
         }
     }
+
+    public string IncompleteMarker(string projectDirectory) => StateFile(projectDirectory, "incomplete");
 
     public bool IsSetupIncomplete(string projectDirectory) => File.Exists(StateFile(projectDirectory, "incomplete"));
 

@@ -30,7 +30,7 @@ internal sealed class PcfBuildCoordinator : IVsUpdateSolutionEvents2
     private readonly IPcfSetupStore _store;
     private readonly PcfBuildSession _session;
     private readonly IOutputLoggerService _output;
-    private readonly ConcurrentDictionary<string, bool> _results = new(StringComparer.OrdinalIgnoreCase);
+    private readonly ConcurrentDictionary<string, bool?> _results = new(StringComparer.OrdinalIgnoreCase);
     private readonly ConcurrentDictionary<string, PcfBuildBlock> _blocked = new(StringComparer.OrdinalIgnoreCase);
     private readonly Dictionary<string, InfoBar> _infoBars = new(StringComparer.OrdinalIgnoreCase);
     private volatile PcfBuildPlan? _plan;
@@ -44,15 +44,22 @@ internal sealed class PcfBuildCoordinator : IVsUpdateSolutionEvents2
         _setup.Changed += project => ThreadHelper.JoinableTaskFactory.RunAsync(() => CloseNoticeAsync(project)).FileAndForget("XrmTools/Pcf/CloseNotice");
     }
 
-    /// <summary>Opens the shared setup experience for a project; set by the package.</summary>
-    public Func<string, Task>? ShowSetup { get; set; }
-
-    public void Advise(IServiceProvider services)
+    /// <summary>Starts listening to solution builds. Safe to call repeatedly, from any thread.</summary>
+    public async Task EnsureAdvisedAsync()
     {
-        ThreadHelper.ThrowIfNotOnUIThread();
-        if (_cookie != 0 || services.GetService(typeof(SVsSolutionBuildManager)) is not IVsSolutionBuildManager2 manager) return;
-        _solution = services.GetService(typeof(SVsSolution)) as IVsSolution;
+        if (_cookie != 0) return;
+        await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync();
+        if (_cookie != 0 || ServiceProvider.GlobalProvider.GetService(typeof(SVsSolutionBuildManager)) is not IVsSolutionBuildManager2 manager) return;
+        _solution = ServiceProvider.GlobalProvider.GetService(typeof(SVsSolution)) as IVsSolution;
         ErrorHandler.ThrowOnFailure(manager.AdviseUpdateSolutionEvents(this, out _cookie));
+    }
+
+    /// <summary>Opens the shared setup experience for a project.</summary>
+    public async Task ShowSetupAsync(string projectFile)
+    {
+        await CloseNoticeAsync(projectFile);
+        _output.OutputString($"{Environment.NewLine}PCF build setup: {projectFile}{Environment.NewLine}");
+        await UI.PcfSetupDialog.ShowAsync(projectFile, _setup, line => _output.OutputString(line + Environment.NewLine), VsShellUtilities.ShutdownToken);
     }
 
     /// <summary>The MSBuild global properties for one project's build, from the current build's plan.</summary>
@@ -85,8 +92,7 @@ internal sealed class PcfBuildCoordinator : IVsUpdateSolutionEvents2
             // Let the click finish before a modal dialog opens; the notification bar and accessibility clients
             // would otherwise wait on it for as long as the dialog stays open.
             await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync(alwaysYield: true);
-            await CloseNoticeAsync(projectFile);
-            if (ShowSetup is not null) await ShowSetup(projectFile);
+            await ShowSetupAsync(projectFile);
         }).FileAndForget("XrmTools/Pcf/SetupNotice");
         if (!await infoBar.TryShowInfoBarUIAsync()) _infoBars.Remove(projectFile);
     }
@@ -131,7 +137,7 @@ internal sealed class PcfBuildCoordinator : IVsUpdateSolutionEvents2
     public int UpdateProjectCfg_Done(IVsHierarchy pHierProj, IVsCfg pCfgProj, IVsCfg pCfgSln, uint dwAction, int fSuccess, int fCancel)
     {
         ThreadHelper.ThrowIfNotOnUIThread();
-        if (fCancel == 0 && ProjectFile(pHierProj) is { } project) _results[project] = fSuccess != 0;
+        if (ProjectFile(pHierProj) is { } project) _results[project] = fCancel != 0 ? null : fSuccess != 0;
         return VSConstants.S_OK;
     }
 
@@ -146,19 +152,23 @@ internal sealed class PcfBuildCoordinator : IVsUpdateSolutionEvents2
             var project = result.Key;
             var directory = Path.GetDirectoryName(project)!;
             var installed = File.Exists(Path.Combine(directory, "node_modules", "pcf-scripts", "package.json"));
-            if (result.Value)
-            {
-                // A successful build ran Microsoft's install where one was needed, which completes an interrupted setup.
-                if (installed) _store.SetSetupIncomplete(directory, false);
-                continue;
-            }
-            string? notice = null;
+            // A successful project needs nothing. The marker of an unfinished install is removed by the build itself,
+            // and only by the step that reinstalled, so a Clean or a build that skipped installing cannot clear it.
+            if (result.Value == true) continue;
             var state = plan?.Find(project);
+            // This build had to install from nothing and did not succeed. npm writes node_modules\.package-lock.json
+            // last; without it the install was cut short, and Microsoft's incremental check could still take the
+            // half-installed folder for current on the next build.
+            if (state is { PackageManager.IsNpm: true, Dependencies.Status: PcfDependencyStatus.Missing } && Directory.Exists(Path.Combine(directory, "node_modules"))
+                && !File.Exists(Path.Combine(directory, "node_modules", ".package-lock.json")))
+                _store.SetSetupIncomplete(directory, true);
+            if (result.Value is null) continue;
+            string? notice = null;
             if (_blocked.TryGetValue(project, out var block)) notice = block.Summary;
             else if (!installed && state is { PackageManager.Kind: PcfPackageManagerKind.Other })
                 notice = $"'{state.ProjectName}' is configured for {state.PackageManager.Name}, so the build did not run npm install for it.";
             else if (!installed && state is not null)
-                notice = $"The build could not install npm dependencies for '{state.ProjectName}'. Setup shows what npm reported and lets you retry.";
+                notice = $"'{state.ProjectName}' did not build because its npm dependencies are not installed. Setup can install them and shows what npm reports.";
             if (notice is not null) ThreadHelper.JoinableTaskFactory.RunAsync(() => ShowNoticeAsync(project, notice)).FileAndForget("XrmTools/Pcf/BuildNotice");
         }
         return VSConstants.S_OK;
