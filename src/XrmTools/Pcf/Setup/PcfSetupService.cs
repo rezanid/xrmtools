@@ -33,7 +33,7 @@ internal sealed class PcfSetupState
     {
         get
         {
-            const string action = " Choose 'Set Up PCF Build' on the project's context menu.";
+            const string action = " To do that, choose 'Set Up PCF Build' on the project's context menu.";
             var prefix = $"PCF project '{ProjectName}': ";
             if (SetupRunning)
                 return new("XTPCF006", $"Setup is still installing npm dependencies for '{ProjectName}'.",

@@ -99,6 +99,13 @@ public sealed class PcfSetupViewModelTests : IDisposable
         wizard.SetupIncomplete.Should().BeTrue();
         wizard.Status.Should().Contain("project was created").And.Contain("Node.js was not found").And.Contain("Retry setup");
         _h.Npm.Commands.Should().BeEmpty();
+
+        // Node.js is installed while the wizard is still open; Retry setup finds it without another check.
+        _h.OnBuildPath("v22.15.0");
+        (await wizard.CreateAsync(Create, CancellationToken.None)).Should().Be(_h.Project.ProjectFile);
+        wizard.SetupIncomplete.Should().BeFalse();
+        _h.Npm.Commands.Should().Equal("install");
+        _requests.Should().HaveCount(1);
     }
 
     [Fact]

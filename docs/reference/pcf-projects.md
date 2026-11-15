@@ -1,93 +1,100 @@
 # PCF projects in Visual Studio
 
-Xrm Tools opens standard PAC-generated `.pcfproj` projects without converting their project files. Microsoft PCF targets remain responsible for normal builds. Node.js, npm and the Power Platform CLI must be installed separately; start Visual Studio with Node.js and npm on its `PATH`.
+Xrm Tools opens standard PAC-generated `.pcfproj` projects without converting their project files. Microsoft's PCF targets and the project's own `pcf-scripts` remain responsible for builds. Xrm Tools finds Node.js and npm for those builds, installs a new project's dependencies, and tells you in Visual Studio what to do when something needs your decision. The Power Platform CLI (PAC) is still required to create and push controls.
 
 ## Create a control
 
-From the solution or a solution folder, choose **Add > Power Apps Component Project...**. The Visual Studio-themed wizard collects the project name and location, control name, namespace, field/dataset template and optional React framework. It runs `pac pcf init` and adds the generated project to the selected solution location. Creation does not require Dataverse authentication.
+From the solution or a solution folder, choose **Add > Power Apps Component Project...**. The wizard collects the project name and location, control name, namespace, field/dataset template and optional React framework. It runs `pac pcf init` and adds the generated project to the selected solution location. Creation does not require Dataverse authentication.
 
-**Install npm dependencies** is an explicit opt-in, unchecked by default. On failure or cancellation, generated files remain available for inspection; an unsuccessful creation is not added to the solution. See the first-build instructions below before choosing Rebuild or starting the harness.
+While you fill in those details the wizard checks for Node.js and npm. When they are usable it shows one line, for example `Node.js v22.15.0 with npm 10.9.2 — Visual Studio's PATH`, and installs the project's dependencies after creating it. **Setup options** holds the rest: the Node.js installation to use, **Browse** for one that was not found, **Get Node.js**, and **Install project dependencies**, which you can clear. If Node.js or npm is missing or does not fit, the section opens by itself and says what is wrong and what to do.
+
+**Get Node.js** opens the official download page in your browser. Xrm Tools does not install software on the computer. After installing Node.js, choose **Check again**; Visual Studio does not need to restart.
+
+Creation and installation show their progress, with npm's output, and **Cancel** stops either one, including every process npm started. If the project was created but its dependencies could not be installed, the wizard stays open, says why, and offers **Retry setup** and **Open project**. The project is kept either way. A project opened that way shows a notification that its setup is incomplete. If creation itself fails or is canceled, generated files remain in the project folder and nothing is added to the solution.
+
+If you clear **Install project dependencies**, nothing is installed until you build.
 
 PAC projects using `RestoreProjectStyle=PackageReference` participate in CPS NuGet restore so their Microsoft build targets can be restored in Visual Studio. Existing `packages.config` projects are not automatically migrated.
 
-## First Build and Rebuild
+## Build an existing project
 
-Install Node.js and npm separately, choosing a version compatible with the project's `.node-version`, `.nvmrc`, and `package.json` engine requirements where present. [Microsoft's PCF setup guidance](https://learn.microsoft.com/power-apps/developer/component-framework/create-custom-controls-using-pcf) recommends Node LTS. PAC is required for creation and deployment, but not for the Microsoft MSBuild targets' npm steps.
+Open the project and choose **Build** or **Rebuild**. There is nothing to enable and no project file to edit. Opening a project never installs anything.
 
-For Microsoft.PowerApps.MSBuild.Pcf 1.52.1, a normal **Build** automatically runs `npm install` when its incremental install target determines it is needed; `PcfEnableAutoNpmInstall` and `PcfAlwaysNpmInstall` control that behavior. It may update `package-lock.json`; it is not equivalent to `npm ci`. Respect any project-specific npm configuration. To start the harness, dependencies must already be installed.
+- **Fresh checkout, Build.** Microsoft's targets run `npm install` when dependencies are missing, as they always have.
+- **Fresh checkout, Rebuild.** Microsoft's Rebuild runs `npm run clean` before its own install, which used to fail with `'pcf-scripts' is not recognized`. Xrm Tools now runs Microsoft's install target first, so Rebuild works on a fresh checkout. This honors `PcfEnableAutoNpmInstall`.
+- **Later builds.** Nothing is installed again, and an unchanged project is not rebuilt.
 
-On a fresh checkout, use **Build before Rebuild** if the project permits automatic installation, or explicitly install dependencies from the directory containing the PCF `package.json`: use `npm ci` when a compatible lockfile exists, otherwise follow the project's instructions (typically `npm install`). This is necessary even when automatic install is enabled: Microsoft's Rebuild runs Clean first, and its `PcfClean` runs `npm run clean` before its automatic install target. If the clean script uses `pcf-scripts` and dependencies are absent, it fails with `'pcf-scripts' is not recognized` / `MSB3073`. Do not delete `node_modules` to fix this. A project with a custom clean script may have different prerequisites.
+When a build cannot proceed without a decision, only the affected project stops, before any npm command runs. The Error List shows what is wrong and what to do, and a notification offers **Set up PCF build**. The same command is on the project's context menu as **Set Up PCF Build...**.
 
-Microsoft's targets remain in charge: Xrm Tools does not automatically install Node, override npm scripts, or prepare dependencies before Clean. Explicit install and the wizard's opt-in are developer actions. `PcfAlwaysNpmInstall`, `PcfEnableAutoNpmInstall`, and custom scripts keep their normal Microsoft behavior. NuGet restore is separate from npm dependency installation.
+### Which Node.js a build uses
 
-## Troubleshoot Node and npm discovery
+In this order:
 
-If Build reports `'npm' is not recognized` and `MSB3073` with exit code `9009`, the Microsoft PCF targets cannot find npm in the build process environment. Other nonzero exits can mean Node/npm is present but unusable; read the preceding output. The project path on the MSBuild error identifies the affected project. Creating a project with **Install npm dependencies** unchecked does not exercise npm and can still succeed. Changing debugger settings will not fix a build.
+1. The installation you selected for the project in **Set Up PCF Build**.
+2. A Node.js and npm that Visual Studio's builds already see on PATH, when it fits the project.
+3. A version already installed with [fnm](https://github.com/Schniz/fnm) that fits the project.
 
-Visual Studio and reused MSBuild worker processes inherit their environment; a successful command in a different terminal does not update them. For a normal Windows launch, make the intended Node and npm available on the environment PATH before starting VS, then restart VS after PATH changes. Alternatively, select an existing installation **for this launch only** in a Developer PowerShell, replacing the example directory with your actual installation containing `node.exe` and the npm launcher:
+"Fits" means the project's `.node-version` or `.nvmrc` (in the project folder or above it, up to the repository root) and `engines.node` in its `package.json`. Version files are resolved by fnm itself, so aliases such as `lts/*` work. With no declaration, a working PATH is kept; otherwise your fnm default is used.
 
-```powershell
-$env:Path = 'C:\path\to\your\node-installation;' + $env:Path
-node.exe --version
-npm.cmd --version
-devenv.exe
-```
+Xrm Tools never installs a Node.js version and never picks one arbitrarily. It asks you to choose when a declared version is not installed, when fnm has several versions and no default, when several installed versions fit `engines.node` and your default is not one of them, or when the version file and `engines.node` contradict each other.
 
-For fnm, initialize it explicitly in the shell, select the project's configured version, verify it, and launch VS from that same shell. For example, when the project intentionally uses the fnm `default` alias:
+A selection is stored per project under `%LOCALAPPDATA%\XrmTools\Pcf`, not in the project or repository. If the selected installation is later moved or deleted, or the project's declared version changes so that it no longer fits, the next build says so and asks again. **Use automatic selection** in the setup dialog forgets a selection.
 
-```powershell
-fnm env --use-on-cd --shell powershell | Out-String | Invoke-Expression
-fnm use default
-node.exe --version
-npm.cmd --version
-devenv.exe
-```
+Node.js installed while Visual Studio is open is found on the Windows PATH without a restart. Other version managers work when they put Node.js on the PATH Visual Studio starts with, or through **Browse**.
 
-The first command evaluates code produced by the installed fnm executable in your shell: use it only if you trust that installation. To honor a project version file instead of the default alias, start in the project directory and use `fnm use` without an explicit version; review [fnm's options](https://github.com/Schniz/fnm/blob/master/docs/commands.md) for directory search and `engines.node` resolution. Install the required version yourself if it is missing. Do not copy a temporary `fnm_multishells` path into project files. With other version managers, follow their documented shell activation and launch VS from that shell; automatic integration with them has not been implemented or tested here.
+A selection that is not already on Visual Studio's PATH is put first on PATH for the duration of that build only, and each project's build confirms it is running the expected version before npm starts. The build output names it, for example `Xrm Tools: building 'MyControl' with Node.js v22.15.0, npm 11.4.2 (fnm default)`.
 
-Close existing VS instances before launching so the solution opens in the intended environment; for Experimental use `devenv.exe /RootSuffix Exp` and also close the main instance if it launches Experimental. Restart after changing or correcting the toolchain: an already-running VS or reused MSBuild worker may retain the old environment. The shell checks are useful but do not prove what the build sees; inspect Build output or use the optional project-local diagnostic below. These steps do not change machine-wide PATH or PowerShell profiles.
+**One build uses one Node.js installation.** If loaded PCF projects in a solution need different versions, the ones that cannot use the build's version stop with `XTPCF007` instead of building with the wrong one. Select a common installation for them if they can share it, unload the others, or open the project in a second Visual Studio window.
 
-Selection is process-wide for these build targets, not per-project: the inherited PATH determines which `node` and bare `npm` MSBuild executes. Xrm Tools does not resolve `.node-version`, `.nvmrc`, or `engines.node` for builds, override a project's configuration, or switch Node for individual projects. Projects requiring different versions need separate VS launches/environments or their own independently tested build tooling. The local harness has its own discovery: it resolves `node.exe` and either `npm.exe` or `npm.cmd` from the VS process PATH, and reports the selected npm launcher in the Xrm Tools output pane. The Web Resources SDK also invokes bare `npm` through MSBuild `Exec`.
+### Set Up PCF Build
 
-### Optional build-environment diagnostic
+The dialog shows the project's Node.js, package manager and dependencies, with the same Node.js choices as the wizard. **Set up** saves a changed selection and installs dependencies when they are missing:
 
-For clearer errors on the npm steps, a team can opt in to the following MSBuild target. Add it inside an existing `Directory.Build.targets` that applies to the PCF project, or import a file containing it from the `.pcfproj`. Do not create a nearer `Directory.Build.targets` without accounting for an existing parent file: [MSBuild stops its upward search at the first one](https://learn.microsoft.com/visualstudio/msbuild/customize-by-directory). This changes project build configuration and applies wherever imported, including command-line builds; it is not installed automatically by Xrm Tools.
+- `npm ci` when the project has a `package-lock.json` or `npm-shrinkwrap.json`, so the lock file is reproduced, not rewritten.
+- `npm install` when it has none.
 
-```xml
-<Target Name="XrmToolsCheckPcfNode" BeforeTargets="PcfClean;PcfBuild;PcfRebuild;RestoreNPM"
-        Condition="'$(MSBuildProjectExtension)' == '.pcfproj' and '$(DesignTimeBuild)' != 'true'">
-  <Exec Command="node --version" IgnoreExitCode="true" StandardOutputImportance="low" StandardErrorImportance="low">
-    <Output TaskParameter="ExitCode" PropertyName="_XrmToolsPcfNodeExitCode" />
-  </Exec>
-  <Error Condition="'$(_XrmToolsPcfNodeExitCode)' != '0'"
-         Text="PCF project '$(MSBuildProjectFullPath)': Node.js is unavailable or unusable in the MSBuild environment. Install or activate the project's Node version, then start Visual Studio from that environment." />
-  <Exec Command="npm --version" IgnoreExitCode="true" StandardOutputImportance="low" StandardErrorImportance="low">
-    <Output TaskParameter="ExitCode" PropertyName="_XrmToolsPcfNpmExitCode" />
-  </Exec>
-  <Error Condition="'$(_XrmToolsPcfNpmExitCode)' != '0'"
-         Text="PCF project '$(MSBuildProjectFullPath)': npm is unavailable or unusable in the MSBuild environment. Install or activate npm for the project's Node version, then start Visual Studio from that environment." />
-</Target>
-```
+npm runs in the project folder with no extra options, so the project's `.npmrc`, registry and script settings apply. Setup can be canceled, and a canceled or failed setup is never reported as ready; run it again, or build, to finish. Full npm output is kept in the Xrm Tools pane of the Output window.
 
-The checks run in the same MSBuild environment as Microsoft's npm commands and fail before those named targets, without changing PATH. They add two process launches when an npm target actually runs; an unchanged incremental Build can skip those targets and therefore the checks. They do not verify engine compatibility, guarantee that node and npm belong to the same installation, or check dependencies. Custom targets that invoke npm independently are not covered. The hook was tested with command-line MSBuild, not verified in Visual Studio; version changes to the Microsoft targets may require review.
+When npm reports a cause, setup names it: the registry rejected the request, the registry could not be reached, a package was not found, a package does not support the selected Node.js, or files in the project could not be changed. For any other failure it reports npm's exit code and the last error lines without guessing. If `npm ci` refuses because the lock file does not match `package.json`, nothing is changed; **Update lock file** runs `npm install` if that is what you want. Xrm Tools does not run `npm audit fix`, change package versions or touch registry credentials.
 
-### First-build investigation evidence
+Setup and builds of the same project do not overlap. Setup refuses to start while a build is running, and a build of a project whose setup is still running, in this or another Visual Studio window, stops with `XTPCF006`.
 
-On Windows, a disposable project generated with PAC 2.14.1 used Microsoft.PowerApps.MSBuild.Pcf 1.52.1, `pcf-scripts` 1.51.1, full-framework MSBuild 18.13.0.52701, fnm 1.38.1, Node 22.15.0 and npm 11.4.2. The supplied smoke-test checkout was inspected read-only. Its PCF directories had no `.node-version` or `.nvmrc`, and the inspected `PcfControl` package did not declare `engines.node`.
+### Projects that use another package manager
 
-1. With fnm initialized as above and no `node_modules`, `MSBuild <project>.pcfproj -restore -t:Rebuild -m:1 -nr:false` failed at Microsoft's `PcfClean` because `pcf-scripts` was unavailable.
-2. `MSBuild <project>.pcfproj -t:Build -m:1 -nr:false` installed dependencies and completed real manifest validation, TypeScript compilation and bundling. Rebuild then succeeded; a subsequent unchanged Build skipped both npm install and npm build.
-3. With the optional target imported, running `MSBuild <project>.pcfproj -t:PcfClean -m:1 -nr:false` in a process with only Windows system directories on PATH produced the project-specific Node diagnostic. A PATH containing a copy of `node.exe` but no npm produced the npm diagnostic. With the fnm environment restored, Build succeeded; the next unchanged Build skipped install and compilation. In a second fresh PAC project with fnm on PATH but not initialized, `-restore -t:Build` also produced the Node diagnostic before npm install.
-4. Separately, with only Windows system directories on PATH and fnm 1.38.1 invoked by its explicit executable path, `fnm exec --using .node-version node --version` and `fnm exec --using .node-version npm.cmd --version` ran Node 22.15.0 and npm 11.4.2 for a disposable version file. An uninstalled `--using 99.0.0` failed rather than installing Node. Concurrent isolated fnm child processes selected Node 22.15.0 and 24.21.0 respectively. These were not Visual Studio builds or automatic Xrm Tools integration.
-5. A disposable MSBuild project set the global `Path` property to the fnm Node installation while the MSBuild process PATH contained only Windows system directories. An `Exec` of `node --version` still failed with exit code 9009: setting the MSBuild property alone did not set the child process environment.
-6. In another fresh PAC project with no Node or npm on the parent PATH, running `fnm exec --using default <full-path-to-MSBuild.exe> <project>.pcfproj -restore -t:Build -m:1 -nr:false` installed dependencies and completed Microsoft's real PCF build; the next unchanged Build skipped install and compilation. This proves an isolated **whole MSBuild process** can inherit fnm's environment; it does not prove that VS's coordinated build can use that process.
-7. In a separate fresh project, a disposable `Directory.Build.targets` hooked `BeforeRebuild` and called Microsoft's `RestoreNPM` when `node_modules/pcf-scripts/package.json` was absent and auto-install was enabled. Invoking Rebuild through the same fnm/MSBuild command installed once, then completed Microsoft's clean, build and rebuild scripts. Microsoft's normal incremental install target skipped the second install in this default configuration. This hook did not serialize competing builds, cover forced-install behavior, or test cancellation; it was not installed into Xrm Tools.
+Xrm Tools prepares npm projects only. A project counts as another package manager's when `package.json` declares a non-npm `packageManager`, or when a `yarn.lock`, `pnpm-lock.yaml`, `pnpm-workspace.yaml` or Bun lock file is present without an npm lock file. The nearest folder that says anything decides, from the project up to the repository root. Having Yarn or pnpm installed on the computer does not matter.
 
-These are command-line observations, not proof of VS build-process propagation. Normal Windows launch, fnm absent from VS's environment, same-session recovery, and multiple project versions have not been verified for this diagnostic. The extension does not inject it automatically: Microsoft's targets invoke bare npm in their own `Exec` tasks, and mutating a shared or reused MSBuild process environment to select a version would risk leaking one project's selection into another. The [`Exec` task's `EnvironmentVariables` parameter](https://learn.microsoft.com/visualstudio/msbuild/exec-task) applies to that task's child process; Microsoft's shipped PCF `Exec` tasks do not expose an equivalent project property. Running `fnm exec` for a separate preparation process therefore does not select Node for Microsoft's later tasks. [MSBuild target-ordering guidance](https://learn.microsoft.com/visualstudio/msbuild/target-build-order) and the installed Microsoft PCF targets describe the hooks used above; the optional target does not replace them. The diagnostic and manual setup above are a fallback, not the desired automatic first-build experience.
+For such a project Xrm Tools does not run npm, and it stops the build before Microsoft's `npm install` would add npm files to it (`XTPCF004`). No file is changed. Install dependencies with the project's package manager and set `<PcfEnableAutoNpmInstall>false</PcfEnableAutoNpmInstall>` in the project file; builds then run the project's scripts without installing. A project with lock files from two package managers stops the same way until one of them is removed or `packageManager` is declared.
 
-The VS build entry uses the solution build manager; a standalone fnm-wrapped MSBuild is not the coordinated VS build. CPS's `IBuildProvider` is a replacement build implementation, not an established delegating environment wrapper; its `IBuildProject.BuildAsync` properties are MSBuild properties rather than process environment variables, and its cancellation token is documented as ignored in VS in favor of solution-build cancellation. A custom build implementation would need to preserve VS coordination, logging, configuration, cancellation and dependencies; launching a second MSBuild alone does not establish those guarantees. Microsoft's [custom IDE build guidance](https://learn.microsoft.com/visualstudio/msbuild/starting-a-build-from-within-the-ide) requires `IVsBuildManagerAccessor` for coordinated custom builds.
+### Messages
 
-The pre-Rebuild hook has a separate injection and concurrency problem. The CPS global-properties provider can set `CustomAfterMicrosoftCommonTargets`, but an MSBuild global property overrides a value supplied by the project: using it unconditionally could replace a team's existing custom import. `CallTarget` alone does not lock the project against another build's npm install, nor does it ensure resource release and safe retry after cancellation. A production solution needs a composable import mechanism and a cancellation-aware cross-process lock around **all** competing installs, including the normal Microsoft install path; this sample provides neither. [Overriding the MSBuild `Exec` task](https://learn.microsoft.com/visualstudio/msbuild/usingtask-element-msbuild) would affect the project's other Exec tasks too and compete with any existing override; replacing the Microsoft targets would need to track their future changes and customizations. Neither alternative has been validated as preserving project behavior. An upstream PCF target extension exposing per-invocation npm environment and coordinated preparation, or a separately engineered replacement build integration with equivalent behavior, would provide a boundary to implement and test. Neither has been established here.
+| Code | Meaning | What to do |
+| --- | --- | --- |
+| `XTPCF001` | Node.js was not found on Visual Studio's PATH, the Windows PATH or in fnm. | Install Node.js (LTS) or choose an installation in **Set Up PCF Build**. |
+| `XTPCF002` | Node.js was found but cannot be used as is: it does not fit the project, the required version is not installed, the choice is ambiguous, or the selected installation is gone. | Follow the message; usually choose an installation in **Set Up PCF Build**. |
+| `XTPCF003` | Node.js was found without npm. | Repair that installation or choose one that includes npm. |
+| `XTPCF004` | The project belongs to another package manager, or has lock files from two. | See the section above. |
+| `XTPCF005` | Dependencies are not installed and this step cannot install them: Clean on a fresh checkout, or automatic install is turned off. | Build the project, or use **Set Up PCF Build**. |
+| `XTPCF006` | Setup is still installing dependencies for this project. | Build again when setup has finished. |
+| `XTPCF007` | The project needs a different Node.js than the other PCF projects in this build. | See "One build uses one Node.js installation" above. |
+| `XTPCF008` | The build process did not see the Node.js the build was set up for. Nothing was built. | Close all Visual Studio windows, reopen the solution and build again. |
+
+Errors from npm scripts themselves (TypeScript, ESLint, webpack) are reported by Microsoft's targets as before.
+
+### How it fits into the build
+
+- Visual Studio's solution build manager still schedules, logs and cancels the build, and Microsoft's targets still run every npm command. Xrm Tools does not start a separate MSBuild, replace Microsoft's targets or override the `Exec` task.
+- When a solution build starts, Xrm Tools decides the Node.js installation for that build. If it is not already on Visual Studio's PATH, it is put first on the Visual Studio process PATH until the build ends, then the original value is restored. MSBuild passes that environment to every node of the build. The machine PATH, fnm's default, shell profiles and `fnm_multishells` folders are never touched, and no shell profile is run.
+- Each PCF project gets a generated file, `obj\<project>.pcfproj.xrmtools.g.targets`, in the MSBuild extensions folder that `Microsoft.Common.targets` imports by wildcard. This is the route by which NuGet brings in Microsoft's PCF targets, so nothing in the project file or its imports changes. The targets in it only run in front of Microsoft's `RestoreNPM`, `PcfClean`, `PcfBuild` and `PcfRebuild`.
+- Those targets do nothing unless Visual Studio passes `XrmToolsPcfBuild=true`, so command-line builds and builds without Xrm Tools are unchanged. Deleting `obj` is harmless; the file is written again.
+
+Limitations:
+
+- Only one Node.js installation per solution build, as described above.
+- **Push to Environment** runs PAC, which starts its own build with Visual Studio's PATH. It does not yet use a Node.js selected in **Set Up PCF Build**.
+- `Microsoft.PowerApps.MSBuild.Pcf` reinstalls on every build when `package.json` is newer than `package-lock.json`. That is Microsoft's incremental check, and Xrm Tools does not change lock file timestamps.
+- If a later version of Microsoft's package renames its npm targets, the added checks stop applying and builds behave as they do without Xrm Tools.
+
+Tested with PAC 2.14.1, Microsoft.PowerApps.MSBuild.Pcf 1.52.1, pcf-scripts 1.51.1, Visual Studio 18 Insiders (MSBuild 18.13.0.52701), fnm 1.38.1, Node.js 22.15.0 and 24.21.0. See [PCF build setup validation](pcf-build-setup-validation.md) for the acceptance runs.
 
 ## Test locally
 

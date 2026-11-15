@@ -74,13 +74,17 @@ internal sealed class PcfBuildCoordinator : IVsUpdateSolutionEvents2
     public async Task ShowNoticeAsync(string projectFile, string text)
     {
         await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync();
-        if (_infoBars.ContainsKey(projectFile)) return;
+        // One notification per project at a time; one the developer dismissed may come back after a later failed build.
+        if (_infoBars.TryGetValue(projectFile, out var shown) && shown.IsVisible) return;
         var model = new InfoBarModel([new InfoBarTextSpan(text + " "), new InfoBarHyperlink("Set up PCF build")], KnownMonikers.StatusWarning, true);
         var infoBar = await VS.InfoBar.CreateAsync(model);
         if (infoBar is null) return;
         _infoBars[projectFile] = infoBar;
         infoBar.ActionItemClicked += (_, _) => ThreadHelper.JoinableTaskFactory.RunAsync(async () =>
         {
+            // Let the click finish before a modal dialog opens; the notification bar and accessibility clients
+            // would otherwise wait on it for as long as the dialog stays open.
+            await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync(alwaysYield: true);
             await CloseNoticeAsync(projectFile);
             if (ShowSetup is not null) await ShowSetup(projectFile);
         }).FileAndForget("XrmTools/Pcf/SetupNotice");
@@ -149,8 +153,11 @@ internal sealed class PcfBuildCoordinator : IVsUpdateSolutionEvents2
                 continue;
             }
             string? notice = null;
+            var state = plan?.Find(project);
             if (_blocked.TryGetValue(project, out var block)) notice = block.Summary;
-            else if (!installed && plan?.Find(project) is { PackageManager.IsNpm: true } state)
+            else if (!installed && state is { PackageManager.Kind: PcfPackageManagerKind.Other })
+                notice = $"'{state.ProjectName}' is configured for {state.PackageManager.Name}, so the build did not run npm install for it.";
+            else if (!installed && state is not null)
                 notice = $"The build could not install npm dependencies for '{state.ProjectName}'. Setup shows what npm reported and lets you retry.";
             if (notice is not null) ThreadHelper.JoinableTaskFactory.RunAsync(() => ShowNoticeAsync(project, notice)).FileAndForget("XrmTools/Pcf/BuildNotice");
         }

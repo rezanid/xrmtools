@@ -4,7 +4,7 @@
     xmlns:ui="clr-namespace:XrmTools.UI"
     xmlns:p="clr-namespace:Microsoft.VisualStudio.PlatformUI;assembly=Microsoft.VisualStudio.Shell.15.0"
     x:Class="XrmTools.UI.PcfCreateDialog" x:ClassModifier="internal"
-    Title="Add PCF project" Width="650" Height="720" MinWidth="500" MinHeight="560"
+    Title="Add PCF project" Width="650" MinWidth="500" SizeToContent="Height" MaxHeight="900"
     Padding="24,12" Loaded="OnLoaded" IsFooterProgressRunning="{Binding IsBusy}">
     <ctrls:DialogWindow.Resources>
         <BooleanToVisibilityConverter x:Key="BoolVisibility"/>

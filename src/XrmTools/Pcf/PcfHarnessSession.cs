@@ -79,7 +79,7 @@ internal sealed class PcfHarnessSession : IDisposable
             // The harness uses the same Node.js as the project's builds, including one selected in Set Up PCF Build.
             var environment = (await _setup.InspectAsync(_project.FullPath, cancellationToken).ConfigureAwait(false)).Environment;
             if (!environment.IsReady)
-                throw new InvalidOperationException($"{environment.Problem} {environment.Remedy} Choose 'Set Up PCF Build' on the project's context menu.");
+                throw new InvalidOperationException($"{environment.Problem} {environment.Remedy} To do that, choose 'Set Up PCF Build' on the project's context menu.");
             var path = string.Join(Path.PathSeparator.ToString(), environment.Installation!.PathEntries) + Path.PathSeparator + Environment.GetEnvironmentVariable("PATH");
             PcfHarnessProcess process;
             lock (_sync)

@@ -78,6 +78,9 @@ internal sealed class PcfCreateDialogViewModel(string location, PcfSetupViewMode
             }
             if (Setup is null || !Setup.InstallDependencies) { SetupIncomplete = false; return CreatedProject; }
             SetupIncomplete = true;
+            // Checked again for the folder the project really is in, and on every retry, so a Node.js installed or
+            // selected after a failure is picked up without reopening the wizard.
+            await Setup.RefreshAsync(CreatedProject, System.IO.Path.GetDirectoryName(CreatedProject)!, token);
             if (!Setup.IsReady)
                 throw new InvalidOperationException($"The project was created, but dependencies were not installed. {Setup.Problem ?? "Choose a Node.js installation."} Then choose Retry setup, or open the project and set it up later.");
             Status = "Project created. Installing npm dependencies; this can take several minutes…";
