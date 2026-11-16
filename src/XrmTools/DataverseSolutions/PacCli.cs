@@ -162,12 +162,20 @@ internal sealed class PacCli(IProcessCommandRunner processCommandRunner) : IPacC
         IReadOnlyList<string> arguments,
         IProgress<ProcessOutputLine> output,
         CancellationToken cancellationToken)
+        => RunPcfCommandAsync(workingDirectory, arguments, null, output, cancellationToken);
+
+    public Task<ProcessCommandResult> RunPcfCommandAsync(
+        string workingDirectory,
+        IReadOnlyList<string> arguments,
+        IReadOnlyDictionary<string, string>? environment,
+        IProgress<ProcessOutputLine> output,
+        CancellationToken cancellationToken)
     {
         ValidateRequiredValue(workingDirectory, nameof(workingDirectory));
         if (arguments is null) throw new ArgumentNullException(nameof(arguments));
         if (output is null) throw new ArgumentNullException(nameof(output));
         cancellationToken.ThrowIfCancellationRequested();
-        return RunPacAsync(arguments, workingDirectory, null, output, cancellationToken);
+        return RunPacAsync(arguments, workingDirectory, null, output, cancellationToken, environment);
     }
 
     public Task<ProcessCommandResult> RunSolutionCommandAsync(
@@ -186,14 +194,16 @@ internal sealed class PacCli(IProcessCommandRunner processCommandRunner) : IPacC
     internal ProcessCommandRequest CreatePacCommandRequest(
         IReadOnlyList<string> arguments,
         string? workingDirectory,
-        IReadOnlyList<string>? sensitiveValues)
+        IReadOnlyList<string>? sensitiveValues,
+        IReadOnlyDictionary<string, string>? environment = null)
     {
         return new ProcessCommandRequest
         {
             FileName = FindPacExecutablePath(),
             Arguments = arguments,
             WorkingDirectory = string.IsNullOrWhiteSpace(workingDirectory) ? Environment.CurrentDirectory : workingDirectory,
-            SensitiveValues = sensitiveValues
+            SensitiveValues = sensitiveValues,
+            EnvironmentVariables = environment
         };
     }
 
@@ -213,12 +223,13 @@ internal sealed class PacCli(IProcessCommandRunner processCommandRunner) : IPacC
         string? workingDirectory,
         IReadOnlyList<string>? sensitiveValues,
         IProgress<ProcessOutputLine>? output,
-        CancellationToken cancellationToken)
+        CancellationToken cancellationToken,
+        IReadOnlyDictionary<string, string>? environment = null)
     {
         ProcessCommandRequest request;
         try
         {
-            request = CreatePacCommandRequest(arguments, workingDirectory, sensitiveValues);
+            request = CreatePacCommandRequest(arguments, workingDirectory, sensitiveValues, environment);
         }
         catch (PacCliNotFoundException)
         {

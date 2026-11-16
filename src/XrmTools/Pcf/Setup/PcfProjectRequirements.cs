@@ -176,18 +176,30 @@ internal enum PcfDependencyStatus { Installed, Missing, Incomplete }
 
 internal sealed class PcfDependencyState
 {
+    private static readonly (string Script, string Target)[] Steps = [("clean", "PcfClean"), ("build", "PcfBuild"), ("rebuild", "PcfRebuild")];
+
     public PcfDependencyStatus Status { get; private set; }
     public bool HasLockFile { get; private set; }
     /// <summary><c>npm ci</c> reproduces an existing lock file; <c>npm install</c> is used only when there is none.</summary>
     public string InstallCommand => HasLockFile ? "ci" : "install";
+    /// <summary>
+    /// Microsoft's targets whose npm script runs <c>pcf-scripts</c> and therefore cannot work before dependencies are
+    /// installed. A project's own script that does not use it, such as a custom clean, is left to run as it always did.
+    /// </summary>
+    public IReadOnlyList<string> TargetsThatNeedPcfScripts { get; private set; } = [];
 
     public static PcfDependencyState Read(string projectDirectory, bool setupIncomplete)
     {
         var installed = File.Exists(Path.Combine(projectDirectory, "node_modules", "pcf-scripts", "package.json"));
+        var scripts = PcfPackageJson.Read(projectDirectory)?["scripts"] as JObject;
         return new PcfDependencyState
         {
             HasLockFile = File.Exists(Path.Combine(projectDirectory, "package-lock.json")) || File.Exists(Path.Combine(projectDirectory, "npm-shrinkwrap.json")),
-            Status = !installed ? PcfDependencyStatus.Missing : setupIncomplete ? PcfDependencyStatus.Incomplete : PcfDependencyStatus.Installed
+            // An unfinished install outranks what is on disk: pcf-scripts can be present in a folder npm never completed.
+            Status = setupIncomplete ? PcfDependencyStatus.Incomplete : installed ? PcfDependencyStatus.Installed : PcfDependencyStatus.Missing,
+            TargetsThatNeedPcfScripts = Steps.Where(step => scripts?[step.Script] is JValue { Type: JTokenType.String } script
+                    && ((string)script!).IndexOf("pcf-scripts", StringComparison.OrdinalIgnoreCase) >= 0)
+                .Select(step => step.Target).ToArray()
         };
     }
 }

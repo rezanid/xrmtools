@@ -19,7 +19,7 @@ internal enum NodeEnvironmentSource
 {
     /// <summary>Chosen for this project in Set Up PCF Build.</summary>
     Selected,
-    /// <summary>Found on the PATH that Visual Studio builds inherit.</summary>
+    /// <summary>On the PATH of this Visual Studio instance, which is what its builds run with.</summary>
     BuildEnvironment,
     /// <summary>On the registered Windows PATH but not in this Visual Studio's own, typically installed after it started.</summary>
     WindowsPath,
@@ -51,6 +51,9 @@ internal sealed class NodeInstallation
         }
     }
 
+    /// <summary>A PATH for a child process that Xrm Tools starts itself: this installation first, then <paramref name="basePath"/>.</summary>
+    public string PathWith(string? basePath) => string.Join(Path.PathSeparator.ToString(), PathEntries) + Path.PathSeparator + basePath;
+
     public string Describe() => $"Node.js {Version}{(NpmVersion is null ? string.Empty : $", npm {NpmVersion}")} ({Label})";
     public NodeInstallation WithSource(NodeEnvironmentSource source, string label) => new(NodeDirectory, NpmLauncher, Version, NpmVersion, source, label);
     public bool IsSameEnvironment(NodeInstallation? other)
@@ -77,7 +80,7 @@ internal sealed class FnmResolution
 /// <summary>Finds Node.js installations without changing any of them. Every probe runs outside the project directory.</summary>
 internal interface INodeEnvironmentProbe
 {
-    /// <summary>The PATH that Visual Studio builds inherit, before any build-scoped activation.</summary>
+    /// <summary>The PATH of this Visual Studio instance. Its builds run with it, and Xrm Tools never changes it.</summary>
     string BuildPath { get; }
     /// <summary>The PATH a newly started process would get from Windows.</summary>
     string WindowsPath { get; }
@@ -93,14 +96,12 @@ internal interface INodeEnvironmentProbe
 [PartCreationPolicy(CreationPolicy.Shared)]
 internal sealed class NodeEnvironmentProbe : INodeEnvironmentProbe
 {
+    // The order cmd.exe tries for a bare "node" or "npm", which is how Microsoft's PCF targets start them.
+    private static readonly string[] NodeLaunchers = ["node.com", "node.exe", "node.bat", "node.cmd"];
     private static readonly string[] NpmLaunchers = ["npm.com", "npm.exe", "npm.bat", "npm.cmd"];
     private readonly ConcurrentDictionary<string, string?> _versions = new(StringComparer.OrdinalIgnoreCase);
-    private readonly PcfBuildSession _session;
 
-    [ImportingConstructor]
-    public NodeEnvironmentProbe(PcfBuildSession session) => _session = session;
-
-    public string BuildPath => _session.BasePath;
+    public string BuildPath => Environment.GetEnvironmentVariable("PATH") ?? string.Empty;
 
     /// <summary>Replaces the registered Windows PATH for this process; lets tests model a machine without changing it.</summary>
     internal const string WindowsPathOverride = "XRMTOOLS_PCF_WINDOWS_PATH";
@@ -116,15 +117,18 @@ internal sealed class NodeEnvironmentProbe : INodeEnvironmentProbe
         }
     }
 
-    public string? FindNodeDirectory(string path) => Path.GetDirectoryName(FindOnPath(path, "node.exe"));
+    public string? FindNodeDirectory(string path) => Path.GetDirectoryName(FindOnPath(path, NodeLaunchers));
 
     public async Task<NodeInstallation?> InspectAsync(string nodeDirectory, string npmSearchPath, NodeEnvironmentSource source, string label, CancellationToken cancellationToken)
     {
-        var node = Path.Combine(nodeDirectory, "node.exe");
-        if (!File.Exists(node)) return null;
+        string? node;
+        try { node = NodeLaunchers.Select(name => Path.Combine(nodeDirectory, name)).FirstOrDefault(File.Exists); }
+        catch (ArgumentException) { return null; }
+        if (node is null) return null;
         // Version managers can switch the version behind an unchanged launcher, so Node itself is asked every time.
         var output = await RunAsync(node, ["--version"], null, 10, cancellationToken).ConfigureAwait(false);
-        if (output.ExitCode != 0 || !NodeVersion.TryParse(output.Text.Trim(), out var version)) return null;
+        var reported = output.Text.Split('\n').Select(line => line.Trim()).LastOrDefault(line => line.Length > 0);
+        if (output.ExitCode != 0 || !NodeVersion.TryParse(reported, out var version)) return null;
         var npm = FindOnPath(npmSearchPath, NpmLaunchers);
         return new NodeInstallation(nodeDirectory, npm, version, npm is null ? null : await NpmVersionAsync(npm, nodeDirectory, version, cancellationToken).ConfigureAwait(false), source, label);
     }

@@ -69,9 +69,10 @@
     <Compile Include="Pcf\Setup\NodeVersions.cs" />
     <Compile Include="Pcf\Setup\PcfBuildCoordinator.cs" />
     <Compile Include="Pcf\Setup\PcfBuildIntegration.cs" />
-    <Compile Include="Pcf\Setup\PcfBuildPlan.cs" />
+    <Compile Include="Pcf\Setup\PcfBuildTargets.cs" />
     <Compile Include="Pcf\Setup\PcfBuildSession.cs" />
     <Compile Include="Pcf\Setup\PcfEnvironmentResolver.cs" />
+    <Compile Include="Pcf\Setup\PcfInstanceLauncher.cs" />
     <Compile Include="Pcf\Setup\PcfNpmRunner.cs" />
     <Compile Include="Pcf\Setup\PcfProjectRequirements.cs" />
     <Compile Include="Pcf\Setup\PcfSetupService.cs" />

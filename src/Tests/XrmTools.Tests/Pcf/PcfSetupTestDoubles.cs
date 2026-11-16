@@ -124,8 +124,8 @@ internal sealed class PcfSetupHarness : IDisposable
     public PcfSetupHarness()
     {
         Store = new PcfSetupStore(Project.StateDirectory);
-        Session = new PcfBuildSession(() => Path, value => Path = value);
-        Probe.BuildPath = Path;
+        Session = new PcfBuildSession();
+        Probe.BuildPath = @"C:\Windows\System32";
         Service = new PcfSetupService(Probe, Store, Npm, Session);
     }
 
@@ -135,9 +135,8 @@ internal sealed class PcfSetupHarness : IDisposable
     public PcfSetupStore Store { get; }
     public PcfBuildSession Session { get; }
     public PcfSetupService Service { get; }
-    public string Path { get; set; } = @"C:\Windows\System32";
 
-    /// <summary>Puts a Node.js installation on the PATH that Visual Studio builds inherit.</summary>
+    /// <summary>Puts a Node.js installation on the PATH of the Visual Studio instance, which is what its builds use.</summary>
     public NodeInstallation OnBuildPath(string version = "v22.15.0", bool npm = true)
     {
         var directory = Probe.Install(@"C:\nodejs", version, npm);

@@ -138,14 +138,52 @@ public sealed class PcfSetupViewModelTests : IDisposable
         _h.OnBuildPath();
         var wizard = await WizardAsync();
         using var cancellation = new CancellationTokenSource();
-        _h.Npm.Behavior = async (_, _, token) => { cancellation.Cancel(); await Task.Delay(Timeout.Infinite, token); return new PcfNpmResult(); };
+        _h.Npm.Behavior = async (directory, _, token) =>
+        {
+            FakeNpmRunner.Succeed(directory);
+            File.WriteAllText(Path.Combine(directory, "node_modules", "half-unpacked.txt"), string.Empty);
+            cancellation.Cancel();
+            await Task.Delay(Timeout.Infinite, token);
+            return new PcfNpmResult();
+        };
 
         var project = await wizard.CreateAsync(Create, cancellation.Token);
 
         project.Should().BeNull();
         wizard.SetupIncomplete.Should().BeTrue();
-        wizard.Status.Should().Contain("canceled").And.Contain("project was created");
+        wizard.Status.Should().Contain("canceled").And.Contain("project was created").And.Contain("Retry setup removes them");
         (await _h.InspectAsync()).SetupRunning.Should().BeFalse();
+        (await _h.InspectAsync()).NeedsRepair.Should().BeTrue();
+
+        _h.Npm.Behavior = null;
+        (await wizard.CreateAsync(Create, CancellationToken.None)).Should().Be(_h.Project.ProjectFile);
+        _h.Npm.Commands.Should().Equal("install", "install");
+        _h.Project.Exists(@"node_modules\half-unpacked.txt").Should().BeFalse("Retry setup does not install on top of what the canceled install left");
+        (await _h.InspectAsync()).NeedsRepair.Should().BeFalse();
+    }
+
+    [Fact]
+    public async Task ExistingProject_UnfinishedInstall_OffersRepair_SaysWhatItRemoves_AndRepairs()
+    {
+        _h.OnBuildPath();
+        _h.Project.InstallDependencies();
+        _h.Project.Write(@"node_modules\half-unpacked.txt", string.Empty);
+        _h.Store.SetSetupIncomplete(_h.Project.ProjectDirectory, true);
+        var dialog = new PcfSetupDialogViewModel(_h.Project.ProjectFile, _h.Service, Setup());
+        await dialog.LoadAsync(CancellationToken.None);
+
+        dialog.IsComplete.Should().BeFalse();
+        dialog.SetUpLabel.Should().Be("_Repair dependencies");
+        dialog.Dependencies.Should().Contain("did not finish").And.Contain("removes this project's node_modules folder").And.Contain("npm install");
+        dialog.Status.Should().Contain("Choose Repair dependencies");
+
+        (await dialog.ApplyAsync(false, CancellationToken.None)).Should().BeTrue();
+
+        _h.Npm.Commands.Should().Equal("install");
+        _h.Project.Exists(@"node_modules\half-unpacked.txt").Should().BeFalse();
+        dialog.SetUpLabel.Should().Be("_Set up");
+        dialog.Dependencies.Should().Be("Installed.");
+        dialog.Status.Should().Contain("ready to build");
     }
 
     [Fact]
@@ -269,16 +307,78 @@ public sealed class PcfSetupViewModelTests : IDisposable
         dialog.Setup.HasStoredSelection.Should().BeFalse();
 
         dialog.Setup.Selected = dialog.Setup.Choices.Single(choice => choice.Installation.Source == NodeEnvironmentSource.Fnm);
-        (await dialog.ApplyAsync(false, CancellationToken.None)).Should().BeTrue();
+        dialog.Setup.NeedsOtherInstance.Should().BeTrue();
+        (await dialog.ApplyAsync(false, CancellationToken.None)).Should().BeFalse("this window still has v22.15.0, so the project is not ready to build here");
 
         dialog.Setup.HasStoredSelection.Should().BeTrue();
-        dialog.Status.Should().Contain("v24.21.0");
+        dialog.IsComplete.Should().BeFalse();
+        dialog.Status.Should().Be("Dependencies are installed. To build 'Sample', restart Visual Studio with Node.js v24.21.0.");
+        dialog.Setup.InstanceNotice.Should().Be("This Visual Studio window has Node.js v22.15.0 on its PATH, so builds here cannot use Node.js v24.21.0. To build, restart Visual Studio with it.");
         (await _h.InspectAsync()).Environment.Installation!.Source.Should().Be(NodeEnvironmentSource.Selected);
 
         dialog.Setup.ClearSelection();
         await dialog.LoadAsync(CancellationToken.None);
         dialog.Setup.HasStoredSelection.Should().BeFalse();
         dialog.Setup.Installation!.Source.Should().Be(NodeEnvironmentSource.BuildEnvironment);
+        dialog.Setup.NeedsOtherInstance.Should().BeFalse();
+        dialog.IsComplete.Should().BeTrue();
+    }
+
+    [Fact]
+    public async Task ExistingProject_FnmOnly_SetupInstallsWithIt_ButReadyWaitsForARestartTheDeveloperChooses()
+    {
+        _h.Probe.InstallWithFnm("v22.15.0", isDefault: true);
+        var dialog = new PcfSetupDialogViewModel(_h.Project.ProjectFile, _h.Service, Setup());
+        await dialog.LoadAsync(CancellationToken.None);
+
+        dialog.Setup.IsReady.Should().BeTrue("npm can run with it in a process Xrm Tools starts");
+        dialog.Setup.NeedsOtherInstance.Should().BeTrue();
+        dialog.Setup.InstanceNotice.Should().Contain("has no Node.js on its PATH").And.Contain("restart Visual Studio");
+        dialog.Setup.RestartLabel.Should().Be("_Restart with Node.js v22.15.0");
+
+        (await dialog.ApplyAsync(false, CancellationToken.None)).Should().BeFalse();
+        _h.Npm.Commands.Should().Equal("install");
+        _h.Npm.Nodes.Single().Source.Should().Be(NodeEnvironmentSource.Fnm);
+        dialog.IsComplete.Should().BeFalse("ready is judged against the Node.js the next build in this window gets");
+        dialog.Status.Should().Be("Dependencies are installed. To build 'Sample', restart Visual Studio with Node.js v22.15.0.");
+
+        var restart = dialog.RequestInstance(closeThisWindow: true)!;
+        restart.Node.NodeDirectory.Should().Be(@"C:\fnm\node-versions\v22.15.0\installation");
+        restart.CloseThisWindow.Should().BeTrue();
+        dialog.RequestInstance(closeThisWindow: false)!.CloseThisWindow.Should().BeFalse();
+        _h.Store.GetSelection(_h.Project.ProjectFile).Should().BeNull("the automatic choice is not turned into a selection");
+    }
+
+    [Fact]
+    public async Task ExistingProject_ThatThisWindowCanBuild_OffersNoRestart()
+    {
+        _h.OnBuildPath();
+        _h.Project.InstallDependencies();
+        var dialog = new PcfSetupDialogViewModel(_h.Project.ProjectFile, _h.Service, Setup());
+        await dialog.LoadAsync(CancellationToken.None);
+
+        dialog.Setup.NeedsOtherInstance.Should().BeFalse();
+        dialog.Setup.InstanceNotice.Should().BeNull();
+        dialog.RequestInstance(closeThisWindow: true).Should().BeNull();
+    }
+
+    [Fact]
+    public async Task Wizard_WithFnmOnly_CreatesAndInstalls_AndSaysBuildingNeedsARestart()
+    {
+        _h.Probe.InstallWithFnm("v22.15.0", isDefault: true);
+
+        var wizard = await WizardAsync();
+
+        wizard.Setup!.IsReady.Should().BeTrue();
+        wizard.Setup.Summary.Should().Contain("v22.15.0");
+        wizard.Setup.NeedsOtherInstance.Should().BeTrue();
+        wizard.Setup.IsExpanded.Should().BeTrue("the restart notice sits in the setup options");
+        wizard.Setup.InstanceNotice.Should().Contain("builds here cannot use Node.js v22.15.0");
+
+        (await wizard.CreateAsync(Create, CancellationToken.None)).Should().Be(_h.Project.ProjectFile);
+        wizard.SetupIncomplete.Should().BeFalse("setup itself finished; only building waits for the restart");
+        _h.Npm.Commands.Should().Equal("install");
+        (await _h.InspectAsync()).BuildBlock!.Summary.Should().Be("'Sample' needs Visual Studio restarted with Node.js v22.15.0 to build.");
     }
 }
 #nullable restore

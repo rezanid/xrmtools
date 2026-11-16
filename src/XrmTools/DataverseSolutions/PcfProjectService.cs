@@ -3,11 +3,13 @@ namespace XrmTools.DataverseSolutions;
 
 using Community.VisualStudio.Toolkit;
 using System;
+using System.Collections.Generic;
 using System.ComponentModel.Composition;
 using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
 using XrmTools.Environments;
+using XrmTools.Pcf.Setup;
 
 internal interface IPcfProjectService
 {
@@ -43,7 +45,7 @@ internal sealed class PcfOperationUi(DataverseSolutionOutput output) : IPcfOpera
 [Export(typeof(IPcfProjectService))]
 [method: ImportingConstructor]
 internal sealed class PcfProjectService(IPacCli pac, IPacAuthBridge auth, IEnvironmentProvider environments,
-    IPcfOperationUi output, DataverseSolutionOperationState state) : IPcfProjectService
+    IPcfOperationUi output, DataverseSolutionOperationState state, IPcfSetupService setup) : IPcfProjectService
 {
     public bool IsBusy => state.IsBusy;
 
@@ -92,6 +94,13 @@ internal sealed class PcfProjectService(IPacCli pac, IPacAuthBridge auth, IEnvir
         try
         {
             token.ThrowIfCancellationRequested();
+            // PAC builds the control with npm in a process Xrm Tools starts, so that process is given the project's
+            // Node.js directly. Without a usable one, say so now instead of failing inside PAC's build.
+            var setupState = await setup.InspectAsync(request.ProjectFilePath, token).ConfigureAwait(false);
+            if (setupState.Block is { } block) throw new InvalidOperationException(block.Message);
+            var node = setupState.Environment.Installation!;
+            IReadOnlyDictionary<string, string>? pacEnvironment = setupState.Environment.AvailableToBuilds ? null
+                : new Dictionary<string, string> { ["PATH"] = node.PathWith(Environment.GetEnvironmentVariable("PATH")) };
             var environment = await environments.GetActiveEnvironmentAsync(true).ConfigureAwait(false);
             if (environment is null || !environment.IsValid || !DataverseEnvironmentUrl.TryNormalize(environment.Url, out var activeUrl)
                 || !string.Equals(activeUrl, DataverseEnvironmentUrl.Normalize(request.EnvironmentUrl), StringComparison.OrdinalIgnoreCase))
@@ -115,8 +124,8 @@ internal sealed class PcfProjectService(IPacCli pac, IPacAuthBridge auth, IEnvir
             try
             {
                 var commandProgress = new PushProgress(output.CreateProgress(), progress);
-                progress?.Report("Building and pushing the PCF control. PAC output will appear here; full details are in the Xrm Tools output pane.");
-                try { EnsureSuccess(await pac.RunPcfCommandAsync(directory, arguments, commandProgress, token).ConfigureAwait(false)); }
+                progress?.Report($"Building and pushing the PCF control with Node.js {node.Version}. PAC output will appear here; full details are in the Xrm Tools output pane.");
+                try { EnsureSuccess(await pac.RunPcfCommandAsync(directory, arguments, pacEnvironment, commandProgress, token).ConfigureAwait(false)); }
                 catch (PacCommandFailedException ex) when (PacAuthenticationFailure.RequiresReauthentication(ex))
                 {
                     output.WriteWarning("PAC authentication expired. Reauthenticate before retrying.");
@@ -133,7 +142,7 @@ internal sealed class PcfProjectService(IPacCli pac, IPacAuthBridge auth, IEnvir
                         || !string.Equals(activeUrl, DataverseEnvironmentUrl.Normalize(request.EnvironmentUrl), StringComparison.OrdinalIgnoreCase))
                         throw new InvalidOperationException("The active environment changed before retry. No further push was started.");
                     progress?.Report("Authentication completed. Retrying the PCF build and push...");
-                    EnsureSuccess(await pac.RunPcfCommandAsync(directory, arguments, commandProgress, token).ConfigureAwait(false));
+                    EnsureSuccess(await pac.RunPcfCommandAsync(directory, arguments, pacEnvironment, commandProgress, token).ConfigureAwait(false));
                 }
                 token.ThrowIfCancellationRequested();
                 output.WriteCompleted();

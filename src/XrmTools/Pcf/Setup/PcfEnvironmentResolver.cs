@@ -13,59 +13,93 @@ internal enum PcfEnvironmentStatus { Ready, NodeMissing, NodeIncompatible, NpmMi
 internal sealed class PcfEnvironmentResolution
 {
     public PcfEnvironmentStatus Status { get; init; }
+    /// <summary>
+    /// The Node.js to use for this project. Processes Xrm Tools starts itself can always use it; a Visual Studio build
+    /// can only when <see cref="AvailableToBuilds"/>, because a build runs with the environment of its Visual Studio instance.
+    /// </summary>
     public NodeInstallation? Installation { get; init; }
     public PcfNodeRequirement Requirement { get; init; } = null!;
     /// <summary>What is wrong, as a full sentence; empty when ready.</summary>
     public string Problem { get; init; } = string.Empty;
     /// <summary>What the developer should do next, as a full sentence.</summary>
     public string Remedy { get; init; } = string.Empty;
+    /// <summary>The Node.js on the PATH of this Visual Studio instance; <c>null</c> when there is none.</summary>
+    public NodeInstallation? InstanceNode { get; init; }
+    /// <summary>The developer selected an installation for this project.</summary>
+    public bool FromSelection { get; init; }
     public bool IsReady => Status == PcfEnvironmentStatus.Ready;
+    public bool AvailableToBuilds => Installation is not null && Provides(Installation);
+
+    /// <summary>Whether builds in this Visual Studio instance would run with the same Node.js version as <paramref name="node"/>.</summary>
+    public bool Provides(NodeInstallation node)
+        => node.Source == NodeEnvironmentSource.BuildEnvironment || (InstanceNode is { NpmLauncher: not null } instance && instance.Version.Equals(node.Version));
+
+    public string DescribeInstance() => InstanceNode is null ? "no Node.js on its PATH"
+        : InstanceNode.NpmLauncher is null ? $"Node.js {InstanceNode.Version} without npm on its PATH"
+        : $"Node.js {InstanceNode.Version} on its PATH";
 }
 
 /// <summary>
 /// Chooses the Node.js installation for a PCF project: an explicit selection for the project first, then a compatible
-/// Node.js and npm already visible to Visual Studio builds, then a compatible version already installed with fnm.
-/// It never installs or switches anything; when no choice is clearly right it reports why instead of guessing.
+/// Node.js and npm on the PATH of this Visual Studio instance, then one on the registered Windows PATH, then a
+/// compatible version already installed with fnm. It never installs or switches anything; when no choice is clearly
+/// right it reports why instead of guessing.
 /// </summary>
 internal sealed class PcfEnvironmentResolver(INodeEnvironmentProbe probe, IPcfSetupStore store)
 {
+    private const string InstanceLabel = "Visual Studio's PATH";
+
     public async Task<PcfEnvironmentResolution> ResolveAsync(string? projectFile, string projectDirectory, CancellationToken cancellationToken)
     {
         var requirement = PcfNodeRequirement.Read(projectDirectory);
         var selection = projectFile is null ? null : store.GetSelection(projectFile);
+        var instance = probe.FindNodeDirectory(probe.BuildPath) is { } instanceDirectory
+            ? await probe.InspectAsync(instanceDirectory, probe.BuildPath, NodeEnvironmentSource.BuildEnvironment, InstanceLabel, cancellationToken).ConfigureAwait(false)
+            : null;
+
+        PcfEnvironmentResolution Ready(NodeInstallation installation) => new()
+        {
+            Status = PcfEnvironmentStatus.Ready, Installation = installation, Requirement = requirement, InstanceNode = instance, FromSelection = selection is not null
+        };
+        PcfEnvironmentResolution Problem(PcfEnvironmentStatus status, string problem, string remedy) => new()
+        {
+            Status = status, Requirement = requirement, Problem = problem, Remedy = remedy, InstanceNode = instance, FromSelection = selection is not null
+        };
+        PcfEnvironmentResolution FromFnm(NodeInstallation installation) => installation.NpmLauncher is null
+            ? Problem(PcfEnvironmentStatus.NpmMissing, $"Node.js {installation.Version} from fnm has no npm beside it ({installation.NodeDirectory}).",
+                "Reinstall that version with fnm, or choose an installation that includes npm.")
+            : Ready(installation);
+
         if (selection is not null)
         {
             var selected = await probe.InspectAsync(selection.NodeDirectory, selection.NodeDirectory, NodeEnvironmentSource.Selected, "selected for this project", cancellationToken).ConfigureAwait(false);
             if (selected is null)
-                return Problem(PcfEnvironmentStatus.SelectionUnavailable, requirement,
+                return Problem(PcfEnvironmentStatus.SelectionUnavailable,
                     $"The Node.js installation selected for this project is no longer available ({selection.NodeDirectory}).", "Choose another installation.");
             if (selected.NpmLauncher is null)
-                return Problem(PcfEnvironmentStatus.NpmMissing, requirement,
+                return Problem(PcfEnvironmentStatus.NpmMissing,
                     $"The selected Node.js {selected.Version} has no npm beside it ({selected.NodeDirectory}).", "Repair that installation or choose one that includes npm.");
             // When the declarations themselves disagree, the explicit selection is the developer's answer.
             if (requirement.Conflict is null && requirement.Check(selected.Version, out var mismatch) == NodeCompatibility.Incompatible)
-                return Problem(PcfEnvironmentStatus.NodeIncompatible, requirement,
+                return Problem(PcfEnvironmentStatus.NodeIncompatible,
                     $"The selected Node.js {selected.Version} no longer fits this project: {mismatch}.", "Choose a matching installation.");
-            return Ready(selected, requirement);
+            // A build runs with what this Visual Studio instance has. When that is the selected version, even from
+            // another folder, the selection is already met and the instance's own Node.js is what gets used.
+            return Ready(instance is { NpmLauncher: not null } && instance.Version.Equals(selected.Version) ? instance : selected);
         }
         if (requirement.Conflict is not null)
-            return Problem(PcfEnvironmentStatus.Ambiguous, requirement, $"The project's Node.js declarations disagree: {requirement.Conflict}.",
+            return Problem(PcfEnvironmentStatus.Ambiguous, $"The project's Node.js declarations disagree: {requirement.Conflict}.",
                 "Correct the declarations, or choose the Node.js installation to use for this project.");
 
         string? rejected = null;
         NodeInstallation? withoutNpm = null;
-        string? seen = null;
-        foreach (var (path, source, label) in new[]
+        var onPath = new List<NodeInstallation>();
+        if (instance is not null) onPath.Add(instance);
+        if (probe.FindNodeDirectory(probe.WindowsPath) is { } windowsDirectory && (instance is null || !NodeInstallation.SameDirectory(instance.NodeDirectory, windowsDirectory))
+            && await probe.InspectAsync(windowsDirectory, probe.WindowsPath, NodeEnvironmentSource.WindowsPath, "Windows PATH, newer than this Visual Studio session", cancellationToken).ConfigureAwait(false) is { } windows)
+            onPath.Add(windows);
+        foreach (var found in onPath)
         {
-            (probe.BuildPath, NodeEnvironmentSource.BuildEnvironment, "Visual Studio's PATH"),
-            (probe.WindowsPath, NodeEnvironmentSource.WindowsPath, "Windows PATH, newer than this Visual Studio session")
-        })
-        {
-            var directory = probe.FindNodeDirectory(path);
-            if (directory is null || (seen is not null && NodeInstallation.SameDirectory(seen, directory))) continue;
-            seen = directory;
-            var found = await probe.InspectAsync(directory, path, source, label, cancellationToken).ConfigureAwait(false);
-            if (found is null) continue;
             var compatibility = requirement.Check(found.Version, out var reason);
             if (compatibility == NodeCompatibility.Unverified && requirement.VersionFilePath is not null)
             {
@@ -77,9 +111,9 @@ internal sealed class PcfEnvironmentResolver(INodeEnvironmentProbe probe, IPcfSe
                     reason = $"{Path.GetFileName(requirement.VersionFilePath)} asks for {requirement.VersionSpec}, which fnm resolves to Node.js {alias.Installation.Version}";
                 }
             }
-            if (compatibility == NodeCompatibility.Incompatible) { rejected ??= $"Node.js {found.Version} on {label} does not fit this project: {reason}"; continue; }
+            if (compatibility == NodeCompatibility.Incompatible) { rejected ??= $"Node.js {found.Version} on {found.Label} does not fit this project: {reason}"; continue; }
             if (found.NpmLauncher is null) { withoutNpm ??= found; continue; }
-            return Ready(found, requirement);
+            return Ready(found);
         }
 
         var versions = await probe.ListFnmVersionsAsync(cancellationToken).ConfigureAwait(false);
@@ -92,12 +126,12 @@ internal sealed class PcfEnvironmentResolver(INodeEnvironmentProbe probe, IPcfSe
                 if (resolved.Installation is { } installation)
                 {
                     if (requirement.Check(installation.Version, out var reason) == NodeCompatibility.Incompatible)
-                        return Problem(PcfEnvironmentStatus.NodeIncompatible, requirement, $"fnm resolved {file} to Node.js {installation.Version}, but {reason}.",
+                        return Problem(PcfEnvironmentStatus.NodeIncompatible, $"fnm resolved {file} to Node.js {installation.Version}, but {reason}.",
                             "Install a matching version with fnm, or choose an installation.");
-                    return FromFnm(installation, requirement);
+                    return FromFnm(installation);
                 }
                 if (resolved.NotInstalled)
-                    return Problem(PcfEnvironmentStatus.NodeIncompatible, requirement, $"{file} asks for Node.js {requirement.VersionSpec}, which is not installed in fnm.",
+                    return Problem(PcfEnvironmentStatus.NodeIncompatible, $"{file} asks for Node.js {requirement.VersionSpec}, which is not installed in fnm.",
                         $"Run 'fnm install' in '{Path.GetDirectoryName(requirement.VersionFilePath)}', or choose another installation.");
                 rejected ??= $"fnm could not resolve {file} ({requirement.VersionSpec})";
             }
@@ -111,11 +145,11 @@ internal sealed class PcfEnvironmentResolver(INodeEnvironmentProbe probe, IPcfSe
                 if (choice is not null)
                 {
                     var resolved = await probe.ResolveFnmAsync(choice.IsDefault ? "default" : choice.Name, cancellationToken).ConfigureAwait(false);
-                    if (resolved.Installation is not null) return FromFnm(resolved.Installation, requirement);
+                    if (resolved.Installation is not null) return FromFnm(resolved.Installation);
                     rejected ??= $"fnm could not start Node.js {choice.Name}";
                 }
                 else if (fitting.Length > 1)
-                    return Problem(PcfEnvironmentStatus.Ambiguous, requirement,
+                    return Problem(PcfEnvironmentStatus.Ambiguous,
                         requirement.EnginesRange is null
                             ? $"fnm has several Node.js versions installed ({names}) and no default."
                             : $"Several Node.js versions installed with fnm fit engines.node {requirement.EnginesRange} ({names}), and the fnm default is not one of them.",
@@ -125,11 +159,11 @@ internal sealed class PcfEnvironmentResolver(INodeEnvironmentProbe probe, IPcfSe
         }
 
         if (rejected is not null)
-            return Problem(PcfEnvironmentStatus.NodeIncompatible, requirement, rejected + ".", "Install a Node.js version that fits, or choose an installation.");
+            return Problem(PcfEnvironmentStatus.NodeIncompatible, rejected + ".", "Install a Node.js version that fits, or choose an installation.");
         if (withoutNpm is not null)
-            return Problem(PcfEnvironmentStatus.NpmMissing, requirement, $"Node.js {withoutNpm.Version} was found in '{withoutNpm.NodeDirectory}', but npm was not found.",
+            return Problem(PcfEnvironmentStatus.NpmMissing, $"Node.js {withoutNpm.Version} was found in '{withoutNpm.NodeDirectory}', but npm was not found.",
                 "Repair that installation or choose one that includes npm.");
-        return Problem(PcfEnvironmentStatus.NodeMissing, requirement, "Node.js was not found on Visual Studio's PATH, on the Windows PATH, or in fnm.",
+        return Problem(PcfEnvironmentStatus.NodeMissing, "Node.js was not found on Visual Studio's PATH, on the Windows PATH, or in fnm.",
             "Install Node.js (LTS), or choose an existing installation.");
     }
 
@@ -141,11 +175,12 @@ internal sealed class PcfEnvironmentResolver(INodeEnvironmentProbe probe, IPcfSe
         {
             if (installation is not null && !candidates.Any(existing => existing.IsSameEnvironment(installation))) candidates.Add(installation);
         }
+        // This Visual Studio instance's own Node.js comes first: it is the only one that needs no restart to build.
+        if (probe.FindNodeDirectory(probe.BuildPath) is { } build)
+            Add(await probe.InspectAsync(build, probe.BuildPath, NodeEnvironmentSource.BuildEnvironment, InstanceLabel, cancellationToken).ConfigureAwait(false));
         var selection = projectFile is null ? null : store.GetSelection(projectFile);
         if (selection is not null)
             Add(await probe.InspectAsync(selection.NodeDirectory, selection.NodeDirectory, NodeEnvironmentSource.Selected, "selected for this project", cancellationToken).ConfigureAwait(false));
-        if (probe.FindNodeDirectory(probe.BuildPath) is { } build)
-            Add(await probe.InspectAsync(build, probe.BuildPath, NodeEnvironmentSource.BuildEnvironment, "Visual Studio's PATH", cancellationToken).ConfigureAwait(false));
         if (probe.FindNodeDirectory(probe.WindowsPath) is { } windows)
             Add(await probe.InspectAsync(windows, probe.WindowsPath, NodeEnvironmentSource.WindowsPath, "Windows PATH", cancellationToken).ConfigureAwait(false));
         foreach (var version in await probe.ListFnmVersionsAsync(cancellationToken).ConfigureAwait(false) ?? [])
@@ -156,17 +191,5 @@ internal sealed class PcfEnvironmentResolver(INodeEnvironmentProbe probe, IPcfSe
         }
         return candidates;
     }
-
-    private static PcfEnvironmentResolution FromFnm(NodeInstallation installation, PcfNodeRequirement requirement)
-        => installation.NpmLauncher is null
-            ? Problem(PcfEnvironmentStatus.NpmMissing, requirement, $"Node.js {installation.Version} from fnm has no npm beside it ({installation.NodeDirectory}).",
-                "Reinstall that version with fnm, or choose an installation that includes npm.")
-            : Ready(installation, requirement);
-
-    private static PcfEnvironmentResolution Ready(NodeInstallation installation, PcfNodeRequirement requirement)
-        => new() { Status = PcfEnvironmentStatus.Ready, Installation = installation, Requirement = requirement };
-
-    private static PcfEnvironmentResolution Problem(PcfEnvironmentStatus status, PcfNodeRequirement requirement, string problem, string remedy)
-        => new() { Status = status, Requirement = requirement, Problem = problem, Remedy = remedy };
 }
 #nullable restore

@@ -79,6 +79,15 @@ internal sealed class PcfSetupViewModel(IPcfSetupService service, Action<string>
     }
 
     public bool HasProblem => Problem is not null;
+
+    /// <summary>
+    /// The selected Node.js is usable, but not by builds in this Visual Studio window, which run with the window's own
+    /// environment. Setup and the test harness start their own processes and can use it right away.
+    /// </summary>
+    public bool NeedsOtherInstance => !IsChecking && IsReady && _resolution is not null && !_resolution.Provides(Installation!);
+    public string? InstanceNotice => !NeedsOtherInstance ? null
+        : $"This Visual Studio window has {_resolution!.DescribeInstance()}, so builds here cannot use Node.js {Installation!.Version}. To build, restart Visual Studio with it.";
+    public string RestartLabel => $"_Restart with Node.js {Installation?.Version}";
     /// <summary>What will happen to dependencies when a new project is created.</summary>
     public string InstallSummary => !InstallDependencies ? "Project dependencies will not be installed now; the first build installs them."
         : IsChecking || IsReady ? "Project dependencies will be installed after the project is created."
@@ -101,13 +110,13 @@ internal sealed class PcfSetupViewModel(IPcfSetupService service, Action<string>
             Choices.Clear();
             foreach (var candidate in candidates) Choices.Add(Choice(candidate));
             _automatic = Find(resolution.Installation) ?? Add(resolution.Installation);
-            HasStoredSelection = resolution.Installation?.Source == NodeEnvironmentSource.Selected || resolution.Status == PcfEnvironmentStatus.SelectionUnavailable;
+            HasStoredSelection = resolution.FromSelection;
             // A choice made in this window survives a refresh; otherwise follow what resolution picked.
             _selected = (explicitChoice ? Find(previous) : null) ?? _automatic;
             OnPropertyChanged(nameof(Selected));
         }
         finally { IsChecking = false; }
-        if (HasProblem) IsExpanded = true;
+        if (HasProblem || NeedsOtherInstance) IsExpanded = true;
     }
 
     /// <summary>Adds an installation the developer browsed to and selects it.</summary>
@@ -130,7 +139,7 @@ internal sealed class PcfSetupViewModel(IPcfSetupService service, Action<string>
         if (_projectFile is not null) service.Select(_projectFile, null);
     }
 
-    public async Task<PcfInstallResult> InstallAsync(string projectFile, bool updateLockFile, CancellationToken token)
+    public async Task<PcfInstallResult> InstallAsync(string projectFile, bool updateLockFile, bool repair, CancellationToken token)
     {
         var node = Installation ?? throw new InvalidOperationException("Choose a Node.js installation first.");
         lock (_output) _output.Clear();
@@ -139,7 +148,7 @@ internal sealed class PcfSetupViewModel(IPcfSetupService service, Action<string>
         IsInstalling = true;
         try
         {
-            var result = await service.InstallAsync(projectFile, node, updateLockFile, new LineProgress(this), token);
+            var result = await service.InstallAsync(projectFile, node, updateLockFile, repair, new LineProgress(this), token);
             LastResult = result;
             return result;
         }
@@ -178,7 +187,7 @@ internal sealed class PcfSetupViewModel(IPcfSetupService service, Action<string>
 
     private void Notify()
     {
-        foreach (var name in new[] { nameof(Installation), nameof(IsReady), nameof(Summary), nameof(Problem), nameof(HasProblem), nameof(Requirement), nameof(HasRequirement), nameof(IsExplicitChoice), nameof(InstallSummary) })
+        foreach (var name in new[] { nameof(Installation), nameof(IsReady), nameof(Summary), nameof(Problem), nameof(HasProblem), nameof(Requirement), nameof(HasRequirement), nameof(IsExplicitChoice), nameof(InstallSummary), nameof(NeedsOtherInstance), nameof(InstanceNotice), nameof(RestartLabel) })
             OnPropertyChanged(name);
     }
 
@@ -212,15 +221,31 @@ internal sealed class PcfSetupDialogViewModel(string projectFile, IPcfSetupServi
         : _state.Dependencies.Status switch
         {
             PcfDependencyStatus.Installed => "Installed.",
-            PcfDependencyStatus.Incomplete => $"A previous setup did not finish. Setup runs {InstallCommand} again.",
+            PcfDependencyStatus.Incomplete => _state.Dependencies.HasLockFile
+                ? "An earlier install did not finish. Repair runs npm ci, which removes this project's node_modules folder and installs exactly what package-lock.json lists."
+                : "An earlier install did not finish. Repair removes this project's node_modules folder and runs npm install again. Nothing else in the project is removed.",
             _ => $"Not installed. Setup runs {InstallCommand}."
         };
+
+    /// <summary>The dialog's main action; after an unfinished install it is a repair and says so.</summary>
+    public string SetUpLabel => _state?.NeedsRepair == true ? "_Repair dependencies" : "_Set up";
 
     private string InstallCommand => _state!.Dependencies.HasLockFile
         ? "npm ci, which installs exactly what package-lock.json lists" : "npm install, because the project has no package-lock.json yet";
 
-    protected override string CancellationStatus => "Setup was canceled. Dependencies may be only partly installed; run setup again to finish.";
+    protected override string CancellationStatus => "Setup was canceled. Dependencies may be only partly installed; choose Repair dependencies to finish.";
     public void ReportCanceling() => Status = "Canceling setup and stopping npm…";
+
+    /// <summary>
+    /// What to start when the developer chooses to open the solution with the selected Node.js; <c>null</c> when
+    /// this window can already build with it. A selection made here is remembered first, so later sessions agree.
+    /// </summary>
+    public PcfInstanceRequest? RequestInstance(bool closeThisWindow)
+    {
+        if (!IsIdle || !Setup.NeedsOtherInstance) return null;
+        Setup.SaveSelection(ProjectFile);
+        return new PcfInstanceRequest(Setup.Installation!, closeThisWindow);
+    }
 
     public Task LoadAsync(CancellationToken token) => RunAsync(async () =>
     {
@@ -239,8 +264,10 @@ internal sealed class PcfSetupDialogViewModel(string projectFile, IPcfSetupServi
         var state = _state!;
         if (state.PackageManager.IsNpm && Setup.InstallDependencies && (state.Dependencies.Status != PcfDependencyStatus.Installed || updateLockFile))
         {
-            Status = "Installing npm dependencies; this can take several minutes…";
-            var result = await Setup.InstallAsync(ProjectFile, updateLockFile, token);
+            // Decided from what was on screen when the developer chose the action that names the removal.
+            var repair = state.NeedsRepair;
+            Status = repair ? "Repairing npm dependencies; this can take several minutes…" : "Installing npm dependencies; this can take several minutes…";
+            var result = await Setup.InstallAsync(ProjectFile, updateLockFile, repair, token);
             // Re-read what is on disk before reporting, so a failed or canceled install is never shown as ready.
             await RefreshAsync(CancellationToken.None);
             if (result.Outcome == PcfInstallOutcome.Canceled) throw new OperationCanceledException();
@@ -256,22 +283,33 @@ internal sealed class PcfSetupDialogViewModel(string projectFile, IPcfSetupServi
         await Setup.RefreshAsync(ProjectFile, _state.ProjectDirectory, token);
         OnPropertyChanged(nameof(PackageManager));
         OnPropertyChanged(nameof(Dependencies));
+        OnPropertyChanged(nameof(SetUpLabel));
     }
 
     private string Describe()
     {
         var state = _state!;
         IsComplete = false;
-        if (state.Block is { } block) return block.Summary;
+        if (state.Block is { Code: not "XTPCF009" } block) return block.Summary;
         if (!Setup.IsReady) return Setup.Problem ?? "Choose a Node.js installation.";
+        if (state.NeedsRepair) return "An earlier npm install did not finish, so builds are stopped. Choose Repair dependencies.";
+        // Ready means ready for the next build in this window, not only that npm ran.
+        var node = Setup.Installation!.Version;
+        var ready = Setup.NeedsOtherInstance ? $"To build, restart Visual Studio with Node.js {node}." : "Node.js is ready.";
         if (!state.PackageManager.IsNpm)
             return state.Dependencies.Status == PcfDependencyStatus.Missing
-                ? $"Node.js is ready. Install dependencies with {state.PackageManager.Name}, then build."
-                : $"Node.js is ready and dependencies are present. Builds run npm install unless PcfEnableAutoNpmInstall is false in the project file.";
+                ? $"{ready} Install dependencies with {state.PackageManager.Name}, then build."
+                : $"{ready} Dependencies are present. Builds run npm install unless PcfEnableAutoNpmInstall is false in the project file.";
         if (state.Dependencies.Status != PcfDependencyStatus.Installed)
-            return Setup.InstallDependencies ? "Choose Set up to install the project's dependencies." : "Node.js is ready. Dependencies are not installed; the next build installs them.";
+        {
+            if (Setup.InstallDependencies) return "Choose Set up to install the project's dependencies.";
+            return Setup.NeedsOtherInstance
+                ? $"Dependencies are not installed. A build installs them once Visual Studio is restarted with Node.js {node}."
+                : "Node.js is ready. Dependencies are not installed; the next build installs them.";
+        }
+        if (Setup.NeedsOtherInstance) return $"Dependencies are installed. To build '{ProjectName}', restart Visual Studio with Node.js {node}.";
         IsComplete = true;
-        return $"'{ProjectName}' is ready to build with Node.js {Setup.Installation!.Version}.";
+        return $"'{ProjectName}' is ready to build with Node.js {node}.";
     }
 }
 #nullable restore

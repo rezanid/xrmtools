@@ -76,11 +76,12 @@ internal sealed class PcfHarnessSession : IDisposable
             if (debugging)
                 Write("Original TypeScript breakpoints require source maps from your bundler. Stock PCF development bundles may expose only transpiled JavaScript; see the PCF project guide.");
             await TaskScheduler.Default;
-            // The harness uses the same Node.js as the project's builds, including one selected in Set Up PCF Build.
+            // The harness is a process Xrm Tools starts itself, so it can use the project's Node.js even when this
+            // Visual Studio instance has another one, or none, on its PATH.
             var environment = (await _setup.InspectAsync(_project.FullPath, cancellationToken).ConfigureAwait(false)).Environment;
             if (!environment.IsReady)
                 throw new InvalidOperationException($"{environment.Problem} {environment.Remedy} To do that, choose 'Set Up PCF Build' on the project's context menu.");
-            var path = string.Join(Path.PathSeparator.ToString(), environment.Installation!.PathEntries) + Path.PathSeparator + Environment.GetEnvironmentVariable("PATH");
+            var path = environment.Installation!.PathWith(Environment.GetEnvironmentVariable("PATH"));
             PcfHarnessProcess process;
             lock (_sync)
             {

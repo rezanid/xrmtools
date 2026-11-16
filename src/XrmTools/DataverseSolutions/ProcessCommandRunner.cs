@@ -45,6 +45,10 @@ internal sealed class ProcessCommandRunner : IProcessCommandRunner
         };
 
         ProcessCommandFormatting.ApplyArguments(startInfo, request.Arguments);
+        if (request.EnvironmentVariables is not null)
+        {
+            foreach (var variable in request.EnvironmentVariables) startInfo.EnvironmentVariables[variable.Key] = variable.Value;
+        }
 
         using var process = new Process
         {

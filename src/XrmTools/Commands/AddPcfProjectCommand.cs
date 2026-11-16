@@ -71,6 +71,8 @@ internal sealed class AddPcfProjectCommand : BaseCommand<AddPcfProjectCommand>
             catch (Exception ex) { throw new InvalidOperationException($"Project was created at '{path}' but could not be added to the solution. Add it manually. {ex.Message}", ex); }
             if (created.SetupIncomplete)
                 await Coordinator.ShowNoticeAsync(path, $"Setup for '{Path.GetFileNameWithoutExtension(path)}' is incomplete: its npm dependencies are not installed yet.").ConfigureAwait(false);
+            // Created and set up is not yet buildable when this window lacks the Node.js that setup used.
+            else await Coordinator.ShowNoticeIfBuildIsBlockedAsync(path).ConfigureAwait(false);
         }
         catch (OperationCanceledException) { }
         catch (Exception ex) { Logger.LogError(ex, "Could not add PCF project."); await VS.MessageBox.ShowErrorAsync(Vsix.Name, ex.Message); }

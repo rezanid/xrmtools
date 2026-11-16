@@ -32,11 +32,6 @@ internal interface IPcfNpmRunner
 [Export(typeof(IPcfNpmRunner))]
 internal sealed class PcfNpmRunner : IPcfNpmRunner
 {
-    private readonly PcfBuildSession _session;
-
-    [ImportingConstructor]
-    public PcfNpmRunner(PcfBuildSession session) => _session = session;
-
     public async Task<PcfNpmResult> RunAsync(NodeInstallation node, string projectDirectory, string command, IProgress<string> output, CancellationToken cancellationToken)
     {
         var launcher = node.NpmLauncher ?? throw new InvalidOperationException("The selected Node.js installation has no npm.");
@@ -55,7 +50,8 @@ internal sealed class PcfNpmRunner : IPcfNpmRunner
             info.Arguments = $"/d /s /c \"\"%XRMTOOLS_PCF_NPM%\" {command}\"";
         }
         else info.Arguments = command;
-        info.EnvironmentVariables["PATH"] = string.Join(Path.PathSeparator.ToString(), node.PathEntries) + Path.PathSeparator + _session.BasePath;
+        // Only this child process gets the selected Node.js; Visual Studio's own environment is left as it is.
+        info.EnvironmentVariables["PATH"] = node.PathWith(Environment.GetEnvironmentVariable("PATH"));
 
         var lines = new List<string>();
         using var job = KillOnCloseJob.Create();

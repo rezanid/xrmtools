@@ -13,6 +13,7 @@ using Xunit;
 using XrmTools;
 using XrmTools.DataverseSolutions;
 using XrmTools.Environments;
+using XrmTools.Pcf.Setup;
 using XrmTools.UI;
 
 public sealed class PcfProjectServiceTests : IDisposable
@@ -24,12 +25,33 @@ public sealed class PcfProjectServiceTests : IDisposable
     private readonly Mock<IEnvironmentProvider> _environments = new(MockBehavior.Strict);
     private readonly TestUi _ui = new();
     private readonly DataverseSolutionOperationState _state = new();
+    private readonly Mock<IPcfSetupService> _setup = new();
 
-    public PcfProjectServiceTests() => Directory.CreateDirectory(_root);
+    public PcfProjectServiceTests()
+    {
+        Directory.CreateDirectory(_root);
+        Node(InstanceNode);
+    }
+
+    private static readonly NodeInstallation InstanceNode = new(@"C:\nodejs", @"C:\nodejs\npm.cmd", new NodeVersion(22, 15, 0), "10.9.2", NodeEnvironmentSource.BuildEnvironment, "Visual Studio's PATH");
+
+    /// <param name="node">The Node.js resolved for the project; <c>null</c> when none is usable.</param>
+    /// <param name="instance">The Node.js this Visual Studio instance has on its PATH.</param>
+    private void Node(NodeInstallation? node, NodeInstallation? instance = null)
+        => _setup.Setup(x => x.InspectAsync(It.IsAny<string>(), It.IsAny<CancellationToken>())).ReturnsAsync((string file, CancellationToken _) => new PcfSetupState
+        {
+            ProjectFile = file,
+            ProjectDirectory = _root,
+            PackageManager = PcfPackageManagerInfo.Detect(_root),
+            Dependencies = PcfDependencyState.Read(_root, false),
+            Environment = node is null
+                ? new PcfEnvironmentResolution { Status = PcfEnvironmentStatus.NodeMissing, Requirement = PcfNodeRequirement.Read(_root), Problem = "Node.js was not found.", Remedy = "Install Node.js." }
+                : new PcfEnvironmentResolution { Status = PcfEnvironmentStatus.Ready, Requirement = PcfNodeRequirement.Read(_root), Installation = node, InstanceNode = instance ?? (node.Source == NodeEnvironmentSource.BuildEnvironment ? node : null) }
+        });
 
     public void Dispose() => Directory.Delete(_root, recursive: true);
 
-    private PcfProjectService Service() => new(_pac.Object, _auth.Object, _environments.Object, _ui, _state);
+    private PcfProjectService Service() => new(_pac.Object, _auth.Object, _environments.Object, _ui, _state, _setup.Object);
     private PcfCreateRequest CreateRequest(bool install = false) => new()
     {
         ParentDirectory = _root, ProjectName = "Example Project", ControlName = "ExampleControl",
@@ -133,8 +155,8 @@ public sealed class PcfProjectServiceTests : IDisposable
         var request = PushRequest(); ActiveEnvironment(Environment()); Authenticates();
         IReadOnlyList<string>? arguments = null;
         using var cts = new CancellationTokenSource();
-        _pac.Setup(x => x.RunPcfCommandAsync(_root, It.IsAny<IReadOnlyList<string>>(), It.IsAny<IProgress<ProcessOutputLine>>(), cts.Token))
-            .Callback<string, IReadOnlyList<string>, IProgress<ProcessOutputLine>, CancellationToken>((_, args, _, _) => arguments = args)
+        _pac.Setup(x => x.RunPcfCommandAsync(_root, It.IsAny<IReadOnlyList<string>>(), It.IsAny<IReadOnlyDictionary<string, string>>(), It.IsAny<IProgress<ProcessOutputLine>>(), cts.Token))
+            .Callback<string, IReadOnlyList<string>, IReadOnlyDictionary<string, string>, IProgress<ProcessOutputLine>, CancellationToken>((_, args, _, _, _) => arguments = args)
             .ReturnsAsync(Success());
         var service = Service();
 
@@ -165,8 +187,8 @@ public sealed class PcfProjectServiceTests : IDisposable
             .Callback(() => progress.Messages.Last().Should().Contain("browser sign-in"))
             .Returns(Task.CompletedTask);
         var line = new ProcessOutputLine(ProcessOutputSource.StandardOutput, "Importing PCF control...");
-        _pac.Setup(x => x.RunPcfCommandAsync(_root, It.IsAny<IReadOnlyList<string>>(), It.IsAny<IProgress<ProcessOutputLine>>(), It.IsAny<CancellationToken>()))
-            .Callback<string, IReadOnlyList<string>, IProgress<ProcessOutputLine>, CancellationToken>((_, _, output, _) => output.Report(line))
+        _pac.Setup(x => x.RunPcfCommandAsync(_root, It.IsAny<IReadOnlyList<string>>(), It.IsAny<IReadOnlyDictionary<string, string>>(), It.IsAny<IProgress<ProcessOutputLine>>(), It.IsAny<CancellationToken>()))
+            .Callback<string, IReadOnlyList<string>, IReadOnlyDictionary<string, string>, IProgress<ProcessOutputLine>, CancellationToken>((_, _, _, output, _) => output.Report(line))
             .ReturnsAsync(Success());
 
         await Service().PushAsync(request, CancellationToken.None, progress);
@@ -183,7 +205,7 @@ public sealed class PcfProjectServiceTests : IDisposable
         var request = PushRequest(); ActiveEnvironment(Environment()); Authenticates();
         _auth.Setup(x => x.ReauthenticatePacProfileForCurrentEnvironmentAsync(It.IsAny<CancellationToken>())).Returns(Task.CompletedTask);
         var failure = new PacCommandFailedException("expired", new ProcessCommandResult { ExitCode = 1, Output = [new ProcessOutputLine(ProcessOutputSource.StandardError, "AADSTS700082")] });
-        _pac.SetupSequence(x => x.RunPcfCommandAsync(_root, It.IsAny<IReadOnlyList<string>>(), It.IsAny<IProgress<ProcessOutputLine>>(), It.IsAny<CancellationToken>()))
+        _pac.SetupSequence(x => x.RunPcfCommandAsync(_root, It.IsAny<IReadOnlyList<string>>(), It.IsAny<IReadOnlyDictionary<string, string>>(), It.IsAny<IProgress<ProcessOutputLine>>(), It.IsAny<CancellationToken>()))
             .ThrowsAsync(failure).ReturnsAsync(Success());
         var service = Service();
         var progress = new RecordingProgress();
@@ -192,7 +214,7 @@ public sealed class PcfProjectServiceTests : IDisposable
 
         progress.Messages.Should().Contain(message => message.Contains("authentication expired"));
         progress.Messages.Should().Contain(message => message.Contains("Retrying the PCF"));
-        _pac.Verify(x => x.RunPcfCommandAsync(_root, It.Is<IReadOnlyList<string>>(args => args.Contains(Url)), It.IsAny<IProgress<ProcessOutputLine>>(), CancellationToken.None), Times.Exactly(2));
+        _pac.Verify(x => x.RunPcfCommandAsync(_root, It.Is<IReadOnlyList<string>>(args => args.Contains(Url)), It.IsAny<IReadOnlyDictionary<string, string>>(), It.IsAny<IProgress<ProcessOutputLine>>(), CancellationToken.None), Times.Exactly(2));
         _auth.Verify(x => x.ReauthenticatePacProfileForCurrentEnvironmentAsync(CancellationToken.None), Times.Once);
         _ui.Completed.Should().Be(1); _ui.Ends.Should().Be(1); service.IsBusy.Should().BeFalse();
     }
@@ -230,10 +252,10 @@ public sealed class PcfProjectServiceTests : IDisposable
         Authenticates();
         _auth.Setup(x => x.ReauthenticatePacProfileForCurrentEnvironmentAsync(It.IsAny<CancellationToken>())).Returns(Task.CompletedTask);
         var failure = new PacCommandFailedException("expired", new ProcessCommandResult { ExitCode = 1, Output = [new ProcessOutputLine(ProcessOutputSource.StandardError, "AADSTS700082")] });
-        _pac.Setup(x => x.RunPcfCommandAsync(_root, It.IsAny<IReadOnlyList<string>>(), It.IsAny<IProgress<ProcessOutputLine>>(), It.IsAny<CancellationToken>())).ThrowsAsync(failure);
+        _pac.Setup(x => x.RunPcfCommandAsync(_root, It.IsAny<IReadOnlyList<string>>(), It.IsAny<IReadOnlyDictionary<string, string>>(), It.IsAny<IProgress<ProcessOutputLine>>(), It.IsAny<CancellationToken>())).ThrowsAsync(failure);
         var service = Service(); Func<Task> act = () => service.PushAsync(request, CancellationToken.None);
         await act.Should().ThrowAsync<InvalidOperationException>().WithMessage("*changed before retry*");
-        _pac.Verify(x => x.RunPcfCommandAsync(_root, It.IsAny<IReadOnlyList<string>>(), It.IsAny<IProgress<ProcessOutputLine>>(), CancellationToken.None), Times.Once);
+        _pac.Verify(x => x.RunPcfCommandAsync(_root, It.IsAny<IReadOnlyList<string>>(), It.IsAny<IReadOnlyDictionary<string, string>>(), It.IsAny<IProgress<ProcessOutputLine>>(), CancellationToken.None), Times.Once);
         _ui.Completed.Should().Be(0); _ui.Ends.Should().Be(1); service.IsBusy.Should().BeFalse();
     }
 
@@ -241,12 +263,58 @@ public sealed class PcfProjectServiceTests : IDisposable
     public async Task PushAsync_CanceledByPac_ReleasesBusyAndStopsAnimation()
     {
         var request = PushRequest(); ActiveEnvironment(Environment()); Authenticates();
-        _pac.Setup(x => x.RunPcfCommandAsync(_root, It.IsAny<IReadOnlyList<string>>(), It.IsAny<IProgress<ProcessOutputLine>>(), It.IsAny<CancellationToken>()))
+        _pac.Setup(x => x.RunPcfCommandAsync(_root, It.IsAny<IReadOnlyList<string>>(), It.IsAny<IReadOnlyDictionary<string, string>>(), It.IsAny<IProgress<ProcessOutputLine>>(), It.IsAny<CancellationToken>()))
             .ThrowsAsync(new OperationCanceledException());
         var service = Service(); Func<Task> act = () => service.PushAsync(request, CancellationToken.None);
         await act.Should().ThrowAsync<OperationCanceledException>();
         _auth.Verify(x => x.ReauthenticatePacProfileForCurrentEnvironmentAsync(It.IsAny<CancellationToken>()), Times.Never);
         _ui.Completed.Should().Be(0); _ui.Ends.Should().Be(1); service.IsBusy.Should().BeFalse();
+    }
+
+    [Fact]
+    public async Task PushAsync_GivesThePacProcessTheProjectsNode_WhenThisVisualStudioDoesNotHaveIt()
+    {
+        var fnm = new NodeInstallation(@"C:\fnm\node-versions\v24.21.0\installation", @"C:\fnm\node-versions\v24.21.0\installation\npm.cmd", new NodeVersion(24, 21, 0), "11.19.0", NodeEnvironmentSource.Fnm, "fnm");
+        Node(fnm, InstanceNode);
+        var request = PushRequest(); ActiveEnvironment(Environment()); Authenticates();
+        var path = System.Environment.GetEnvironmentVariable("PATH");
+        IReadOnlyDictionary<string, string>? environment = null;
+        _pac.Setup(x => x.RunPcfCommandAsync(_root, It.IsAny<IReadOnlyList<string>>(), It.IsAny<IReadOnlyDictionary<string, string>>(), It.IsAny<IProgress<ProcessOutputLine>>(), It.IsAny<CancellationToken>()))
+            .Callback<string, IReadOnlyList<string>, IReadOnlyDictionary<string, string>, IProgress<ProcessOutputLine>, CancellationToken>((_, _, variables, _, _) => environment = variables)
+            .ReturnsAsync(Success());
+        var progress = new RecordingProgress();
+
+        await Service().PushAsync(request, CancellationToken.None, progress);
+
+        environment.Should().NotBeNull();
+        environment!.Keys.Should().Equal("PATH");
+        environment["PATH"].Should().Be(@"C:\fnm\node-versions\v24.21.0\installation;" + path, "only the PAC process gets the selected Node.js first");
+        System.Environment.GetEnvironmentVariable("PATH").Should().Be(path, "this process's own PATH is left alone");
+        progress.Messages.Should().Contain(message => message.Contains("with Node.js v24.21.0"));
+    }
+
+    [Fact]
+    public async Task PushAsync_LeavesThePacEnvironmentAlone_WhenThisVisualStudioAlreadyHasTheProjectsNode()
+    {
+        var request = PushRequest(); ActiveEnvironment(Environment()); Authenticates();
+        _pac.Setup(x => x.RunPcfCommandAsync(_root, It.IsAny<IReadOnlyList<string>>(), null, It.IsAny<IProgress<ProcessOutputLine>>(), It.IsAny<CancellationToken>())).ReturnsAsync(Success());
+
+        await Service().PushAsync(request, CancellationToken.None);
+
+        _pac.VerifyAll();
+    }
+
+    [Fact]
+    public async Task PushAsync_WithoutAUsableNode_GivesSetupGuidance_BeforeAuthenticationOrPac()
+    {
+        Node(null);
+        var request = PushRequest(); var service = Service();
+
+        Func<Task> act = () => service.PushAsync(request, CancellationToken.None);
+
+        await act.Should().ThrowAsync<InvalidOperationException>().WithMessage("PCF project 'Example': Node.js was not found.*Set Up PCF Build*");
+        _pac.VerifyNoOtherCalls(); _auth.VerifyNoOtherCalls(); _environments.VerifyNoOtherCalls();
+        service.IsBusy.Should().BeFalse();
     }
 
     private sealed class TestUi : IPcfOperationUi

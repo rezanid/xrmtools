@@ -85,6 +85,14 @@ public interface IPacCli
         IProgress<ProcessOutputLine> output,
         CancellationToken cancellationToken);
 
+    /// <param name="environment">Variables for the PAC process only, such as a PATH that starts with the project's Node.js.</param>
+    Task<ProcessCommandResult> RunPcfCommandAsync(
+        string workingDirectory,
+        IReadOnlyList<string> arguments,
+        IReadOnlyDictionary<string, string>? environment,
+        IProgress<ProcessOutputLine> output,
+        CancellationToken cancellationToken);
+
     Task<ProcessCommandResult> RunSolutionCommandAsync(
         CdsProjectInfo project,
         IReadOnlyList<string> arguments,

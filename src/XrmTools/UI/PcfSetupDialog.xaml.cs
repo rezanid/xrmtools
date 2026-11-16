@@ -15,14 +15,17 @@ internal partial class PcfSetupDialog : DialogWindow
 {
     private CancellationToken token;
     private CancellationTokenSource? operation;
+    private PcfInstanceRequest? request;
     private bool loaded;
     private PcfSetupDialog() => InitializeComponent();
 
-    public static async Task ShowAsync(string projectFile, IPcfSetupService service, Action<string>? log, CancellationToken token)
+    /// <returns>The restart the developer chose, to be carried out after this dialog has closed; otherwise <c>null</c>.</returns>
+    public static async Task<PcfInstanceRequest?> ShowAsync(string projectFile, IPcfSetupService service, Action<string>? log, CancellationToken token)
     {
         await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync(token);
         var dialog = new PcfSetupDialog { DataContext = new PcfSetupDialogViewModel(projectFile, service, new PcfSetupViewModel(service, log)), token = token };
         dialog.ShowModal();
+        return dialog.request;
     }
 
     private PcfSetupDialogViewModel? Model => DataContext as PcfSetupDialogViewModel;
@@ -44,6 +47,21 @@ internal partial class PcfSetupDialog : DialogWindow
 
     private Task ApplyAsync(bool updateLockFile)
         => Model is { } model ? RunAsync(cancellation => model.ApplyAsync(updateLockFile, cancellation)) : Task.CompletedTask;
+
+    private void OnRestart(object sender, RoutedEventArgs e) => RequestInstance(closeThisWindow: true);
+    private void OnSecondWindow(object sender, RoutedEventArgs e) => RequestInstance(closeThisWindow: false);
+
+    // The dialog only records the choice. Closing a solution from inside a modal dialog is not safe, so the caller
+    // starts the new window once this one is gone.
+    private void RequestInstance(bool closeThisWindow)
+    {
+        try
+        {
+            request = Model?.RequestInstance(closeThisWindow);
+            if (request is not null) DialogResult = true;
+        }
+        catch (Exception ex) when (ex is System.IO.IOException or UnauthorizedAccessException) { Model?.ReportFailure(ex); }
+    }
 
     private async Task RunAsync(Func<CancellationToken, Task> action)
     {

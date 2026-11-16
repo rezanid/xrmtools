@@ -15,7 +15,7 @@
             <ctrls:Button x:Name="UpdateLockButton" Content="_Update lock file" MinWidth="120" IsEnabled="{Binding IsIdle}" Click="OnUpdateLockFile"
                           ToolTip="Runs npm install, which rewrites package-lock.json to match package.json"
                           Visibility="{Binding Setup.CanUpdateLockFile, Converter={StaticResource BoolVisibility}}"/>
-            <ctrls:Button x:Name="SetUpButton" Content="_Set up" Kind="Accent" MinWidth="100" Margin="8,0,0,0" IsDefault="True" IsEnabled="{Binding IsIdle}" Click="OnSetUp"/>
+            <ctrls:Button x:Name="SetUpButton" Content="{Binding SetUpLabel}" Kind="Accent" MinWidth="100" Margin="8,0,0,0" IsDefault="True" IsEnabled="{Binding IsIdle}" Click="OnSetUp"/>
             <ctrls:Button x:Name="CloseButton" Content="Close" MinWidth="100" Margin="8,0,0,0" IsCancel="True" Click="OnClose"/>
         </StackPanel>
     </ctrls:DialogWindow.FooterContent>
@@ -25,6 +25,16 @@
             <Label Content="Node.js" Style="{StaticResource FieldLabel}"/>
             <ctrls:TextBlock x:Name="SetupSummary" Text="{Binding Setup.Summary}" TextWrapping="Wrap" Margin="0,0,0,10" AutomationProperties.LiveSetting="Polite"/>
             <ui:PcfSetupView x:Name="SetupView" DataContext="{Binding Setup}" Margin="0,0,0,14"/>
+            <StackPanel x:Name="RestartPanel" Margin="0,0,0,14" Visibility="{Binding Setup.NeedsOtherInstance, Converter={StaticResource BoolVisibility}}">
+                <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
+                    <ctrls:Button x:Name="RestartButton" Content="{Binding Setup.RestartLabel}" Kind="Accent" Click="OnRestart"
+                                  ToolTip="Closes this window after asking to save changes, and reopens the solution with this Node.js first on PATH"/>
+                    <ctrls:Button x:Name="SecondWindowButton" Content="Open a secon_d window instead" Margin="8,0,0,0" Click="OnSecondWindow"
+                                  ToolTip="Keeps this window open and opens the solution in another one with this Node.js first on PATH"/>
+                </StackPanel>
+                <ctrls:TextBlock x:Name="RestartText" TextWrapping="Wrap" Opacity="0.8"
+                                 Text="A Visual Studio window uses one Node.js for everything it builds and runs. Restart closes this window after asking to save changes. If other PCF projects here need a different version, open a second window for this one, or select a version that fits them all."/>
+            </StackPanel>
             <Label Content="Package manager" Style="{StaticResource FieldLabel}"/>
             <ctrls:TextBlock x:Name="PackageManagerText" Text="{Binding PackageManager}" TextWrapping="Wrap" Margin="0,0,0,12"/>
             <Label Content="Dependencies" Style="{StaticResource FieldLabel}"/>

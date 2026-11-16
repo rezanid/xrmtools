@@ -85,7 +85,11 @@ internal sealed class PcfBuildGlobalPropertiesProvider : StaticGlobalPropertiesP
             await _integration.EnsureTargetsAsync().ConfigureAwait(false);
             var properties = Empty.PropertiesMap;
             foreach (var property in await _coordinator.GetBuildPropertiesAsync(_project.FullPath, cancellationToken).ConfigureAwait(false))
-                properties = properties.SetItem(property.Key, ProjectCollection.Escape(property.Value));
+            {
+                // The list of target names keeps its semicolons; every other value is text for a message.
+                properties = properties.SetItem(property.Key,
+                    property.Key == PcfBuildTargets.GateTargetsProperty ? property.Value : ProjectCollection.Escape(property.Value));
+            }
             return properties;
         }
         catch (Exception ex) when (ex is not OperationCanceledException and not OutOfMemoryException)

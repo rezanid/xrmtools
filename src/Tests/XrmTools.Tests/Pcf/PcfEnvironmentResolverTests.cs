@@ -32,6 +32,8 @@ public sealed class PcfEnvironmentResolverTests : IDisposable
         resolution.Status.Should().Be(PcfEnvironmentStatus.Ready);
         resolution.Installation!.Source.Should().Be(NodeEnvironmentSource.BuildEnvironment);
         resolution.Installation.Version.ToString().Should().Be("v22.15.0");
+        resolution.AvailableToBuilds.Should().BeTrue();
+        resolution.FromSelection.Should().BeFalse();
         _h.Probe.FnmRequests.Should().BeEmpty("fnm is not consulted while Visual Studio's own environment fits");
     }
 
@@ -47,6 +49,40 @@ public sealed class PcfEnvironmentResolverTests : IDisposable
         resolution.Status.Should().Be(PcfEnvironmentStatus.Ready);
         resolution.Installation!.Source.Should().Be(NodeEnvironmentSource.Selected);
         resolution.Installation.NodeDirectory.Should().Be(@"D:\tools\node20");
+        resolution.FromSelection.Should().BeTrue();
+        resolution.InstanceNode!.Version.ToString().Should().Be("v22.15.0");
+        resolution.AvailableToBuilds.Should().BeFalse("this Visual Studio instance has another version, and its builds run with that");
+    }
+
+    [Fact]
+    public async Task ExplicitSelection_OfTheVersionThisVisualStudioAlreadyHas_NeedsNoOtherInstance()
+    {
+        var instance = _h.OnBuildPath("v22.15.0");
+        Select(_h.Probe.InstallWithFnm("v22.15.0"));
+
+        var resolution = await ResolveAsync();
+
+        resolution.Status.Should().Be(PcfEnvironmentStatus.Ready);
+        resolution.FromSelection.Should().BeTrue();
+        resolution.AvailableToBuilds.Should().BeTrue();
+        resolution.Installation!.NodeDirectory.Should().Be(instance.NodeDirectory, "the build uses the instance's own Node.js, so setup does too");
+    }
+
+    [Fact]
+    public async Task FnmVersion_WithoutNodeInThisVisualStudio_IsUsableBySetup_ButNotByBuildsHere()
+    {
+        _h.Probe.InstallWithFnm("v22.15.0", isDefault: true);
+
+        var resolution = await ResolveAsync();
+
+        resolution.Status.Should().Be(PcfEnvironmentStatus.Ready);
+        resolution.Installation!.Source.Should().Be(NodeEnvironmentSource.Fnm);
+        resolution.InstanceNode.Should().BeNull();
+        resolution.AvailableToBuilds.Should().BeFalse();
+        resolution.DescribeInstance().Should().Be("no Node.js on its PATH");
+        var state = await _h.InspectAsync();
+        state.Block.Should().BeNull();
+        state.BuildBlock!.Code.Should().Be("XTPCF007");
     }
 
     [Fact]

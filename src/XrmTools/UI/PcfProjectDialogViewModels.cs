@@ -38,6 +38,7 @@ internal sealed class PcfCreateDialogViewModel(string location, PcfSetupViewMode
     private string _projectName = string.Empty;
     private string? _createdProject;
     private bool _setupIncomplete;
+    private bool _installStarted;
     public string Location { get => _location; set => SetProperty(ref _location, value); }
     public string ProjectName { get => _projectName; set => SetProperty(ref _projectName, value); }
     public string ControlName { get; set; } = string.Empty;
@@ -57,7 +58,7 @@ internal sealed class PcfCreateDialogViewModel(string location, PcfSetupViewMode
     /// <summary>The project exists, but the dependencies the developer asked for are not installed.</summary>
     public bool SetupIncomplete { get => _setupIncomplete; private set => SetProperty(ref _setupIncomplete, value); }
     protected override string CancellationStatus => IsCreated
-        ? "Setup was canceled. The project was created; dependencies may be only partly installed."
+        ? "Setup was canceled. The project was created; dependencies may be only partly installed. Retry setup removes them and installs again."
         : "Creation was canceled. Any generated files were left in the project folder.";
 
     /// <summary>The folder the project will be created in, used to find Node.js declarations in the surrounding repository.</summary>
@@ -84,7 +85,10 @@ internal sealed class PcfCreateDialogViewModel(string location, PcfSetupViewMode
             if (!Setup.IsReady)
                 throw new InvalidOperationException($"The project was created, but dependencies were not installed. {Setup.Problem ?? "Choose a Node.js installation."} Then choose Retry setup, or open the project and set it up later.");
             Status = "Project created. Installing npm dependencies; this can take several minutes…";
-            var result = await Setup.InstallAsync(CreatedProject, false, token);
+            // A retry starts from nothing: what an interrupted npm install left in this new project cannot be built on.
+            var retry = _installStarted;
+            _installStarted = true;
+            var result = await Setup.InstallAsync(CreatedProject, false, retry, token);
             if (result.Outcome == PcfInstallOutcome.Canceled) throw new OperationCanceledException();
             if (!result.Succeeded)
                 throw new InvalidOperationException($"The project was created, but setup is incomplete. {result.Message} Choose Retry setup, or open the project and set it up later.");

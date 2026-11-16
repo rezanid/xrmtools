@@ -9,38 +9,39 @@ using Microsoft.VisualStudio.Shell.Interop;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.ComponentModel.Composition;
 using System.IO;
-using System.Linq;
+using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
 using XrmTools.Logging;
 
 /// <summary>
-/// Connects PCF setup to Visual Studio's own coordinated build. When the solution build manager starts a build it
-/// decides, once, which Node.js installation the build uses and makes it visible to that build only; each project
-/// then receives its decision as MSBuild properties. Visual Studio still schedules, logs and cancels the build.
+/// Connects PCF setup to Visual Studio's own coordinated build. Each PCF project that takes part in a build is
+/// checked against the environment of this Visual Studio instance, which is the environment the build runs with, and
+/// receives the result as MSBuild properties. Visual Studio still schedules, logs and cancels the build, and its
+/// environment is never changed.
 /// </summary>
 [Export]
 [PartCreationPolicy(CreationPolicy.Shared)]
 internal sealed class PcfBuildCoordinator : IVsUpdateSolutionEvents2
 {
-    private static readonly TimeSpan InspectionTimeout = TimeSpan.FromSeconds(30);
     private readonly IPcfSetupService _setup;
     private readonly IPcfSetupStore _store;
     private readonly PcfBuildSession _session;
+    private readonly IPcfInstanceLauncher _launcher;
     private readonly IOutputLoggerService _output;
     private readonly ConcurrentDictionary<string, bool?> _results = new(StringComparer.OrdinalIgnoreCase);
-    private readonly ConcurrentDictionary<string, PcfBuildBlock> _blocked = new(StringComparer.OrdinalIgnoreCase);
+    // Only projects Visual Studio actually builds are inspected, so a loaded project outside the build has no say.
+    private readonly ConcurrentDictionary<string, PcfSetupState> _states = new(StringComparer.OrdinalIgnoreCase);
     private readonly Dictionary<string, InfoBar> _infoBars = new(StringComparer.OrdinalIgnoreCase);
-    private volatile PcfBuildPlan? _plan;
-    private IVsSolution? _solution;
     private uint _cookie;
 
     [ImportingConstructor]
-    public PcfBuildCoordinator(IPcfSetupService setup, IPcfSetupStore store, PcfBuildSession session, IOutputLoggerService output)
+    public PcfBuildCoordinator(IPcfSetupService setup, IPcfSetupStore store, PcfBuildSession session, IPcfInstanceLauncher launcher, IOutputLoggerService output)
     {
-        _setup = setup; _store = store; _session = session; _output = output;
+        _setup = setup; _store = store; _session = session; _launcher = launcher; _output = output;
         _setup.Changed += project => ThreadHelper.JoinableTaskFactory.RunAsync(() => CloseNoticeAsync(project)).FileAndForget("XrmTools/Pcf/CloseNotice");
     }
 
@@ -50,31 +51,42 @@ internal sealed class PcfBuildCoordinator : IVsUpdateSolutionEvents2
         if (_cookie != 0) return;
         await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync();
         if (_cookie != 0 || ServiceProvider.GlobalProvider.GetService(typeof(SVsSolutionBuildManager)) is not IVsSolutionBuildManager2 manager) return;
-        _solution = ServiceProvider.GlobalProvider.GetService(typeof(SVsSolution)) as IVsSolution;
         ErrorHandler.ThrowOnFailure(manager.AdviseUpdateSolutionEvents(this, out _cookie));
     }
 
-    /// <summary>Opens the shared setup experience for a project.</summary>
+    /// <summary>Opens the shared setup experience for a project and carries out a restart the developer chose there.</summary>
     public async Task ShowSetupAsync(string projectFile)
     {
         await CloseNoticeAsync(projectFile);
         _output.OutputString($"{Environment.NewLine}PCF build setup: {projectFile}{Environment.NewLine}");
-        await UI.PcfSetupDialog.ShowAsync(projectFile, _setup, line => _output.OutputString(line + Environment.NewLine), VsShellUtilities.ShutdownToken);
+        var request = await UI.PcfSetupDialog.ShowAsync(projectFile, _setup, line => _output.OutputString(line + Environment.NewLine), VsShellUtilities.ShutdownToken);
+        if (request is null) return;
+        try
+        {
+            if (request.CloseThisWindow && _session.IsBuilding)
+                throw new InvalidOperationException("A build is running. Wait for it to finish or cancel it, then choose the restart again.");
+            if (await _launcher.LaunchAsync(request))
+                _output.OutputString($"Opened the solution in a new Visual Studio window with {request.Node.Describe()} first on its PATH ({request.Node.NodeDirectory}).{Environment.NewLine}");
+        }
+        catch (Exception ex) when (ex is Win32Exception or InvalidOperationException or COMException)
+        {
+            await VS.MessageBox.ShowErrorAsync(Vsix.Name, $"Visual Studio was not restarted with Node.js {request.Node.Version}. {ex.Message}");
+        }
     }
 
-    /// <summary>The MSBuild global properties for one project's build, from the current build's plan.</summary>
+    /// <summary>The MSBuild global properties for one project's build. Visual Studio asks only for projects it is building.</summary>
     public async Task<IReadOnlyDictionary<string, string>> GetBuildPropertiesAsync(string projectFile, CancellationToken cancellationToken)
     {
-        var plan = _plan;
-        var state = plan?.Find(projectFile);
-        if (state is null)
-        {
-            // Not part of a solution-build plan: nothing was activated, so the generated targets verify Node.js themselves.
-            state = await _setup.InspectAsync(projectFile, cancellationToken).ConfigureAwait(false);
-            plan = PcfBuildPlan.Create([state]);
-        }
-        if (plan!.BlockFor(state) is { } block) _blocked[projectFile] = block;
-        return plan.PropertiesFor(state);
+        var state = await _setup.InspectAsync(projectFile, cancellationToken).ConfigureAwait(false);
+        _states[projectFile] = state;
+        return PcfBuildProperties.For(state);
+    }
+
+    /// <summary>Tells the developer, right after a project was added, when it cannot build in this window as it is.</summary>
+    public async Task ShowNoticeIfBuildIsBlockedAsync(string projectFile)
+    {
+        var state = await _setup.InspectAsync(projectFile, VsShellUtilities.ShutdownToken).ConfigureAwait(false);
+        if (state.BuildBlock is { } block) await ShowNoticeAsync(projectFile, block.Summary).ConfigureAwait(false);
     }
 
     /// <summary>Shows a notification with the Set up PCF build action, at most once per project at a time.</summary>
@@ -107,30 +119,11 @@ internal sealed class PcfBuildCoordinator : IVsUpdateSolutionEvents2
 
     public int UpdateSolution_Begin(ref int pfCancelUpdate)
     {
-        ThreadHelper.ThrowIfNotOnUIThread();
         _results.Clear();
-        _blocked.Clear();
-        _plan = null;
-        // Marked first: a setup that starts from here on sees the build, and one already running is seen below.
+        _states.Clear();
+        // Marked before any project is inspected: a setup that starts from here on sees the build, and one that is
+        // already running is seen when its project is inspected.
         _session.BeginBuild();
-        try
-        {
-            var projects = LoadedPcfProjects();
-            if (projects.Count == 0) return VSConstants.S_OK;
-            var states = ThreadHelper.JoinableTaskFactory.Run(async () =>
-            {
-                using var timeout = new CancellationTokenSource(InspectionTimeout);
-                return await Task.Run(() => Task.WhenAll(projects.Select(project => _setup.InspectAsync(project, timeout.Token))), timeout.Token);
-            });
-            var plan = PcfBuildPlan.Create(states);
-            _session.Activate(plan.Activation);
-            _plan = plan;
-        }
-        catch (Exception ex) when (ex is not OutOfMemoryException)
-        {
-            // The build continues exactly as it would without Xrm Tools' preparation.
-            _output.LogWarning($"PCF build preparation was skipped: {ex.Message}");
-        }
         return VSConstants.S_OK;
     }
 
@@ -143,28 +136,28 @@ internal sealed class PcfBuildCoordinator : IVsUpdateSolutionEvents2
 
     public int UpdateSolution_Done(int fSucceeded, int fModified, int fCancelCommand)
     {
-        ThreadHelper.ThrowIfNotOnUIThread();
         _session.EndBuild();
-        var plan = _plan;
-        _plan = null;
         foreach (var result in _results)
         {
             var project = result.Key;
             var directory = Path.GetDirectoryName(project)!;
             var installed = File.Exists(Path.Combine(directory, "node_modules", "pcf-scripts", "package.json"));
-            // A successful project needs nothing. The marker of an unfinished install is removed by the build itself,
-            // and only by the step that reinstalled, so a Clean or a build that skipped installing cannot clear it.
+            // A successful project needs nothing. An unfinished install is ended only by setup's repair; no build
+            // clears it.
             if (result.Value == true) continue;
-            var state = plan?.Find(project);
-            // This build had to install from nothing and did not succeed. npm writes node_modules\.package-lock.json
-            // last; without it the install was cut short, and Microsoft's incremental check could still take the
-            // half-installed folder for current on the next build.
-            if (state is { PackageManager.IsNpm: true, Dependencies.Status: PcfDependencyStatus.Missing } && Directory.Exists(Path.Combine(directory, "node_modules"))
-                && !File.Exists(Path.Combine(directory, "node_modules", ".package-lock.json")))
-                _store.SetSetupIncomplete(directory, true);
-            if (result.Value is null) continue;
+            _states.TryGetValue(project, out var state);
             string? notice = null;
-            if (_blocked.TryGetValue(project, out var block)) notice = block.Summary;
+            // This build had to install from nothing and did not succeed. npm writes node_modules\.package-lock.json
+            // last; without it the install was cut short, and both npm and Microsoft's incremental check could take
+            // the half-installed folder for current from here on.
+            if (state is { BuildBlock: null, PackageManager.IsNpm: true, Dependencies.Status: PcfDependencyStatus.Missing } && Directory.Exists(Path.Combine(directory, "node_modules"))
+                && !File.Exists(Path.Combine(directory, "node_modules", ".package-lock.json")))
+            {
+                _store.SetSetupIncomplete(directory, true);
+                notice = $"The npm install for '{state.ProjectName}' did not finish. Repair its dependencies before building again.";
+            }
+            else if (result.Value is null) continue;
+            else if (state?.BuildBlock is { } block) notice = block.Summary;
             else if (!installed && state is { PackageManager.Kind: PcfPackageManagerKind.Other })
                 notice = $"'{state.ProjectName}' is configured for {state.PackageManager.Name}, so the build did not run npm install for it.";
             else if (!installed && state is not null)
@@ -178,18 +171,6 @@ internal sealed class PcfBuildCoordinator : IVsUpdateSolutionEvents2
     public int UpdateSolution_Cancel() => VSConstants.S_OK;
     public int OnActiveProjectCfgChange(IVsHierarchy pIVsHierarchy) => VSConstants.S_OK;
     public int UpdateProjectCfg_Begin(IVsHierarchy pHierProj, IVsCfg pCfgProj, IVsCfg pCfgSln, uint dwAction, ref int pfCancel) => VSConstants.S_OK;
-
-    private List<string> LoadedPcfProjects()
-    {
-        ThreadHelper.ThrowIfNotOnUIThread();
-        var projects = new List<string>();
-        var none = Guid.Empty;
-        if (_solution is null || ErrorHandler.Failed(_solution.GetProjectEnum((uint)__VSENUMPROJFLAGS.EPF_LOADEDINSOLUTION, ref none, out var enumerator))) return projects;
-        var hierarchy = new IVsHierarchy[1];
-        while (enumerator.Next(1, hierarchy, out var fetched) == VSConstants.S_OK && fetched == 1)
-            if (ProjectFile(hierarchy[0]) is { } project) projects.Add(project);
-        return projects;
-    }
 
     private static string? ProjectFile(IVsHierarchy? hierarchy)
     {
