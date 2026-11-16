@@ -1,4 +1,4 @@
-#nullable enable
+ #nullable enable
 namespace XrmTools.Pcf.Setup;
 
 using Newtonsoft.Json.Linq;

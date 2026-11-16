@@ -8,12 +8,14 @@
         <Style x:Key="FieldLabel" TargetType="Label"><Setter Property="Foreground" Value="{DynamicResource {x:Static p:EnvironmentColors.ToolWindowTextBrushKey}}"/><Setter Property="Padding" Value="0"/><Setter Property="Margin" Value="0,0,0,5"/><Setter Property="FontWeight" Value="SemiBold"/></Style>
     </UserControl.Resources>
     <StackPanel>
-        <ctrls:TextBlock x:Name="ProblemText" Text="{Binding Problem}" TextWrapping="Wrap" Margin="0,0,0,10" FontWeight="SemiBold"
-                         AutomationProperties.LiveSetting="Polite" Visibility="{Binding HasProblem, Converter={StaticResource BoolVisibility}}"/>
-        <ctrls:TextBlock x:Name="RequirementText" Text="{Binding Requirement, StringFormat='This project asks for: {0}'}" TextWrapping="Wrap" Margin="0,0,0,10"
-                         Visibility="{Binding HasRequirement, Converter={StaticResource BoolVisibility}}"/>
-        <ctrls:TextBlock x:Name="InstanceNoticeText" Text="{Binding InstanceNotice}" TextWrapping="Wrap" Margin="0,0,0,10" FontWeight="SemiBold"
-                         AutomationProperties.LiveSetting="Polite" Visibility="{Binding NeedsOtherInstance, Converter={StaticResource BoolVisibility}}"/>
+        <StackPanel Visibility="{Binding ShowNotices, RelativeSource={RelativeSource AncestorType=UserControl}, Converter={StaticResource BoolVisibility}}">
+            <ctrls:TextBlock x:Name="ProblemText" Text="{Binding Problem}" TextWrapping="Wrap" Margin="0,0,0,10" FontWeight="SemiBold"
+                             AutomationProperties.LiveSetting="Polite" Visibility="{Binding HasProblem, Converter={StaticResource BoolVisibility}}"/>
+            <ctrls:TextBlock x:Name="RequirementText" Text="{Binding Requirement, StringFormat='This project asks for: {0}'}" TextWrapping="Wrap" Margin="0,0,0,10"
+                             Visibility="{Binding HasRequirement, Converter={StaticResource BoolVisibility}}"/>
+            <ctrls:TextBlock x:Name="InstanceNoticeText" Text="{Binding InstanceNotice}" TextWrapping="Wrap" Margin="0,0,0,10" FontWeight="SemiBold"
+                             AutomationProperties.LiveSetting="Polite" Visibility="{Binding NeedsOtherInstance, Converter={StaticResource BoolVisibility}}"/>
+        </StackPanel>
         <Label Content="Node._js installation" Target="{Binding ElementName=NodeChoices}" Style="{StaticResource FieldLabel}"/>
         <Grid Margin="0,0,0,8">
             <Grid.ColumnDefinitions><ColumnDefinition/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
@@ -30,7 +32,8 @@
                           Visibility="{Binding HasStoredSelection, Converter={StaticResource BoolVisibility}}"
                           ToolTip="Forget the installation selected for this project"/>
         </StackPanel>
-        <ctrls:TextBlock TextWrapping="Wrap" Margin="0,0,0,10" Opacity="0.8"
+        <ctrls:TextBlock x:Name="DownloadInstructions" TextWrapping="Wrap" Margin="0,0,0,10"
+                         Visibility="{Binding HasProblem, Converter={StaticResource BoolVisibility}}"
                          Text="Get Node.js opens nodejs.org in your browser; Xrm Tools does not install software on this computer. After installing Node.js, choose Check again."/>
         <ctrls:CheckBox x:Name="InstallCheckBox" Content="_Install project dependencies" IsChecked="{Binding InstallDependencies}"/>
     </StackPanel>
