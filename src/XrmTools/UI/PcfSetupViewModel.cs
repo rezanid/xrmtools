@@ -4,6 +4,7 @@ namespace XrmTools.UI;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.ComponentModel;
 using System.IO;
 using System.Linq;
 using System.Threading;
@@ -198,16 +199,26 @@ internal sealed class PcfSetupViewModel(IPcfSetupService service, Action<string>
 }
 
 /// <summary>Set Up PCF Build for an existing project.</summary>
-internal sealed class PcfSetupDialogViewModel(string projectFile, IPcfSetupService service, PcfSetupViewModel setup) : PcfDialogViewModel
+internal sealed class PcfSetupDialogViewModel : PcfDialogViewModel
 {
+    private readonly IPcfSetupService _service;
     private PcfSetupState? _state;
+    private NodeInstallation? _settled;
     private bool _complete;
 
-    public string ProjectFile { get; } = projectFile;
+    public PcfSetupDialogViewModel(string projectFile, IPcfSetupService service, PcfSetupViewModel setup)
+    {
+        ProjectFile = projectFile;
+        _service = service;
+        Setup = setup;
+        setup.PropertyChanged += OnSetupChanged;
+    }
+
+    public string ProjectFile { get; }
     public string ProjectName => Path.GetFileNameWithoutExtension(ProjectFile);
-    public PcfSetupViewModel Setup { get; } = setup;
-    /// <summary>Nothing is left for setup to do; the footer then offers Close only.</summary>
-    public bool IsComplete { get => _complete; private set => SetProperty(ref _complete, value); }
+    public PcfSetupViewModel Setup { get; }
+    /// <summary>Nothing is left for setup to do; the main button then reads Done and only closes the dialog.</summary>
+    public bool IsComplete { get => _complete; private set { if (SetProperty(ref _complete, value)) OnPropertyChanged(nameof(SetUpLabel)); } }
 
     public string PackageManager => _state is null ? string.Empty
         : _state.PackageManager.IsNpm ? "npm" + (_state.PackageManager.Evidence.Length == 0 ? string.Empty : $" ({_state.PackageManager.Evidence})")
@@ -227,8 +238,8 @@ internal sealed class PcfSetupDialogViewModel(string projectFile, IPcfSetupServi
             _ => $"Not installed. Setup runs {InstallCommand}."
         };
 
-    /// <summary>The dialog's main action; after an unfinished install it is a repair and says so.</summary>
-    public string SetUpLabel => _state?.NeedsRepair == true ? "_Repair dependencies" : "_Set up";
+    /// <summary>The dialog's main action: Done when nothing is left to do, a repair after an unfinished install, otherwise Set up.</summary>
+    public string SetUpLabel => IsComplete ? "_Done" : _state?.NeedsRepair == true ? "_Repair dependencies" : "_Set up";
 
     private string InstallCommand => _state!.Dependencies.HasLockFile
         ? "npm ci, which installs exactly what package-lock.json lists" : "npm install, because the project has no package-lock.json yet";
@@ -251,9 +262,20 @@ internal sealed class PcfSetupDialogViewModel(string projectFile, IPcfSetupServi
     {
         Status = "Checking the project…";
         await RefreshAsync(token);
+        // A choice made in this dialog and not yet applied stays pending across Check again.
+        if (!Setup.IsExplicitChoice) _settled = Setup.Installation;
         Status = Describe();
         return "loaded";
     });
+
+    /// <summary>The dialog's main button.</summary>
+    /// <returns><c>true</c> when the dialog should close: nothing was left to do, so nothing was run.</returns>
+    public async Task<bool> RunMainActionAsync(CancellationToken token)
+    {
+        if (IsComplete) return true;
+        await ApplyAsync(false, token);
+        return false;
+    }
 
     /// <returns><c>true</c> when setup finished and the project is ready to build.</returns>
     public async Task<bool> ApplyAsync(bool updateLockFile, CancellationToken token) => await RunAsync(async () =>
@@ -261,6 +283,7 @@ internal sealed class PcfSetupDialogViewModel(string projectFile, IPcfSetupServi
         if (!Setup.IsReady) throw new InvalidOperationException(Setup.Problem ?? "Choose a Node.js installation.");
         Setup.SaveSelection(ProjectFile);
         await RefreshAsync(token);
+        _settled = Setup.Installation;
         var state = _state!;
         if (state.PackageManager.IsNpm && Setup.InstallDependencies && (state.Dependencies.Status != PcfDependencyStatus.Installed || updateLockFile))
         {
@@ -279,11 +302,17 @@ internal sealed class PcfSetupDialogViewModel(string projectFile, IPcfSetupServi
 
     private async Task RefreshAsync(CancellationToken token)
     {
-        _state = await service.InspectAsync(ProjectFile, token);
+        _state = await _service.InspectAsync(ProjectFile, token);
         await Setup.RefreshAsync(ProjectFile, _state.ProjectDirectory, token);
         OnPropertyChanged(nameof(PackageManager));
         OnPropertyChanged(nameof(Dependencies));
         OnPropertyChanged(nameof(SetUpLabel));
+    }
+
+    // Another Node.js chosen after setup finished: the main action is Set up again, not Done.
+    private void OnSetupChanged(object sender, PropertyChangedEventArgs e)
+    {
+        if (e.PropertyName == nameof(PcfSetupViewModel.Selected) && IsIdle && _state is not null) Status = Describe();
     }
 
     private string Describe()
@@ -308,6 +337,8 @@ internal sealed class PcfSetupDialogViewModel(string projectFile, IPcfSetupServi
                 : "Node.js is ready. Dependencies are not installed; the next build installs them.";
         }
         if (Setup.NeedsOtherInstance) return $"Dependencies are installed. To build '{ProjectName}', restart Visual Studio with Node.js {node}.";
+        // A Node.js chosen here is only remembered for the project by Set up.
+        if (!Setup.Installation!.IsSameEnvironment(_settled)) return $"Choose Set up to use Node.js {node} for '{ProjectName}'.";
         IsComplete = true;
         return $"'{ProjectName}' is ready to build with Node.js {node}.";
     }

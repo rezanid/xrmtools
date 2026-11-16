@@ -1,0 +1,19 @@
+=== 6a: cancel a build while Microsoft's npm install is running, then build again ===
+while the build installs: build state 2 (2 = in progress); npm processes under Visual Studio: 2; pcf-scripts present: False
+after Build.Cancel: ========== Elapsed 25.675 seconds ==========
+  npm processes under Visual Studio: 0; node_modules exists: True; pcf-scripts present: False; npm's own completion file present: False; unfinished-install markers: 1
+BUILD AGAIN: failedProjects=1 seconds=57; ========== Build: 0 succeeded or up-to-date, 1 failed, 0 skipped ==========
+    1>  Xrm Tools: an earlier dependency install did not finish; running Microsoft's npm restore.
+    1>EXEC : error : Cannot find module './Utility'
+    1>%USERPROFILE%\.nuget\packages\microsoft.powerapps.msbuild.pcf\1.52.1\build\Microsoft.PowerApps.MSBuild.Pcf.targets(100,5): error MSB3073: The command "npm run build -- --noColor --buildMode development --outDir "%USERPROFILE%\AppData\Local\Temp\xt-pcf\acc6\Cancel6\out\controls" --buildSource VisualStudio" exited with code 1.
+  unfinished-install markers: 0; bundle.js produced: False; package-lock.json unchanged: True
+UNCHANGED BUILD AFTER: failedProjects=1 seconds=2; ========== Build: 0 succeeded or up-to-date, 1 failed, 0 skipped ==========; npm install ran: False; pcf-scripts ran: True
+=== 6b: setup requested while a build is installing dependencies for the same project ===
+Set up chosen during the build: status='A build is running. Wait for it to finish or cancel it, then retry setup.'; npm output box shown: False
+that build, undisturbed: failedProjects=0 seconds=59; ========== Build: 1 succeeded or up-to-date, 0 failed, 0 skipped ==========; 'added N packages' lines: 1
+setup opened again after the build: dependencies='Installed.' status=''Busy6' is ready to build with Node.js v22.15.0.'
+=== 6c: build while another process holds the project's setup lock, as a second Visual Studio running setup would ===
+REBUILD while process 18344 holds the lock: failedProjects=1 seconds=2; ========== Rebuild All: 0 succeeded, 1 failed, 0 skipped ==========; an npm script ran: False
+    1>%USERPROFILE%\AppData\Local\Temp\xt-pcf\acc6\Busy6\Busy6.pcfproj : error XTPCF006: PCF project 'Busy6': setup is still installing npm dependencies. Build again when setup has finished.
+  notification: Setup is still installing npm dependencies for 'Busy6'.  Set up PCF build
+REBUILD after the lock was released (lock file left behind: False): failedProjects=0 seconds=14; ========== Rebuild All: 1 succeeded, 0 failed, 0 skipped ==========

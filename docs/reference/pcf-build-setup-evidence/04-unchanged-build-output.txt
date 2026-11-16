@@ -1,5 +1,0 @@
-Build started at 5:56 PM...
-1>------ Build started: Project: Fresh4, Configuration: Debug Any CPU ------
-========== Build: 1 succeeded or up-to-date, 0 failed, 0 skipped ==========
-========== Build completed at 5:56 PM and took 01.519 seconds ==========
-

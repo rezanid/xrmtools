@@ -41,7 +41,12 @@ internal partial class PcfSetupDialog : DialogWindow
         await SetupView.Refresh();
     }
 
-    private async void OnSetUp(object sender, RoutedEventArgs e) => await ApplyAsync(false);
+    private async void OnSetUp(object sender, RoutedEventArgs e)
+    {
+        var close = false;
+        if (Model is { } model) await RunAsync(async cancellation => close = await model.RunMainActionAsync(cancellation));
+        if (close) DialogResult = true;
+    }
     private async void OnUpdateLockFile(object sender, RoutedEventArgs e) => await ApplyAsync(true);
 #pragma warning restore VSTHRD100
 

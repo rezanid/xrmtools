@@ -1,7 +1,0 @@
-Rebuild started at 5:00 PM...
-1>------ Rebuild All started: Project: Choose2, Configuration: Debug Any CPU ------
-Restored %USERPROFILE%\AppData\Local\Temp\xt-pcf\acc2b\Choose2\Choose2.pcfproj (in 59 ms).
-1>%USERPROFILE%\AppData\Local\Temp\xt-pcf\acc2b\Choose2\Choose2.pcfproj : error XTPCF002: PCF project 'Choose2': fnm has several Node.js versions installed (v22.15.0, v24.21.0) and no default. Choose the version to use for this project. To do that, choose 'Set Up PCF Build' on the project's context menu.
-========== Rebuild All: 0 succeeded, 1 failed, 0 skipped ==========
-========== Rebuild completed at 5:00 PM and took 01.848 seconds ==========
-

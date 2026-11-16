@@ -181,9 +181,52 @@ public sealed class PcfSetupViewModelTests : IDisposable
 
         _h.Npm.Commands.Should().Equal("install");
         _h.Project.Exists(@"node_modules\half-unpacked.txt").Should().BeFalse();
-        dialog.SetUpLabel.Should().Be("_Set up");
+        dialog.SetUpLabel.Should().Be("_Done");
         dialog.Dependencies.Should().Be("Installed.");
         dialog.Status.Should().Contain("ready to build");
+        (await dialog.RunMainActionAsync(CancellationToken.None)).Should().BeTrue();
+        _h.Npm.Commands.Should().Equal(["install"], "Done after a repair only closes the dialog");
+    }
+
+    [Fact]
+    public async Task ExistingProject_AfterSetup_MainActionIsDone_AndOnlyCloses_UntilAnotherNodeIsChosen()
+    {
+        _h.OnBuildPath("v22.15.0");
+        _h.Project.Write("package-lock.json", "{}");
+        var dialog = new PcfSetupDialogViewModel(_h.Project.ProjectFile, _h.Service, Setup());
+        await dialog.LoadAsync(CancellationToken.None);
+        dialog.SetUpLabel.Should().Be("_Set up");
+
+        (await dialog.RunMainActionAsync(CancellationToken.None)).Should().BeFalse("setup ran, and the dialog stays open to show the result");
+
+        _h.Npm.Commands.Should().Equal("ci");
+        dialog.IsComplete.Should().BeTrue();
+        dialog.SetUpLabel.Should().Be("_Done");
+
+        (await dialog.RunMainActionAsync(CancellationToken.None)).Should().BeTrue("Done closes the dialog");
+
+        _h.Npm.Commands.Should().Equal(["ci"], "Done runs nothing");
+        dialog.Status.Should().Be("'Sample' is ready to build with Node.js v22.15.0.");
+
+        // Another installation of the same version: this window can build with it, but it is not saved yet.
+        (await dialog.Setup.SelectDirectoryAsync(_h.Probe.Install(@"D:\portable\node", "v22.15.0"), CancellationToken.None)).Should().BeTrue();
+
+        dialog.IsComplete.Should().BeFalse();
+        dialog.SetUpLabel.Should().Be("_Set up");
+        dialog.Status.Should().Be("Choose Set up to use Node.js v22.15.0 for 'Sample'.");
+
+        (await dialog.RunMainActionAsync(CancellationToken.None)).Should().BeFalse();
+
+        _h.Store.GetSelection(_h.Project.ProjectFile)!.NodeDirectory.Should().Be(@"D:\portable\node");
+        _h.Npm.Commands.Should().Equal(["ci"], "dependencies were already installed");
+        dialog.SetUpLabel.Should().Be("_Done");
+
+        // Going back to the saved choice needs nothing; a different one needs Set up again.
+        var saved = dialog.Setup.Selected;
+        dialog.Setup.Selected = dialog.Setup.Choices.First(choice => choice != saved);
+        dialog.SetUpLabel.Should().Be("_Set up");
+        dialog.Setup.Selected = saved;
+        dialog.SetUpLabel.Should().Be("_Done");
     }
 
     [Fact]

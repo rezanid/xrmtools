@@ -1,4 +1,0 @@
-Command-line build with the generated targets file present (obj\None5.pcfproj.xrmtools.g.targets exists: True); MSBuild.exe None5.pcfproj -t:Rebuild, Node.js from the shell's PATH
-exit code: 0; Build succeeded.
-Xrm Tools targets that ran: 0; lines mentioning Xrm Tools or XTPCF: 0
-Microsoft targets that ran: PcfClean, PcfBuild, PcfRebuild

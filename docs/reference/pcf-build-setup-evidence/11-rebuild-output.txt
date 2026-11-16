@@ -1,7 +1,0 @@
-Rebuild started at 5:45 PM...
-1>------ Rebuild All started: Project: Pnpm11, Configuration: Debug Any CPU ------
-Restored %USERPROFILE%\AppData\Local\Temp\xt-pcf\acc11\Pnpm11\Pnpm11.pcfproj (in 46 ms).
-1>%USERPROFILE%\AppData\Local\Temp\xt-pcf\acc11\Pnpm11\Pnpm11.pcfproj : error XTPCF004: PCF project 'Pnpm11' is configured for pnpm ("packageManager": "pnpm@9.12.0" in %USERPROFILE%\AppData\Local\Temp\xt-pcf\acc11\Pnpm11\package.json). Microsoft's PCF build installs dependencies with npm, which would add npm files to this project, so npm install was not run and no files were changed. Install dependencies with pnpm and set <PcfEnableAutoNpmInstall>false</PcfEnableAutoNpmInstall> in the project file so builds do not run npm install, then build again.
-========== Rebuild All: 0 succeeded, 1 failed, 0 skipped ==========
-========== Rebuild completed at 5:45 PM and took 00.467 seconds ==========
-
