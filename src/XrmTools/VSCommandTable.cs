@@ -89,6 +89,7 @@ namespace XrmTools
         public const int PushPcfProjectCmdId = 0x09A1;
         public const int StartPcfHarnessCmdId = 0x09A2;
         public const int StopPcfHarnessCmdId = 0x09A3;
+        public const int SetUpPcfBuildCmdId = 0x09A4;
         public const int XrmToolsToolbar = 0x2000;
         public const int XrmToolsToolbarGroup = 0x2010;
         public const int XrmToolsContextSubMenu = 0x1000;

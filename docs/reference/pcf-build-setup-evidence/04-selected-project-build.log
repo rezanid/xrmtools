@@ -1,0 +1,20 @@
+P22\.nvmrc = 22; P24\.nvmrc = 24; Visual Studio 16948 was started normally and has Node.js v22.15.0 on its PATH; fnm has v24.21.0
+REBUILD SELECTION, P22 selected, P24 loaded: failedProjects=0 seconds=43; ========== Rebuild All: 1 succeeded, 0 failed, 0 skipped ==========
+    1>------ Rebuild All started: Project: P22, Configuration: Debug Any CPU ------
+    1>  XTNODE P22 v22.15.0 %USERPROFILE%\AppData\Local\Author Software\nvm\installs\v22.15.0\node.exe
+  P24 appears in that build's output: True; notification about P24: False
+REBUILD SOLUTION: failedProjects=1 seconds=14; ========== Rebuild All: 1 succeeded, 1 failed, 0 skipped ==========
+    1>------ Rebuild All started: Project: P22, Configuration: Debug Any CPU ------
+    2>------ Rebuild All started: Project: P24, Configuration: Debug Any CPU ------
+    1>  XTNODE P22 v22.15.0 %USERPROFILE%\AppData\Local\Author Software\nvm\installs\v22.15.0\node.exe
+    2>%USERPROFILE%\AppData\Local\Temp\xt-pcf\acc10\P24\P24.pcfproj : error XTPCF007: PCF project 'P24': this Visual Studio window has Node.js v22.15.0 on its PATH, so it cannot build with Node.js v24.21.0, npm 11.19.0 (fnm, from .nvmrc), which this project uses. To restart Visual Studio with it, choose 'Set Up PCF Build' on the project's context menu.
+  an npm script ran for P24: False; notification: 'P24' needs Visual Studio restarted with Node.js v24.21.0 to build.  Set up PCF build
+setup dialog for P24: notice = This Visual Studio window has Node.js v22.15.0 on its PATH, so builds here cannot use Node.js v24.21.0. To build, restart Visual Studio with it.
+setup dialog for P24: status = Dependencies are installed. To build 'P24', restart Visual Studio with Node.js v24.21.0.
+second Visual Studio 17516: "C:\Program Files\Microsoft Visual Studio\18\Insiders\Common7\IDE\devenv.exe" /rootsuffix Exp "%USERPROFILE%\AppData\Local\Temp\xt-pcf\acc10\acc10.slnx"
+first window still open with its solution: True; its PATH unchanged: True
+PATH of the second window starts with: %USERPROFILE%\AppData\Roaming\fnm\node-versions\v24.21.0\installation;C:\Program...
+SECOND WINDOW, REBUILD SELECTION P24: failedProjects=0 seconds=65; ========== Rebuild All: 1 succeeded, 0 failed, 0 skipped ==========
+    1>------ Rebuild All started: Project: P24, Configuration: Debug Any CPU ------
+    1>  XTNODE P24 v24.21.0 %USERPROFILE%\AppData\Roaming\fnm\node-versions\v24.21.0\installation\node.exe
+SECOND WINDOW, BUILD SELECTION P22: failedProjects=0 seconds=3; ========== Build: 1 succeeded or up-to-date, 0 failed, 0 skipped ==========

@@ -1,0 +1,18 @@
+PATH of Visual Studio 18000 before any build: 1541 characters, SHA-256 20D3BB561A75C940
+BUILD SOLUTION (PcfA.pcfproj, Lib.csproj, DvSolution.cdsproj): failedProjects=0 seconds=34; ========== Build: 3 succeeded, 0 failed, 0 up-to-date, 0 skipped ==========
+    1>------ Build started: Project: PcfA, Configuration: Debug Any CPU ------
+    2>------ Build started: Project: Lib, Configuration: Debug Any CPU ------
+    1>  XTNODE PcfA v22.15.0 %USERPROFILE%\AppData\Local\Author Software\nvm\installs\v22.15.0\node.exe
+    3>------ Build started: Project: DvSolution, Configuration: Debug Any CPU ------
+    3>  Solution: bin\Debug\DvSolution.zip generated.
+  outputs: Lib.dll True; bundle.js True; DvSolution.zip True
+  PATH seen by the C# project's build step during that build is the PATH before: True
+  PATH of Visual Studio after that build is the PATH before: True
+=== the same solution when the PCF project asks for a Node.js this window does not have (.nvmrc = 24) ===
+REBUILD SOLUTION: failedProjects=1 seconds=3; ========== Rebuild All: 2 succeeded, 1 failed, 0 skipped ==========
+    1>------ Rebuild All started: Project: PcfA, Configuration: Debug Any CPU ------
+    2>------ Rebuild All started: Project: Lib, Configuration: Debug Any CPU ------
+    1>%USERPROFILE%\AppData\Local\Temp\xt-pcf\mixed\PcfA\PcfA.pcfproj : error XTPCF007: PCF project 'PcfA': this Visual Studio window has Node.js v22.15.0 on its PATH, so it cannot build with Node.js v24.21.0, npm 11.19.0 (fnm, from .nvmrc), which this project uses. To restart Visual Studio with it, choose 'Set Up PCF Build' on the ...
+    3>------ Rebuild All started: Project: DvSolution, Configuration: Debug Any CPU ------
+  PATH during that build is the PATH before: True; after it: True; fnm's Node.js 24 folder anywhere on either: False
+BUILD SOLUTION after removing .nvmrc: failedProjects=0 seconds=3; ========== Build: 2 succeeded, 0 failed, 1 up-to-date, 0 skipped ==========

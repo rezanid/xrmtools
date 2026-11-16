@@ -1,0 +1,37 @@
+<UserControl xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:ctrls="clr-namespace:XrmTools.Shell.Controls"
+    xmlns:p="clr-namespace:Microsoft.VisualStudio.PlatformUI;assembly=Microsoft.VisualStudio.Shell.15.0"
+    x:Class="XrmTools.UI.PcfSetupView" x:ClassModifier="internal">
+    <UserControl.Resources>
+        <BooleanToVisibilityConverter x:Key="BoolVisibility"/>
+        <Style x:Key="FieldLabel" TargetType="Label"><Setter Property="Foreground" Value="{DynamicResource {x:Static p:EnvironmentColors.ToolWindowTextBrushKey}}"/><Setter Property="Padding" Value="0"/><Setter Property="Margin" Value="0,0,0,5"/><Setter Property="FontWeight" Value="SemiBold"/></Style>
+    </UserControl.Resources>
+    <StackPanel>
+        <ctrls:TextBlock x:Name="ProblemText" Text="{Binding Problem}" TextWrapping="Wrap" Margin="0,0,0,10" FontWeight="SemiBold"
+                         AutomationProperties.LiveSetting="Polite" Visibility="{Binding HasProblem, Converter={StaticResource BoolVisibility}}"/>
+        <ctrls:TextBlock x:Name="RequirementText" Text="{Binding Requirement, StringFormat='This project asks for: {0}'}" TextWrapping="Wrap" Margin="0,0,0,10"
+                         Visibility="{Binding HasRequirement, Converter={StaticResource BoolVisibility}}"/>
+        <ctrls:TextBlock x:Name="InstanceNoticeText" Text="{Binding InstanceNotice}" TextWrapping="Wrap" Margin="0,0,0,10" FontWeight="SemiBold"
+                         AutomationProperties.LiveSetting="Polite" Visibility="{Binding NeedsOtherInstance, Converter={StaticResource BoolVisibility}}"/>
+        <Label Content="Node._js installation" Target="{Binding ElementName=NodeChoices}" Style="{StaticResource FieldLabel}"/>
+        <Grid Margin="0,0,0,8">
+            <Grid.ColumnDefinitions><ColumnDefinition/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+            <ctrls:ComboBox x:Name="NodeChoices" ItemsSource="{Binding Choices}" SelectedItem="{Binding Selected}" DisplayMemberPath="Display"
+                            IsEditable="False" MaxDropDownHeight="240" AutomationProperties.Name="Node.js installation"/>
+            <ctrls:Button x:Name="BrowseButton" Grid.Column="1" Content="Bro_wse…" Margin="8,0,0,0" Click="OnBrowse"
+                          ToolTip="Select the folder that contains node.exe"/>
+        </Grid>
+        <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
+            <ctrls:Button x:Name="CheckAgainButton" Content="Check _again" Click="OnCheckAgain"/>
+            <ctrls:Button x:Name="GetNodeButton" Content="_Get Node.js…" Margin="8,0,0,0" Click="OnGetNode"
+                          ToolTip="Opens the official Node.js download page in your browser"/>
+            <ctrls:Button x:Name="AutomaticButton" Content="Use a_utomatic selection" Margin="8,0,0,0" Click="OnAutomatic"
+                          Visibility="{Binding HasStoredSelection, Converter={StaticResource BoolVisibility}}"
+                          ToolTip="Forget the installation selected for this project"/>
+        </StackPanel>
+        <ctrls:TextBlock TextWrapping="Wrap" Margin="0,0,0,10" Opacity="0.8"
+                         Text="Get Node.js opens nodejs.org in your browser; Xrm Tools does not install software on this computer. After installing Node.js, choose Check again."/>
+        <ctrls:CheckBox x:Name="InstallCheckBox" Content="_Install project dependencies" IsChecked="{Binding InstallDependencies}"/>
+    </StackPanel>
+</UserControl>

@@ -12,6 +12,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using XrmTools.DataverseSolutions;
 using XrmTools.Logging;
+using XrmTools.Pcf.Setup;
 
 [Export]
 [AppliesTo(PcfProjectRegistration.UniqueCapability)]
@@ -19,6 +20,7 @@ internal sealed class PcfHarnessSession : IDisposable
 {
     private readonly UnconfiguredProject _project;
     private readonly IOutputLoggerService _output;
+    private readonly IPcfSetupService _setup;
     private readonly SemaphoreSlim _gate = new(1, 1);
     private readonly object _sync = new();
     private CancellationTokenSource? _launchCancellation;
@@ -28,10 +30,11 @@ internal sealed class PcfHarnessSession : IDisposable
     private bool _disposed;
 
     [ImportingConstructor]
-    public PcfHarnessSession(UnconfiguredProject project, IOutputLoggerService output)
+    public PcfHarnessSession(UnconfiguredProject project, IOutputLoggerService output, IPcfSetupService setup)
     {
         _project = project;
         _output = output;
+        _setup = setup;
         _project.ProjectUnloading += OnProjectUnloadingAsync;
     }
 
@@ -73,11 +76,17 @@ internal sealed class PcfHarnessSession : IDisposable
             if (debugging)
                 Write("Original TypeScript breakpoints require source maps from your bundler. Stock PCF development bundles may expose only transpiled JavaScript; see the PCF project guide.");
             await TaskScheduler.Default;
+            // The harness is a process Xrm Tools starts itself, so it can use the project's Node.js even when this
+            // Visual Studio instance has another one, or none, on its PATH.
+            var environment = (await _setup.InspectAsync(_project.FullPath, cancellationToken).ConfigureAwait(false)).Environment;
+            if (!environment.IsReady)
+                throw new InvalidOperationException($"{environment.Problem} {environment.Remedy} To do that, choose 'Set Up PCF Build' on the project's context menu.");
+            var path = environment.Installation!.PathWith(Environment.GetEnvironmentVariable("PATH"));
             PcfHarnessProcess process;
             lock (_sync)
             {
                 cancellationToken.ThrowIfCancellationRequested();
-                process = PcfHarnessProcess.Start(directory, Write);
+                process = PcfHarnessProcess.Start(directory, Write, path);
                 _process = process;
             }
             try

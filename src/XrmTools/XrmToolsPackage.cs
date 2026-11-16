@@ -229,6 +229,7 @@ public sealed partial class XrmToolsPackage : ToolkitPackage
         await UnregisterCommand.InitializeAsync(this);
         await AddDataverseSolutionProjectCommand.InitializeAsync(this);
         await AddPcfProjectCommand.InitializeAsync(this);
+        await SetUpPcfBuildCommand.InitializeAsync(this);
         await PushPcfProjectCommand.InitializeAsync(this);
         await StartPcfHarnessCommand.InitializeAsync(this);
         await StopPcfHarnessCommand.InitializeAsync(this);

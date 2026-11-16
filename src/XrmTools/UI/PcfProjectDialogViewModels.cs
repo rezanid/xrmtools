@@ -8,6 +8,7 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using XrmTools.DataverseSolutions;
+using XrmTools.Pcf.Setup;
 using XrmTools.WebApi.Entities;
 
 internal abstract class PcfDialogViewModel : ViewModelBase
@@ -31,18 +32,69 @@ internal abstract class PcfDialogViewModel : ViewModelBase
     }
 }
 
-internal sealed class PcfCreateDialogViewModel(string location) : PcfDialogViewModel
+internal sealed class PcfCreateDialogViewModel(string location, PcfSetupViewModel? setup = null) : PcfDialogViewModel
 {
     private string _location = location;
+    private string _projectName = string.Empty;
+    private string? _createdProject;
+    private bool _setupIncomplete;
+    private bool _installStarted;
     public string Location { get => _location; set => SetProperty(ref _location, value); }
-    public string ProjectName { get; set; } = string.Empty;
+    public string ProjectName { get => _projectName; set => SetProperty(ref _projectName, value); }
     public string ControlName { get; set; } = string.Empty;
     public string Namespace { get; set; } = string.Empty;
     public string Template { get; set; } = "field";
     public string Framework { get; set; } = "none";
-    public bool InstallDependencies { get; set; }
+    /// <summary>Node.js and dependency setup; <c>null</c> only where the wizard runs without it.</summary>
+    public PcfSetupViewModel? Setup { get; } = setup;
+    /// <summary>Set once PAC has generated the project, even if a later step failed.</summary>
+    public string? CreatedProject
+    {
+        get => _createdProject;
+        private set { if (SetProperty(ref _createdProject, value)) { OnPropertyChanged(nameof(CanEdit)); OnPropertyChanged(nameof(IsCreated)); } }
+    }
+    public bool IsCreated => CreatedProject is not null;
+    public bool CanEdit => !IsCreated;
+    /// <summary>The project exists, but the dependencies the developer asked for are not installed.</summary>
+    public bool SetupIncomplete { get => _setupIncomplete; private set => SetProperty(ref _setupIncomplete, value); }
+    protected override string CancellationStatus => IsCreated
+        ? "Setup was canceled. The project was created; dependencies may be only partly installed. Retry setup removes them and installs again."
+        : "Creation was canceled. Any generated files were left in the project folder.";
+
+    /// <summary>The folder the project will be created in, used to find Node.js declarations in the surrounding repository.</summary>
+    public string TargetDirectory => System.IO.Path.Combine(Location ?? string.Empty, ProjectName ?? string.Empty);
+    public void ReportCanceling() => Status = IsCreated ? "Canceling setup and stopping npm…" : "Canceling project creation…";
+
+    /// <returns>The project to add to the solution when everything requested was done; otherwise <c>null</c>.</returns>
     public Task<string?> CreateAsync(Func<PcfCreateRequest, CancellationToken, Task<string>> create, CancellationToken token)
-        => RunAsync(() => create(new PcfCreateRequest { ParentDirectory = Location, ProjectName = ProjectName, ControlName = ControlName, Namespace = Namespace, Template = Template, Framework = Framework, InstallDependencies = InstallDependencies }, token));
+        => RunAsync(async () =>
+        {
+            if (CreatedProject is null)
+            {
+                Status = "Creating the project with pac pcf init…";
+                // Dependencies are installed as a separate step so that step can use the selected Node.js, be canceled
+                // with all of its child processes, and fail without losing the created project.
+                CreatedProject = await create(new PcfCreateRequest { ParentDirectory = Location, ProjectName = ProjectName, ControlName = ControlName, Namespace = Namespace, Template = Template, Framework = Framework }, token);
+                Setup?.SaveSelection(CreatedProject);
+            }
+            if (Setup is null || !Setup.InstallDependencies) { SetupIncomplete = false; return CreatedProject; }
+            SetupIncomplete = true;
+            // Checked again for the folder the project really is in, and on every retry, so a Node.js installed or
+            // selected after a failure is picked up without reopening the wizard.
+            await Setup.RefreshAsync(CreatedProject, System.IO.Path.GetDirectoryName(CreatedProject)!, token);
+            if (!Setup.IsReady)
+                throw new InvalidOperationException($"The project was created, but dependencies were not installed. {Setup.Problem ?? "Choose a Node.js installation."} Then choose Retry setup, or open the project and set it up later.");
+            Status = "Project created. Installing npm dependencies; this can take several minutes…";
+            // A retry starts from nothing: what an interrupted npm install left in this new project cannot be built on.
+            var retry = _installStarted;
+            _installStarted = true;
+            var result = await Setup.InstallAsync(CreatedProject, false, retry, token);
+            if (result.Outcome == PcfInstallOutcome.Canceled) throw new OperationCanceledException();
+            if (!result.Succeeded)
+                throw new InvalidOperationException($"The project was created, but setup is incomplete. {result.Message} Choose Retry setup, or open the project and set it up later.");
+            SetupIncomplete = false;
+            return CreatedProject;
+        });
 }
 
 internal sealed class PcfPushDialogViewModel(string projectPath, string environmentUrl) : PcfDialogViewModel

@@ -47,7 +47,8 @@ internal sealed class PcfHarnessProcess : IDisposable
         };
     }
 
-    public static PcfHarnessProcess Start(string projectDirectory, Action<string> output)
+    /// <param name="path">The PATH for npm and Node.js; Visual Studio's own when omitted.</param>
+    public static PcfHarnessProcess Start(string projectDirectory, Action<string> output, string? path = null)
     {
         var packagePath = Path.Combine(projectDirectory, "package.json");
         if (!File.Exists(packagePath)) throw new FileNotFoundException("The PCF project has no package.json.", packagePath);
@@ -57,7 +58,7 @@ internal sealed class PcfHarnessProcess : IDisposable
         if (!Directory.Exists(Path.Combine(projectDirectory, "node_modules", "pcf-scripts")))
             throw new InvalidOperationException("PCF dependencies are missing. Run npm install in the project directory before starting the local harness.");
 
-        var info = CreateStartInfo(projectDirectory, Environment.GetEnvironmentVariable("PATH") ?? string.Empty);
+        var info = CreateStartInfo(projectDirectory, path ?? Environment.GetEnvironmentVariable("PATH") ?? string.Empty);
         output($"Starting PCF harness using {info.EnvironmentVariables["XRMTOOLS_PCF_NPM"] ?? info.FileName}.");
         var job = CreateKillOnCloseJob();
         var process = new Process { StartInfo = info, EnableRaisingEvents = true };

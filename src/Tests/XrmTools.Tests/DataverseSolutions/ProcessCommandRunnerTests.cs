@@ -38,6 +38,27 @@ public class ProcessCommandRunnerTests
     }
 
     [Fact]
+    public async Task RunAsync_GivesEnvironmentVariablesToTheChildProcessOnly()
+    {
+        var runner = new ProcessCommandRunner();
+        var path = Environment.GetEnvironmentVariable("PATH");
+
+        var result = await runner.RunAsync(
+            new ProcessCommandRequest
+            {
+                FileName = CmdExePath,
+                WorkingDirectory = Environment.CurrentDirectory,
+                Arguments = ["/d", "/c", "echo %PATH%"],
+                EnvironmentVariables = new Dictionary<string, string> { ["PATH"] = @"C:\xrmtools-selected-node;" + path }
+            },
+            new Progress<ProcessOutputLine>(_ => { }),
+            CancellationToken.None);
+
+        result.Output.Single(line => !line.IsError).Text.Should().StartWith(@"C:\xrmtools-selected-node;");
+        Environment.GetEnvironmentVariable("PATH").Should().Be(path);
+    }
+
+    [Fact]
     public async Task RunAsync_MasksSensitiveOutput()
     {
         var runner = new ProcessCommandRunner();

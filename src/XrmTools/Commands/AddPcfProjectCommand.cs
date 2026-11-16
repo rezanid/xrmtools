@@ -13,13 +13,18 @@ using System.ComponentModel.Composition;
 using System.IO;
 using System.Threading.Tasks;
 using XrmTools.DataverseSolutions;
+using XrmTools.Logging;
 using XrmTools.Logging.Compatibility;
+using XrmTools.Pcf.Setup;
 using XrmTools.UI;
 
 [Command(PackageGuids.XrmToolsCmdSetIdString, PackageIds.AddPcfProjectCmdId)]
 internal sealed class AddPcfProjectCommand : BaseCommand<AddPcfProjectCommand>
 {
     [Import] internal IPcfProjectService Service { get; set; } = null!;
+    [Import] internal IPcfSetupService Setup { get; set; } = null!;
+    [Import] internal PcfBuildCoordinator Coordinator { get; set; } = null!;
+    [Import] internal IOutputLoggerService Output { get; set; } = null!;
     [Import] internal ILogger<AddPcfProjectCommand> Logger { get; set; } = null!;
     protected override async Task InitializeCompletedAsync()
     {
@@ -44,12 +49,13 @@ internal sealed class AddPcfProjectCommand : BaseCommand<AddPcfProjectCommand>
             {
                 if (selected.Project?.Kind == "{66A26720-8FB5-11D2-AA7E-00C04F688DDE}") { folder = selected.Project.UniqueName; break; }
             }
-            var path = await PcfCreateDialog.ShowAsync(directory, async (request, token) =>
+            var created = await PcfCreateDialog.ShowAsync(directory, new PcfSetupViewModel(Setup, line => Output.OutputString(line + Environment.NewLine)), async (request, token) =>
             {
                 try { return await Service.CreateAsync(request, token).ConfigureAwait(false); }
                 catch (Exception ex) { Logger.LogError(ex, "PCF project creation failed."); throw; }
             }, Package.DisposalToken).ConfigureAwait(false);
-            if (path is null) return;
+            if (created is null) return;
+            var path = created.ProjectFile;
             await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync(Package.DisposalToken);
             try
             {
@@ -63,6 +69,10 @@ internal sealed class AddPcfProjectCommand : BaseCommand<AddPcfProjectCommand>
                 else dte.Solution.AddFromFile(path, Exclusive: false);
             }
             catch (Exception ex) { throw new InvalidOperationException($"Project was created at '{path}' but could not be added to the solution. Add it manually. {ex.Message}", ex); }
+            if (created.SetupIncomplete)
+                await Coordinator.ShowNoticeAsync(path, $"Setup for '{Path.GetFileNameWithoutExtension(path)}' is incomplete: its npm dependencies are not installed yet.").ConfigureAwait(false);
+            // Created and set up is not yet buildable when this window lacks the Node.js that setup used.
+            else await Coordinator.ShowNoticeIfBuildIsBlockedAsync(path).ConfigureAwait(false);
         }
         catch (OperationCanceledException) { }
         catch (Exception ex) { Logger.LogError(ex, "Could not add PCF project."); await VS.MessageBox.ShowErrorAsync(Vsix.Name, ex.Message); }

@@ -55,6 +55,7 @@
     <Compile Include="Commands\AddPcfProjectCommand.cs" />
     <Compile Include="Commands\PcfHarnessCommands.cs" />
     <Compile Include="Commands\PushPcfProjectCommand.cs" />
+    <Compile Include="Commands\SetUpPcfBuildCommand.cs" />
     <Compile Include="DataverseSolutions\CdsPackageReferenceCapabilitiesProvider.cs" />
     <Compile Include="DataverseSolutions\CdsProjectConfigurationDimensionsProvider.cs" />
     <Compile Include="DataverseSolutions\CdsProjectGlobalPropertiesProvider.cs" />
@@ -64,6 +65,18 @@
     <Compile Include="Pcf\PcfDebugLaunchProvider.cs" />
     <Compile Include="Pcf\PcfHarnessProcess.cs" />
     <Compile Include="Pcf\PcfHarnessSession.cs" />
+    <Compile Include="Pcf\Setup\NodeEnvironmentProbe.cs" />
+    <Compile Include="Pcf\Setup\NodeVersions.cs" />
+    <Compile Include="Pcf\Setup\PcfBuildCoordinator.cs" />
+    <Compile Include="Pcf\Setup\PcfBuildIntegration.cs" />
+    <Compile Include="Pcf\Setup\PcfBuildTargets.cs" />
+    <Compile Include="Pcf\Setup\PcfBuildSession.cs" />
+    <Compile Include="Pcf\Setup\PcfEnvironmentResolver.cs" />
+    <Compile Include="Pcf\Setup\PcfInstanceLauncher.cs" />
+    <Compile Include="Pcf\Setup\PcfNpmRunner.cs" />
+    <Compile Include="Pcf\Setup\PcfProjectRequirements.cs" />
+    <Compile Include="Pcf\Setup\PcfSetupService.cs" />
+    <Compile Include="Pcf\Setup\PcfSetupStore.cs" />
     <Compile Include="Shell\Controls\Window.cs" />
     <Compile Include="Shell\Controls\DialogWindow.cs" />
     <Compile Include="Shell\Controls\PathButton.cs" />
@@ -403,6 +416,13 @@
     <Compile Include="UI\PcfPushDialog.xaml.cs">
       <DependentUpon>PcfPushDialog.xaml</DependentUpon>
     </Compile>
+    <Compile Include="UI\PcfSetupDialog.xaml.cs">
+      <DependentUpon>PcfSetupDialog.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="UI\PcfSetupView.xaml.cs">
+      <DependentUpon>PcfSetupView.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="UI\PcfSetupViewModel.cs" />
     <Compile Include="UI\RemovedPluginsDecision.cs" />
     <Compile Include="UI\RemovedPluginsDialog.xaml.cs">
       <DependentUpon>RemovedPluginsDialog.xaml</DependentUpon>
@@ -591,6 +611,12 @@
       <Generator>MSBuild:Compile</Generator>
     </Page>
     <Page Include="UI\PcfPushDialog.xaml">
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="UI\PcfSetupDialog.xaml">
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="UI\PcfSetupView.xaml">
       <Generator>MSBuild:Compile</Generator>
     </Page>
     <Page Include="UI\RemovedPluginsDialog.xaml">

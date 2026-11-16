@@ -39,6 +39,9 @@ public sealed class ProcessCommandRequest
     public string WorkingDirectory { get; init; } = string.Empty;
 
     public IReadOnlyList<string>? SensitiveValues { get; init; }
+
+    /// <summary>Variables set for this child process only, on top of the ones it inherits.</summary>
+    public IReadOnlyDictionary<string, string>? EnvironmentVariables { get; init; }
 }
 
 public sealed class ProcessCommandResult

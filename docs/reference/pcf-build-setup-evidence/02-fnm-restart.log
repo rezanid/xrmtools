@@ -1,0 +1,25 @@
+PATH given to Visual Studio 15396 : node.exe on it: False; npm on it: False; fnm on it: %USERPROFILE%\AppData\Local\Microsoft\WinGet\Packages\Schniz.fnm_Microsoft.Winget.Source_8wekyb3d8bbwe\fnm.exe
+REBUILD in that window: failedProjects=1 seconds=4; ========== Rebuild All: 0 succeeded, 1 failed, 0 skipped ==========; an npm script ran: False
+    1>%USERPROFILE%\AppData\Local\Temp\xt-pcf\acc2\Fnm2\Fnm2.pcfproj : error XTPCF007: PCF project 'Fnm2': this Visual Studio window has no Node.js on its PATH, so it cannot build with Node.js v22.15.0, npm 11.4.2 (fnm default), which this project uses. To restart Visual Studio with it, choose 'Set Up PCF Build' on the project's context menu.
+notification: 'Fnm2' needs Visual Studio restarted with Node.js v22.15.0 to build.  Set up PCF build
+Visual Studio's PATH unchanged by that build: True
+setup dialog: Node.js      = Node.js v22.15.0 with npm 11.4.2 — fnm default
+setup dialog: notice       = This Visual Studio window has no Node.js on its PATH, so builds here cannot use Node.js v22.15.0. To build, restart Visual Studio with it.
+setup dialog: actions      = Restart with Node.js v22.15.0 | Open a second window instead
+setup dialog: explanation  = A Visual Studio window uses one Node.js for everything it builds and runs. Restart closes this window after asking to save changes. If other PCF projects here need a different version, open a second window for this one, or select a version that fits them all.
+setup dialog: dependencies = Installed.
+setup dialog: status       = Dependencies are installed. To build 'Fnm2', restart Visual Studio with Node.js v22.15.0.
+=== unsaved work: edit a file, choose Restart, cancel Visual Studio's save prompt ===
+edited %USERPROFILE%\AppData\Local\Temp\xt-pcf\acc2\Fnm2\FieldControl\index.ts; saved: False
+Visual Studio asks before closing; buttons: Save | Don't Save | Cancel
+after Cancel: this window still running: True; solution still open: True; edit still unsaved in the editor: True; new Visual Studio started: False
+=== choose Restart again and save ===
+new Visual Studio 18076 started by 15396 : "C:\Program Files\Microsoft Visual Studio\18\Insiders\Common7\IDE\devenv.exe" /rootsuffix Exp "%USERPROFILE%\AppData\Local\Temp\xt-pcf\acc2\acc2.slnx"
+first window exited by itself: True
+the edit was saved before the restart: True
+solution open in the new window: %USERPROFILE%\AppData\Local\Temp\xt-pcf\acc2\acc2.slnx
+PATH of the new window starts with: %USERPROFILE%\AppData\Roaming\fnm\aliases\default;C:\Program Files\Par...
+PATH of the new window = fnm default folder + PATH of the first window: False
+REBUILD in the new window: failedProjects=0 seconds=67; ========== Rebuild All: 1 succeeded, 0 failed, 0 skipped ==========
+    1>  XTNODE Fnm2 v22.15.0 %USERPROFILE%\AppData\Roaming\fnm\aliases\default\node.exe
+UNCHANGED BUILD in the new window: failedProjects=0 seconds=2; ========== Build: 1 succeeded or up-to-date, 0 failed, 0 skipped ==========; npm install ran: False; pcf-scripts ran: False

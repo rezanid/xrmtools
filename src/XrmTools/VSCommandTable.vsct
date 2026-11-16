@@ -183,6 +183,15 @@
           <CanonicalName>.XrmTools.Pcf.StopHarness</CanonicalName>
         </Strings>
       </Button>
+      <Button guid="XrmToolsCmdSetId" id="SetUpPcfBuildCmdId" priority="0x0113" type="Button">
+        <Parent guid="XrmToolsCmdSetId" id="XrmToolsProjectContextMenuGroup" />
+        <CommandFlag>DynamicVisibility</CommandFlag>
+        <CommandFlag>DefaultInvisible</CommandFlag>
+        <Strings>
+          <ButtonText>Set Up PCF Build...</ButtonText>
+          <CanonicalName>.XrmTools.Pcf.SetUpBuild</CanonicalName>
+        </Strings>
+      </Button>
       <Button guid="XrmToolsCmdSetId" id="RecloneDataverseSolutionCmdId" priority="0x0105" type="Button">
         <Parent guid="XrmToolsCmdSetId" id="XrmToolsProjectContextMenuGroup" />
         <Icon guid="ImageCatalogGuid" id="Refresh" />
@@ -534,6 +543,7 @@
       <IDSymbol name="PushPcfProjectCmdId" value="0x09A1"/>
       <IDSymbol name="StartPcfHarnessCmdId" value="0x09A2"/>
       <IDSymbol name="StopPcfHarnessCmdId" value="0x09A3"/>
+      <IDSymbol name="SetUpPcfBuildCmdId" value="0x09A4"/>
       <IDSymbol name="XrmToolsToolbar" value="0x2000"/>
       <IDSymbol name="XrmToolsToolbarGroup" value="0x2010"/>
       <IDSymbol name="XrmToolsContextSubMenu" value="0x1000"/>
