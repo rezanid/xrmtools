@@ -230,6 +230,69 @@ public sealed class PcfSetupViewModelTests : IDisposable
     }
 
     [Fact]
+    public async Task ExistingProject_DependencyOptionChange_RestoresSetup_UntilApplied_WithoutRunningNpmAgain()
+    {
+        _h.OnBuildPath();
+        _h.Project.InstallDependencies();
+        var dialog = new PcfSetupDialogViewModel(_h.Project.ProjectFile, _h.Service, Setup());
+        await dialog.LoadAsync(CancellationToken.None);
+        dialog.IsComplete.Should().BeTrue();
+
+        dialog.Setup.InstallDependencies = false;
+
+        dialog.IsComplete.Should().BeFalse();
+        dialog.SetUpLabel.Should().Be("_Set up");
+        dialog.Status.Should().Contain("apply the dependency-install option");
+        await dialog.LoadAsync(CancellationToken.None);
+        dialog.IsComplete.Should().BeFalse("Check again must not discard a pending input change");
+
+        (await dialog.RunMainActionAsync(CancellationToken.None)).Should().BeFalse();
+        dialog.IsComplete.Should().BeTrue();
+        (await dialog.RunMainActionAsync(CancellationToken.None)).Should().BeTrue();
+        _h.Npm.Commands.Should().BeEmpty();
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task ExistingProject_InstallationOutput_ExpandsWhileWorking_AndCollapsesOnlyOnSuccess(bool cancel)
+    {
+        _h.OnBuildPath();
+        using var cancellation = new CancellationTokenSource();
+        var dialog = new PcfSetupDialogViewModel(_h.Project.ProjectFile, _h.Service, Setup());
+        await dialog.LoadAsync(CancellationToken.None);
+        dialog.IsOutputExpanded.Should().BeFalse();
+        _h.Npm.Behavior = (directory, _, token) =>
+        {
+            dialog.IsOutputExpanded.Should().BeTrue();
+            dialog.IsBusy.Should().BeTrue();
+            dialog.Setup.IsInstalling.Should().BeTrue();
+            if (cancel)
+            {
+                cancellation.Cancel();
+                token.ThrowIfCancellationRequested();
+            }
+            FakeNpmRunner.Succeed(directory);
+            return Task.FromResult(new PcfNpmResult { ExitCode = 0 });
+        };
+
+        (await dialog.ApplyAsync(false, cancellation.Token)).Should().Be(!cancel);
+
+        dialog.IsOutputExpanded.Should().Be(cancel);
+        dialog.IsIdle.Should().BeTrue();
+        dialog.Setup.IsInstalling.Should().BeFalse();
+        dialog.IsComplete.Should().Be(!cancel);
+        dialog.Setup.Output.Should().Contain("npm install");
+        if (cancel)
+        {
+            dialog.Setup.IsExpanded.Should().BeTrue();
+            dialog.SetUpLabel.Should().Be("_Repair dependencies");
+            dialog.Status.Should().Contain("canceled").And.Contain("Repair dependencies");
+        }
+        else _log.Should().Contain(line => line.Contains("npm install"));
+    }
+
+    [Fact]
     public async Task Wizard_ExplicitChoice_IsUsedForTheInstall_AndRememberedForTheProject()
     {
         _h.OnBuildPath("v22.15.0");
@@ -315,11 +378,14 @@ public sealed class PcfSetupViewModelTests : IDisposable
         dialog.Status.Should().Contain("package-lock.json does not match package.json").And.Contain("npm error code EUSAGE");
         dialog.Setup.CanUpdateLockFile.Should().BeTrue();
         dialog.IsIdle.Should().BeTrue();
+        dialog.IsOutputExpanded.Should().BeTrue();
+        dialog.Setup.IsExpanded.Should().BeTrue();
 
         _h.Npm.Behavior = null;
         (await dialog.ApplyAsync(true, CancellationToken.None)).Should().BeTrue();
         _h.Npm.Commands.Should().Equal("ci", "install");
         dialog.Setup.CanUpdateLockFile.Should().BeFalse();
+        dialog.IsOutputExpanded.Should().BeFalse();
     }
 
     [Fact]

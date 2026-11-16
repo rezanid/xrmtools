@@ -13,8 +13,13 @@ using System.Windows.Interop;
 internal partial class PcfSetupView : UserControl
 {
     internal const string NodeDownloadPage = "https://nodejs.org/en/download";
+    public static readonly DependencyProperty ShowNoticesProperty = DependencyProperty.Register(
+        nameof(ShowNotices), typeof(bool), typeof(PcfSetupView), new PropertyMetadata(true));
 
     public PcfSetupView() => InitializeComponent();
+
+    /// <summary>False when the host displays these notices outside its collapsible setup controls.</summary>
+    public bool ShowNotices { get => (bool)GetValue(ShowNoticesProperty); set => SetValue(ShowNoticesProperty, value); }
 
     /// <summary>Re-reads the environment; supplied by the hosting dialog, which knows the project.</summary>
     public Func<Task>? Refresh { get; set; }

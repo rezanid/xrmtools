@@ -204,7 +204,8 @@ internal sealed class PcfSetupDialogViewModel : PcfDialogViewModel
     private readonly IPcfSetupService _service;
     private PcfSetupState? _state;
     private NodeInstallation? _settled;
-    private bool _complete;
+    private bool _settledInstallDependencies = true;
+    private bool _complete, _outputExpanded;
 
     public PcfSetupDialogViewModel(string projectFile, IPcfSetupService service, PcfSetupViewModel setup)
     {
@@ -219,6 +220,7 @@ internal sealed class PcfSetupDialogViewModel : PcfDialogViewModel
     public PcfSetupViewModel Setup { get; }
     /// <summary>Nothing is left for setup to do; the main button then reads Done and only closes the dialog.</summary>
     public bool IsComplete { get => _complete; private set { if (SetProperty(ref _complete, value)) OnPropertyChanged(nameof(SetUpLabel)); } }
+    public bool IsOutputExpanded { get => _outputExpanded; set => SetProperty(ref _outputExpanded, value); }
 
     public string PackageManager => _state is null ? string.Empty
         : _state.PackageManager.IsNpm ? "npm" + (_state.PackageManager.Evidence.Length == 0 ? string.Empty : $" ({_state.PackageManager.Evidence})")
@@ -278,41 +280,58 @@ internal sealed class PcfSetupDialogViewModel : PcfDialogViewModel
     }
 
     /// <returns><c>true</c> when setup finished and the project is ready to build.</returns>
-    public async Task<bool> ApplyAsync(bool updateLockFile, CancellationToken token) => await RunAsync(async () =>
+    public async Task<bool> ApplyAsync(bool updateLockFile, CancellationToken token)
     {
-        if (!Setup.IsReady) throw new InvalidOperationException(Setup.Problem ?? "Choose a Node.js installation.");
-        Setup.SaveSelection(ProjectFile);
-        await RefreshAsync(token);
-        _settled = Setup.Installation;
-        var state = _state!;
-        if (state.PackageManager.IsNpm && Setup.InstallDependencies && (state.Dependencies.Status != PcfDependencyStatus.Installed || updateLockFile))
+        var outcome = await RunAsync(async () =>
         {
-            // Decided from what was on screen when the developer chose the action that names the removal.
-            var repair = state.NeedsRepair;
-            Status = repair ? "Repairing npm dependencies; this can take several minutes…" : "Installing npm dependencies; this can take several minutes…";
-            var result = await Setup.InstallAsync(ProjectFile, updateLockFile, repair, token);
-            // Re-read what is on disk before reporting, so a failed or canceled install is never shown as ready.
-            await RefreshAsync(CancellationToken.None);
-            if (result.Outcome == PcfInstallOutcome.Canceled) throw new OperationCanceledException();
-            if (!result.Succeeded) throw new InvalidOperationException(string.Join(Environment.NewLine, new[] { result.Message }.Concat(result.Details)));
+            if (!Setup.IsReady) throw new InvalidOperationException(Setup.Problem ?? "Choose a Node.js installation.");
+            Setup.SaveSelection(ProjectFile);
+            await RefreshAsync(token);
+            _settled = Setup.Installation;
+            _settledInstallDependencies = Setup.InstallDependencies;
+            var state = _state!;
+            if (state.PackageManager.IsNpm && Setup.InstallDependencies && (state.Dependencies.Status != PcfDependencyStatus.Installed || updateLockFile))
+            {
+                // Decided from what was on screen when the developer chose the action that names the removal.
+                var repair = state.NeedsRepair;
+                Status = repair ? "Repairing npm dependencies; this can take several minutes…" : "Installing npm dependencies; this can take several minutes…";
+                var result = await Setup.InstallAsync(ProjectFile, updateLockFile, repair, token);
+                // Re-read what is on disk before reporting, so a failed or canceled install is never shown as ready.
+                await RefreshAsync(CancellationToken.None);
+                if (result.Outcome == PcfInstallOutcome.Canceled) throw new OperationCanceledException();
+                if (!result.Succeeded) throw new InvalidOperationException(string.Join(Environment.NewLine, new[] { result.Message }.Concat(result.Details)));
+            }
+            Status = Describe();
+            return IsComplete ? "done" : "pending";
+        });
+        if (outcome is null)
+        {
+            IsOutputExpanded = true;
+            Setup.IsExpanded = true;
         }
-        Status = Describe();
-        return IsComplete ? "done" : "pending";
-    }) == "done";
+        else if (outcome == "done") IsOutputExpanded = false;
+        return outcome == "done";
+    }
 
     private async Task RefreshAsync(CancellationToken token)
     {
         _state = await _service.InspectAsync(ProjectFile, token);
         await Setup.RefreshAsync(ProjectFile, _state.ProjectDirectory, token);
+        if (_state.NeedsRepair) Setup.IsExpanded = true;
         OnPropertyChanged(nameof(PackageManager));
         OnPropertyChanged(nameof(Dependencies));
         OnPropertyChanged(nameof(SetUpLabel));
     }
 
-    // Another Node.js chosen after setup finished: the main action is Set up again, not Done.
+    // Changed inputs after setup finished make the main action Set up again, not Done.
     private void OnSetupChanged(object sender, PropertyChangedEventArgs e)
     {
-        if (e.PropertyName == nameof(PcfSetupViewModel.Selected) && IsIdle && _state is not null) Status = Describe();
+        if (e.PropertyName is nameof(PcfSetupViewModel.Selected) or nameof(PcfSetupViewModel.InstallDependencies)
+            && IsIdle && _state is not null) Status = Describe();
+        if (e.PropertyName is nameof(PcfSetupViewModel.HasProblem) or nameof(PcfSetupViewModel.NeedsOtherInstance)
+            && (Setup.HasProblem || Setup.NeedsOtherInstance)) Setup.IsExpanded = true;
+        if (e.PropertyName == nameof(PcfSetupViewModel.IsInstalling) && Setup.IsInstalling) IsOutputExpanded = true;
+        if (e.PropertyName == nameof(PcfSetupViewModel.LastResult) && Setup.LastResult is { } result) IsOutputExpanded = !result.Succeeded;
     }
 
     private string Describe()
@@ -339,6 +358,7 @@ internal sealed class PcfSetupDialogViewModel : PcfDialogViewModel
         if (Setup.NeedsOtherInstance) return $"Dependencies are installed. To build '{ProjectName}', restart Visual Studio with Node.js {node}.";
         // A Node.js chosen here is only remembered for the project by Set up.
         if (!Setup.Installation!.IsSameEnvironment(_settled)) return $"Choose Set up to use Node.js {node} for '{ProjectName}'.";
+        if (Setup.InstallDependencies != _settledInstallDependencies) return "Choose Set up to apply the dependency-install option.";
         IsComplete = true;
         return $"'{ProjectName}' is ready to build with Node.js {node}.";
     }

@@ -68,7 +68,9 @@ The dialog shows the project's Node.js, package manager and dependencies, with t
 
 npm runs in the project folder with no extra options, so the project's `.npmrc`, registry and script settings apply. Setup can be canceled, and a canceled or failed setup is never reported as ready. Full npm output is kept in the Xrm Tools pane of the Output window.
 
-When nothing is left to do, the main button reads **Done** and only closes the dialog. Choosing another Node.js turns it back into **Set up**.
+The project name and current status stay above the setup controls. **Change...** opens **Setup options**, which contains Node.js selection, **Browse**, **Check again**, **Get Node.js** and the dependency-install option. Controls expand when Node.js needs attention. **Project details** contains the full, selectable project path. **Installation output** expands during installation and after failure or cancellation, and collapses after a successful install; it can be reopened to review the output.
+
+When nothing is left to do, **Done** is the only footer button and only closes the dialog. Changing the Node.js selection or dependency-install option makes **Set up** available again.
 
 When npm reports a cause, setup names it: the registry rejected the request, the registry could not be reached, a package was not found, a package does not support the selected Node.js, or files in the project could not be changed. For any other failure it reports npm's exit code and the last error lines without guessing. If `npm ci` refuses because the lock file does not match `package.json`, nothing is changed; **Update lock file** runs `npm install` if that is what you want. Xrm Tools does not run `npm audit fix`, change package versions or touch registry credentials.
 

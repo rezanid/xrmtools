@@ -2,56 +2,92 @@
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:ctrls="clr-namespace:XrmTools.Shell.Controls"
     xmlns:ui="clr-namespace:XrmTools.UI"
+    xmlns:styles="clr-namespace:XrmTools.Shell.Styles"
     xmlns:p="clr-namespace:Microsoft.VisualStudio.PlatformUI;assembly=Microsoft.VisualStudio.Shell.15.0"
     x:Class="XrmTools.UI.PcfSetupDialog" x:ClassModifier="internal"
-    Title="Set up PCF build" Width="660" MinWidth="520" SizeToContent="Height"
+    Title="Set up PCF build" Width="660" MinWidth="520" MinHeight="360" SizeToContent="Height" ResizeMode="CanResize"
+    MaxHeight="{Binding Height, Source={x:Static SystemParameters.WorkArea}}"
     Padding="24,12" Loaded="OnLoaded" IsFooterProgressRunning="{Binding IsBusy}">
     <ctrls:DialogWindow.Resources>
         <BooleanToVisibilityConverter x:Key="BoolVisibility"/>
         <Style x:Key="FieldLabel" TargetType="Label"><Setter Property="Foreground" Value="{DynamicResource {x:Static p:EnvironmentColors.ToolWindowTextBrushKey}}"/><Setter Property="Padding" Value="0"/><Setter Property="Margin" Value="0,0,0,5"/><Setter Property="FontWeight" Value="SemiBold"/></Style>
+        <Style x:Key="SecondaryAction" TargetType="ctrls:Button" BasedOn="{StaticResource {x:Type ctrls:Button}}">
+            <Style.Triggers>
+                <MultiDataTrigger>
+                    <MultiDataTrigger.Conditions><Condition Binding="{Binding IsComplete}" Value="True"/><Condition Binding="{Binding IsIdle}" Value="True"/></MultiDataTrigger.Conditions>
+                    <Setter Property="Visibility" Value="Collapsed"/>
+                </MultiDataTrigger>
+            </Style.Triggers>
+        </Style>
     </ctrls:DialogWindow.Resources>
     <ctrls:DialogWindow.FooterContent>
-        <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+        <WrapPanel HorizontalAlignment="Right">
             <ctrls:Button x:Name="UpdateLockButton" Content="_Update lock file" MinWidth="120" IsEnabled="{Binding IsIdle}" Click="OnUpdateLockFile"
-                          ToolTip="Runs npm install, which rewrites package-lock.json to match package.json"
-                          Visibility="{Binding Setup.CanUpdateLockFile, Converter={StaticResource BoolVisibility}}"/>
+                          ToolTip="Runs npm install, which rewrites package-lock.json to match package.json">
+                <ctrls:Button.Style>
+                    <Style TargetType="ctrls:Button" BasedOn="{StaticResource SecondaryAction}">
+                        <Style.Triggers><DataTrigger Binding="{Binding Setup.CanUpdateLockFile}" Value="False"><Setter Property="Visibility" Value="Collapsed"/></DataTrigger></Style.Triggers>
+                    </Style>
+                </ctrls:Button.Style>
+            </ctrls:Button>
             <ctrls:Button x:Name="SetUpButton" Content="{Binding SetUpLabel}" Kind="Accent" MinWidth="100" Margin="8,0,0,0" IsDefault="True" IsEnabled="{Binding IsIdle}" Click="OnSetUp"/>
-            <ctrls:Button x:Name="CloseButton" Content="Close" MinWidth="100" Margin="8,0,0,0" IsCancel="True" Click="OnClose"/>
-        </StackPanel>
+            <ctrls:Button x:Name="CloseButton" MinWidth="100" Margin="8,0,0,0" IsCancel="True" Click="OnClose">
+                <ctrls:Button.Style>
+                    <Style TargetType="ctrls:Button" BasedOn="{StaticResource SecondaryAction}">
+                        <Setter Property="Content" Value="Close"/>
+                        <Style.Triggers><DataTrigger Binding="{Binding IsBusy}" Value="True"><Setter Property="Content" Value="Cancel"/></DataTrigger></Style.Triggers>
+                    </Style>
+                </ctrls:Button.Style>
+            </ctrls:Button>
+        </WrapPanel>
     </ctrls:DialogWindow.FooterContent>
-    <StackPanel>
-        <StackPanel IsEnabled="{Binding IsIdle}">
-            <ctrls:TextBlock x:Name="ProjectText" Text="{Binding ProjectFile}" TextWrapping="Wrap" FontWeight="SemiBold" Margin="0,0,0,12"/>
-            <Label Content="Node.js" Style="{StaticResource FieldLabel}"/>
-            <ctrls:TextBlock x:Name="SetupSummary" Text="{Binding Setup.Summary}" TextWrapping="Wrap" Margin="0,0,0,10" AutomationProperties.LiveSetting="Polite"/>
-            <ui:PcfSetupView x:Name="SetupView" DataContext="{Binding Setup}" Margin="0,0,0,14"/>
-            <StackPanel x:Name="RestartPanel" Margin="0,0,0,14" Visibility="{Binding Setup.NeedsOtherInstance, Converter={StaticResource BoolVisibility}}">
-                <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
-                    <ctrls:Button x:Name="RestartButton" Content="{Binding Setup.RestartLabel}" Kind="Accent" Click="OnRestart"
-                                  ToolTip="Closes this window after asking to save changes, and reopens the solution with this Node.js first on PATH"/>
-                    <ctrls:Button x:Name="SecondWindowButton" Content="Open a secon_d window instead" Margin="8,0,0,0" Click="OnSecondWindow"
-                                  ToolTip="Keeps this window open and opens the solution in another one with this Node.js first on PATH"/>
+    <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled" Focusable="False">
+        <StackPanel>
+            <ctrls:TextBlock x:Name="ProjectText" Text="{Binding ProjectName}" TextWrapping="Wrap" FontWeight="SemiBold"
+                             FontSize="{Binding SubtitleFontSize, Source={x:Static styles:Typography.Instance}}" Margin="0,0,0,16"/>
+            <Border BorderBrush="{DynamicResource {x:Static p:EnvironmentColors.ToolWindowBorderBrushKey}}" BorderThickness="1" Padding="12" Margin="0,0,0,16">
+                <StackPanel>
+                    <ctrls:TextBlock x:Name="StatusText" Text="{Binding Status}" TextWrapping="Wrap" FontWeight="SemiBold" AutomationProperties.LiveSetting="Polite"/>
+                    <ctrls:TextBlock x:Name="ProblemText" Text="{Binding Setup.Problem}" TextWrapping="Wrap" Margin="0,6,0,0"
+                                     AutomationProperties.LiveSetting="Polite" Visibility="{Binding Setup.HasProblem, Converter={StaticResource BoolVisibility}}"/>
+                    <ctrls:TextBlock x:Name="DependenciesText" Text="{Binding Dependencies}" TextWrapping="Wrap" Margin="0,6,0,0"/>
                 </StackPanel>
-                <ctrls:TextBlock x:Name="RestartText" TextWrapping="Wrap" Opacity="0.8"
+            </Border>
+            <StackPanel x:Name="RestartPanel" IsEnabled="{Binding IsIdle}" Margin="0,0,0,16" Visibility="{Binding Setup.NeedsOtherInstance, Converter={StaticResource BoolVisibility}}">
+                <ctrls:TextBlock x:Name="InstanceNoticeText" Text="{Binding Setup.InstanceNotice}" TextWrapping="Wrap" Margin="0,0,0,8" FontWeight="SemiBold" AutomationProperties.LiveSetting="Polite"/>
+                <ctrls:TextBlock x:Name="RestartText" TextWrapping="Wrap" Margin="0,0,0,8"
                                  Text="A Visual Studio window uses one Node.js for everything it builds and runs. Restart closes this window after asking to save changes. If other PCF projects here need a different version, open a second window for this one, or select a version that fits them all."/>
+                <WrapPanel>
+                    <ctrls:Button x:Name="RestartButton" Content="{Binding Setup.RestartLabel}" Kind="Accent" Click="OnRestart" Margin="0,0,8,6"
+                                  ToolTip="Closes this window after asking to save changes, and reopens the solution with this Node.js first on PATH"/>
+                    <ctrls:Button x:Name="SecondWindowButton" Content="Open a secon_d window instead" Click="OnSecondWindow" Margin="0,0,0,6"
+                                  ToolTip="Keeps this window open and opens the solution in another one with this Node.js first on PATH"/>
+                </WrapPanel>
             </StackPanel>
+            <Grid Margin="0,0,0,12">
+                <Grid.ColumnDefinitions><ColumnDefinition/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+                <ctrls:TextBlock x:Name="SetupSummary" Text="{Binding Setup.Summary}" TextWrapping="Wrap" VerticalAlignment="Center" AutomationProperties.LiveSetting="Polite"/>
+                <ctrls:Button x:Name="ChangeButton" Grid.Column="1" Content="_Change…" Kind="Subtle" Margin="8,0,0,0" IsEnabled="{Binding IsIdle}" Click="OnChange"/>
+            </Grid>
+            <ctrls:TextBlock x:Name="RequirementText" Text="{Binding Setup.Requirement, StringFormat='This project asks for: {0}'}" TextWrapping="Wrap" Margin="0,0,0,12"
+                             Visibility="{Binding Setup.HasRequirement, Converter={StaticResource BoolVisibility}}"/>
             <Label Content="Package manager" Style="{StaticResource FieldLabel}"/>
             <ctrls:TextBlock x:Name="PackageManagerText" Text="{Binding PackageManager}" TextWrapping="Wrap" Margin="0,0,0,12"/>
-            <Label Content="Dependencies" Style="{StaticResource FieldLabel}"/>
-            <ctrls:TextBlock x:Name="DependenciesText" Text="{Binding Dependencies}" TextWrapping="Wrap"/>
+            <ctrls:Expander x:Name="SetupOptions" Header="Setup o_ptions" IsExpanded="{Binding Setup.IsExpanded, Mode=TwoWay}" IsEnabled="{Binding IsIdle}" Margin="0,0,0,8">
+                <ui:PcfSetupView x:Name="SetupView" DataContext="{Binding Setup}" ShowNotices="False" Margin="0,8,0,8"/>
+            </ctrls:Expander>
+            <ctrls:Expander x:Name="InstallationOutput" Header="Installation _output" IsExpanded="{Binding IsOutputExpanded, Mode=TwoWay}" Margin="0,0,0,8">
+                <StackPanel Margin="0,8,0,8">
+                    <ctrls:TextBox x:Name="SetupOutput" Text="{Binding Setup.Output, Mode=OneWay}" IsReadOnly="True" TextWrapping="NoWrap"
+                                   FontFamily="{Binding CodeFontFamily, Source={x:Static styles:Typography.Instance}}"
+                                   VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Auto" Height="130"
+                                   AutomationProperties.Name="npm output" TextChanged="OnOutputChanged"/>
+                    <ctrls:TextBlock Text="Full npm output is kept in the Xrm Tools pane of the Output window." TextWrapping="Wrap" Margin="0,8,0,0"/>
+                </StackPanel>
+            </ctrls:Expander>
+            <ctrls:Expander x:Name="ProjectDetails" Header="Project _details">
+                <ctrls:TextBox x:Name="ProjectPath" Text="{Binding ProjectFile, Mode=OneWay}" IsReadOnly="True" TextWrapping="Wrap" Margin="0,8,0,8" AutomationProperties.Name="Project path"/>
+            </ctrls:Expander>
         </StackPanel>
-        <ctrls:TextBox x:Name="SetupOutput" Text="{Binding Setup.Output, Mode=OneWay}" IsReadOnly="True" TextWrapping="NoWrap" FontFamily="Consolas"
-                       VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Auto" Height="130" Margin="0,12,0,0"
-                       AutomationProperties.Name="npm output" TextChanged="OnOutputChanged">
-            <ctrls:TextBox.Style>
-                <Style TargetType="ctrls:TextBox" BasedOn="{StaticResource {x:Type ctrls:TextBox}}">
-                    <Style.Triggers><DataTrigger Binding="{Binding Setup.Output}" Value=""><Setter Property="Visibility" Value="Collapsed"/></DataTrigger></Style.Triggers>
-                </Style>
-            </ctrls:TextBox.Style>
-        </ctrls:TextBox>
-        <ScrollViewer MaxHeight="120" VerticalScrollBarVisibility="Auto" Margin="0,12,0,0">
-            <ctrls:TextBlock x:Name="StatusText" Text="{Binding Status}" TextWrapping="Wrap" AutomationProperties.LiveSetting="Polite"/>
-        </ScrollViewer>
-        <ctrls:TextBlock Text="Full npm output is kept in the Xrm Tools pane of the Output window." TextWrapping="Wrap" Margin="0,8,0,0" Opacity="0.8"/>
-    </StackPanel>
+    </ScrollViewer>
 </ctrls:DialogWindow>

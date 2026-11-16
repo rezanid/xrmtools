@@ -56,6 +56,14 @@ internal partial class PcfSetupDialog : DialogWindow
     private void OnRestart(object sender, RoutedEventArgs e) => RequestInstance(closeThisWindow: true);
     private void OnSecondWindow(object sender, RoutedEventArgs e) => RequestInstance(closeThisWindow: false);
 
+    private void OnChange(object sender, RoutedEventArgs e)
+    {
+        if (Model is not { IsIdle: true } model) return;
+        model.Setup.IsExpanded = true;
+        SetupOptions.UpdateLayout();
+        SetupView.NodeChoices.Focus();
+    }
+
     // The dialog only records the choice. Closing a solution from inside a modal dialog is not safe, so the caller
     // starts the new window once this one is gone.
     private void RequestInstance(bool closeThisWindow)
