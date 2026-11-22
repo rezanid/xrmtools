@@ -67,6 +67,10 @@ internal sealed class ODataResponseMargin : Grid, IWpfTextViewMargin
     private DataverseEnvironment? displayedEnvironment;
     private bool disposed;
     private int environmentRevision;
+    private Community.VisualStudio.Toolkit.InfoBar? configurationNotice;
+    private string? configurationNoticeKey;
+    private int configurationNoticeRevision;
+    private const string OpenEnvironmentFileText = "Open environment file";
     // Capture once per text view: both MEF providers and request adornments share this instance.
     internal bool IsRightLayout { get; } = GeneralOptions.Instance.ODataResponseLayout == ODataResponseLayout.Right;
 
@@ -74,7 +78,9 @@ internal sealed class ODataResponseMargin : Grid, IWpfTextViewMargin
     {
         this.view = view;
         this.execution = execution;
-        session = ODataBufferSession.Attach(view.TextBuffer);
+        string? filePath = view.TextBuffer.Properties.TryGetProperty(typeof(ITextDocument), out ITextDocument textDocument)
+            ? textDocument.FilePath : null;
+        session = ODataBufferSession.Attach(view.TextBuffer, filePath);
         Visibility = Visibility.Collapsed;
         if (IsRightLayout) { Width = 600; MinWidth = 320; }
         else { Height = 280; MinHeight = 120; }
@@ -207,6 +213,7 @@ internal sealed class ODataResponseMargin : Grid, IWpfTextViewMargin
         };
         view.GotAggregateFocus += OnViewFocus;
         view.Closed += Closed;
+        session.VariablesChanged += VariablesChanged;
         DataverseEnvironmentProvider.EnvironmentChanged += EnvironmentChanged;
         GeneralOptions.Saved += OptionsSaved;
         RefreshEnvironment();
@@ -218,9 +225,18 @@ internal sealed class ODataResponseMargin : Grid, IWpfTextViewMargin
         if (disposed || active != null) return;
         // Reveal before validation so missing-environment and request errors are visible too.
         Visibility = Visibility.Visible;
-        var run = session.Captures.Begin(document, request, displayedEnvironment);
         if (displayedEnvironment?.IsValid != true) { status.Text = "Select an environment in Xrm Tools, then refresh the environment."; return; }
         var captured = displayedEnvironment with { };
+        if (!session.TryCreateDocument(view.TextSnapshot.GetText(), captured.Name, out var effectiveDocument, out var snapshotError))
+        {
+            ShowError("Error", snapshotError ?? "Environment variables are not ready. Refresh and try again.");
+            return;
+        }
+        var effectiveRequest = effectiveDocument.FindRequestAtLine(request.Line);
+        if (effectiveRequest == null) { ShowError("Error", "The request changed. Select it again and send."); return; }
+        document = effectiveDocument;
+        request = effectiveRequest;
+        var run = session.Captures.Begin(document, request, captured);
         var cts = new CancellationTokenSource();
         active = cts;
         ActiveRequestId = Guid.NewGuid();
@@ -304,21 +320,82 @@ internal sealed class ODataResponseMargin : Grid, IWpfTextViewMargin
             try
             {
                 var environment = await execution.GetEnvironmentAsync();
+                var selected = environment is null ? null : environment with { };
+                await session.SetEnvironmentAsync(selected);
                 await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync();
                 if (disposed || revision != environmentRevision) return;
-                displayedEnvironment = environment is null ? null : environment with { };
-                session.Captures.SetEnvironment(displayedEnvironment);
-                environmentText.Text = environment?.IsValid == true ? $"{environment.Name} · {environment.Url}" : "No environment selected";
+                displayedEnvironment = selected;
+                UpdateEnvironmentLabel();
             }
             catch (Exception)
             {
                 await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync();
                 if (disposed || revision != environmentRevision) return;
                 displayedEnvironment = null;
-                session.Captures.SetEnvironment(null);
+                _ = session.SetEnvironmentAsync(null);
                 environmentText.Text = "Environment unavailable — refresh to try again";
             }
         }).FileAndForget("XrmTools/OData/Environment");
+    }
+
+    private void UpdateEnvironmentLabel()
+    {
+        environmentText.Text = displayedEnvironment?.IsValid == true
+            ? $"{displayedEnvironment.Name} · {displayedEnvironment.Url}"
+            : "No environment selected";
+        if (session.IsLoading) environmentText.Text += " · Loading environment variables…";
+        else if (session.ConfigurationError != null) environmentText.Text += " · Environment variable configuration error";
+        environmentText.ToolTip = session.ConfigurationError;
+        UpdateConfigurationNotice();
+    }
+
+    private void UpdateConfigurationNotice()
+    {
+        ThreadHelper.ThrowIfNotOnUIThread();
+        if (disposed || session.IsLoading) return;
+        if (session.ConfigurationNoticeOwner == null) session.ConfigurationNoticeOwner = this;
+        if (!ReferenceEquals(session.ConfigurationNoticeOwner, this)) return;
+
+        string? error = session.ConfigurationError;
+        string? path = session.EnvironmentFilePath;
+        string? key = error == null ? null : path + "\n" + error;
+        if (key == configurationNoticeKey) return;
+        configurationNoticeKey = key;
+        int revision = ++configurationNoticeRevision;
+        CloseConfigurationNotice();
+        if (error == null) return;
+
+        tasks.RunAsync(async () =>
+        {
+            await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync();
+            if (disposed || revision != configurationNoticeRevision) return;
+            var spans = new List<InfoBarTextSpan> { new($"Environment variables are unavailable because {(path == null ? "the environment file" : Path.GetFileName(path))} is invalid: {error} ") };
+            if (path != null) spans.Add(new InfoBarHyperlink(OpenEnvironmentFileText));
+            var model = new InfoBarModel(spans, Microsoft.VisualStudio.Imaging.KnownMonikers.StatusWarning, isCloseButtonVisible: true);
+            var notice = await view.CreateInfoBarAsync(model);
+            if (notice == null) return;
+            if (disposed || revision != configurationNoticeRevision) { notice.Close(); return; }
+            notice.ActionItemClicked += (_, args) =>
+            {
+                if (path == null || args.ActionItem is not InfoBarHyperlink { Text: OpenEnvironmentFileText }) return;
+                tasks.RunAsync(async () =>
+                {
+                    // Let the click finish before opening another document.
+                    await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync(alwaysYield: true);
+                    if (File.Exists(path)) await Community.VisualStudio.Toolkit.VS.Documents.OpenAsync(path);
+                    else await Community.VisualStudio.Toolkit.VS.StatusBar.ShowMessageAsync("The environment file no longer exists.");
+                }).FileAndForget("XrmTools/OData/OpenEnvironmentFile");
+            };
+            configurationNotice = notice;
+            if (!await notice.TryShowInfoBarUIAsync() && ReferenceEquals(configurationNotice, notice)) configurationNotice = null;
+        }).FileAndForget("XrmTools/OData/ConfigurationNotice");
+    }
+
+    private void CloseConfigurationNotice()
+    {
+        ThreadHelper.ThrowIfNotOnUIThread();
+        configurationNotice?.Close();
+        configurationNotice = null;
     }
 
     private static FrameworkElement Metric(string label, TextBlock value)
@@ -391,9 +468,17 @@ internal sealed class ODataResponseMargin : Grid, IWpfTextViewMargin
         requestInfo.Text = "=== " + label.ToUpperInvariant() + " ===" + Environment.NewLine + message;
     }
     private void OnViewFocus(object sender, EventArgs e) => RefreshEnvironment();
+    private void VariablesChanged(object? sender, EventArgs e)
+    {
+        tasks.RunAsync(async () =>
+        {
+            await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync();
+            if (!disposed) UpdateEnvironmentLabel();
+        }).FileAndForget("XrmTools/OData/EnvironmentVariables");
+    }
     private void EnvironmentChanged(DataverseEnvironment environment)
     {
-        session.Captures.SetEnvironment(environment);
+        _ = session.SetEnvironmentAsync(environment);
         RefreshEnvironment();
     }
     private void OptionsSaved(GeneralOptions options) => RefreshEnvironment();
@@ -489,6 +574,10 @@ internal sealed class ODataResponseMargin : Grid, IWpfTextViewMargin
         jsonHost?.Close();
         displayedBody?.Release();
         active?.Cancel();
+        session.VariablesChanged -= VariablesChanged;
+        configurationNoticeRevision++;
+        CloseConfigurationNotice();
+        if (ReferenceEquals(session.ConfigurationNoticeOwner, this)) session.ConfigurationNoticeOwner = null;
         session.Dispose();
         view.GotAggregateFocus -= OnViewFocus;
         view.Closed -= Closed;

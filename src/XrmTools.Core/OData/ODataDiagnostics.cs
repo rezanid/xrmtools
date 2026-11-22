@@ -10,7 +10,8 @@ internal readonly record struct ODataDiagnostic(int Start, int Length, string Me
 
 internal static class ODataDiagnostics
 {
-    public static IReadOnlyList<ODataDiagnostic> Analyze(string text)
+    public static IReadOnlyList<ODataDiagnostic> Analyze(string text,
+        IReadOnlyDictionary<string, string>? environmentVariables = null, string? environmentError = null)
     {
         var lineStarts = new List<int> { 0 };
         foreach (Match newline in Regex.Matches(text, "\r\n|\r|\n"))
@@ -29,8 +30,12 @@ internal static class ODataDiagnostics
             }
         }, (line, column, name) => diagnostics.Add(new(lineStarts[line] + column, name.Length, $"Duplicate request name '{name}'. Choose a unique name.")));
 
+        if (environmentVariables != null) document.SetEnvironmentVariables(environmentVariables);
+        if (environmentError != null)
+            diagnostics.Add(new(0, Math.Min(1, text.Length), $"Invalid odata-client.env.json: {environmentError}"));
+
         var names = new HashSet<string>(document.Requests.Select(request => request.RequestName).Where(name => name.Length != 0), StringComparer.Ordinal);
-        var variables = document.Variables.Keys.Concat(ODataBuiltInVariables.All.Keys).ToArray();
+        var variables = document.EffectiveVariables.Keys.Concat(ODataBuiltInVariables.All.Keys).ToArray();
         foreach (var (start, expression) in references)
         {
             if (expression.Contains(".response"))
@@ -45,7 +50,7 @@ internal static class ODataDiagnostics
                 if (!names.Contains(name))
                     diagnostics.Add(Unknown(start, name, "named request", names));
             }
-            else if (!document.Variables.ContainsKey(expression) && !ODataBuiltInVariables.All.ContainsKey(expression))
+            else if (!document.EffectiveVariables.ContainsKey(expression) && !ODataBuiltInVariables.All.ContainsKey(expression))
                 diagnostics.Add(Unknown(start, expression, "variable", variables));
         }
         return diagnostics.OrderBy(diagnostic => diagnostic.Start).ToArray();

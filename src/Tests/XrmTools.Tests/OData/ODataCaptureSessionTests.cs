@@ -116,6 +116,28 @@ public class ODataCaptureSessionTests
     }
 
     [Fact]
+    public void EnvironmentVariableChangesInvalidateOnlyDependentCapturesAndRejectLatePublication()
+    {
+        var session = new ODataCaptureSession();
+        var document = ODataDocument.Parse("# @name dependent\nGET /accounts({{account1}})\n###\n# @name independent\nGET /WhoAmI");
+        document.SetEnvironmentVariables(new Dictionary<string, string> { ["account1"] = "one" });
+        var dependent = session.Begin(document, document.Requests[0], Environment);
+        var independent = session.Begin(document, document.Requests[1], Environment);
+        session.Complete(dependent, Response("dependent"), CancellationToken.None);
+        var independentResponse = Response("independent");
+        session.Complete(independent, independentResponse, CancellationToken.None);
+
+        var changed = ODataDocument.Parse("# @name dependent\nGET /accounts({{account1}})\n###\n# @name independent\nGET /WhoAmI");
+        changed.SetEnvironmentVariables(new Dictionary<string, string> { ["account1"] = "two" });
+        session.Update(changed);
+
+        Assert.Null(session.Get("dependent"));
+        Assert.Same(independentResponse, session.Get("independent"));
+        session.Complete(dependent, Response("stale"), CancellationToken.None);
+        Assert.Null(session.Get("dependent"));
+    }
+
+    [Fact]
     public void CancellationEnvironmentChangeAndClosePreventLatePublication()
     {
         var session = new ODataCaptureSession();

@@ -29,6 +29,8 @@ internal static class ODataContentType
 [TextViewRole(PredefinedTextViewRoles.Document)]
 internal sealed class ODataEditorOptions : IWpfTextViewCreationListener
 {
+    [Import] private ITextDocumentFactoryService DocumentFactory { get; set; } = null!;
+
     public void TextViewCreated(IWpfTextView textView)
     {
         textView.Options.SetOptionValue(DefaultTextViewOptions.ShowErrorSquigglesId, true);
@@ -38,6 +40,30 @@ internal sealed class ODataEditorOptions : IWpfTextViewCreationListener
         const string wordSuggestions = "WordBasedSuggestions";
         if (textView.Options.IsOptionDefined(wordSuggestions, localScopeOnly: false))
             textView.Options.SetOptionValue(wordSuggestions, false);
+
+        string? filePath = DocumentFactory.TryGetTextDocument(textView.TextBuffer, out var document)
+            ? document.FilePath : null;
+        var session = ODataBufferSession.Attach(textView.TextBuffer, filePath);
+        bool waitingForDocument = false;
+        void DocumentCreated(object sender, TextDocumentEventArgs args)
+        {
+            if (args.TextDocument?.TextBuffer != textView.TextBuffer) return;
+            DocumentFactory.TextDocumentCreated -= DocumentCreated;
+            waitingForDocument = false;
+            session.SetDocumentPath(args.TextDocument.FilePath);
+        }
+        void Closed(object sender, EventArgs args)
+        {
+            textView.Closed -= Closed;
+            if (waitingForDocument) DocumentFactory.TextDocumentCreated -= DocumentCreated;
+            session.Dispose();
+        }
+        textView.Closed += Closed;
+        if (filePath == null)
+        {
+            waitingForDocument = true;
+            DocumentFactory.TextDocumentCreated += DocumentCreated;
+        }
     }
 }
 

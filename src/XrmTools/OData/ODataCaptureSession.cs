@@ -4,8 +4,11 @@ namespace XrmTools.OData;
 using Microsoft.VisualStudio.Text;
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
+using System.Security;
 using System.Threading;
+using System.Threading.Tasks;
 
 // One session belongs to one text buffer, not to the exported execution service.
 internal sealed class ODataCaptureSession
@@ -36,6 +39,11 @@ internal sealed class ODataCaptureSession
             ClearCaptures();
             epoch++;
         }
+    }
+
+    public void AdvanceEpoch()
+    {
+        lock (gate) epoch++;
     }
 
     public void Update(ODataDocument document)
@@ -141,33 +149,270 @@ internal sealed class ODataCaptureSession
 
 internal sealed class ODataBufferSession : IDisposable
 {
+    private readonly object gate = new();
     private readonly ITextBuffer buffer;
+    private string? documentPath;
+    private string? sidecarPath;
+    private FileSystemWatcher[] watchers = [];
+    private string text;
+    private Dictionary<string, string> environmentVariables = new(StringComparer.Ordinal);
+    private string? environmentName;
+    private string? configurationError;
+    private Task profileLoad = Task.CompletedTask;
+    private int revision;
+    private bool loading;
+    private bool disposed;
     private int views;
     public ODataCaptureSession Captures { get; } = new();
+    public event EventHandler? VariablesChanged;
 
-    private ODataBufferSession(ITextBuffer buffer)
+    private ODataBufferSession(ITextBuffer buffer, string? filePath)
     {
         this.buffer = buffer;
-        Captures.Update(ODataDocument.Parse(buffer.CurrentSnapshot.GetText()));
+        text = buffer.CurrentSnapshot.GetText();
+        Captures.Update(ODataDocument.Parse(text));
         buffer.Changed += Changed;
+        SetDocumentPath(filePath);
     }
 
-    public static ODataBufferSession Attach(ITextBuffer buffer)
+    public static ODataBufferSession Attach(ITextBuffer buffer, string? filePath = null)
     {
-        var session = buffer.Properties.GetOrCreateSingletonProperty(() => new ODataBufferSession(buffer));
+        var session = buffer.Properties.GetOrCreateSingletonProperty(() => new ODataBufferSession(buffer, filePath));
         session.views++;
         return session;
     }
 
-    public static ODataCaptureSession? GetCaptures(ITextBuffer buffer)
-        => buffer.Properties.TryGetProperty(typeof(ODataBufferSession), out ODataBufferSession session) ? session.Captures : null;
+    public void SetDocumentPath(string? filePath)
+    {
+        string? nextDocumentPath = string.IsNullOrWhiteSpace(filePath) ? null : Path.GetFullPath(filePath);
+        lock (gate)
+            if (string.Equals(documentPath, nextDocumentPath, StringComparison.OrdinalIgnoreCase)) return;
 
-    private void Changed(object sender, TextContentChangedEventArgs e) => Captures.Update(ODataDocument.Parse(e.After.GetText()));
+        var nextWatchers = nextDocumentPath == null ? [] : ODataEnvironmentFile.GetSearchDirectories(nextDocumentPath)
+            .Select(directory => CreateWatcher(directory)).ToArray();
+        FileSystemWatcher[] previousWatchers;
+        bool refresh;
+        lock (gate)
+        {
+            if (disposed || string.Equals(documentPath, nextDocumentPath, StringComparison.OrdinalIgnoreCase))
+            {
+                foreach (var item in nextWatchers) item.Dispose();
+                return;
+            }
+            previousWatchers = watchers;
+            watchers = nextWatchers;
+            documentPath = nextDocumentPath;
+            sidecarPath = null;
+            refresh = environmentName != null;
+        }
+        foreach (var item in previousWatchers)
+        {
+            item.EnableRaisingEvents = false;
+            item.Dispose();
+        }
+        foreach (var item in nextWatchers) item.EnableRaisingEvents = true;
+        if (refresh) ScheduleReload();
+    }
+
+    private FileSystemWatcher CreateWatcher(string directory)
+    {
+        var item = new FileSystemWatcher(directory, "odata-client.env.json")
+        {
+            NotifyFilter = NotifyFilters.FileName | NotifyFilters.LastWrite | NotifyFilters.Size
+        };
+        item.Changed += SidecarChanged;
+        item.Created += SidecarChanged;
+        item.Deleted += SidecarChanged;
+        item.Renamed += SidecarRenamed;
+        item.Error += WatcherError;
+        return item;
+    }
+
+    public string? SavedDocumentPath { get { lock (gate) return documentPath; } }
+    public string? SelectedEnvironmentName { get { lock (gate) return environmentName; } }
+    public static ODataBufferSession? Get(ITextBuffer buffer)
+        => buffer.Properties.TryGetProperty(typeof(ODataBufferSession), out ODataBufferSession session) ? session : null;
+
+    public static ODataCaptureSession? GetCaptures(ITextBuffer buffer) => Get(buffer)?.Captures;
+
+    public ODataDocument CreateDocument(string source)
+    {
+        lock (gate)
+        {
+            var document = ODataDocument.Parse(source);
+            document.SetEnvironmentVariables(environmentVariables);
+            return document;
+        }
+    }
+
+    public bool TryCreateDocument(string source, string? expectedEnvironment, out ODataDocument document, out string? error)
+    {
+        lock (gate)
+        {
+            document = ODataDocument.Parse(source);
+            document.SetEnvironmentVariables(environmentVariables);
+            error = configurationError;
+            if (loading)
+            {
+                error = "Environment variables are still loading. Wait and send again.";
+                return false;
+            }
+            if (!string.Equals(environmentName, expectedEnvironment, StringComparison.OrdinalIgnoreCase))
+            {
+                error = "The selected environment changed. Refresh the environment and send again.";
+                return false;
+            }
+            return true;
+        }
+    }
+
+    public string? ConfigurationError { get { lock (gate) return configurationError; } }
+    public string? EnvironmentFilePath { get { lock (gate) return sidecarPath; } }
+    public bool IsLoading { get { lock (gate) return loading; } }
+    // UI-thread only: lets one view of a shared buffer own the configuration InfoBar, avoiding duplicates in split views.
+    internal object? ConfigurationNoticeOwner { get; set; }
+
+    public Task SetEnvironmentAsync(DataverseEnvironment? environment)
+    {
+        Captures.SetEnvironment(environment);
+        string? selected = environment?.IsValid == true ? environment.Name : null;
+        TaskCompletionSource<bool>? completion = null;
+        int loadRevision = 0;
+        string? loadDocumentPath = null;
+        lock (gate)
+        {
+            if (string.Equals(environmentName, selected, StringComparison.OrdinalIgnoreCase))
+                return loading ? profileLoad : Task.CompletedTask;
+
+            environmentName = selected;
+            environmentVariables = new Dictionary<string, string>(StringComparer.Ordinal);
+            configurationError = null;
+            loading = selected != null && documentPath != null;
+            loadRevision = ++revision;
+            if (loading)
+            {
+                loadDocumentPath = documentPath;
+                completion = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+                profileLoad = completion.Task;
+            }
+            UpdateCapturesLocked();
+        }
+        VariablesChanged?.Invoke(this, EventArgs.Empty);
+        if (completion == null) return Task.CompletedTask;
+        _ = LoadProfileAsync(selected!, loadDocumentPath, loadRevision, completion);
+        return completion.Task;
+    }
+
+    private async Task LoadProfileAsync(string selected, string? sourcePath, int loadRevision, TaskCompletionSource<bool> completion)
+    {
+        var loaded = await Task.Run(() =>
+        {
+            string? path = sourcePath == null ? null : ODataEnvironmentFile.FindNearest(sourcePath);
+            return (Path: path, Profile: ReadProfile(selected, path));
+        }).ConfigureAwait(false);
+        bool changed = false;
+        lock (gate)
+        {
+            if (!disposed && loadRevision == revision)
+            {
+                sidecarPath = loaded.Path;
+                environmentVariables = new Dictionary<string, string>(StringComparer.Ordinal);
+                foreach (var variable in loaded.Profile.Variables) environmentVariables.Add(variable.Key, variable.Value);
+                configurationError = loaded.Profile.Error;
+                loading = false;
+                UpdateCapturesLocked();
+                changed = true;
+            }
+        }
+        if (changed) VariablesChanged?.Invoke(this, EventArgs.Empty);
+        completion.TrySetResult(true);
+    }
+
+    private static ODataEnvironmentProfile ReadProfile(string selected, string? path)
+    {
+        if (path == null) return ODataEnvironmentVariables.Missing();
+        try { return ODataEnvironmentVariables.Parse(File.ReadAllText(path), selected); }
+        catch (FileNotFoundException) { return ODataEnvironmentVariables.Missing(); }
+        catch (DirectoryNotFoundException) { return ODataEnvironmentVariables.Missing(); }
+        catch (IOException) { return ODataEnvironmentVariables.Invalid("The file could not be read."); }
+        catch (UnauthorizedAccessException) { return ODataEnvironmentVariables.Invalid("The file could not be read."); }
+        catch (SecurityException) { return ODataEnvironmentVariables.Invalid("The file could not be read."); }
+    }
+
+    private void Changed(object sender, TextContentChangedEventArgs e)
+    {
+        lock (gate)
+        {
+            text = e.After.GetText();
+            UpdateCapturesLocked();
+        }
+    }
+
+    private void UpdateCapturesLocked()
+    {
+        var document = ODataDocument.Parse(text);
+        document.SetEnvironmentVariables(environmentVariables);
+        Captures.Update(document);
+    }
+
+    private void SidecarChanged(object sender, FileSystemEventArgs e) => ScheduleReload();
+    private void SidecarRenamed(object sender, RenamedEventArgs e) => ScheduleReload();
+
+    private void ScheduleReload()
+    {
+        string? selected;
+        string? sourcePath;
+        int loadRevision;
+        TaskCompletionSource<bool> completion;
+        lock (gate)
+        {
+            if (disposed || environmentName == null) return;
+            selected = environmentName;
+            sourcePath = documentPath;
+            loading = true;
+            loadRevision = ++revision;
+            completion = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+            profileLoad = completion.Task;
+        }
+        Captures.AdvanceEpoch();
+        VariablesChanged?.Invoke(this, EventArgs.Empty);
+        _ = ReloadAfterDelayAsync(selected, sourcePath, loadRevision, completion);
+    }
+
+    private async Task ReloadAfterDelayAsync(string selected, string? sourcePath, int loadRevision, TaskCompletionSource<bool> completion)
+    {
+        await Task.Delay(150).ConfigureAwait(false);
+        await LoadProfileAsync(selected, sourcePath, loadRevision, completion).ConfigureAwait(false);
+    }
+
+    private void WatcherError(object sender, ErrorEventArgs e)
+    {
+        lock (gate)
+        {
+            if (disposed) return;
+            revision++;
+            loading = false;
+            environmentVariables.Clear();
+            configurationError = "The environment configuration file could not be monitored.";
+            UpdateCapturesLocked();
+        }
+        Captures.AdvanceEpoch();
+        VariablesChanged?.Invoke(this, EventArgs.Empty);
+    }
 
     public void Dispose()
     {
-        if (--views != 0) return;
+        lock (gate)
+        {
+            if (--views != 0) return;
+            disposed = true;
+        }
         buffer.Changed -= Changed;
+        foreach (var item in watchers)
+        {
+            item.EnableRaisingEvents = false;
+            item.Dispose();
+        }
         Captures.Close();
         buffer.Properties.RemoveProperty(typeof(ODataBufferSession));
     }

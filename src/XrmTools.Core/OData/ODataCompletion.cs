@@ -9,6 +9,7 @@ using System.Text.RegularExpressions;
 internal enum ODataCompletionKind
 {
     DocumentVariable,
+    EnvironmentVariable,
     BuiltInVariable,
     NamedRequest,
     ResponseMember
@@ -69,9 +70,11 @@ internal static class ODataCompletion
         {
             foreach (var name in document.Variables.Keys)
                 yield return new(name, "Document variable.", ODataCompletionKind.DocumentVariable);
+            foreach (var name in document.EnvironmentVariables.Keys.Where(name => !document.Variables.ContainsKey(name)))
+                yield return new(name, "Variable from the selected environment profile.", ODataCompletionKind.EnvironmentVariable);
             foreach (var entry in ODataBuiltInVariables.All)
                 yield return new(entry.Key, entry.Value.Description, ODataCompletionKind.BuiltInVariable);
-            foreach (var name in names.Where(name => !document.Variables.ContainsKey(name)))
+            foreach (var name in names.Where(name => !document.EffectiveVariables.ContainsKey(name)))
                 yield return new(name, "Named request. Continue with .response to reference its captured response.", ODataCompletionKind.NamedRequest);
             yield break;
         }

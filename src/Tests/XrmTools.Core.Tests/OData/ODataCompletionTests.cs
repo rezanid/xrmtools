@@ -52,4 +52,20 @@ public class ODataCompletionTests
         var document = ODataDocument.Parse("@accountId = example\n# @name list\nGET /accounts");
         Assert.Equal(expected, string.Join(",", ODataCompletion.GetItems(document, qualifier).Select(item => item.Text)));
     }
+
+    [Fact]
+    public void OffersEnvironmentVariablesInTheirOwnCategoryAndShowsDocumentOverridesOnce()
+    {
+        var document = ODataDocument.Parse("@account1 = local\nGET /accounts");
+        document.SetEnvironmentVariables(new System.Collections.Generic.Dictionary<string, string>
+        {
+            ["account1"] = "environment",
+            ["region"] = "West"
+        });
+
+        var items = ODataCompletion.GetItems(document, "").ToArray();
+        Assert.Single(items.Where(item => item.Text == "account1"));
+        Assert.Contains(items, item => item.Text == "account1" && item.Kind == ODataCompletionKind.DocumentVariable);
+        Assert.Contains(items, item => item.Text == "region" && item.Kind == ODataCompletionKind.EnvironmentVariable);
+    }
 }

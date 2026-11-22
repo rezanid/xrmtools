@@ -1,5 +1,6 @@
 namespace XrmTools.Core.Tests.OData;
 
+using System.Linq;
 using XrmTools.OData;
 using Xunit;
 
@@ -39,5 +40,18 @@ public class ODataDiagnosticTests
         var diagnostic = Assert.Single(ODataDiagnostics.Analyze(text));
         Assert.Equal("dat", text.Substring(diagnostic.Start, diagnostic.Length));
         Assert.Null(diagnostic.Replacement);
+    }
+
+    [Fact]
+    public void ValidatesEnvironmentVariablesAndReportsConfigurationErrorsWithoutValues()
+    {
+        const string text = "GET /accounts({{account1}})/{{missing}}";
+        var variables = new System.Collections.Generic.Dictionary<string, string> { ["account1"] = "sensitive-value" };
+        var diagnostics = ODataDiagnostics.Analyze(text, variables, "The file contains malformed JSON.");
+
+        Assert.Equal(2, diagnostics.Count);
+        Assert.Contains("Invalid odata-client.env.json", diagnostics[0].Message);
+        Assert.DoesNotContain("sensitive-value", string.Join(" ", diagnostics.Select(item => item.Message)));
+        Assert.Equal("missing", text.Substring(diagnostics[1].Start, diagnostics[1].Length));
     }
 }

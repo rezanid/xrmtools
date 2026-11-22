@@ -35,6 +35,8 @@ internal sealed class ODataCompletionSource : IAsyncCompletionSource
     private static readonly object DescriptionKey = new();
     private static readonly (ImageElement Icon, ImmutableArray<CompletionFilter> Filters) DocumentVariables =
         CreateCategory("Document variables", "V", KnownMonikers.LocalVariable);
+    private static readonly (ImageElement Icon, ImmutableArray<CompletionFilter> Filters) EnvironmentVariables =
+        CreateCategory("Environment variables", "E", KnownMonikers.Environment);
     private static readonly (ImageElement Icon, ImmutableArray<CompletionFilter> Filters) BuiltInVariables =
         CreateCategory("Built-in variables", "B", KnownMonikers.Constant);
     private static readonly (ImageElement Icon, ImmutableArray<CompletionFilter> Filters) NamedRequests =
@@ -77,7 +79,9 @@ internal sealed class ODataCompletionSource : IAsyncCompletionSource
         }
         if (!TryGetSpan(triggerLocation, out _, out var qualifier)) return CompletionContext.Empty;
 
-        var document = ODataDocument.Parse(triggerLocation.Snapshot.GetText());
+        var source = triggerLocation.Snapshot.GetText();
+        var document = ODataBufferSession.Get(triggerLocation.Snapshot.TextBuffer)?.CreateDocument(source)
+            ?? ODataDocument.Parse(source);
         return MakeContext(ODataCompletion.GetItems(document, qualifier));
     }
 
@@ -88,6 +92,7 @@ internal sealed class ODataCompletionSource : IAsyncCompletionSource
             var category = entry.Kind switch
             {
                 ODataCompletionKind.DocumentVariable => DocumentVariables,
+                ODataCompletionKind.EnvironmentVariable => EnvironmentVariables,
                 ODataCompletionKind.BuiltInVariable => BuiltInVariables,
                 ODataCompletionKind.NamedRequest => NamedRequests,
                 _ => ResponseMembers

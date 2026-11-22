@@ -54,6 +54,17 @@ public class ODataExecutionServiceTests
     }
 
     [Fact]
+    public async Task UndefinedEnvironmentVariableFailsBeforeAuthenticationOrDispatch()
+    {
+        var document = ODataDocument.Parse("GET /accounts({{account1}})");
+        await Assert.ThrowsAsync<FormatException>(() => new ODataExecutionService(selection.Object, authentication.Object, transport.Object)
+            .SendAsync(document, document.Requests[0], environment, TestContext.Current.CancellationToken));
+
+        authentication.Verify(a => a.PreAuthenticateAsync(It.IsAny<DataverseEnvironment>(), It.IsAny<bool>(), It.IsAny<CancellationToken>()), Times.Never);
+        transport.Verify(t => t.SendAsync(It.IsAny<HttpRequestMessage>(), It.IsAny<CancellationToken>()), Times.Never);
+    }
+
+    [Fact]
     public async Task DoesNotRetryFailedMutations()
     {
         transport.Setup(t => t.SendAsync(It.IsAny<HttpRequestMessage>(), It.IsAny<CancellationToken>())).ThrowsAsync(new HttpRequestException("Failure"));

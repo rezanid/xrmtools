@@ -30,7 +30,23 @@ internal sealed class ODataDocument
     internal static readonly Regex Variable = new(@"\{\{\s*([^{}]+?)\s*\}\}", RegexOptions.Compiled);
     public List<ODataRequest> Requests { get; } = [];
     public Dictionary<string, string> Variables { get; } = new(StringComparer.Ordinal);
+    public Dictionary<string, string> EnvironmentVariables { get; } = new(StringComparer.Ordinal);
+    public IReadOnlyDictionary<string, string> EffectiveVariables
+    {
+        get
+        {
+            var variables = new Dictionary<string, string>(EnvironmentVariables, StringComparer.Ordinal);
+            foreach (var variable in Variables) variables[variable.Key] = variable.Value;
+            return variables;
+        }
+    }
     public List<string> Errors { get; } = [];
+
+    public void SetEnvironmentVariables(IReadOnlyDictionary<string, string> variables)
+    {
+        EnvironmentVariables.Clear();
+        foreach (var variable in variables) EnvironmentVariables[variable.Key] = variable.Value;
+    }
 
     public static ODataDocument Parse(string text, Action<int, int, string>? scanReferences = null,
         Action<int, int, string>? duplicateName = null, Action<int, int, string, bool>? declaration = null)
@@ -156,7 +172,7 @@ internal sealed class ODataDocument
             if (ODataBuiltInVariables.All.TryGetValue(key, out var builtIn))
                 return evaluateDynamic ? builtIn.Evaluate() : match.Value;
             if (allowResponses && key.Contains(".response")) return match.Value;
-            if (!Variables.TryGetValue(key, out var replacement)) throw new FormatException($"Undefined variable '{key}'. Define it with @name = value or use a supported named response reference.");
+            if (!EffectiveVariables.TryGetValue(key, out var replacement)) throw new FormatException($"Undefined variable '{key}'. Define it with @name = value, provide it in the selected environment profile, or use a supported named response reference.");
             if (stack.Count >= 32 || !stack.Add(key)) throw new FormatException($"Cyclic or excessively nested variable '{key}'.");
             if (used != null) used[key] = replacement;
             try { return ExpandVariables(replacement, stack, allowResponses, used, evaluateDynamic); }
