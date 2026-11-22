@@ -2,9 +2,14 @@
 namespace XrmTools.OData;
 
 using Microsoft.VisualStudio.Shell;
+using Microsoft.VisualStudio.ComponentModelHost;
+using Microsoft.VisualStudio.Utilities;
+using Microsoft.Win32;
+using System.IO;
 using Microsoft.VisualStudio.PlatformUI;
 using System.Windows.Input;
 using Microsoft.VisualStudio.Text.Editor;
+using Microsoft.VisualStudio.Text.Operations;
 using Microsoft.VisualStudio.Text;
 using Microsoft.VisualStudio.Threading;
 using System;
@@ -26,6 +31,7 @@ internal sealed class ODataResponseMargin : Grid, IWpfTextViewMargin
 {
     private readonly IWpfTextView view;
     private readonly ODataExecutionService execution;
+    private readonly ODataBufferSession session;
     private readonly JoinableTaskFactory tasks = ThreadHelper.JoinableTaskContext.CreateFactory(ThreadHelper.JoinableTaskContext.CreateCollection());
     private readonly TextBlock environmentText = new() { Margin = new Thickness(6), VerticalAlignment = VerticalAlignment.Center };
     private readonly TextBlock status = new() { Text = "Select a request and choose Send Request.", Margin = new Thickness(6), TextWrapping = TextWrapping.Wrap };
@@ -36,6 +42,10 @@ internal sealed class ODataResponseMargin : Grid, IWpfTextViewMargin
     private readonly Button cancel = new() { Content = "Cancel", IsEnabled = false, Margin = new Thickness(4) };
     private readonly Button send = new() { Content = "Send at caret", Margin = new Thickness(4) };
     private readonly TextBox body = ResponseText();
+    private readonly DockPanel bodyPage = new();
+    private readonly Button saveBody = new() { Content = "Save full body", Visibility = Visibility.Collapsed };
+    private IWpfTextViewHost? jsonHost;
+    private ODataStoredBody? displayedBody;
     private readonly DataGrid headers = ResponseHeaders();
     private readonly TextBox requestInfo = ResponseText();
     private readonly RadioButton[] responseTabs = new RadioButton[3];
@@ -64,6 +74,7 @@ internal sealed class ODataResponseMargin : Grid, IWpfTextViewMargin
     {
         this.view = view;
         this.execution = execution;
+        session = ODataBufferSession.Attach(view.TextBuffer);
         Visibility = Visibility.Collapsed;
         if (IsRightLayout) { Width = 600; MinWidth = 320; }
         else { Height = 280; MinHeight = 120; }
@@ -128,7 +139,11 @@ internal sealed class ODataResponseMargin : Grid, IWpfTextViewMargin
         tabBorder.SetResourceReference(BackgroundProperty, EnvironmentColors.ToolWindowBackgroundBrushKey);
         response.Children.Add(tabBorder);
         var content = new Grid { Margin = new Thickness(1) };
-        var pages = new FrameworkElement[] { ResponseScroll(body), headers, ResponseScroll(requestInfo) };
+        DockPanel.SetDock(saveBody, Dock.Top);
+        saveBody.Click += SaveBody;
+        bodyPage.Children.Add(saveBody);
+        bodyPage.Children.Add(ResponseScroll(body));
+        var pages = new FrameworkElement[] { bodyPage, headers, ResponseScroll(requestInfo) };
         var names = new[] { "Body", "Headers", "Raw" };
         for (int i = 0; i < names.Length; i++)
         {
@@ -203,6 +218,7 @@ internal sealed class ODataResponseMargin : Grid, IWpfTextViewMargin
         if (disposed || active != null) return;
         // Reveal before validation so missing-environment and request errors are visible too.
         Visibility = Visibility.Visible;
+        var run = session.Captures.Begin(document, request, displayedEnvironment);
         if (displayedEnvironment?.IsValid != true) { status.Text = "Select an environment in Xrm Tools, then refresh the environment."; return; }
         var captured = displayedEnvironment with { };
         var cts = new CancellationTokenSource();
@@ -213,7 +229,7 @@ internal sealed class ODataResponseMargin : Grid, IWpfTextViewMargin
         send.IsEnabled = false;
         cancel.IsEnabled = true;
         responseTabs[0].IsChecked = true;
-        body.Clear(); headers.ItemsSource = null; requestInfo.Clear();
+        SetBody("", false, null); headers.ItemsSource = null; requestInfo.Clear();
         ShowBadge("Sending", 0);
         time.Text = "--";
         size.Text = "--";
@@ -223,9 +239,22 @@ internal sealed class ODataResponseMargin : Grid, IWpfTextViewMargin
         {
             try
             {
-                var result = await execution.SendAsync(document, request, captured, cts.Token);
+                using var result = await execution.SendAsync(document, request, captured, cts.Token, session.Captures, run);
+                string preview = result.IsJson && result.StoredBody == null
+                    ? await System.Threading.Tasks.Task.Run(() => PrettyPrint(result.Body), cts.Token)
+                    : result.Body;
                 await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync();
                 if (disposed) return;
+                cts.Token.ThrowIfCancellationRequested();
+                if (result.CanCapture)
+                    session.Captures.Complete(run, new ODataCapturedResponse
+                    {
+                        Body = result.StoredBody == null ? result.Body : "",
+                        StoredBody = result.StoredBody?.Retain(),
+                        ContentByteLength = result.ContentByteLength,
+                        Headers = result.CapturableHeaders,
+                        Principal = result.Principal
+                    }, cts.Token);
                 responseTabs[0].IsChecked = true;
                 ShowBadge(result.Status, result.StatusCode);
                 time.Text = ODataResponseFormatter.Time(result.ElapsedMilliseconds);
@@ -236,7 +265,7 @@ internal sealed class ODataResponseMargin : Grid, IWpfTextViewMargin
                         ? new KeyValuePair<string, string>(line.Substring(0, colon), line.Substring(colon + 1).Trim())
                         : new KeyValuePair<string, string>(line, "")).ToArray();
                 requestInfo.Text = result.Raw;
-                body.Text = PrettyPrint(result.Body);
+                SetBody(preview.Length <= ODataTransport.PreviewLimit ? preview : result.Body, result.IsJson, result.StoredBody);
             }
             catch (OperationCanceledException)
             {
@@ -278,6 +307,7 @@ internal sealed class ODataResponseMargin : Grid, IWpfTextViewMargin
                 await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync();
                 if (disposed || revision != environmentRevision) return;
                 displayedEnvironment = environment is null ? null : environment with { };
+                session.Captures.SetEnvironment(displayedEnvironment);
                 environmentText.Text = environment?.IsValid == true ? $"{environment.Name} · {environment.Url}" : "No environment selected";
             }
             catch (Exception)
@@ -285,6 +315,7 @@ internal sealed class ODataResponseMargin : Grid, IWpfTextViewMargin
                 await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync();
                 if (disposed || revision != environmentRevision) return;
                 displayedEnvironment = null;
+                session.Captures.SetEnvironment(null);
                 environmentText.Text = "Environment unavailable — refresh to try again";
             }
         }).FileAndForget("XrmTools/OData/Environment");
@@ -356,13 +387,97 @@ internal sealed class ODataResponseMargin : Grid, IWpfTextViewMargin
         time.Text = "--";
         size.Text = "--";
         status.Text = message;
-        body.Text = message;
+        SetBody(message, false, null);
         requestInfo.Text = "=== " + label.ToUpperInvariant() + " ===" + Environment.NewLine + message;
     }
     private void OnViewFocus(object sender, EventArgs e) => RefreshEnvironment();
-    private void EnvironmentChanged(DataverseEnvironment environment) => RefreshEnvironment();
+    private void EnvironmentChanged(DataverseEnvironment environment)
+    {
+        session.Captures.SetEnvironment(environment);
+        RefreshEnvironment();
+    }
     private void OptionsSaved(GeneralOptions options) => RefreshEnvironment();
     private void Closed(object sender, EventArgs e) => Dispose();
+
+    private void SetBody(string text, bool json, ODataStoredBody? stored)
+    {
+        ThreadHelper.ThrowIfNotOnUIThread();
+        displayedBody?.Release();
+        displayedBody = stored?.Retain();
+        saveBody.Visibility = stored != null ? Visibility.Visible : Visibility.Collapsed;
+        saveBody.Content = "Preview truncated · Save full body";
+        if (bodyPage.Children.Count > 1) bodyPage.Children.RemoveAt(1);
+        jsonHost?.Close();
+        jsonHost = null;
+        if (json && text.Length > 0 && Package.GetGlobalService(typeof(SComponentModel)) is IComponentModel services &&
+            services.GetService<IContentTypeRegistryService>().GetContentType("JSON") is IContentType jsonType)
+        {
+            var buffer = services.GetService<ITextBufferFactoryService>().CreateTextBuffer(text, jsonType);
+            using var edit = buffer.CreateReadOnlyRegionEdit();
+            edit.CreateReadOnlyRegion(new Microsoft.VisualStudio.Text.Span(0, buffer.CurrentSnapshot.Length), SpanTrackingMode.EdgeInclusive, EdgeInsertionMode.Deny);
+            edit.Apply();
+            var factory = services.GetService<ITextEditorFactoryService>();
+            var roles = factory.CreateTextViewRoleSet(PredefinedTextViewRoles.Analyzable, PredefinedTextViewRoles.Interactive);
+            jsonHost = factory.CreateTextViewHost(factory.CreateTextView(buffer, roles), setFocus: false);
+            EnableJsonCopy(jsonHost.TextView, services.GetService<IEditorOperationsFactoryService>());
+            bodyPage.Children.Add(jsonHost.HostControl);
+        }
+        else
+        {
+            body.Text = text;
+            bodyPage.Children.Add(ResponseScroll(body));
+        }
+    }
+
+    private static void EnableJsonCopy(IWpfTextView textView, IEditorOperationsFactoryService factory)
+    {
+        var operations = factory.GetEditorOperations(textView);
+        var element = textView.VisualElement;
+        var copy = new MenuItem { Header = "_Copy", InputGestureText = "Ctrl+C" };
+        var selectAll = new MenuItem { Header = "Select _All", InputGestureText = "Ctrl+A" };
+        var menu = new ContextMenu();
+        menu.Items.Add(copy);
+        menu.Items.Add(selectAll);
+        menu.Opened += (_, _) => copy.IsEnabled = !textView.Selection.IsEmpty;
+        copy.Click += (_, _) => operations.CopySelection();
+        selectAll.Click += (_, _) => operations.SelectAll();
+        element.ContextMenu = menu;
+        element.AddHandler(UIElement.PreviewMouseRightButtonUpEvent, new MouseButtonEventHandler((_, args) =>
+        {
+            args.Handled = true;
+            menu.PlacementTarget = element;
+            menu.Placement = System.Windows.Controls.Primitives.PlacementMode.MousePoint;
+            menu.IsOpen = true;
+        }), handledEventsToo: true);
+
+        element.PreviewKeyDown += (_, args) =>
+        {
+            if (Keyboard.Modifiers != ModifierKeys.Control) return;
+            if (args.Key == Key.C)
+            {
+                args.Handled = true;
+                if (!textView.Selection.IsEmpty) operations.CopySelection();
+            }
+            else if (args.Key == Key.A)
+            {
+                args.Handled = true;
+                operations.SelectAll();
+            }
+        };
+    }
+
+    private async void SaveBody(object sender, RoutedEventArgs args)
+    {
+        var dialog = new SaveFileDialog { FileName = "response", Filter = "All files (*.*)|*.*" };
+        if (displayedBody == null || dialog.ShowDialog() != true || displayedBody == null) return;
+        try
+        {
+            using var input = displayedBody.Open();
+            using var output = new FileStream(dialog.FileName, FileMode.Create, FileAccess.Write, FileShare.None, 65536, useAsync: true);
+            await input.CopyToAsync(output);
+        }
+        catch (Exception ex) { if (!disposed) status.Text = "Could not save the response: " + ex.Message; }
+    }
     public FrameworkElement VisualElement => this;
     public double MarginSize => Visibility == Visibility.Collapsed ? 0 : IsRightLayout ? ActualWidth : ActualHeight;
     public bool Enabled => !disposed;
@@ -371,7 +486,10 @@ internal sealed class ODataResponseMargin : Grid, IWpfTextViewMargin
     {
         if (disposed) return;
         disposed = true;
+        jsonHost?.Close();
+        displayedBody?.Release();
         active?.Cancel();
+        session.Dispose();
         view.GotAggregateFocus -= OnViewFocus;
         view.Closed -= Closed;
         DataverseEnvironmentProvider.EnvironmentChanged -= EnvironmentChanged;

@@ -10,6 +10,21 @@ GET /WhoAmI
 GET /accounts?$select=accountid,name&$top={{limit}}
 Prefer: odata.include-annotations="*"
 
+### Create a test account
+# Only run create, retrieve and cleanup in a designated test environment.
+# @name createAccount
+POST /accounts
+Content-Type: application/json
+Prefer: return=representation
+
+{"name":"Xrm Tools OData editor test"}
+
+### Retrieve the test account
+GET /accounts({{createAccount.response.body.$.accountid}})?$select=name
+
+### Clean up the test account
+DELETE /accounts({{createAccount.response.body.$.accountid}})
+
 ### Metadata
 GET /EntityDefinitions?$select=LogicalName,DisplayName
 

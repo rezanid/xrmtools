@@ -18,10 +18,27 @@ using Hyperlink = XrmTools.Shell.Controls.Hyperlink;
 internal static class ODataContentType
 {
     public const string Name = "XrmTools.OData";
-    [Export, Name(Name), BaseDefinition("code")]
+    [Export, Name(Name), BaseDefinition("code++")]
     internal static readonly ContentTypeDefinition Definition = null!;
     [Export, FileExtension(".odata"), ContentType(Name)]
     internal static readonly FileExtensionToContentTypeDefinition Extension = null!;
+}
+
+[Export(typeof(IWpfTextViewCreationListener))]
+[ContentType(ODataContentType.Name)]
+[TextViewRole(PredefinedTextViewRoles.Document)]
+internal sealed class ODataEditorOptions : IWpfTextViewCreationListener
+{
+    public void TextViewCreated(IWpfTextView textView)
+    {
+        textView.Options.SetOptionValue(DefaultTextViewOptions.ShowErrorSquigglesId, true);
+
+        // This option belongs to Visual Studio's generic word completion provider.
+        // Apply it only to this view and only when the provider is installed.
+        const string wordSuggestions = "WordBasedSuggestions";
+        if (textView.Options.IsOptionDefined(wordSuggestions, localScopeOnly: false))
+            textView.Options.SetOptionValue(wordSuggestions, false);
+    }
 }
 
 [Export(typeof(IWpfTextViewMarginProvider))]
