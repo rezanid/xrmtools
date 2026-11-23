@@ -91,6 +91,14 @@ internal sealed class ODataCaptureSession
         lock (gate) return !closed && epoch == expectedEpoch && used.All(value => captures.Values.Any(current => ReferenceEquals(current, value)));
     }
 
+    internal long Epoch { get { lock (gate) return epoch; } }
+
+    internal bool AreInspectionsCurrent(IReadOnlyDictionary<string, ODataCapturedResponse?> inspected, long expectedEpoch)
+    {
+        lock (gate) return !closed && epoch == expectedEpoch && inspected.All(pair =>
+            ReferenceEquals(pair.Value, captures.TryGetValue(pair.Key, out var current) ? current : null));
+    }
+
     public void Complete(Run run, ODataCapturedResponse response, CancellationToken cancellationToken)
     {
         lock (gate)
@@ -266,6 +274,42 @@ internal sealed class ODataBufferSession : IDisposable
         }
     }
 
+    internal async Task<ODataInspection?> InspectAsync(string source, string expression, CancellationToken token)
+    {
+        ODataDocument document;
+        string? selected;
+        int expectedRevision;
+        long expectedEpoch;
+        bool variablesLoading;
+        lock (gate)
+        {
+            if (disposed || source != text) return null;
+            document = CreateDocument(source);
+            selected = environmentName;
+            expectedRevision = revision;
+            expectedEpoch = Captures.Epoch;
+            variablesLoading = loading;
+        }
+        var inspected = new Dictionary<string, ODataCapturedResponse?>(StringComparer.Ordinal);
+        var result = variablesLoading && !ODataBuiltInVariables.All.ContainsKey(expression)
+            ? new ODataInspection("Environment variables", "Environment variables are still loading. Hover again when loading completes.") { IsValue = false }
+            : await ODataInspector.InspectAsync(document, expression, selected, name =>
+            {
+                var capture = Captures.Get(name);
+                inspected[name] = capture;
+                return capture;
+            }, _ => { }, token).ConfigureAwait(false);
+        token.ThrowIfCancellationRequested();
+        return IsCurrent() ? result with { IsCurrent = IsCurrent } : null;
+
+        bool IsCurrent()
+        {
+            lock (gate)
+                return !disposed && source == text && expectedRevision == revision && loading == variablesLoading &&
+                    Captures.AreInspectionsCurrent(inspected, expectedEpoch);
+        }
+    }
+
     public string? ConfigurationError { get { lock (gate) return configurationError; } }
     public string? EnvironmentFilePath { get { lock (gate) return sidecarPath; } }
     public bool IsLoading { get { lock (gate) return loading; } }
@@ -274,13 +318,13 @@ internal sealed class ODataBufferSession : IDisposable
 
     public Task SetEnvironmentAsync(DataverseEnvironment? environment)
     {
-        Captures.SetEnvironment(environment);
         string? selected = environment?.IsValid == true ? environment.Name : null;
         TaskCompletionSource<bool>? completion = null;
         int loadRevision = 0;
         string? loadDocumentPath = null;
         lock (gate)
         {
+            Captures.SetEnvironment(environment);
             if (string.Equals(environmentName, selected, StringComparison.OrdinalIgnoreCase))
                 return loading ? profileLoad : Task.CompletedTask;
 

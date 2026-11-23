@@ -70,6 +70,7 @@
     <Compile Include="OData\ODataInlineRename.cs" />
     <Compile Include="OData\ODataOutliningProvider.cs" />
     <Compile Include="OData\ODataCompletionProvider.cs" />
+    <Compile Include="OData\ODataQuickInfoProvider.cs" />
     <Compile Include="Pcf\PcfDebugLaunchProvider.cs" />
     <Compile Include="Pcf\PcfHarnessProcess.cs" />
     <Compile Include="Pcf\PcfHarnessSession.cs" />

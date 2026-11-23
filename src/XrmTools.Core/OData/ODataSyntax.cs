@@ -15,7 +15,8 @@ internal enum ODataSyntaxKind
     HttpMethod,
     RequestTarget,
     HttpVersion,
-    HeaderName
+    HeaderName,
+    HeaderValue
 }
 
 /// <summary>A nonempty, UTF-16 range in the original document (not normalized text).</summary>
@@ -130,6 +131,9 @@ internal static class ODataSyntax
                     int headerEnd = colon;
                     while (headerEnd > start && char.IsWhiteSpace(line[headerEnd - 1])) headerEnd--;
                     Add(start, headerEnd - start, ODataSyntaxKind.HeaderName);
+                    int valueStart = colon + 1;
+                    while (valueStart < length && char.IsWhiteSpace(line[valueStart])) valueStart++;
+                    Add(valueStart, length - valueStart, ODataSyntaxKind.HeaderValue);
                 }
                 else if (colon < 0 && IsHeaderName(trimmed))
                     Add(start, trimmed.Length, ODataSyntaxKind.HeaderName);

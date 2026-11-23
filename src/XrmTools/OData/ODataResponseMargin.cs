@@ -25,6 +25,8 @@ using System.Collections.Generic;
 using XrmTools.Options;
 using XrmTools.Shell.Styles;
 using Button = XrmTools.Shell.Controls.Button;
+using ContextMenu = XrmTools.Shell.Controls.ContextMenu;
+using MenuItem = XrmTools.Shell.Controls.MenuItem;
 using ScrollViewer = XrmTools.Shell.Controls.ScrollViewer;
 
 internal sealed class ODataResponseMargin : Grid, IWpfTextViewMargin
@@ -407,13 +409,22 @@ internal sealed class ODataResponseMargin : Grid, IWpfTextViewMargin
         return panel;
     }
 
-    private static TextBox ResponseText()
+    internal static TextBox ResponseText()
     {
         var text = new TextBox { IsReadOnly = true, IsReadOnlyCaretVisible = false,
             AcceptsReturn = true, TextWrapping = TextWrapping.NoWrap, IsTabStop = false,
             BorderThickness = new Thickness(0), FontFamily = new FontFamily("Consolas"), FontSize = 13 };
         text.SetResourceReference(StyleProperty, "RawTextBoxStyle");
+        text.ContextMenu = ClipboardMenu(text);
         return text;
+    }
+
+    private static ContextMenu ClipboardMenu(UIElement target)
+    {
+        var menu = new ContextMenu();
+        menu.Items.Add(new MenuItem { Header = "_Copy", Command = ApplicationCommands.Copy, CommandTarget = target, InputGestureText = "Ctrl+C" });
+        menu.Items.Add(new MenuItem { Header = "Select _All", Command = ApplicationCommands.SelectAll, CommandTarget = target, InputGestureText = "Ctrl+A" });
+        return menu;
     }
 
     private static ScrollViewer ResponseScroll(TextBox text) => new()
@@ -423,7 +434,7 @@ internal sealed class ODataResponseMargin : Grid, IWpfTextViewMargin
         VerticalScrollBarVisibility = ScrollBarVisibility.Auto
     };
 
-    private static DataGrid ResponseHeaders()
+    internal static DataGrid ResponseHeaders()
     {
         var grid = new DataGrid
         {
@@ -436,6 +447,7 @@ internal sealed class ODataResponseMargin : Grid, IWpfTextViewMargin
             FontFamily = new FontFamily("Consolas"), FontSize = 13
         };
         KeyboardNavigation.SetTabNavigation(grid, KeyboardNavigationMode.Once);
+        grid.ContextMenu = ClipboardMenu(grid);
         grid.Columns.Add(new DataGridTextColumn { Header = "Name", Binding = new Binding("Key"), Width = new DataGridLength(200) });
         grid.Columns.Add(new DataGridTextColumn { Header = "Value", Binding = new Binding("Value"), Width = new DataGridLength(1, DataGridLengthUnitType.Star) });
         return grid;
@@ -514,7 +526,7 @@ internal sealed class ODataResponseMargin : Grid, IWpfTextViewMargin
         }
     }
 
-    private static void EnableJsonCopy(IWpfTextView textView, IEditorOperationsFactoryService factory)
+    internal static void EnableJsonCopy(IWpfTextView textView, IEditorOperationsFactoryService factory)
     {
         var operations = factory.GetEditorOperations(textView);
         var element = textView.VisualElement;

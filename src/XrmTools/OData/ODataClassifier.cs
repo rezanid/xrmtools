@@ -33,12 +33,13 @@ internal sealed class ODataClassifier : IClassifier
             [ODataSyntaxKind.Heading] = registry.GetClassificationType(PredefinedClassificationTypeNames.PreprocessorKeyword),
             [ODataSyntaxKind.Comment] = registry.GetClassificationType(PredefinedClassificationTypeNames.Comment),
             [ODataSyntaxKind.NameDirective] = registry.GetClassificationType(PredefinedClassificationTypeNames.Keyword),
-            [ODataSyntaxKind.VariableDeclaration] = registry.GetClassificationType(PredefinedClassificationTypeNames.Identifier),
-            [ODataSyntaxKind.VariableReference] = registry.GetClassificationType(PredefinedClassificationTypeNames.Identifier),
-            [ODataSyntaxKind.HttpMethod] = registry.GetClassificationType(PredefinedClassificationTypeNames.Keyword),
-            [ODataSyntaxKind.RequestTarget] = registry.GetClassificationType(PredefinedClassificationTypeNames.String),
-            [ODataSyntaxKind.HttpVersion] = registry.GetClassificationType(PredefinedClassificationTypeNames.Number),
-            [ODataSyntaxKind.HeaderName] = registry.GetClassificationType(PredefinedClassificationTypeNames.Identifier)
+            [ODataSyntaxKind.VariableDeclaration] = registry.GetClassificationType(PredefinedClassificationTypeNames.SymbolDefinition),
+            [ODataSyntaxKind.VariableReference] = registry.GetClassificationType(PredefinedClassificationTypeNames.MarkupAttribute),
+            [ODataSyntaxKind.HttpMethod] = registry.GetClassificationType(PredefinedClassificationTypeNames.MarkupNode),
+            [ODataSyntaxKind.RequestTarget] = registry.GetClassificationType(PredefinedClassificationTypeNames.Text),
+            [ODataSyntaxKind.HttpVersion] = registry.GetClassificationType(PredefinedClassificationTypeNames.Type),
+            [ODataSyntaxKind.HeaderName] = registry.GetClassificationType(PredefinedClassificationTypeNames.Keyword),
+            [ODataSyntaxKind.HeaderValue] = registry.GetClassificationType(PredefinedClassificationTypeNames.Literal)
         };
         buffer.Changed += Changed;
     }

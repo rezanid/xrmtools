@@ -218,6 +218,102 @@ internal static class ODataResponseReferences
         catch (JsonException ex) { throw new FormatException($"Response body for '{expression}' is not valid JSON.", ex); }
     }
 
+    internal static string Preview(ODataCapturedResponse capture, string expression, CancellationToken token, bool literal = false, Action? unavailable = null)
+    {
+        var match = Prefix.Match(expression);
+        ValidateSelector(expression);
+        if (match.Groups[2].Value == "headers")
+        {
+            string header = ParseHeader(match.Groups[3].Value, expression);
+            if (ODataCapturedResponse.IsCredentialHeader(header))
+            {
+                unavailable?.Invoke();
+                return "Sensitive response header is redacted and cannot be inspected.";
+            }
+            if (!capture.Headers.TryGetValue(header, out var value))
+                throw new FormatException("The capture is available, but response header '" + header + "' is missing.");
+            return ODataInspector.Bound(value);
+        }
+        var steps = ParsePath(match.Groups[3].Value, expression);
+        using var output = new PreviewText();
+        try
+        {
+            using var input = new PreviewReader(capture.OpenBody(), token);
+            using var reader = new CancellableJsonReader(input, token);
+            using var writer = new JsonTextWriter(output) { Formatting = Formatting.Indented };
+            if (!reader.Read() || !WriteSelection(reader, writer, steps, 0, preview: true))
+                throw new FormatException("The capture is available, but the selector is missing or has the wrong type.");
+            writer.Flush();
+            string preview = output.ToString();
+            if (literal)
+            {
+                using var selectedReader = new JsonTextReader(new StringReader(preview)) { DateParseHandling = DateParseHandling.None };
+                var selected = JToken.ReadFrom(selectedReader);
+                if (selected.Type == JTokenType.String) return ODataInspector.Bound(selected.Value<string>()!);
+            }
+            return ODataInspector.Bound(preview);
+        }
+        catch (PreviewTruncatedException) { return ODataInspector.Bound(output.ToString(), ODataInspector.ResponseTruncationNotice); }
+        catch (PreviewReadLimitException)
+        {
+            unavailable?.Invoke();
+            return "Preview unavailable within the 64 Ki character inspection limit. Select a smaller or earlier response value; the capture is available.";
+        }
+        catch (JsonException) { throw new FormatException("The capture is available, but its body is not valid JSON at the inspected selector."); }
+    }
+
+    private sealed class PreviewTruncatedException : Exception { }
+    private sealed class PreviewReadLimitException : Exception { }
+
+    private sealed class PreviewText : StringWriter
+    {
+        private int lines = 1;
+        private bool previousCarriageReturn;
+
+        public override void Write(char value)
+        {
+            if (GetStringBuilder().Length == ODataInspector.PreviewLimit) throw new PreviewTruncatedException();
+            if ((value == '\r' || value == '\n' && !previousCarriageReturn) && ++lines > ODataInspector.PreviewLineLimit)
+                throw new PreviewTruncatedException();
+            base.Write(value);
+            previousCarriageReturn = value == '\r';
+        }
+        public override void Write(char[] buffer, int index, int count)
+        {
+            for (int i = 0; i < count; i++) Write(buffer[index + i]);
+        }
+        public override void Write(string? value)
+        {
+            if (value != null) foreach (char c in value) Write(c);
+        }
+    }
+
+    private sealed class PreviewReader(TextReader inner, CancellationToken token) : TextReader
+    {
+        private int remaining = 64 * 1024;
+        public override int Read(char[] buffer, int index, int count)
+        {
+            token.ThrowIfCancellationRequested();
+            if (remaining == 0) throw new PreviewReadLimitException();
+            int read = inner.Read(buffer, index, Math.Min(count, remaining));
+            remaining -= read;
+            return read;
+        }
+        public override int Read()
+        {
+            token.ThrowIfCancellationRequested();
+            if (remaining == 0) throw new PreviewReadLimitException();
+            int value = inner.Read();
+            if (value >= 0) remaining--;
+            return value;
+        }
+        protected override void Dispose(bool disposing)
+        {
+            if (disposing) inner.Dispose();
+            base.Dispose(disposing);
+        }
+    }
+
     internal static string ValidateSelector(string expression)
     {
         var match = Prefix.Match(expression);
@@ -279,7 +375,7 @@ internal static class ODataResponseReferences
         return steps;
     }
 
-    private static bool WriteSelection(JsonTextReader reader, JsonWriter writer, List<(string? Key, int Index)> steps, int depth)
+    private static bool WriteSelection(JsonTextReader reader, JsonWriter writer, List<(string? Key, int Index)> steps, int depth, bool preview = false)
     {
         if (depth == steps.Count)
         {
@@ -302,8 +398,10 @@ internal static class ODataResponseReferences
             if (objectStep && !reader.Read()) throw new JsonReaderException("Missing property value.");
             if (match)
             {
-                if (!WriteSelection(reader, writer, steps, depth + 1)) return false;
+                if (!WriteSelection(reader, writer, steps, depth + 1, preview)) return false;
                 found = true;
+                // Projected items must be consumed before advancing to their next sibling.
+                if (preview && !project && !steps.Take(depth).Any(step => step.Key == null && step.Index < 0)) return true;
             }
             else reader.Skip();
             item++;

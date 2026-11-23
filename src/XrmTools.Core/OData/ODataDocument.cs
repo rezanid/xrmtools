@@ -165,8 +165,49 @@ internal sealed class ODataDocument
 
     public string Expand(string value) => ExpandVariables(value, new HashSet<string>(StringComparer.Ordinal), false, null);
 
-    private string ExpandVariables(string value, HashSet<string> stack, bool allowResponses, Dictionary<string, string>? used, bool evaluateDynamic = true)
-        => Variable.Replace(value, match =>
+    internal string ExpandForInspection(string value)
+        => ExpandVariables(value, new HashSet<string>(StringComparer.Ordinal), true, null, evaluateDynamic: false, limit: 4096);
+
+    internal IReadOnlyCollection<string> GetDynamicDependencies(string name, CancellationToken token)
+    {
+        var dependencies = new HashSet<string>(StringComparer.Ordinal);
+        var visited = new HashSet<string>(StringComparer.Ordinal);
+        var pending = new Stack<string>();
+        var variables = EffectiveVariables;
+        pending.Push(name);
+        while (pending.Count != 0)
+        {
+            token.ThrowIfCancellationRequested();
+            string key = pending.Pop();
+            if (!visited.Add(key)) continue;
+            if (ODataBuiltInVariables.All.ContainsKey(key)) dependencies.Add(key);
+            else if (variables.TryGetValue(key, out var value))
+                foreach (Match match in Variable.Matches(value))
+                {
+                    token.ThrowIfCancellationRequested();
+                    pending.Push(match.Groups[1].Value.Trim());
+                }
+        }
+        return dependencies;
+    }
+
+    private string ExpandVariables(string value, HashSet<string> stack, bool allowResponses, Dictionary<string, string>? used, bool evaluateDynamic = true, int limit = int.MaxValue)
+    {
+        if (value.Length > limit) throw new FormatException("The variable is too large to expand for inspection.");
+        var result = new StringBuilder();
+        int last = 0;
+        foreach (Match match in Variable.Matches(value))
+        {
+            result.Append(value, last, match.Index - last);
+            string replacement = ExpandMatch(match);
+            if (result.Length + replacement.Length > limit) throw new FormatException("The variable is too large to expand for inspection.");
+            result.Append(replacement);
+            last = match.Index + match.Length;
+        }
+        if (result.Length + value.Length - last > limit) throw new FormatException("The variable is too large to expand for inspection.");
+        return result.Append(value, last, value.Length - last).ToString();
+
+        string ExpandMatch(Match match)
         {
             string key = match.Groups[1].Value.Trim();
             if (ODataBuiltInVariables.All.TryGetValue(key, out var builtIn))
@@ -175,9 +216,10 @@ internal sealed class ODataDocument
             if (!EffectiveVariables.TryGetValue(key, out var replacement)) throw new FormatException($"Undefined variable '{key}'. Define it with @name = value, provide it in the selected environment profile, or use a supported named response reference.");
             if (stack.Count >= 32 || !stack.Add(key)) throw new FormatException($"Cyclic or excessively nested variable '{key}'.");
             if (used != null) used[key] = replacement;
-            try { return ExpandVariables(replacement, stack, allowResponses, used, evaluateDynamic); }
+            try { return ExpandVariables(replacement, stack, allowResponses, used, evaluateDynamic, limit); }
             finally { stack.Remove(key); }
-        });
+        }
+    }
 
     public ODataRequest Resolve(ODataRequest source) => Resolve(source, _ => null, _ => { });
 

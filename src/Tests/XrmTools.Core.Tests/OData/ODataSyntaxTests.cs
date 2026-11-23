@@ -17,7 +17,8 @@ public class ODataSyntaxTests
             (ODataSyntaxKind.HttpMethod, "GET"),
             (ODataSyntaxKind.RequestTarget, "/accounts?$filter=name eq 'A B'"),
             (ODataSyntaxKind.HttpVersion, "HTTP/1.1"),
-            (ODataSyntaxKind.HeaderName, "Accept")
+            (ODataSyntaxKind.HeaderName, "Accept"),
+            (ODataSyntaxKind.HeaderValue, "application/json")
         }, Tokens(text));
     }
 
@@ -90,7 +91,8 @@ public class ODataSyntaxTests
             (ODataSyntaxKind.Heading, "### Next"),
             (ODataSyntaxKind.HttpMethod, "GET"),
             (ODataSyntaxKind.RequestTarget, "/next"),
-            (ODataSyntaxKind.HeaderName, "Accept")
+            (ODataSyntaxKind.HeaderName, "Accept"),
+            (ODataSyntaxKind.HeaderValue, "json")
         }, Tokens(text));
     }
 
@@ -98,7 +100,7 @@ public class ODataSyntaxTests
     public void MalformedRequestStillStartsHeadersAndDeclarationsDoNotOverrideState()
     {
         const string text = "TRACE /accounts\n@notDeclaration = value\nGET /other\nAccept: json\n\nContent-Type: body";
-        Assert.Equal(new[] { (ODataSyntaxKind.HeaderName, "Accept") }, Tokens(text));
+        Assert.Equal(new[] { (ODataSyntaxKind.HeaderName, "Accept"), (ODataSyntaxKind.HeaderValue, "json") }, Tokens(text));
         var document = ODataDocument.Parse(text);
         Assert.Single(document.Requests);
         Assert.Equal("Content-Type: body", document.Requests[0].Body);
@@ -144,6 +146,22 @@ public class ODataSyntaxTests
         Assert.Empty(Scan(" \r\n\t"));
         Assert.DoesNotContain(Scan("POST /accounts\n\n{\"name\": {\"value\": 1}}"), s => s.Kind == ODataSyntaxKind.VariableReference);
         Assert.Throws<ArgumentNullException>(() => ODataSyntax.Scan(null));
+    }
+
+    [Fact]
+    public void HeaderValuesTrimWhitespaceAndSplitAroundReferencesWithoutColoringBodies()
+    {
+        const string text = "GET /a\r\nX-Test: before {{id}} after  \r\nEmpty:  \r\n\r\nX-Body: uncolored";
+        Assert.Equal(new[]
+        {
+            (ODataSyntaxKind.HttpMethod, "GET"),
+            (ODataSyntaxKind.RequestTarget, "/a"),
+            (ODataSyntaxKind.HeaderName, "X-Test"),
+            (ODataSyntaxKind.HeaderValue, "before "),
+            (ODataSyntaxKind.VariableReference, "{{id}}"),
+            (ODataSyntaxKind.HeaderValue, " after"),
+            (ODataSyntaxKind.HeaderName, "Empty")
+        }, Tokens(text));
     }
 
     private static IReadOnlyList<ODataSyntaxSpan> Scan(string text)
