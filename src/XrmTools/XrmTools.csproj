@@ -66,6 +66,7 @@
     <Compile Include="OData\ODataClassifier.cs" />
     <Compile Include="OData\ODataDiagnosticProvider.cs" />
     <Compile Include="OData\ODataEnvironmentFile.cs" />
+    <Compile Include="OData\ODataExecutionCoordinator.cs" />
     <Compile Include="OData\ODataGoToDefinition.cs" />
     <Compile Include="OData\ODataInlineRename.cs" />
     <Compile Include="OData\ODataOutliningProvider.cs" />

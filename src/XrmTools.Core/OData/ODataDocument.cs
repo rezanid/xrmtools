@@ -59,6 +59,7 @@ internal sealed class ODataDocument
         var executableLines = new List<string>();
         string name = "";
         string requestName = "";
+        int nameLine = 0, nameColumn = 0;
         var names = new HashSet<string>(StringComparer.Ordinal);
         int sectionLine = 0;
         void Finish(int endLine)
@@ -104,14 +105,12 @@ internal sealed class ODataDocument
                         else
                         {
                             requestName = matchName.Groups[1].Value;
-                            declaration?.Invoke(i, indentation + trimmed.Length - comment.Length + matchName.Groups[1].Index, requestName, true);
-                            if (!names.Add(requestName))
-                            {
-                                document.Errors.Add($"Line {i + 1}: duplicate request name '{requestName}'. Request names are case-sensitive and must be unique.");
-                                duplicateName?.Invoke(i, indentation + trimmed.Length - comment.Length + matchName.Groups[1].Index, requestName);
-                            }
+                            nameLine = i;
+                            nameColumn = indentation + trimmed.Length - comment.Length + matchName.Groups[1].Index;
                         }
                     }
+                    else if (requestName.Length != 0 && ODataSyntax.MatchRequestLine(comment).Success)
+                        requestName = "";
                     continue;
                 }
                 if (trimmed.Length == 0) continue;
@@ -130,6 +129,15 @@ internal sealed class ODataDocument
                 }
                 var match = ODataSyntax.MatchRequestLine(trimmed);
                 request = new ODataRequest { Line = i, StartLine = sectionLine, Name = name, RequestName = requestName };
+                if (requestName.Length != 0)
+                {
+                    declaration?.Invoke(nameLine, nameColumn, requestName, true);
+                    if (!names.Add(requestName))
+                    {
+                        document.Errors.Add($"Line {nameLine + 1}: duplicate request name '{requestName}'. Request names are case-sensitive and must be unique.");
+                        duplicateName?.Invoke(nameLine, nameColumn, requestName);
+                    }
+                }
                 requestName = "";
                 executableLines.Add(line);
                 document.Requests.Add(request);

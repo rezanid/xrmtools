@@ -104,6 +104,46 @@ public class ODataInspectionSessionTests
     }
 
     [Fact]
+    public void RunNavigationTracksRequestLinesAndRejectsDeletedOrReplacedResults()
+    {
+        var snapshot = new Mock<ITextSnapshot>();
+        snapshot.SetupGet(s => s.Length).Returns(40);
+        snapshot.Setup(s => s.GetText()).Returns("GET /one\n###\nGET /two");
+        var firstLine = new Mock<ITextSnapshotLine>();
+        firstLine.SetupGet(line => line.Extent).Returns(new SnapshotSpan(snapshot.Object, 0, 8));
+        var secondLine = new Mock<ITextSnapshotLine>();
+        secondLine.SetupGet(line => line.Extent).Returns(new SnapshotSpan(snapshot.Object, 13, 8));
+        snapshot.Setup(s => s.GetLineFromLineNumber(0)).Returns(firstLine.Object);
+        snapshot.Setup(s => s.GetLineFromLineNumber(2)).Returns(secondLine.Object);
+        var edited = new Mock<ITextSnapshot>();
+        edited.SetupGet(s => s.Length).Returns(60);
+        var firstTracking = new Mock<ITrackingSpan>();
+        var secondTracking = new Mock<ITrackingSpan>();
+        firstTracking.Setup(t => t.GetSpan(edited.Object)).Returns(new SnapshotSpan(edited.Object, 10, 8));
+        secondTracking.Setup(t => t.GetSpan(edited.Object)).Returns(new SnapshotSpan(edited.Object, 23, 8));
+        snapshot.Setup(s => s.CreateTrackingSpan(new Span(0, 8), SpanTrackingMode.EdgeExclusive)).Returns(firstTracking.Object);
+        snapshot.Setup(s => s.CreateTrackingSpan(new Span(13, 8), SpanTrackingMode.EdgeExclusive)).Returns(secondTracking.Object);
+        var buffer = new Mock<ITextBuffer>();
+        buffer.SetupGet(b => b.CurrentSnapshot).Returns(snapshot.Object);
+        buffer.SetupGet(b => b.Properties).Returns(new PropertyCollection());
+        using var session = ODataBufferSession.Attach(buffer.Object);
+        var result = new ODataExecutionResult { IsDocument = true, Rows = new[]
+        {
+            new ODataExecutionRow { Id = 0, Request = new ODataRequest { Line = 0 } },
+            new ODataExecutionRow { Id = 1, Request = new ODataRequest { Line = 2 } }
+        } };
+        session.SetRunNavigation(result, snapshot.Object);
+        Assert.Equal(10, session.GetRunNavigation(result, 0, edited.Object).Value.Position);
+        Assert.Equal(23, session.GetRunNavigation(result, 1, edited.Object).Value.Position);
+        Assert.Null(session.GetRunNavigation(new ODataExecutionResult(), 0, edited.Object));
+        Assert.Null(session.GetRunNavigation(result, 2, edited.Object));
+        secondTracking.Setup(t => t.GetSpan(edited.Object)).Returns(new SnapshotSpan(edited.Object, 23, 0));
+        Assert.Null(session.GetRunNavigation(result, 1, edited.Object));
+        session.ClearRunNavigation();
+        Assert.Null(session.GetRunNavigation(result, 0, edited.Object));
+    }
+
+    [Fact]
     public async Task CompletedBufferInspectionRejectsClosedSessions()
     {
         var snapshot = new Mock<ITextSnapshot>();

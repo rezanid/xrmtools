@@ -29,6 +29,17 @@ public class ODataResponseReferenceTests
         Assert.Contains("duplicate", Assert.Throws<FormatException>(() => duplicate.Resolve(duplicate.Requests[0])).Message);
     }
 
+    [Fact]
+    public void CommentedNamedRequestsDoNotBlockOrNameOtherRequests()
+    {
+        var doc = ODataDocument.Parse("GET /first\n### disabled\n# @name x\n#GET /disabled\n### next\n# @name x\nGET /next\n### disabled at end\n// @name y\n// GET /disabled");
+        Assert.Empty(doc.Errors);
+        Assert.Equal(2, doc.Requests.Count);
+        Assert.Equal("/first", doc.Resolve(doc.Requests[0]).Target);
+        Assert.Equal("x", doc.Requests[1].RequestName);
+        Assert.Equal("/next", doc.Resolve(doc.Requests[1]).Target);
+    }
+
     [Theory]
     [InlineData("# @name 1bad\nGET /a")]
     [InlineData("// @name\nGET /a")]

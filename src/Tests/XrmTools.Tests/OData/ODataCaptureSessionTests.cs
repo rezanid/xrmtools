@@ -1,6 +1,9 @@
 namespace XrmTools.Tests.OData;
 
+using System;
 using System.Collections.Generic;
+using System.IO;
+using System.Text;
 using System.Threading;
 using Microsoft.VisualStudio.Text;
 using Microsoft.VisualStudio.Utilities;
@@ -155,5 +158,29 @@ public class ODataCaptureSessionTests
         session.Close();
         session.Complete(run, Response("{}"), CancellationToken.None);
         Assert.Null(session.Get("a"));
+    }
+
+    [Fact]
+    public void CaptureBudgetIncludesHeadersAndDisposesAnOversizedCapture()
+    {
+        string path = Path.Combine(Path.GetTempPath(), "odata-capture-" + Guid.NewGuid().ToString("N"));
+        File.WriteAllText(path, "body");
+        try
+        {
+            var session = new ODataCaptureSession();
+            var document = ODataDocument.Parse("# @name a\nGET /WhoAmI");
+            var run = session.Begin(document, document.Requests[0], Environment);
+            var response = new ODataCapturedResponse
+            {
+                StoredBody = new ODataStoredBody(path, Encoding.UTF8),
+                ContentByteLength = 200L * 1024 * 1024 - 512,
+                Headers = new Dictionary<string, string> { ["Large"] = new string('x', 512) }
+            };
+            session.Complete(run, response, CancellationToken.None);
+            Assert.Null(session.Get("a"));
+            Assert.False(File.Exists(path));
+            session.Close();
+        }
+        finally { if (File.Exists(path)) File.Delete(path); }
     }
 }

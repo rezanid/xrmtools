@@ -75,9 +75,9 @@ internal sealed class ODataMarginProvider : IWpfTextViewMarginProvider
 {
     [Import] internal ODataExecutionService Execution { get; set; } = null!;
     public IWpfTextViewMargin CreateMargin(IWpfTextViewHost host, IWpfTextViewMargin container)
-        {
+    {
         var margin = host.TextView.Properties.GetOrCreateSingletonProperty(() => new ODataResponseMargin(host.TextView, Execution));
-        return margin.IsRightLayout ? null! : margin;
+        return new ODataMarginHost(margin.Placement, false);
     }
 }
 
@@ -91,7 +91,77 @@ internal sealed class ODataRightMarginProvider : IWpfTextViewMarginProvider
     public IWpfTextViewMargin CreateMargin(IWpfTextViewHost host, IWpfTextViewMargin container)
     {
         var margin = host.TextView.Properties.GetOrCreateSingletonProperty(() => new ODataResponseMargin(host.TextView, Execution));
-        return margin.IsRightLayout ? margin : null!;
+        return new ODataMarginHost(margin.Placement, true);
+    }
+}
+
+internal sealed class ODataMarginPlacement
+{
+    private readonly FrameworkElement content;
+    private readonly Action<bool> configure;
+    private ODataMarginHost? bottom;
+    private ODataMarginHost? right;
+    internal bool IsRight { get; private set; }
+    internal bool CanSwitch => bottom != null && right != null;
+
+    internal ODataMarginPlacement(FrameworkElement content, bool isRight, Action<bool> configure)
+    {
+        this.content = content;
+        IsRight = isRight;
+        this.configure = configure;
+    }
+
+    internal void Attach(ODataMarginHost host, bool isRight)
+    {
+        if (isRight) right = host; else bottom = host;
+        host.Visibility = isRight == IsRight ? Visibility.Visible : Visibility.Collapsed;
+        if (isRight == IsRight) host.Children.Add(content);
+    }
+
+    internal void Detach(ODataMarginHost host, bool isRight)
+    {
+        host.Children.Remove(content);
+        if (isRight && ReferenceEquals(right, host)) right = null;
+        if (!isRight && ReferenceEquals(bottom, host)) bottom = null;
+    }
+
+    internal void Toggle()
+    {
+        if (!CanSwitch) return;
+        var oldHost = IsRight ? right! : bottom!;
+        var newHost = IsRight ? bottom! : right!;
+        oldHost.Children.Remove(content);
+        oldHost.Visibility = Visibility.Collapsed;
+        IsRight = !IsRight;
+        configure(IsRight);
+        newHost.Children.Add(content);
+        newHost.Visibility = Visibility.Visible;
+    }
+}
+
+internal sealed class ODataMarginHost : Grid, IWpfTextViewMargin
+{
+    private readonly ODataMarginPlacement placement;
+    private readonly bool isRight;
+    private bool disposed;
+
+    internal ODataMarginHost(ODataMarginPlacement placement, bool isRight)
+    {
+        this.placement = placement;
+        this.isRight = isRight;
+        placement.Attach(this, isRight);
+    }
+
+    public FrameworkElement VisualElement => this;
+    public double MarginSize => Visibility != Visibility.Visible ? 0 : isRight ? ActualWidth : ActualHeight;
+    public bool Enabled => !disposed;
+    public ITextViewMargin? GetTextViewMargin(string name) =>
+        name == (isRight ? "XrmTools.OData.Response.Right" : "XrmTools.OData.Response") ? this : null;
+    public void Dispose()
+    {
+        if (disposed) return;
+        disposed = true;
+        placement.Detach(this, isRight);
     }
 }
 
@@ -177,6 +247,18 @@ internal sealed class ODataActionTagger : ITagger<InterLineAdornmentTag>, IDispo
                     };
                     var text = new TextBlock { FontSize = 12, Padding = new Thickness(2, 0, 2, 0) };
                     text.Inlines.Add(link);
+                    if (ReferenceEquals(request, capturedDocument.Requests.FirstOrDefault()))
+                    {
+                        text.Inlines.Add(new Run("   "));
+                        var run = new Hyperlink(new Run("Run Document"))
+                        {
+                            TextDecorations = null,
+                            IsEnabled = !margin.IsExecuting,
+                            ToolTip = "Review the environment and write requests before running the document in order."
+                        };
+                        run.Click += (_, _) => { if (!disposed && !margin.IsExecuting) margin.RunDocument(); };
+                        text.Inlines.Add(run);
+                    }
                     if (request.Error != null) text.ToolTip = request.Error;
                     return text;
                 }, true, 15.0, HorizontalPositioningMode.TextRelative, 0.0, null);

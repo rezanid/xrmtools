@@ -23,6 +23,7 @@ internal sealed class ODataCaptureSession
     private bool closed;
     private const long CaptureBudget = 200L * 1024 * 1024;
     private readonly LinkedList<string> captureOrder = new();
+    private readonly Dictionary<string, long> captureSizes = new(StringComparer.Ordinal);
     private long capturedBytes;
 
     internal readonly record struct Run(string Name, long Version, long Epoch);
@@ -107,14 +108,29 @@ internal sealed class ODataCaptureSession
                 versions.TryGetValue(run.Name, out var version) && version == run.Version && fingerprints.ContainsKey(run.Name))
             {
                 RemoveCapture(run.Name);
-                while (capturedBytes + response.ContentByteLength > CaptureBudget && captureOrder.First != null)
+                long size = CaptureSize(run.Name, response);
+                if (size > CaptureBudget) { response.Dispose(); return; }
+                while (capturedBytes + size > CaptureBudget && captureOrder.First != null)
                     RemoveCapture(captureOrder.First.Value);
                 captures[run.Name] = response;
+                captureSizes[run.Name] = size;
                 captureOrder.AddLast(run.Name);
-                capturedBytes += response.ContentByteLength;
+                capturedBytes += size;
             }
             else response.Dispose();
         }
+    }
+
+    private static long CaptureSize(string name, ODataCapturedResponse response)
+    {
+        long size = 256 + 2L * (name.Length + (long)response.Body.Length + (response.Principal?.Length ?? 0));
+        if (response.StoredBody != null) size += Math.Min(Math.Max(response.ContentByteLength, 0), CaptureBudget + 1);
+        foreach (var header in response.Headers)
+        {
+            size += 64 + 2L * (header.Key.Length + (long)header.Value.Length);
+            if (size > CaptureBudget) break;
+        }
+        return size;
     }
 
     public void Close()
@@ -142,6 +158,7 @@ internal sealed class ODataCaptureSession
         foreach (var capture in captures.Values) capture.Dispose();
         captures.Clear();
         captureOrder.Clear();
+        captureSizes.Clear();
         capturedBytes = 0;
     }
 
@@ -150,7 +167,8 @@ internal sealed class ODataCaptureSession
         if (!captures.TryGetValue(name, out var capture)) return;
         captures.Remove(name);
         captureOrder.Remove(name);
-        capturedBytes -= capture.ContentByteLength;
+        capturedBytes -= captureSizes[name];
+        captureSizes.Remove(name);
         capture.Dispose();
     }
 }
@@ -166,13 +184,52 @@ internal sealed class ODataBufferSession : IDisposable
     private Dictionary<string, string> environmentVariables = new(StringComparer.Ordinal);
     private string? environmentName;
     private string? configurationError;
+    private string? profileWarning;
     private Task profileLoad = Task.CompletedTask;
     private int revision;
     private bool loading;
     private bool disposed;
     private int views;
+    private ODataExecutionCoordinator? coordinator;
+    private ODataExecutionResult? navigationResult;
+    private ITrackingSpan[] navigationSpans = [];
     public ODataCaptureSession Captures { get; } = new();
     public event EventHandler? VariablesChanged;
+
+    public ODataExecutionCoordinator GetCoordinator(ODataExecutionService execution)
+    {
+        lock (gate)
+        {
+            if (coordinator == null)
+            {
+                coordinator = new ODataExecutionCoordinator(execution, Captures);
+                if (disposed) coordinator.Dispose();
+            }
+            return coordinator;
+        }
+    }
+
+    internal void SetRunNavigation(ODataExecutionResult result, ITextSnapshot snapshot)
+    {
+        var spans = result.Rows.Select(row => snapshot.CreateTrackingSpan(
+            snapshot.GetLineFromLineNumber(row.Request.Line).Extent.Span, SpanTrackingMode.EdgeExclusive)).ToArray();
+        lock (gate) { navigationResult = result; navigationSpans = spans; }
+    }
+
+    internal SnapshotPoint? GetRunNavigation(ODataExecutionResult result, int rowId, ITextSnapshot snapshot)
+    {
+        lock (gate)
+        {
+            if (disposed || !ReferenceEquals(navigationResult, result) || rowId < 0 || rowId >= navigationSpans.Length) return null;
+            var span = navigationSpans[rowId].GetSpan(snapshot);
+            return span.IsEmpty ? null : span.Start;
+        }
+    }
+
+    internal void ClearRunNavigation()
+    {
+        lock (gate) { navigationResult = null; navigationSpans = []; }
+    }
 
     private ODataBufferSession(ITextBuffer buffer, string? filePath)
     {
@@ -311,6 +368,7 @@ internal sealed class ODataBufferSession : IDisposable
     }
 
     public string? ConfigurationError { get { lock (gate) return configurationError; } }
+    public string? ProfileWarning { get { lock (gate) return profileWarning; } }
     public string? EnvironmentFilePath { get { lock (gate) return sidecarPath; } }
     public bool IsLoading { get { lock (gate) return loading; } }
     // UI-thread only: lets one view of a shared buffer own the configuration InfoBar, avoiding duplicates in split views.
@@ -324,6 +382,7 @@ internal sealed class ODataBufferSession : IDisposable
         string? loadDocumentPath = null;
         lock (gate)
         {
+            coordinator?.EnvironmentChanged(environment);
             Captures.SetEnvironment(environment);
             if (string.Equals(environmentName, selected, StringComparison.OrdinalIgnoreCase))
                 return loading ? profileLoad : Task.CompletedTask;
@@ -331,6 +390,7 @@ internal sealed class ODataBufferSession : IDisposable
             environmentName = selected;
             environmentVariables = new Dictionary<string, string>(StringComparer.Ordinal);
             configurationError = null;
+            profileWarning = null;
             loading = selected != null && documentPath != null;
             loadRevision = ++revision;
             if (loading)
@@ -363,6 +423,9 @@ internal sealed class ODataBufferSession : IDisposable
                 environmentVariables = new Dictionary<string, string>(StringComparer.Ordinal);
                 foreach (var variable in loaded.Profile.Variables) environmentVariables.Add(variable.Key, variable.Value);
                 configurationError = loaded.Profile.Error;
+                profileWarning = loaded.Profile.ProfileMissing
+                    ? $"No profile matches the selected environment '{selected}'. Add or rename a profile to match it."
+                    : null;
                 loading = false;
                 UpdateCapturesLocked();
                 changed = true;
@@ -438,6 +501,7 @@ internal sealed class ODataBufferSession : IDisposable
             loading = false;
             environmentVariables.Clear();
             configurationError = "The environment configuration file could not be monitored.";
+            profileWarning = null;
             UpdateCapturesLocked();
         }
         Captures.AdvanceEpoch();
@@ -450,8 +514,11 @@ internal sealed class ODataBufferSession : IDisposable
         {
             if (--views != 0) return;
             disposed = true;
+            navigationResult = null;
+            navigationSpans = [];
         }
         buffer.Changed -= Changed;
+        coordinator?.Dispose();
         foreach (var item in watchers)
         {
             item.EnableRaisingEvents = false;

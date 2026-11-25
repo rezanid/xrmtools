@@ -52,6 +52,40 @@ public class ODataEnvironmentFileTests
     }
 
     [Fact]
+    public async Task MismatchedProfileWarnsAndMatchingProfileLoadsAfterEdit()
+    {
+        string directory = Path.Combine(Path.GetTempPath(), "XrmTools-OData-Profile-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(directory);
+        string documentPath = Path.Combine(directory, "requests.odata");
+        string sidecarPath = Path.Combine(directory, "odata-client.env.json");
+        File.WriteAllText(sidecarPath, "{\"DEV\":{\"account1_id\":\"one\",\"account2_id\":\"two\"}}");
+        var snapshot = new Mock<ITextSnapshot>();
+        snapshot.Setup(s => s.GetText()).Returns("GET /accounts({{account1_id}})");
+        var buffer = new Mock<ITextBuffer>();
+        buffer.SetupGet(b => b.CurrentSnapshot).Returns(snapshot.Object);
+        buffer.SetupGet(b => b.Properties).Returns(new PropertyCollection());
+        var session = ODataBufferSession.Attach(buffer.Object, documentPath);
+        try
+        {
+            await session.SetEnvironmentAsync(new DataverseEnvironment { Name = "DEV-FSI", ConnectionString = "Url=https://contoso.crm.dynamics.com;TenantId=test" });
+            Assert.Contains("DEV-FSI", session.ProfileWarning);
+            Assert.Null(session.ConfigurationError);
+            Assert.True(session.TryCreateDocument(snapshot.Object.GetText(), "DEV-FSI", out var before, out _));
+            Assert.Empty(before.EnvironmentVariables);
+            File.WriteAllText(sidecarPath, "{\"DEV-FSI\":{\"account1_id\":\"one\",\"account2_id\":\"two\"}}");
+            await WaitUntilAsync(() => session.ProfileWarning == null && session.CreateDocument(snapshot.Object.GetText()).EnvironmentVariables.ContainsKey("account1_id"));
+            Assert.True(session.TryCreateDocument(snapshot.Object.GetText(), "DEV-FSI", out var after, out _));
+            Assert.Equal("/accounts(one)", after.Resolve(after.Requests[0]).Target);
+            Assert.Equal("two", after.EnvironmentVariables["account2_id"]);
+        }
+        finally
+        {
+            session.Dispose();
+            Directory.Delete(directory, recursive: true);
+        }
+    }
+
+    [Fact]
     public async Task RefreshesWhenANearerFileAppearsAndFallsBackToItsParentWhenDeleted()
     {
         string root = Path.Combine(Path.GetTempPath(), "XrmTools-OData-Ancestor-" + Guid.NewGuid().ToString("N"));

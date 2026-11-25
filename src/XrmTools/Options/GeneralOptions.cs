@@ -122,7 +122,7 @@ internal class GeneralOptions : BaseOptionModel<GeneralOptions>
 
     [Category("OData Editor")]
     [DisplayName("Preview location")]
-    [Description("Determines if the preview window should be shown on the side or below the document. Close and reopen existing .odata documents to apply a change.")]
+    [Description("Default response pane location for newly opened .odata views. Right-click the response pane to change an existing view.")]
     [DefaultValue(ODataResponseLayout.Below)]
     [TypeConverter(typeof(EnumDescriptionConverter))]
     public ODataResponseLayout ODataResponseLayout { get; set; } = ODataResponseLayout.Below;

@@ -19,6 +19,9 @@ public class ODataEnvironmentVariablesTests
         Assert.Equal("11111111-1111-1111-1111-111111111111", development.Variables["account1"]);
         Assert.Equal("22222222-2222-2222-2222-222222222222", test.Variables["account1"]);
         Assert.Empty(missing.Variables);
+        Assert.True(missing.ProfileMissing);
+        Assert.False(development.ProfileMissing);
+        Assert.False(ODataEnvironmentVariables.Missing().ProfileMissing);
         Assert.False(development.Variables.ContainsKey("Account1"));
     }
 

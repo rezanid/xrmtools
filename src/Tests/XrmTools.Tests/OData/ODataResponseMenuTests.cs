@@ -29,6 +29,125 @@ public class ODataResponseMenuTests
         Assert.Equal("response", text.SelectedText);
     });
 
+    [Theory]
+    [InlineData(false, false)]
+    [InlineData(false, true)]
+    [InlineData(true, false)]
+    [InlineData(true, true)]
+    public Task LayoutHostsMoveTheSameContentAndPreserveState(bool initialRight, bool rightFirst) => OnStaThread(() =>
+    {
+        var content = new TextBox { Text = "response", Visibility = Visibility.Visible };
+        bool configuredRight = initialRight;
+        var placement = new ODataMarginPlacement(content, initialRight, right => configuredRight = right);
+        var first = new ODataMarginHost(placement, rightFirst);
+        var second = new ODataMarginHost(placement, !rightFirst);
+        var bottom = rightFirst ? second : first;
+        var right = rightFirst ? first : second;
+        Assert.Same(initialRight ? right : bottom, content.Parent);
+        Assert.Equal(initialRight ? Visibility.Visible : Visibility.Collapsed, right.Visibility);
+        Assert.Equal(initialRight ? Visibility.Collapsed : Visibility.Visible, bottom.Visibility);
+        placement.Toggle();
+        Assert.Equal(!initialRight, configuredRight);
+        Assert.Same(initialRight ? bottom : right, content.Parent);
+        Assert.Equal("response", content.Text);
+        Assert.Equal(Visibility.Visible, content.Visibility);
+        content.Visibility = Visibility.Collapsed;
+        placement.Toggle();
+        Assert.Same(initialRight ? right : bottom, content.Parent);
+        Assert.Equal(Visibility.Collapsed, content.Visibility);
+        Assert.Equal(initialRight, configuredRight);
+        right.Dispose();
+        Assert.False(placement.CanSwitch);
+        placement.Toggle();
+        Assert.Equal(initialRight, placement.IsRight);
+        bottom.Dispose();
+    });
+
+    [Fact]
+    public Task LayoutMenuUsesShellThemeAndReflectsCurrentPosition() => OnStaThread(() =>
+    {
+        bool right = false;
+        bool canSwitch = true;
+        var menu = ODataResponseMargin.LayoutMenu(() => right, () => canSwitch, () => right = !right);
+        Assert.IsType<ShellContextMenu>(menu);
+        var item = Assert.IsType<ShellMenuItem>(Assert.Single(menu.Items));
+        menu.RaiseEvent(new RoutedEventArgs(ContextMenu.OpenedEvent));
+        Assert.Equal("Move response to side", item.Header);
+        Assert.True(item.IsEnabled);
+        item.RaiseEvent(new RoutedEventArgs(MenuItem.ClickEvent));
+        Assert.True(right);
+        canSwitch = false;
+        menu.RaiseEvent(new RoutedEventArgs(ContextMenu.OpenedEvent));
+        Assert.Equal("Move response below document", item.Header);
+        Assert.False(item.IsEnabled);
+    });
+
+    [Fact]
+    public Task RunControlsUseShellThemedComponents() => OnStaThread(() =>
+    {
+        var grid = ODataResponseMargin.ResultTable();
+        Assert.True(grid.IsReadOnly);
+        Assert.False(grid.CanUserSortColumns);
+        Assert.Equal(DataGridSelectionUnit.FullRow, grid.SelectionUnit);
+        Assert.Equal(new[] { "", "Method", "Request", "Status", "Time" }, System.Linq.Enumerable.Select(grid.Columns, column => column.Header));
+        Assert.IsType<DataGridTemplateColumn>(grid.Columns[0]);
+        var dialog = new ODataRunConfirmation(new XrmTools.DataverseEnvironment
+        {
+            Name = "Development", ConnectionString = "Url=https://contoso.crm.dynamics.com;TenantId=test"
+        }, 2, "POST /accounts");
+        Assert.IsAssignableFrom<XrmTools.Shell.Controls.DialogWindow>(dialog);
+        var content = Assert.IsType<StackPanel>(dialog.Content);
+        var writeList = Assert.IsType<XrmTools.Shell.Controls.ScrollViewer>(content.Children[3]);
+        Assert.Equal(240, writeList.MaxHeight);
+        Assert.Equal("POST /accounts", Assert.IsType<XrmTools.Shell.Controls.TextBlock>(writeList.Content).Text);
+        var footer = Assert.IsType<StackPanel>(dialog.FooterContent);
+        Assert.Equal(XrmTools.Shell.Styles.ButtonKind.Accent, Assert.IsType<XrmTools.Shell.Controls.Button>(footer.Children[0]).Kind);
+        Assert.True(Assert.IsType<XrmTools.Shell.Controls.Button>(footer.Children[1]).IsCancel);
+    });
+
+    [Fact]
+    public void ToolbarSummaryKeepsRunTargetStatisticsAndStopReasonAcrossEnvironmentChanges()
+    {
+        var dev = new XrmTools.DataverseEnvironment { Name = "Dev", ConnectionString = "Url=https://dev.crm.dynamics.com;TenantId=test" };
+        var test = new XrmTools.DataverseEnvironment { Name = "Test", ConnectionString = "Url=https://test.crm.dynamics.com;TenantId=test" };
+        var run = new ODataExecutionResult { IsDocument = true, Environment = dev, StopReason = "Canceled.", Rows = new[]
+        {
+            new ODataExecutionRow { State = "Succeeded" }, new ODataExecutionRow { State = "Failed" },
+            new ODataExecutionRow { State = "Skipped" }, new ODataExecutionRow { State = "Running" }
+        } };
+        string same = ODataResponseMargin.EnvironmentLabel(dev, false, false, null, null, run);
+        Assert.StartsWith("Dev — 3/4 finished · 1 succeeded · 1 failed · 1 skipped · Canceled.", same);
+        Assert.Contains("https://dev.crm.dynamics.com", same);
+        Assert.DoesNotContain("Run target:", same);
+        string switched = ODataResponseMargin.EnvironmentLabel(test, false, false, null, "Missing profile", run);
+        Assert.StartsWith("Test · Run target: Dev — 3/4 finished", switched);
+        Assert.Contains("https://test.crm.dynamics.com", switched);
+        Assert.Contains("Run URL: https://dev.crm.dynamics.com", switched);
+        Assert.Contains("No matching variable profile", switched);
+        string unavailable = ODataResponseMargin.EnvironmentLabel(null, true, false, null, null, run);
+        Assert.Contains("Environment unavailable — refresh to try again", unavailable);
+        Assert.Contains("Run target: Dev", unavailable);
+        string manual = ODataResponseMargin.EnvironmentLabel(dev, false, false, null, null, new ODataExecutionResult());
+        Assert.DoesNotContain("finished", manual);
+    }
+
+    [Fact]
+    public void ResultRowsExposeStatusMonikersAndText()
+    {
+        var row = new ODataExecutionRow { Request = new ODataRequest { Method = "POST", Name = "Create" }, State = "Succeeded" };
+        var item = new ODataResponseMargin.ResultItem(row);
+        Assert.Equal("POST", item.Method);
+        Assert.Equal("Create", item.Name);
+        Assert.Equal(Visibility.Visible, item.IconVisibility);
+        Assert.Equal(Microsoft.VisualStudio.Imaging.KnownMonikers.StatusOK, item.Icon);
+        row.State = "Failed";
+        Assert.Equal(Microsoft.VisualStudio.Imaging.KnownMonikers.StatusError, item.Icon);
+        Assert.Equal("Failed", item.Outcome);
+        row.State = "Skipped";
+        Assert.Equal(Visibility.Collapsed, item.IconVisibility);
+        Assert.Equal("--", item.Elapsed);
+    }
+
     [Fact]
     public Task HeaderResultMenuUsesShellThemeAndPreservesGridClipboardBehavior() => OnStaThread(() =>
     {

@@ -6,7 +6,10 @@ using System.Collections.Generic;
 using System.Text.Json;
 using System.Text.RegularExpressions;
 
-internal sealed record ODataEnvironmentProfile(IReadOnlyDictionary<string, string> Variables, string? Error);
+internal sealed record ODataEnvironmentProfile(IReadOnlyDictionary<string, string> Variables, string? Error)
+{
+    public bool ProfileMissing { get; init; }
+}
 
 internal static class ODataEnvironmentVariables
 {
@@ -46,9 +49,10 @@ internal static class ODataEnvironmentVariables
         }
 
         var selectedVariables = new Dictionary<string, string>(StringComparer.Ordinal);
-        if (selectedEnvironment != null && profiles.TryGetValue(selectedEnvironment, out var matchingProfile))
-            foreach (var variable in matchingProfile) selectedVariables.Add(variable.Key, variable.Value);
-        return new ODataEnvironmentProfile(selectedVariables, null);
+        bool found = selectedEnvironment != null && profiles.ContainsKey(selectedEnvironment);
+        if (found)
+            foreach (var variable in profiles[selectedEnvironment!]) selectedVariables.Add(variable.Key, variable.Value);
+        return new ODataEnvironmentProfile(selectedVariables, null) { ProfileMissing = selectedEnvironment != null && !found };
     }
 
     public static ODataEnvironmentProfile Missing()
