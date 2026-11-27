@@ -803,13 +803,19 @@ internal sealed class ODataResponseMargin : Grid, IWpfTextViewMargin
     {
         var dialog = new SaveFileDialog { FileName = "response", Filter = "All files (*.*)|*.*" };
         if (displayedBody == null || dialog.ShowDialog() != true || displayedBody == null) return;
+        await SaveBodyAsync(displayedBody, dialog.FileName, message => disposed ? System.Threading.Tasks.Task.CompletedTask :
+            Community.VisualStudio.Toolkit.VS.MessageBox.ShowErrorAsync("Save response body", message));
+    }
+
+    internal static async System.Threading.Tasks.Task SaveBodyAsync(ODataStoredBody storedBody, string fileName, Func<string, System.Threading.Tasks.Task> reportError)
+    {
         try
         {
-            using var input = displayedBody.Open();
-            using var output = new FileStream(dialog.FileName, FileMode.Create, FileAccess.Write, FileShare.None, 65536, useAsync: true);
+            using var input = storedBody.Open();
+            using var output = new FileStream(fileName, FileMode.Create, FileAccess.Write, FileShare.None, 65536, useAsync: true);
             await input.CopyToAsync(output);
         }
-        catch (Exception ex) { if (!disposed) status.Text = "Could not save the response: " + ex.Message; }
+        catch (Exception ex) { await reportError("Could not save the response: " + ex.Message); }
     }
     public FrameworkElement VisualElement => this;
     public double MarginSize => Visibility == Visibility.Collapsed ? 0 : IsRightLayout ? ActualWidth : ActualHeight;

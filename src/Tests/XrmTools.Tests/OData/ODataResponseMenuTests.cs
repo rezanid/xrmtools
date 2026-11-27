@@ -1,6 +1,8 @@
 namespace XrmTools.Tests.OData;
 
 using System;
+using System.IO;
+using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
@@ -146,6 +148,39 @@ public class ODataResponseMenuTests
         row.State = "Skipped";
         Assert.Equal(Visibility.Collapsed, item.IconVisibility);
         Assert.Equal("--", item.Elapsed);
+    }
+
+    [Fact]
+    public async Task SaveBodyReportsFailureAndKeepsResponseAvailableForRetry()
+    {
+        string source = Path.Combine(Path.GetTempPath(), "odata-save-" + Guid.NewGuid().ToString("N"));
+        string destination = source + ".saved";
+        File.WriteAllText(source, "response body");
+        var stored = new ODataStoredBody(source, Encoding.UTF8);
+        string error = null;
+        try
+        {
+            await ODataResponseMargin.SaveBodyAsync(stored, Path.Combine(source + ".missing", "response"), message =>
+            {
+                error = message;
+                return Task.CompletedTask;
+            });
+            Assert.StartsWith("Could not save the response: ", error);
+            Assert.True(File.Exists(source));
+            error = null;
+            await ODataResponseMargin.SaveBodyAsync(stored, destination, message =>
+            {
+                error = message;
+                return Task.CompletedTask;
+            });
+            Assert.Null(error);
+            Assert.Equal("response body", File.ReadAllText(destination));
+        }
+        finally
+        {
+            stored.Release();
+            if (File.Exists(destination)) File.Delete(destination);
+        }
     }
 
     [Fact]
