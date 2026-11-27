@@ -62,6 +62,16 @@
     <Compile Include="DataverseSolutions\PcfProjectModels.cs" />
     <Compile Include="DataverseSolutions\PcfProjectService.cs" />
     <Compile Include="DataverseSolutions\PcfPushDestinationResolver.cs" />
+    <Compile Include="OData\ODataCaptureSession.cs" />
+    <Compile Include="OData\ODataClassifier.cs" />
+    <Compile Include="OData\ODataDiagnosticProvider.cs" />
+    <Compile Include="OData\ODataEnvironmentFile.cs" />
+    <Compile Include="OData\ODataExecutionCoordinator.cs" />
+    <Compile Include="OData\ODataGoToDefinition.cs" />
+    <Compile Include="OData\ODataInlineRename.cs" />
+    <Compile Include="OData\ODataOutliningProvider.cs" />
+    <Compile Include="OData\ODataCompletionProvider.cs" />
+    <Compile Include="OData\ODataQuickInfoProvider.cs" />
     <Compile Include="Pcf\PcfDebugLaunchProvider.cs" />
     <Compile Include="Pcf\PcfHarnessProcess.cs" />
     <Compile Include="Pcf\PcfHarnessSession.cs" />

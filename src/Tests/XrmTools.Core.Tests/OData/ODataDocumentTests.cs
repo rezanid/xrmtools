@@ -7,6 +7,23 @@ using Xunit;
 public class ODataDocumentTests
 {
     [Fact]
+    public void GeneratesGuidsPerOccurrenceWithoutChangingRequestFingerprint()
+    {
+        var document = ODataDocument.Parse("@id = {{$guid}}\n# @name create\nPOST /accounts\nX-Request-Id: {{id}}\n\n{\"accountid\":\"{{id}}\"}");
+        var request = document.Requests[0];
+        var fingerprint = document.Fingerprint(request);
+
+        var first = document.Resolve(request);
+        var second = document.Resolve(request);
+        using var json = System.Text.Json.JsonDocument.Parse(first.Body);
+        Assert.True(Guid.TryParseExact(json.RootElement.GetProperty("accountid").GetString(), "D", out var accountId));
+        Assert.True(Guid.TryParseExact(Assert.Single(first.Headers).Value, "D", out var headerId));
+        Assert.NotEqual(accountId, headerId);
+        Assert.NotEqual(first.Body, second.Body);
+        Assert.Equal(fingerprint, document.Fingerprint(request));
+    }
+
+    [Fact]
     public void ParsesMultipleRequestsAndPreservesJsonBody()
     {
         var document = ODataDocument.Parse("@count = 5\r\n### Find\r\nGET /accounts?$top={{count}}\r\nAccept: application/json\r\n\r\n### Create\r\nPOST /accounts\r\nContent-Type: application/json\r\n\r\n{\r\n  \"name\": \"hello\"\r\n}\r\n");

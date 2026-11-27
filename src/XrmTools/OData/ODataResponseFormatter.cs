@@ -14,18 +14,18 @@ internal static class ODataResponseFormatter
     public static string Time(double milliseconds) => milliseconds < 1000 ? $"{milliseconds:0.##} ms" : $"{milliseconds / 1000:0.##} s";
     public static string Size(long bytes) => bytes < 1024 ? $"{bytes} B" : bytes < 1024 * 1024 ? $"{bytes / 1024d:0.#} KB" : $"{bytes / (1024d * 1024):0.#} MB";
 
+    internal static bool IsSensitive(string name) =>
+        name.Equals("Authorization", StringComparison.OrdinalIgnoreCase) ||
+        name.Equals("Proxy-Authorization", StringComparison.OrdinalIgnoreCase) ||
+        name.Equals("Cookie", StringComparison.OrdinalIgnoreCase) ||
+        name.Equals("Set-Cookie", StringComparison.OrdinalIgnoreCase);
+
     public static string Headers(HttpHeaders? headers)
     {
         if (headers == null) return "";
         var text = new StringBuilder();
         foreach (var header in headers.OrderBy(h => h.Key, StringComparer.OrdinalIgnoreCase))
-        {
-            bool sensitive = header.Key.Equals("Authorization", StringComparison.OrdinalIgnoreCase) ||
-                header.Key.Equals("Proxy-Authorization", StringComparison.OrdinalIgnoreCase) ||
-                header.Key.Equals("Cookie", StringComparison.OrdinalIgnoreCase) ||
-                header.Key.Equals("Set-Cookie", StringComparison.OrdinalIgnoreCase);
-            text.Append(header.Key).Append(": ").AppendLine(sensitive ? "[redacted]" : string.Join(", ", header.Value));
-        }
+            text.Append(header.Key).Append(": ").AppendLine(IsSensitive(header.Key) ? "[redacted]" : string.Join(", ", header.Value));
         return text.ToString();
     }
 
